@@ -279,9 +279,25 @@ these are binding until amended *here* (feature docs must not re-litigate them).
 
 ### Content & scope
 
-- **R-S1 — License: GPLv3.** Rationale: enables clean reuse of openScale's
-  GPLv3 scale drivers, F-Droid-friendly, strongest copyleft for a privacy product.
-  Models, datasets and recipe content carry their own documented licenses.
+- **R-S1 — License: Apache-2.0.** *(Amended 2026-09-11 by the owner, via
+  ticket WLO-0014 — originally GPLv3.)* Rationale: a permissive license
+  permits bundling free proprietary **on-device** SDKs where they beat open
+  ones (R-S13 policy); the cost is that openScale's GPLv3 scale drivers can
+  no longer be reused — Bluetooth-scale support becomes clean-room
+  implementations of popular protocols. Models, datasets and recipe content
+  carry their own documented licenses.
+- **R-S13 — Proprietary-SDK policy.** *(Owner ruling 2026-09-11, ticket
+  WLO-0014.)* The code is open source (Apache-2.0); proprietary SDKs/services
+  are acceptable when they are **free** and **materially better** than the
+  open alternative, subject to three conditions: (a) **on-device only** — or,
+  if the SDK transmits anything, it is gated behind an explicit consent
+  toggle and issues receipts like any cloud call; (b) every third-party SDK
+  gets an in-repo **data-flow audit card** (what it collects, when, where it
+  goes); (c) F12's single-egress `NetworkDispatcher` discipline still applies
+  to everything that touches the network. **F-Droid is not a distribution
+  requirement** (Play Store + GitHub APKs are; F-Droid may be added later via
+  a clean-stack audit); the **"WLO Pure" no-INTERNET flavor is dropped**
+  (F12 §3.8 amended accordingly).
 - **R-S2 — Exercise library:** authored minimal set (CC0) + community additions;
   no proprietary bundled database; the two-level muscle schema is the keystone.
 - **R-S3 — Seed recipes:** ~50 open-licensed starter recipes + import + AI
@@ -328,7 +344,7 @@ Ratified 2026-09-11.*
   flagship features behind a "More" sheet reads as shame, which R-U7
   exists to prevent.
 - **R-D3 — Typography: Inter, single family.** Inter (OFL-1.1,
-  GPLv3-compatible per R-S1) is the only UI family. Tabular figures
+  Apache-2.0-compatible per R-S1) is the only UI family. Tabular figures
   (`tnum`) are mandatory wherever numbers change or align; display optical
   sizing for hero numerals. No second typeface.
 - **R-D4 — Charting split.** Vico (Apache-2.0) for standard line/bar
@@ -377,6 +393,16 @@ Ratified 2026-09-11.*
   on a screen may duplicate information another card already shows; states
   explain themselves when they occur and are never pre-explained ("fallback:
   provisional when held" is the banned pattern).
+
+- **R-D12 — "Weight trend" naming + unit glyphs (owner ruling, round 3).**
+  The engine trend is weight-specific and UI labels say so: cards, rows and
+  screens read "Weight trend" (F06/F07/F10), never a bare "Trend" — calories
+  surface as the ring and "left", burn as "Measured burn", silhouette as cm
+  deltas. Every hero number and delta renders a settings-driven unit glyph
+  ("81.2 kg", "↓ 0.3 kg") per R-D10 — a unitless body number is a defect.
+  The trend card's sparkline renders in every Day-loop state (continuity
+  over height economy), and on check-in day the check-in card carries the
+  number once while the trend card carries the series only (R-D11 dedup).
 
 ---
 

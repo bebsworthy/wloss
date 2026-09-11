@@ -160,6 +160,9 @@ html, body {
 .card-title .right { text-transform: none; letter-spacing: 0; font-weight: 500; }
 
 .hero { font-size: 56px; font-weight: 650; letter-spacing: -.03em; font-variant-numeric: var(--tnum); line-height: 1.02; }
+/* R-D12: unit glyph — settings-driven, never hardcoded in copy logic, always visible */
+.unit { font-size: 11px; font-weight: 500; color: var(--text-tertiary); margin-left: 2px; letter-spacing: 0; }
+.hero .unit { font-size: 16px; font-weight: 550; }
 .stat-l { font-size: 28px; font-weight: 600; font-variant-numeric: var(--tnum); letter-spacing: -.01em; }
 .stat-m { font-size: 20px; font-weight: 550; font-variant-numeric: var(--tnum); }
 .stat-s { font-size: 14px; font-weight: 500; font-variant-numeric: var(--tnum); }

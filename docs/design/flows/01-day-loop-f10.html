@@ -44,7 +44,7 @@
       <div class="wf-box row">Hub header · date · streak chip · ⚙ (backup dot)</div>
       <div class="wf-box">Weigh-in card (leads until logged) → <b>04</b></div>
       <div class="wf-note">↑ morning only; disappears once logged (R-B8: later re-weighs just join)</div>
-      <div class="wf-box hero">Hero trend card: “Trend 81.2 ↓0.3” + ribbon strip</div>
+      <div class="wf-box hero">Hero weight-trend card: “81.2 kg ↓0.3 kg” + ribbon strip</div>
       <div class="wf-box tall">Calories ring: remaining vs adaptive target + macro dots + prov chip</div>
       <div class="wf-box row">Today’s plan card → “log as planned” (1 tap)</div>
       <div class="wf-box grid"><div>📷 log</div><div>⚖ weigh</div><div>gut</div><div>workout</div></div>
@@ -138,10 +138,10 @@
         </div>
 
         <div class="card">
-          <div class="card-title">Trend <span class="prov derived">derived</span></div>
+          <div class="card-title">Weight trend <span class="prov derived">derived</span></div>
           <div style="display:flex; align-items:baseline; gap:12px;">
-            <div class="hero">81.2</div>
-            <span class="delta down">↓ 0.3</span>
+            <div class="hero">81.2<span class="unit">kg</span></div>
+            <span class="delta down">↓ 0.3 kg</span>
           </div>
           <svg width="100%" height="36" viewBox="0 0 330 36" style="margin-top:6px">
             <path class="band" d="M0,15 L330,21 L330,36 L0,31 Z"/>
@@ -208,7 +208,7 @@
       <b>Morning — first-screen contract.</b>
       <ol>
         <li><span class="pin-ref">1</span>Streak chip + report-ready pill are display-only (F11 owns); backup-health dot rides the gear menu — never a nag badge (IA §1.1).</li>
-        <li><span class="pin-ref">2</span>Hero = trend-first framing, never raw weight alone; the raw 81.6 stays small print (F06 frozen card). Delta chip: neutral/accent hues only — no alarm-red exists in the theme.</li>
+        <li><span class="pin-ref">2</span>Hero = trend-first framing, never raw weight alone; the raw 81.6 stays small print (F06 frozen card). Round 3: the card is named Weight trend (the engine trend is weight-specific) and its 36 px sparkline renders in every state — continuity over height economy. Delta chip: neutral/accent hues only — no alarm-red exists in the theme.</li>
         <li><span class="pin-ref">3</span>Provenance chips mandatory (FEATURES §2.1): trend chip names the smoother; ring chip names the target source (“adaptive · check-in Sep 8”) and falls back to a “provisional” chip when the engine is <span class="held-c">held</span>.</li>
         <li><span class="pin-ref">4</span>“Log as planned” = zero-tap-path meal replay (F10 §4 input minimization; R-B1 prefill treaty).</li>
         <li><span class="pin-ref">5</span>Quick-action rail: camera is primary; badge-dot on workout = PR news from F05; long-press camera = kcal-only quick-add. Every action starts here and finishes ≤2 taps (5-second doctrine).</li>
@@ -257,11 +257,16 @@
         </div>
 
         <div class="card">
-          <div class="card-title">Trend <span class="prov derived">derived</span></div>
+          <div class="card-title">Weight trend <span class="prov derived">derived</span></div>
           <div style="display:flex; align-items:baseline; gap:12px;">
-            <div class="hero">81.2</div><span class="delta down">↓ 0.3</span>
+            <div class="hero">81.2<span class="unit">kg</span></div><span class="delta down">↓ 0.3 kg</span>
             <span class="receipt faint" style="margin-left:auto;">this morning</span>
           </div>
+          <svg width="100%" height="36" viewBox="0 0 330 36" style="margin-top:6px">
+            <path class="band" d="M0,15 L330,21 L330,36 L0,31 Z"/>
+            <polyline class="spark-dim" points="0,25 30,20 60,27 90,16 120,23 150,18 180,25 210,16 240,22 270,14 300,21 330,12"/>
+            <polyline class="spark" points="0,22 33,21 66,23 99,21 132,21 165,19 198,19 231,16 264,15 297,14 330,12"/>
+          </svg>
         </div>
 
         <div class="card sunken">
@@ -381,8 +386,8 @@
         <div class="card raised">
           <div class="card-title">Weekly check-in <span class="chip accent">UPDATING</span></div>
           <div class="stat-row">
-            <span class="label">Trend</span>
-            <span class="value stat-s">81.1 <span class="delta down">−0.6 kg/wk</span> <span class="faint">on pace</span></span>
+            <span class="label">Weight trend</span>
+            <span class="value stat-s">81.1 kg <span class="delta down">−0.6 kg/wk</span> <span class="faint">on pace</span></span>
           </div>
           <div class="stat-row">
             <span class="label">Days logged</span>
@@ -413,10 +418,13 @@
         </div>
 
         <div class="card">
-          <div class="card-title">Trend <span class="prov derived">derived</span></div>
-          <div style="display:flex; align-items:baseline; gap:12px;">
-            <div class="hero">81.1</div><span class="delta down">↓ 0.2</span>
-          </div>
+          <div class="card-title">Weight trend <span class="prov derived">derived</span></div>
+          <svg width="100%" height="36" viewBox="0 0 330 36" style="margin-top:6px">
+            <path class="band" d="M0,15 L330,21 L330,36 L0,31 Z"/>
+            <polyline class="spark-dim" points="0,25 30,20 60,27 90,16 120,23 150,18 180,25 210,16 240,22 270,14 300,21 330,12"/>
+            <polyline class="spark" points="0,22 33,21 66,23 99,21 132,21 165,19 198,19 231,16 264,15 297,14 330,12"/>
+          </svg>
+          <div class="receipt faint" style="margin-top:4px;">the series · today’s number up top</div>
         </div>
 
         <div class="card">
@@ -443,7 +451,7 @@
     <div class="caption annotation">
       <b>Check-in day (R-U17).</b>
       <ol>
-        <li><span class="pin-ref">10</span>Check-in card occupies the hero slot for the day; trend card returns tomorrow. Frozen anatomy compressed here — full sequence in flow 03.</li>
+        <li><span class="pin-ref">10</span>Check-in card occupies the hero slot for the day; the trend card renders the series only — the number lives once, in the check-in card (R-D11 dedup, round 3). Full sequence in flow 03.</li>
         <li><span class="pin-ref">11</span>Status chip before numbers (Zolt/MacroFactor pattern); “6/7 logged” renders day dots with Wednesday’s fast marked as chosen, never missed. Swiping the card away = Keep (no dismiss-shame).</li>
       </ol>
     </div>
@@ -467,8 +475,8 @@
           <div class="widget" style="margin:0 auto;">
             <div style="display:flex; justify-content:space-between; align-items:baseline;">
               <div>
-                <div class="hero" style="font-size:44px;">81.2</div>
-                <div class="receipt"><span class="down">▼ 0.3</span> · trend</div>
+                <div class="hero" style="font-size:44px;">81.2<span class="unit">kg</span></div>
+                <div class="receipt"><span class="down">▼ 0.3 kg</span> · trend</div>
               </div>
               <div class="ring" style="--fill:33; width:64px; height:64px;">
                 <div class="center"><span class="stat-s">1,277</span><span class="faint" style="font-size:9px;">left</span></div>
