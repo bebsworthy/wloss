@@ -1,0 +1,348 @@
+# WLO — Master Feature Document
+
+*The map of the app: what the features are, how they interlock, and the frozen
+rulings that resolve every cross-feature question the 13 specs deferred. Each
+feature's full spec lives beside this file (`F01`–`F13`); the template they
+follow is [`TEMPLATE.md`](TEMPLATE.md). Companion docs:
+[`../objective.md`](../objective.md) · [`../research/synthesis.md`](../research/synthesis.md).*
+
+---
+
+## 1. The feature map
+
+| ID | Feature | Doc | Provides (one line) | AI consent |
+|----|---------|-----|---------------------|------------|
+| F01 | Onboarding, Goals & Diet Plan Studio | [F01](F01-onboarding-diet-plans.md) | Zero-account path to a versioned, user-owned Diet Plan | consumes `meal-planning` |
+| F02 | Food Logging & AI Nutrient Estimation | [F02](F02-food-logging.md) | Any meal → trusted nutrient record in seconds, photo-first | consumes `food-photo`, `voice-input` |
+| F03 | Meal Planning & Recipes | [F03](F03-meal-planning.md) | Template → week plan → pre-logs; planned-vs-actual adherence | consumes `meal-planning` |
+| F04 | Shopping List & Pantry | [F04](F04-shopping-pantry.md) | Auto list from the plan; pantry ground truth; edit-proof checks | none in v1 (see R-C3) |
+| F05 | Exercise Planning & Tracking | [F05](F05-exercise.md) | Hevy-class logging loop; explainable adaptation; expenditure context | none (see R-C2) |
+| F06 | Weight & Body Metrics | [F06](F06-weight-body-metrics.md) | The honest measurement layer: trend weight, provenance, EAV metrics | none — local math only |
+| F07 | Energy & Metabolism Engine | [F07](F07-energy-engine.md) | On-device adaptive TDEE, 3-band decelerating forecast, weekly check-in | none — the privacy flagship |
+| F08 | Silhouette Tracker | [F08](F08-silhouette.md) | Guided private body-photo ritual + on-device compare studio | owns `silhouette` (near-never) |
+| F09 | Gut & Poop Tracker | [F09](F09-gut-tracker.md) | 10-second Bristol logging + the plan↔gut correlation moat | owns `poop-photo` |
+| F10 | Daily Hub & Nudges | [F10](F10-daily-hub.md) | One home surface; the app-wide respectful notification policy | none (nudge copy: `insights-chat`, opt-in) |
+| F11 | Insights, Statistics & Gamification | [F11](F11-insights-gamification.md) | Stats hub, report cards, forgiving streak economy, share cards | consumes `insights-chat` (prose only) |
+| F12 | AI Platform: On-device Models, BYOK & Consent | [F12](F12-ai-platform.md) | Model zoo, BYOK layer, consent matrix, receipt log, redaction | owns all six categories |
+| F13 | Data Vault & Integrations | [F13](F13-data-vault.md) | Schema of record, export/backup/restore, Health Connect, scales | none — enforces the network gate |
+
+**Layering:** F13 (foundation) → F12 (AI infrastructure) → domain features
+F01–F09 → F10/F11 (composition & motivation). F07 sits at the center of the
+domain ring: it is the consumer of F02/F03/F05/F06 and the authority that makes
+them one system instead of five trackers.
+
+---
+
+## 2. How it works together
+
+### 2.1 The shared data spine
+
+Five concepts are defined once and consumed everywhere:
+
+- **Day record** — the app's *rendering* unit: one composed view per profile
+  per date (intake entries owned by **F02** incl. day status
+  `Logged/Skipped/Fasted`, planned-meal slots owned by **F03**, measurements
+  **F06**, exercise **F05**, gut entries **F09**, captures **F08** — vector
+  silhouette records, never photos per R-U16).
+  **Storage is event-level, not day-level** (R-B8): every timestamped data
+  point is kept verbatim — multiple weigh-ins in one day are normal data.
+  *Rulings R-B1, R-B8.*
+- **Targets document** — versioned; `{calorie budget + schedule, macro splits,
+  fiber, water, workout cadence, pace, floor}`. Write authority: **F01 creates,
+  F07 adapts (Apply-only)**; every other feature reads. *R-B2.* Water intake
+  is logged by **F02** (drink entries + a one-tap water quick-add); F09
+  consumes the actuals for its hydration correlation.
+- **Provenance** — every derived number is `measured` / `estimated` / `derived`
+  (AI outputs add model + consent state) and opens a "how we got here" sheet.
+  A number rendered without its chip is a spec bug.
+- **Data-quality states** — `developing / updating / held` (Zolt/MacroFactor
+  pattern), generalized: F07 gates its engine, F11 gates grades, F03 gates
+  adherence, F04 gates cost stats, F06 gates trend rendering. Weak data holds
+  and says why; it never guesses.
+- **Consent + Receipt** — F12's six categories gate cloud AI; every call,
+  cloud or local, writes a hash-chained receipt; F13's network gate is the
+  single egress choke point. Day-to-day dispatch runs through **F12's
+  NetworkDispatcher**; **F13 owns the architectural enforcement** (feature
+  code cannot reach a socket except through the dispatcher) and the
+  user-facing audit surface.
+
+Supporting cast: **Trend weight** (computed in F06 only — one smoother, one
+owner), **Food Memory**, **Fresh Start marker** (hide-not-delete, reversible),
+**Vault partitions** (sensitive attachments in F13's encrypted, gallery-invisible
+store), **Nudge Contract** (F10's app-wide notification policy).
+
+### 2.2 The Day loop (daily rhythm, orchestrated by F10)
+
+Morning: Bluetooth scale, photo-of-display, **or simply typing 92.1 — all
+equal first-class paths** (R-U15). F06 answers with the trend card ("Trend
+179.1, down 0.6") and the Hub's hero number; a second weigh-in later in the
+day is kept as its own data point. Meals: F03's planned card → one-tap
+"log as planned" or F02's photo ladder (≤10 s, corrections optional).
+Movement: F05 session with prefilled sets → expenditure handed to F07 as
+context. Gut: whenever it actually happens — for many people a few times a
+week, not daily — F09's two-tap Bristol entry, correlated automatically
+against F02's fiber and F03's plan; no day is ever flagged "gut not logged"
+(R-U13). Evening: day status one-tap, day-closure recap [v1.x]. The Hub
+reorders itself by time of day; nothing in the loop ever requires a keyboard.
+
+### 2.3 The Week loop (the ritual that binds the system)
+
+Sunday: **F07 check-in** (60–90 s) → status chip, trend, adherence, measured
+TDEE, proposed targets → **Apply / Keep / Discuss**. Applied targets write a new
+F01 plan version (diff shown) → **F03 "Generate week"** against the fresh budget
+→ **F04 list** builds from the plan in <1 s → shop → sweep to pantry. F11's
+report card stamps grades from the same week's data. This is the loop no
+competitor closes: *measure → decide → plan → shop → log → measure.*
+
+### 2.4 Three signature flows (the moats, as user stories)
+
+1. **The honest forecast.** Onboarding goal dials → F07 renders 3-band forecast
+   (cold-start formula mode, labeled `ESTIMATED`) → by week 3 the bands sharpen
+   around the *measured* TDEE → near goal the deceleration model bends the cone
+   instead of lying linearly. *(F01+F07+F06; the open gap in all 18 researched apps.)*
+2. **The stall that isn't.** Scale flat 14 days → F08's quiet-scale card shows
+   "−2.3 cm in 6 weeks" → F07 reframes the plateau as rising measured TDEE and
+   proposes the upward target → F09 annotates the water-weight noise. Four
+   features turn the category's #1 quit-moment into the app's best moment.
+3. **The proof.** "Lentils don't love me back": F03 planned the curry, F02
+   logged the fiber, F09 pairs the outcome 19 h later → trigger report unlocks
+   at day 14 → doctor PDF exports the whole story. *(The plan↔poop loop exists
+   in zero competitors.)*
+
+### 2.5 The consent matrix (frozen)
+
+| Category | Consumers | Default |
+|---|---|---|
+| `food-photo` | F02 (F04 cloud-assist if ever shipped — R-C3) | off, on-device first |
+| `voice-input` | F02 (F05/F06/F10 voice quick-logs; raw-audio sub-toggle off) | off, on-device STT |
+| `meal-planning` | F01, F03 | off, deterministic engine |
+| `silhouette` | F08 — **no cloud code path exists in v1** | off, "not recommended" |
+| `poop-photo` | F09 | off, on-device classifier |
+| `insights-chat` | F11 (prose), F10 (nudge copy, opt-in; default local templates) | off, local rules |
+
+Future consumers already sanctioned by existing categories (no taxonomy
+change; the matrix above lists v1 traffic only): F03 photo-to-recipe →
+`food-photo` [future] · F03 voice planning → `voice-input` [v1.x] · F05
+natural-language program discussion → `insights-chat` [future].
+
+Non-AI network (governed by F13, audited in F12's connection log): OFF/USDA
+food lookups — toggle default **on** (payload is barcode/search string only, no
+personal data), aggressive cache, one-tap off (R-C4). Everything else a packet
+analyzer sees: nothing. F05/F06/F07 make zero AI calls, ever (R-C5).
+
+---
+
+## 3. Rulings — frozen decisions on deferred questions
+
+Each spec deferred cross-cutting calls to this document. Ruled as follows;
+these are binding until amended *here* (feature docs must not re-litigate them).
+
+### Consent & network
+
+- **R-C1 — Taxonomy is six, frozen.** New cloud capabilities enter only by
+  master-doc amendment. `exercise-plan` is pre-approved as the seventh *if and
+  when* F05 cloud generation ships ([future]); until then F05 is on-device only.
+- **R-C2 — F05 v1:** deterministic rule engine only; no cloud path, no consent.
+- **R-C3 — F04 vision (receipt scan, pantry stock-take):** on-device OCR/vision
+  only in v1/v1.x, consent-free; a future cloud assist would consume
+  `food-photo` (making F04 its third consumer).
+- **R-C4 — Food-DB lookups:** F13 integration toggle (not an F12 AI category),
+  default on, cached, per-lookup audit trail.
+- **R-C5 — F05/F06/F07 are AI-free by design** — stated on the consent matrix
+  as "local math only"; this is a marketing asset, not an absence.
+- **R-C6 — Raw-audio cloud STT** is a sub-toggle inside `voice-input`, default
+  off (transcript-only is the default payload).
+- **R-C7 — F07 "Discuss" with `insights-chat` off** renders the local explainer
+  plus one informational line; it never prompts to enable cloud.
+
+### Data spine & authority
+
+- **R-B1 — Day record:** F02 owns the food diary and day-status semantics;
+  F03 owns the planned-slot state machine (`planned/confirmed/swapped/skipped/
+  replaced`) that projects into it; a `replaced` slot links to the actual F02
+  entry, which owns the nutrition; F03 keeps slot labeling. F07/F10 consume.
+- **R-B2 — Targets:** single versioned document; F01 writes v1, F07 writes
+  adaptive adjustments **only via explicit Apply** (ledgered, reversible);
+  all other features read-only. Exercise expenditure is structurally incapable
+  of raising eating targets (enforced in the write path).
+- **R-B3 — Fiber target** lives in Targets; F09 supplies the default
+  (25–30 g, or plan-derived) at F01's plan-creation; divergence between the
+  active F03 plan and the fiber target renders in F03 as a plan-fit signal —
+  there is exactly one target, never two competing numbers.
+- **R-B4 — Adherence metrics:** F03 computes (plan coverage, energy fidelity,
+  swap gravity, cook realism); F11 consumes read-only. One definition per number.
+- **R-B5 — F06→F07 series contract** frozen: daily scalars + trend + residual σ
+  + coverage % + provenance flags, under lowest-of-day/noon-normalized semantics.
+- **R-B6 — F09 classifier personalization:** correction-cache prior over a
+  frozen on-device model in v1 (shared mechanism with F02's dish priors);
+  on-device fine-tuning is [future], pending an F12 platform ruling.
+- **R-B7 — Fresh Start ledger:** badges/milestones retained; streaks reset;
+  charts shaded at the marker; everything reversible. (F01 ritual, F11 economy,
+  F13 mechanics.)
+- **R-B8 — Event-level storage, day-level rendering (owner ruling).** Every
+  measurement is stored as a timestamped event; **multiple weigh-ins per day —
+  including the post-bathroom "now I get my win" re-weigh — are kept verbatim**,
+  never collapsed, overwritten, or judged. "One value per day" semantics
+  (lowest-of-day for weight, last-in for girths) are **derived views** consumed
+  by trend math, F07, and exports; the raw points stay queryable (time-of-day
+  lens, weigh-count stats) and ship in exports.
+
+### Algorithm constants (published on F07's Algorithms page)
+
+- **R-A1 —** 7,700 kcal/kg (3,500/lb). **R-A2 —** EWMA α default 0.15, tuner
+  visible. **R-A3 —** v1 engine: Transparent (closed-form) only; Adaptive
+  spline ships v1.x opt-in, becomes default only after benchmarking.
+- **R-A4 —** v1 nutrients: kcal, macros, fiber, sugar, sodium; micronutrient
+  panels v1.x.
+- **R-A5 —** F07 cold-start forecast mode is **[v1] mandatory** (F01's
+  onboarding preview depends on it): formula-BMR-based, wide bands, `ESTIMATED`
+  chip, "will sharpen as you log".
+
+### UX policy
+
+- **R-U1 — Nudge Contract (app-wide):** default cap 1/day (user 0–3), quiet
+  hours 21:30–07:30, all reminders — including F08 capture-due and F09 gap
+  nudges — draw from this single budget with F10 arbitrating priority; F07's
+  check-in is one soft notification on check-in day; dismissed = never re-fired
+  for the same gap.
+- **R-U2 — Report card:** Sunday default, user-selectable; F07 check-in and F11
+  grades share the day.
+- **R-U3 — Consistency Score:** dormant tile until ≥4 weeks of data, then
+  opt-in activation; hideable permanently.
+- **R-U4 — Wrapped:** install-anniversary reveal (calendar-year toggle optional).
+- **R-U5 — Backups:** encrypted by default (user passphrase, lockout warning
+  shown at setup); plaintext is an explicit per-export choice; rotation default 7.
+- **R-U6 — F08 capture:** 2 mandatory angles (front + side), back optional;
+  comparisons annotate which angles are present; the 60 s ritual is preserved.
+- **R-U7 — Section naming:** F08 = "Archive", F09 = "Digestion" (renamable).
+  Words like "body photo" / "poop" never appear in nav, notifications, or widgets.
+- **R-U8 — F06 weight-noise annotations from F09:** opt-in, default off.
+- **R-U9 — F10 day-closure recap:** in-app card first [v1.x]; as a notification
+  only by explicit opt-in.
+- **R-U10 — Streaks:** multi-oracle (weigh-in OR meal-log OR workout by default,
+  user-tunable); `held` days count as neutral — they neither advance nor break.
+- **R-U11 — F03 month view** is read-only overview in v1 (week-level editing).
+- **R-U12 — Widgets:** one widget framework owned by F10; the F04 list widget
+  rides it [v1.x]. No parallel widget stacks.
+- **R-U13 — No daily expectation for irregular rhythms (owner ruling).** Gut
+  entries and silhouette captures are never part of any "expected logs" /
+  day-completeness model; nothing renders as a gap, a miss, or an empty streak.
+  F09 gap reminders are baseline-relative (a 2-day gap for a 3/week person *is*
+  the baseline — it never fires) and **default off**; F08 capture reminders are
+  cadence-relative the same way.
+- **R-U14 — Photo retention is opt-in, default off (owner ruling).** Storage
+  is a real constraint with no Google-Photos cloud overflow to bail it out.
+  Food photos (F02) and stool photos (F09) are processed on-device and
+  **discarded at save by default**; compressed-thumbnail mode and full-quality
+  retention are explicit opt-ins (with a per-capture "keep this one"). F13
+  therefore ships a **storage dashboard [v1]** (per-category usage,
+  shrink-to-thumbnails, age-based purge, per-category wipe) and a
+  **user-folder photo offload [v1.x]** (copy originals to the SAF backup
+  folder to reclaim device space — the local-first stand-in for cloud
+  overflow); private Google-Drive offload is [future] (complex,
+  account-bound). Silhouette is *not* an exception to opt into — see R-U16.
+- **R-U16 — Silhouette: vector outlines only, never photographs (owner
+  ruling).** The F08 capture processes camera frames **in memory only**, then
+  derives a **vector outline** + width profile + estimated measurements and
+  **discards the frame at save — unrecoverable by architecture, not a
+  setting**. WLO never stores a body photo anywhere, in any form, encrypted
+  or otherwise: not in the vault, not in backups, not in exports, not in
+  share cards. What the timeline, compare studio, and share artifacts use are
+  vector records. Rationale: we do not preserve intimate images of people —
+  there is nothing to leak from a lost phone, a hostile import, or a
+  compromised cloud backup, because the artifact does not exist.
+- **R-U15 — Assists never gate (owner ruling).** Every capture assist —
+  scale-display OCR, photo recognition, stool classifier, barcode — has an
+  equal-status manual path one tap away, offered but never forced, with a
+  graceful landing on manual when recognition fails. Sometimes typing 92.1 is
+  genuinely the fastest input, and the app must honor that.
+- **R-U17 — Check-in hero-slot promotion (F10):** on the user's check-in day
+  (Sunday default) the F07 check-in card is promoted into the Daily Hub's hero
+  slot for that day, displacing the trend card; the trend returns the next day.
+
+### Content & scope
+
+- **R-S1 — License: GPLv3.** Rationale: enables clean reuse of openScale's
+  GPLv3 scale drivers, F-Droid-friendly, strongest copyleft for a privacy product.
+  Models, datasets and recipe content carry their own documented licenses.
+- **R-S2 — Exercise library:** authored minimal set (CC0) + community additions;
+  no proprietary bundled database; the two-level muscle schema is the keystone.
+- **R-S3 — Seed recipes:** ~50 open-licensed starter recipes + import + AI
+  drafting; a larger curated library is v1.x content work.
+- **R-S4 — Import converters:** generic CSV/JSON at v1; MFP/Lose It!/Paprika/
+  Mealime converters v1.x.
+- **R-S5 — Pantry partial-stock deduction:** default off globally; one-time
+  prompt at first generation with remember-choice.
+- **R-S6 — F01 preference quiz:** 8-card core in v1; the long tail lives in the
+  Studio and F03 filters. Cadence default: weekly (daily supported).
+- **R-S7 — F03 fit-badge tolerance:** ±5 % kcal, aligned with F07's proposal
+  semantics so a "fit" plan never argues with a `held` week.
+- **R-S8 — F09 FODMAP vocabulary:** simplified 6-tag open set in v1;
+  Monash-grade category coverage is [future] (licensing-dependent).
+- **R-S9 — Health Connect nutrition writes (F13):** kcal/macros at v1;
+  micronutrients when the food DB supports them.
+
+---
+
+## 4. Review notes (all 13 specs, read in full)
+
+| Doc | Verdict | Highlights | Watch-outs |
+|----|---------|-----------|------------|
+| F01 | **Pass** | Plan-as-versioned-document with diffs; calorie-floor "haptic wall" refusal; zero-account, <3 min | Cold-start forecast dependency → resolved by R-A5; quiz length → R-S6 |
+| F02 | **Pass** | Correction loop as hero flow; sanity rails ("anti-27M-kcal guarantee"); personal accuracy stat | Diary ownership → R-B1; OFF cache budget needs a sizing decision at impl. |
+| F03 | **Pass** | Reconciliation-not-regeneration treaty with F04; adherence defined honestly; leftovers charged to cook day | Seed library → R-S3; `replaced` semantics → R-B1 |
+| F04 | **Pass** | Unit-aware consolidation incl. the "don't fake cross-unit" honesty rule; delta-chip reconciliation | Consent gap → R-C3; servings-change reconciliation UX → prototype |
+| F05 | **Pass** | "Readable rule engine" (anti-Fitbod as a feature); expenditure "context, never credit" enforced in the write path | Recovery constants need publishing; library licensing → R-S2 |
+| F06 | **Pass** | Trend-first ritual with kind haptics; method-registry body fat; EAV store powers the whole app | Zero-phase smoother spec → implementation decision w/ documented UX; α → R-A2 |
+| F07 | **Pass — flagship** | Deceleration forecast (the 19-app gap); dual-engine transparency; Apply-only write authority; decision ledger | Targets contract → R-B2; constants → R-A1/A3; engine telemetry page is [future], resist promoting early |
+| F08 | **Pass** | No-cloud-by-construction privacy; named-guardrail pose gating; quiet-scale payoff card | Angle set → R-U6; retention → **superseded by R-U16 (vector-only, no photos ever)** |
+| F09 | **Pass** | Plan↔poop correlation moat; unlock-progress-ring fixes cold-start abandonment; flawless discretion spec | FODMAP vocabulary → R-S8; fiber target → R-B3 |
+| F10 | **Pass** | 5-second doctrine as a *measured* invariant; Nudge Contract enforced in code review; owns composition only | Nudge cap → R-U1; check-in hero-slot promotion → R-U17 |
+| F11 | **Pass** | Forgiving economy with no purchase path "structurally impossible"; `held` gating generalized; Consistency Score's risks spec'd honestly | Report day → R-U2; score default → R-U3; streak neutral days → R-U10 |
+| F12 | **Pass — constitution** | Hash-chained receipts; payload-preview consent sheets; "WLO Pure" no-INTERNET flavor | Category boundaries → R-C1–C7; local-LLM runtime is v1.x, don't block v1 on it |
+| F13 | **Pass** | Staged-and-validated restores ("corrupt import can't destroy data"); egress list as a user-facing screen | License → R-S1; Health Connect nutrition granularity → R-S9 |
+
+**Cross-cutting review findings (consistency checks that passed):** consent
+taxonomy referenced identically across 9 docs; write-authority for Targets
+stated compatibly in F01/F02/F05/F07; provenance and `held`-gating patterns are
+uniform; tone rules (banned-words lists) appear in F02/F03/F05/F06/F08/F09/F10/F11
+in mutually consistent forms. **Fixed in this doc rather than by editing specs:**
+all R-* rulings above (the specs explicitly deferred them here). A 2026-09-11
+alignment pass re-synced spec body text that had drifted behind rulings —
+F01 (import scope, Fresh Start wording), F04 (consent wording, consolidation
+math), F07 (engine version tags), F08 (angle set), F09 (fiber target), F11
+(Wrapped date), F13 (converter tags); no spec contradicts a ruling as written.
+
+---
+
+## 5. What v1 must include (roll-up)
+
+From the specs' `[v1]` tags and rulings: zero-account onboarding + plan studio
+(F01) · full input ladder with correction loop + sanity rails (F02) · planner +
+generation + swaps (F03) · generated list, pantry, staples, reconciliation
+(F04) · logging loop, rule engine, heatmap (F05) · trend weight, smoothers,
+measurements, EAV, scale OCR (F06) · Transparent engine, check-in, 3-band
+decelerating forecast, Algorithms page (F07) · capture ritual, vector-silhouette Archive,
+timeline/compare (F08) · Bristol logging, on-device classifier pre-select, fiber
+target, red flags, doctor export (F09) · Hub, Adaptive Day Model, Nudge
+Contract, widget (F10) · stats hub, report card, forgiving streaks, share cards
+(F11) · model zoo, BYOK, consent matrix, receipts (F12) · vault, versioned
+export, SAF backup, biometric lock, Health Connect, Bluetooth scales, storage dashboard (F13).
+
+Deliberately **not** v1: adaptive spline engine, cook mode, recipe-URL/photo
+importers, competitor converters, cost tracking, correlations, Wrapped,
+Consistency Score, Wear OS, cloud paths beyond BYOK-consented ones.
+
+## 6. Still genuinely open (needs prototypes, data, or an owner call)
+
+1. Zero-phase smoother implementation + its "recent values revise" UX (F06).
+2. Recovery-model constants for F05 (must be WLO's own, published).
+3. ARCore-less device tier: portion fallback strategy (F02).
+4. OFF offline cache sizing vs lazy cache (F02/F13).
+5. Exercise library content pipeline (author vs curate) — follows R-S2.
+6. Classifier architecture for F09 when personalization lands (F12 platform).
+7. Multi-profile vault partitioning + Health Connect's single-profile constraint (F13/F01).
+8. Badge visual direction (needs design exploration — F11).
+9. F04 servings-change reconciliation pattern (prototype with F03).
+10. Whether `meal-planning` cloud generation ships in v1 or v1.x (F01/F03
+    work without it; it is the first BYOK showcase — product-call).

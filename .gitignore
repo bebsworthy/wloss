@@ -1,0 +1,5 @@
+# Ticket CLI local state (SQLite db + machine config)
+.ticket/
+
+# macOS
+.DS_Store
