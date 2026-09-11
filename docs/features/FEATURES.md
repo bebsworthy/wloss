@@ -426,6 +426,20 @@ Ratified 2026-09-11.*
   meals card; until then exercise stays "context, never credit" (R-B2) in
   the Close-the-day row.
 
+- **R-D14 — Day-loop cards are content-rendered (owner ruling, round 6).**
+  A card renders because its content exists, never as a fixture: the diary
+  appears with the first entry, "plan vs. actual" with a plan, and the meals
+  cards only while an open planned slot exists. Absence is silent — a user
+  who never plans meals (or lets a plan lapse) sees no meals card, no empty
+  state, no planner upsell: F01's budget powers the ring for everyone, and
+  F03 is discovered in its tab, onboarding, and the check-in hand-off, never
+  nagged from the day loop; the ~19:00 "plan tomorrow" surface is likewise
+  plan-conditional. When a planned slot does render, its full decision set —
+  confirm · ate something else (→ F02) · swap (→ F03) · not having it — sits
+  one tap behind the row, with the happy-path button as the sole visible
+  affordance; skips and replaces are neutral decisions that shrink the header
+  count, and a slot still open past its day is never penalized.
+
 ---
 
 ## 4. Review notes (all 13 specs, read in full)

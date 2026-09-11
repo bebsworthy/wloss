@@ -63,7 +63,8 @@ permission, widget bounds.
   day-completeness that reorders cards and re-ranks quick actions. Morning
   (until user-set, default 10:30): weigh-in card leads if none yet. Midday:
   next planned meal + photo action lead. Evening (from ~19:00): "close the
-  day" and "plan tomorrow" surface. Night: minimal layout, recap only.
+  day"; the "plan tomorrow" surface renders only for planners (R-D14). Night:
+  minimal layout, recap only.
 - **Day-completeness model** — which expected logs exist (weigh-in, meals vs.
   plan, workout due — **never gut entries or silhouette captures: irregular
   rhythms are normal, R-U13**); drives card states: `done`, `open`,
@@ -102,8 +103,8 @@ notification taps and action buttons; Wear OS glance [future]; app shortcuts
 2. *Morning weigh-in:* the weigh card stays first until logged → tap (1) → F06
    numpad prefilled with last weight, ±0.1 stepper → confirm (2) → the hero card
    flips to trend-first framing ("Trend 179.1, down 0.6") with a count-up.
-3. *Evening plan-tomorrow:* card appears after ~19:00 → tap → F03 tomorrow view
-   with a "copy today" preset → one confirm.
+3. *Evening plan-tomorrow:* on days with a plan (R-D14), a card appears after
+   ~19:00 → tap → F03 tomorrow view with a "copy today" preset → one confirm.
 
 **Input minimization.** The user never types on the Hub: meal identity comes from
 photo/voice/recents (F02), weight from prefill + stepper, poop from a 2-tap
@@ -131,7 +132,9 @@ camera icon = quick-add calories only.
 **Data-quality gating.** No trend chip until ≥3 weigh-ins exist (mirrors F06);
 no forecast ETA while F07 is `held` — the ring falls back to the static F01
 target labeled with a "provisional" provenance chip that taps through to the
-explainer; "plan vs. actual" only renders when a plan exists.
+explainer; "plan vs. actual" only renders when a plan exists — day-loop cards
+are content-rendered across the board (R-D14): absence is silent, never an
+empty state or an upsell.
 
 ## 5. What the User Gets Out
 
@@ -139,7 +142,14 @@ explainer; "plan vs. actual" only renders when a plan exists.
   with the progress-ribbon strip from F06; tap → F06.
 - **Calories-remaining ring** vs. the adaptive target from F07, with macro dots
   and a provenance chip ("adaptive · check-in Sep 8"); tap → F07.
-- **Meals · today** — the next F03 meal as a card with one-tap "log as planned" (R-D13: forward-looking only; confirmed meals live solely in the diary; "plan" is the week plan's word).
+- **Meals · today / tomorrow** — content-rendered (R-D14): the card exists
+  only while ≥1 open planned slot exists; no plan (or a lapsed one) → no card,
+  no empty state, no planner upsell. The next open meal renders as one row
+  whose "log as planned" is the sole visible button — the happy path; the row
+  tap opens the meal sheet (confirm · ate something else → F02 · swap → F03 ·
+  not having it), where skips and replaces are neutral decisions that shrink
+  the header count. R-D13: forward-looking only; resolved meals live solely
+  in the diary; "plan" is the week plan's word.
 - **Quick-action rail** — photo-log (F02), weigh-in (F06), poop (F09), workout
   (F05); icons badge-dot when their owner has news (e.g., a PR from F05).
 - **Streak chip and report-card-ready pill** from F11 (display only).

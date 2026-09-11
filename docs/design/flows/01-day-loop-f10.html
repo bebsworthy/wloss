@@ -65,7 +65,7 @@
       <div class="wf-box grid"><div>📷</div><div>⚖</div><div>gut</div><div>workout</div></div>
       <div class="wf-box row">nav</div>
     </div></div>
-    <div class="caption annotation"><b>Midday.</b> Plan card leads (Adaptive Day Model); logged slots collapse to one line; ring re-swept on return from capture.</div>
+    <div class="caption annotation"><b>Midday.</b> Plan card leads (Adaptive Day Model); logged slots collapse to one line; ring re-swept on return from capture. No plan → no meals card — silent absence (R-D14).</div>
   </div>
 
   <div class="flowunit">
@@ -211,7 +211,7 @@
         <li><span class="pin-ref">1</span>Streak chip + report-ready pill are display-only (F11 owns); backup-health dot rides the gear menu — never a nag badge (IA §1.1).</li>
         <li><span class="pin-ref">2</span>Hero = trend-first framing, never raw weight alone; the raw 81.6 stays small print (F06 frozen card). Round 3: the card is named Weight trend (the engine trend is weight-specific) and its 36 px sparkline renders in every state — continuity over height economy. Delta chip: neutral/accent hues only — no alarm-red exists in the theme.</li>
         <li><span class="pin-ref">3</span>Provenance chips mandatory (FEATURES §2.1); chip words name user facts, not mechanisms — the ring chip reads “updates weekly · Sep 8” (cadence + last change). The engine word “adaptive” lives in the ⓘ explainer’s first sentence (“your budget is adaptive — recalculated at each check-in from your measured burn and weight trend”); falls back to a “provisional” chip when the engine is <span class="held-c">held</span>.</li>
-        <li><span class="pin-ref">4</span>“Log as planned” = zero-tap-path meal replay (F10 §4 input minimization; R-B1 prefill treaty).</li>
+        <li><span class="pin-ref">4</span>“Log as planned” = zero-tap-path meal replay (F10 §4 input minimization; R-B1 prefill treaty). The button is the happy path only (R-D14): tapping the row opens the meal sheet — confirm · ate something else (→ 02) · swap (→ 03) · not having it.</li>
         <li><span class="pin-ref">5</span>Quick-action rail: camera is primary; badge-dot on workout = PR news from F05; long-press camera = kcal-only quick-add. Every action starts here and finishes ≤2 taps (5-second doctrine).</li>
       </ol>
     </div>
@@ -304,7 +304,88 @@
       <b>Midday — after a log.</b>
       <ol>
         <li><span class="pin-ref">6</span>Ring swept with a 400 ms ease-out + tick at sweep end (F10 motion table); the save arc landed here from flow 02. Copy is a fact (“1,008 left”), never a verdict.</li>
-        <li><span class="pin-ref">7</span>The meals card is forward-looking only (R-D13): one row — the next open meal with planned kcal + provenance — beside its one-tap CTA (R-B1 prefill treaty). Confirmed meals collapse into the header count and appear exactly once, in the diary (R-D11 dedup). Weigh-in card is gone after logging; re-weighs would simply join (R-B8).</li>
+        <li><span class="pin-ref">7</span>The meals card is forward-looking only (R-D13): one row — the next open meal with planned kcal + provenance — beside its one-tap CTA (R-B1 prefill treaty); it renders only while an open planned slot exists (R-D14 — the flow below shows this same Friday without a plan). The button is the happy path; tapping the row opens the meal sheet — confirm · ate something else (→ 02) · swap (→ 03) · not having it — where skips and replaces are neutral decisions that shrink the header count, and the diary keeps the single record (R-D11 dedup). Weigh-in card is gone after logging; re-weighs would simply join (R-B8).</li>
+      </ol>
+    </div>
+  </div>
+
+  <!-- Midday, no plan -->
+  <div class="flowunit">
+    <div class="phone">
+      <div class="statusbar"><span>12:47</span><span class="icons">▮▮▮ ⌁ ▰</span></div>
+      <div class="screen">
+        <div class="apphead">
+          <div class="brand">WLO <small>Friday, Sep 11</small></div>
+          <div class="actions"><span class="chip">🔥 12</span><span class="chip" title="backup healthy">●</span></div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">Today <span class="prov adaptive">updates weekly · Sep 8</span></div>
+          <div style="display:flex; gap:14px; align-items:center;">
+            <div class="ring ring-big" style="--fill:47">
+              <div class="center"><div class="stat-m">892</div><div class="receipt faint">of 1,900 kcal</div></div>
+            </div>
+            <div style="flex:1">
+              <div class="stat-m">1,008 left</div>
+              <div class="macrodots">
+                <span class="m"><span class="sw" style="background:var(--series-4)"></span>P 128/165</span>
+                <span class="m"><span class="sw" style="background:var(--series-1)"></span>C 171/215</span>
+                <span class="m"><span class="sw" style="background:var(--series-2)"></span>F 52/70</span>
+              </div>
+              <div class="receipt" style="margin-top:8px;">lunch logged in 6 s <span class="faint">· photo</span></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">Weight trend <span class="prov derived">derived</span></div>
+          <div style="display:flex; align-items:baseline; gap:12px;">
+            <div class="hero">81.2<span class="unit">kg</span></div><span class="delta down">↓ 0.3 kg</span>
+            <span class="receipt faint" style="margin-left:auto;">this morning</span>
+          </div>
+          <svg width="100%" height="36" viewBox="0 0 330 36" style="margin-top:6px">
+            <path class="band" d="M0,15 L330,21 L330,36 L0,31 Z"/>
+            <polyline class="spark-dim" points="0,25 30,20 60,27 90,16 120,23 150,18 180,25 210,16 240,22 270,14 300,21 330,12"/>
+            <polyline class="spark" points="0,22 33,21 66,23 99,21 132,21 165,19 198,19 231,16 264,15 297,14 330,12"/>
+          </svg>
+        </div>
+
+        <div class="card sunken">
+          <div class="card-title">Diary · today <span class="right weekdots">
+            <span><span class="dot logged"></span><div class="lbl">M</div></span>
+            <span><span class="dot logged"></span><div class="lbl">T</div></span>
+            <span><span class="dot fasted"></span><div class="lbl">W</div></span>
+            <span><span class="dot logged"></span><div class="lbl">T</div></span>
+            <span><span class="dot logged"></span><div class="lbl">F</div></span></span>
+          </div>
+          <div class="stat-row"><span class="label">Breakfast · oats &amp; kiwi</span><span class="value receipt">380 · <span class="prov estimated">AI-est</span></span></div>
+          <div class="stat-row"><span class="label">Lunch · lentil curry + rice 📷</span><span class="value receipt">512 · <span class="prov measured">DB-verified</span></span></div>
+          <div class="stat-row"><span class="label">Water</span><span class="value receipt">1.25 / 2.5 L</span></div>
+        </div>
+
+        <div class="rail">
+          <div class="qa primary"><span class="ic">📷</span>Log food</div>
+          <div class="qa"><span class="ic">⚖</span>Weigh</div>
+          <div class="qa"><span class="ic">🌿</span>Digestion</div>
+          <div class="qa"><span class="ic">🏋</span>Workout</div>
+        </div>
+
+        <div class="navbar">
+          <div class="tab active"><span class="ic">◉</span>Hub</div>
+          <div class="tab"><span class="ic">▦</span>Plan</div>
+          <div class="tab"><span class="ic">✦</span>Insights</div>
+          <div class="tab"><span class="ic ic-arch"></span>Archive</div>
+          <div class="tab"><span class="ic">🌿</span>Digestion</div>
+        </div>
+      </div>
+      <span class="pin" style="top:250px; right:24px;">8</span>
+      <span class="pin" style="top:668px; right:14px;">9</span>
+    </div>
+    <div class="caption annotation">
+      <b>The same Friday, no plan.</b>
+      <ol>
+        <li><span class="pin-ref">10</span>Content-rendered (R-D14): the meals card exists only while an open planned slot exists — here nothing renders where the planner’s card sits in the flow above. No placeholder, no empty state, no planner upsell: the ring reads F01’s budget, which every user has (even via the skip-everything default plan), so the loop works untouched — weigh, log, ring, trend.</li>
+        <li><span class="pin-ref">11</span>“What’s next” has one answer: the rail’s camera, always on screen. A clock-based “log breakfast” substitute card was considered and rejected — it duplicates the rail, and time-of-day slots betray IF users; the diary already renders fasted days as chosen (R-U13). A plan that lapses ends the same way — silently. F03 is discovered in its tab, onboarding, and the check-in hand-off, never nagged from the day loop.</li>
       </ol>
     </div>
   </div>
@@ -363,14 +444,14 @@
           <div class="tab"><span class="ic">🌿</span>Digestion</div>
         </div>
       </div>
-      <span class="pin" style="top:120px; right:30px;">8</span>
-      <span class="pin" style="top:430px; left:40px;">9</span>
+      <span class="pin" style="top:120px; right:30px;">10</span>
+      <span class="pin" style="top:430px; left:40px;">11</span>
     </div>
     <div class="caption annotation">
       <b>Evening.</b>
       <ol>
-        <li><span class="pin-ref">8</span>“Close the day” = one-tap day status (R-B1); exercise shows as context with its honest ±30 % chip — structurally incapable of raising the target (R-B2, “context, never credit”); landing in band plays a double micro-bounce + success haptic.</li>
-        <li><span class="pin-ref">9</span>Over-budget by 10 kcal renders as <i>information</i> (“inside daily variance”) — the ring shows state, not sin; no red exists to reach for (F07 rule). Plan-tomorrow links to flow 05 with the copy-today preset.</li>
+        <li><span class="pin-ref">10</span>“Close the day” = one-tap day status (R-B1); exercise shows as context with its honest ±30 % chip — structurally incapable of raising the target (R-B2, “context, never credit”); landing in band plays a double micro-bounce + success haptic.</li>
+        <li><span class="pin-ref">11</span>Over-budget by 10 kcal renders as <i>information</i> (“inside daily variance”) — the ring shows state, not sin; no red exists to reach for (F07 rule). Plan-tomorrow links to flow 05 with the copy-today preset — and is plan-conditional like every plan surface (R-D14): no plan → no card, and the ~19:00 surface never fires.</li>
       </ol>
     </div>
   </div>
@@ -445,14 +526,14 @@
           <div class="tab"><span class="ic">🌿</span>Digestion</div>
         </div>
       </div>
-      <span class="pin" style="top:120px; right:30px;">10</span>
-      <span class="pin" style="top:284px; right:36px;">11</span>
+      <span class="pin" style="top:120px; right:30px;">12</span>
+      <span class="pin" style="top:284px; right:36px;">13</span>
     </div>
     <div class="caption annotation">
       <b>Check-in day (R-U17).</b>
       <ol>
-        <li><span class="pin-ref">10</span>Check-in card occupies the hero slot for the day; the trend card renders the series only — the number lives once, in the check-in card (R-D11 dedup, round 3). Full sequence in flow 03.</li>
-        <li><span class="pin-ref">11</span>Status chip before numbers (Zolt/MacroFactor pattern); “6/7 logged” renders day dots with Wednesday’s fast marked as chosen, never missed. Swiping the card away = Keep (no dismiss-shame).</li>
+        <li><span class="pin-ref">12</span>Check-in card occupies the hero slot for the day; the trend card renders the series only — the number lives once, in the check-in card (R-D11 dedup, round 3). Full sequence in flow 03.</li>
+        <li><span class="pin-ref">13</span>Status chip before numbers (Zolt/MacroFactor pattern); “6/7 logged” renders day dots with Wednesday’s fast marked as chosen, never missed. Swiping the card away = Keep (no dismiss-shame).</li>
       </ol>
     </div>
   </div>
@@ -490,14 +571,14 @@
           <div class="faint" style="text-align:center; font-size:11px; letter-spacing:6px; margin-top:10px;">• • • •</div>
         </div>
       </div>
-      <span class="pin" style="top:110px; right:22px;">12</span>
-      <span class="pin" style="top:400px; right:26px;">13</span>
+      <span class="pin" style="top:110px; right:22px;">14</span>
+      <span class="pin" style="top:400px; right:26px;">15</span>
     </div>
     <div class="caption annotation">
       <b>Off-app surfaces.</b>
       <ol>
-        <li><span class="pin-ref">12</span>Nudge copy is an invitation, never a verdict; ≤2 action buttons; overflow holds “Pause nudges for a week”. Permission was requested once, in context, after the first successful log.</li>
-        <li><span class="pin-ref">13</span>4×2 widget: hero + ring + sparkline; all zones deep-link; refresh is event-driven (save) + daily — never a poller (Glance 30-min floor). Lock-screen mode redacts numerals to dots.</li>
+        <li><span class="pin-ref">14</span>Nudge copy is an invitation, never a verdict; ≤2 action buttons; overflow holds “Pause nudges for a week”. Permission was requested once, in context, after the first successful log.</li>
+        <li><span class="pin-ref">15</span>4×2 widget: hero + ring + sparkline; all zones deep-link; refresh is event-driven (save) + daily — never a poller (Glance 30-min floor). Lock-screen mode redacts numerals to dots.</li>
       </ol>
     </div>
   </div>
@@ -519,6 +600,7 @@
         <li><b>R-U15</b> — weigh-in card copy “Step on, snap, or type” states three equal paths up front. ✓</li>
         <li><b>Local-first</b> — no spinner anywhere; offline never referenced as a state; “Computed on your device” on the check-in card. ✓</li>
         <li><b>Density</b> — 4 cards answer 3 questions above the fold at 390×844; whitespace only at hero/ring. ✓</li>
+        <li><b>Content-rendered cards (R-D14)</b> — the no-plan variant renders no meals card and no empty state; absence is silent, a lapsed plan ends silently, F03 is never upsold from the day loop. ✓</li>
       </ol>
     </div></div>
     <div class="col"><div class="annotation">
