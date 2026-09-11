@@ -197,6 +197,16 @@ html, body {
 .prov.derived { color: var(--text-tertiary); }
 .prov.adaptive { color: var(--accent); border-color: rgba(61,214,165,.3); }
 .prov.held { color: var(--held); border-color: rgba(232,179,75,.4); }
+
+/* R-D12 (amended, round 8): inline provenance — the ⓘ binds to the number or
+   word it describes when the card header stays clean; same tap-through
+   explainer (cadence + last-change date live there, never in the header). */
+.prov-i::after { content: "ⓘ"; font-size: 9px; line-height: 1; opacity: .7; margin-left: 2px; }
+
+/* macro split row — wraps to a second line on narrow columns instead of clipping */
+.macrodots { display: flex; flex-wrap: wrap; gap: 6px 10px; margin-top: 10px; }
+.macrodots .m { display: flex; align-items: center; gap: 5px; font-size: 12px; font-variant-numeric: var(--tnum); color: var(--text-secondary); white-space: nowrap; }
+.macrodots .sw { width: 9px; height: 9px; border-radius: 3px; }
 /* R-D11 anatomy: word + ⓘ — the parameters live one tap away in the explainer */
 .prov::after {
   content: "ⓘ"; font-size: 9px; line-height: 1;

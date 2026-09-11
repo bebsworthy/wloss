@@ -395,7 +395,7 @@ Ratified 2026-09-11.*
   (EWMA α, window sizes), or design-doc phrases ("offline is a non-state",
   "celebration is geometry"). Those live in the frame annotations and the
   ⓘ explainers only. Provenance chips surface a user-word + ⓘ
-  ("derived ⓘ", "AI-estimated ⓘ", "updates weekly ⓘ"); the technical parameters
+  ("derived ⓘ", "AI-estimated ⓘ", inline "of 1,900 kcal ⓘ"); the technical parameters
   sit one tap away in the how-we-got-here explainer — the §2.1 provenance
   guarantee is preserved, its vocabulary is not. Each card carries at most
   one helper line, phrased as the next action, never as mechanism; nothing
@@ -412,9 +412,14 @@ Ratified 2026-09-11.*
   The trend card's sparkline renders in every Day-loop state (continuity
   over height economy), and on check-in day the check-in card carries the
   number once while the trend card carries the series only (R-D11 dedup).
-  Chip words name user facts, not mechanisms: the ring-target chip reads
-  "updates weekly · <last check-in date>"; the engine word "adaptive"
-  belongs to the explainer's first sentence (F07), never the chip.
+  Chip words name user facts, not mechanisms. **Amended (owner ruling,
+  round 8):** a card header names the card and never carries a number's
+  provenance — the "updates weekly · <date>" header chip is retired. A
+  derived number wears its provenance inline instead: the ring target reads
+  "of 1,900 kcal ⓘ" (held: "of 1,950 kcal · provisional ⓘ"), and the ⓘ
+  tap-through explainer holds the mechanism ("adaptive — recalculated at
+  each weekly check-in from your measured burn and weight trend · last
+  updated <date>").
 
 - **R-D13 — Day-loop card names are literal (owner ruling, round 5).**
   Hub cards name their content: "Meals · today" / "Meals · tomorrow" — the

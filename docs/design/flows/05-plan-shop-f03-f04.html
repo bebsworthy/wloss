@@ -51,7 +51,7 @@
     <div class="phone wf"><div class="screen">
       <div class="wf-box solid row">status bar</div>
       <div class="wf-box row">segmented: Plan · Recipes · List · Pantry (IA §1 — one tab owns the pipeline)</div>
-      <div class="wf-box row">Week header: Sep 7–13 ▾ · 1,900 kcal/day · targets prov “updates weekly · Sep 6” → <b>03</b></div>
+      <div class="wf-box row">Week header: Sep 7–13 ▾ · 1,900 kcal/day · targets ⓘ → <b>03</b></div>
       <div class="wf-box tall">7 compact day sections (390 dp can’t fit columns): meal rows per slot + fit badge “kcal ✓ · P −6 g” per day</div>
       <div class="wf-note">past days collapse to one line · today expands · badges flip in split-flap after the 40 ms deal-in</div>
       <div class="wf-box row">skipped slot renders neutrally: “Friday’s plan met real life — replanned” — no guilt (F03 §6)</div>
@@ -139,7 +139,7 @@
           <div class="card-title">Week of Sep 7 <span class="right">Sep 7 – 13 ▾</span></div>
           <div style="display:flex; justify-content:space-between; align-items:center;">
             <div><span class="stat-m">1,900</span> <span class="receipt">kcal/day · P 165 g</span></div>
-            <span class="prov adaptive">updates weekly · Sep 6</span>
+            <span class="prov-i">targets</span>
           </div>
           <div class="receipt" style="margin-top:8px;"><b style="color:var(--text-primary)">Why this plan</b> · 3 cook events · 4 leftovers · 9 shared ingredients ≈ <b style="color:var(--text-primary)">€4.10</b> under an unshared week</div>
           <div class="receipt faint" style="margin-top:3px;">hardest rules: no mushrooms (excluded) · fish 2×/wk (template) · pantry influence: off — not enough data yet · <span class="prov derived">on-device</span></div>
@@ -192,7 +192,7 @@
         <div class="receipt faint" style="margin:6px 4px 14px;">builds in &lt; 1 s, offline · aisle order will be yours</div>
       </div>
       <span class="pin" style="top:308px; left:12px;">1</span>
-      <span class="pin" style="top:170px; right:40px;">2</span>
+      <span class="pin" style="top:186px; right:24px;">2</span>
       <span class="pin" style="top:515px; right:150px;">3</span>
       <span class="pin" style="top:368px; left:40px;">4</span>
       <span class="pin" style="top:756px; right:12px;">5</span>
@@ -203,7 +203,7 @@
       <b>Friday 17:24 — the week, mid-flight.</b>
       <ol>
         <li><span class="pin-ref">1</span>Fit badges show the gap, never a verdict: “kcal ✓ · P −6 g”; ✓ means within <b>±5 % kcal (R-S7)</b>, aligned with F07’s proposal semantics so a fit plan never argues with a <span class="held-c">held</span> week. Saturday’s hand-placed lamb renders “kcal +12%” — the number is the information; no fail state exists. Badges flip in like split-flap after the 40 ms deal-in.</li>
-        <li><span class="pin-ref">2</span>Week targets carry provenance (“updates weekly · Sep 6”) — plans generate against <i>today’s</i> budget, not onboarding’s; Sunday’s Apply (→ flow 03) re-solves only the slots the new targets violate.</li>
+        <li><span class="pin-ref">2</span>Week targets carry provenance as an inline “targets ⓘ” — the tap-through holds cadence and last-change date; plans generate against <i>today’s</i> budget, not onboarding’s; Sunday’s Apply (→ flow 03) re-solves only the slots the new targets violate.</li>
         <li><span class="pin-ref">3</span>Skipped slot, zero guilt — the spec’s own copy, verbatim: <i>“Friday’s plan met real life — replanned.”</i> Skips feed adherence honestly; the state machine (planned → confirmed / swapped / skipped / replaced) is owned by F03 (R-B1 treaty: F02 owns nutrition of replacements).</li>
         <li><span class="pin-ref">4</span>Leftover connector: stitched tupperware line from Tue’s cook event to Wed’s lunch; ingredient weight is charged to the cook day only, so the list pays for cook events, not eating events; tap pans the calendar to the parent batch.</li>
         <li><span class="pin-ref">5</span>Adherence strip: zipper-extends per confirm; below 3 logged days it renders “not yet meaningful” — the metric answers “how good is my planning?”, never “how good are you?” (<i>“plans that survive contact with Tuesdays”</i>, F03 §6).</li>
@@ -297,7 +297,7 @@
           <div class="brand">WLO <small>Sunday, Sep 13 · shop day</small></div>
           <div class="actions"><span class="chip">Shopping ▾</span><span class="chip">To buy · 11</span></div>
         </div>
-        <div class="receipt faint" style="margin:0 4px 10px;">for the week of Sep 14 · targets <span class="prov adaptive">updates weekly · Sep 13</span></div>
+        <div class="receipt faint" style="margin:0 4px 10px;">for the week of Sep 14 · <span class="prov-i">targets</span></div>
 
         <div class="card" style="padding-top:6px;">
           <div class="card-title">Shopping <span class="right receipt">Consolidate ✓ · raw lines</span></div>

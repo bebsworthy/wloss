@@ -226,10 +226,10 @@
         </div>
 
         <div class="card">
-          <div class="card-title">Today <span class="prov adaptive">updates weekly · Sep 6</span></div>
+          <div class="card-title">Calories</div>
           <div style="display:flex; gap:14px; align-items:center;">
             <div class="ring ring-big" style="--fill:54">
-              <div class="center"><div class="stat-m">1,045</div><div class="receipt faint">of 1,950 kcal</div></div>
+              <div class="center"><div class="stat-m">1,045</div><div class="receipt faint"><span class="prov-i">of 1,950 kcal</span></div></div>
             </div>
             <div style="flex:1"><div class="receipt dim">The ring keeps yesterday’s target until you tap Apply — nothing changes behind your back. It updates the moment you do.</div></div>
           </div>
@@ -333,14 +333,14 @@
         </div>
 
         <div class="card">
-          <div class="card-title">Today <span class="prov adaptive">updates weekly · Sep 13</span></div>
+          <div class="card-title">Calories</div>
           <div style="display:flex; gap:14px; align-items:center;">
             <div class="ring ring-big" style="--fill:55">
-              <div class="center"><div class="stat-m">1,045</div><div class="receipt faint">of 1,900 kcal</div></div>
+              <div class="center"><div class="stat-m">1,045</div><div class="receipt faint"><span class="prov-i">of 1,900 kcal</span></div></div>
             </div>
             <div style="flex:1">
               <div class="receipt dim">Same meals, fresh budget.</div>
-              <div class="receipt faint" style="margin-top:4px;">provenance re-stamps: “Sep 6” → <b style="color:var(--accent)">“Sep 13”</b></div>
+              <div class="receipt faint" style="margin-top:4px;">target ⓘ re-stamps: “Sep 6” → <b style="color:var(--accent)">“Sep 13”</b></div>
             </div>
           </div>
         </div>
@@ -422,12 +422,12 @@
         </div>
 
         <div class="card">
-          <div class="card-title">Today <span class="prov held">provisional · estimate held</span></div>
+          <div class="card-title">Calories</div>
           <div style="display:flex; gap:14px; align-items:center;">
             <div class="ring ring-big" style="--fill:54">
-              <div class="center"><div class="stat-m">1,045</div><div class="receipt faint">of 1,950 kcal</div></div>
+              <div class="center"><div class="stat-m">1,045</div><div class="receipt faint"><span class="prov-i">of 1,950 kcal · <b style="color:var(--held)">provisional</b></span></div></div>
             </div>
-            <div style="flex:1"><div class="receipt dim">The ring falls back to a “provisional” chip while the engine can’t see clearly — amber is the strongest color this state gets.</div></div>
+            <div style="flex:1"><div class="receipt dim">The target reads “provisional” while the engine can’t see clearly — amber is the strongest color this state gets.</div></div>
           </div>
         </div>
 
@@ -450,7 +450,7 @@
         <li><span class="pin-ref">18</span>Amber status chip, <b>pulsed exactly once (600 ms)</b> — attention without alarm; the pulse never repeats. Held is the strongest state color in the feature; red is reserved for nothing.</li>
         <li><span class="pin-ref">19</span>The <b>reason chip names the fix</b>: “3 unlogged days — can’t compare like with like.” Tapping it opens the one-tap fix (“mark those days Skipped, or log tomorrow’s weigh-in”) — fixing data is one tap, never an interrogation. Trigger here: ≥ 3 trailing days with no record <i>and</i> no status mark; a user-flagged atypical week (travel/illness) holds the same way.</li>
         <li><span class="pin-ref">20</span>Trend and pace <b>stay visible</b> (the week still happened); the estimate is <b>frozen at its last good value (2,370, Sep 6) at reduced opacity</b>; there is <b>no proposal row</b> — unlike weeks aren’t compared, full stop.</li>
-        <li><span class="pin-ref">21</span>The hold <b>auto-releases</b> when the trigger clears — the engine simply starts seeing again. No guilt copy exists to release. Day statuses stay one-tap and never shamed (R-U13); the ring drops to its “provisional” chip (flow 01, pin 3).</li>
+        <li><span class="pin-ref">21</span>The hold <b>auto-releases</b> when the trigger clears — the engine simply starts seeing again. No guilt copy exists to release. Day statuses stay one-tap and never shamed (R-U13); the target reads “provisional” inline (flow 01, pin 3).</li>
       </ol>
     </div>
   </div>

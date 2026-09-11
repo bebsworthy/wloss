@@ -1,0 +1,7 @@
+## Execution record (2026-09-11)
+
+- **Header chip retired (R-D12 amended):** all 9 "Today + updates weekly" card headers (01×5, 02×1, 03×3 incl. held) → plain "Calories"; the ⓘ moved onto the number: ring centers read "of 1,900 kcal ⓘ" (held: "of 1,950 kcal · provisional ⓘ", amber word). 03 held body no longer references a chip; "provenance re-stamps" → "target ⓘ re-stamps"; pin 21 synced. 05: "targets updates weekly · Sep N" → inline "targets ⓘ" ×2 + wf line; pin 2 moved off the short label, caption synced. m1 pin 3 rewritten to the inline-provenance contract.
+- **Macro-row fix:** shared `.macrodots` (flex-wrap, row-gap 6) moved into `_wlo.css`; private copies deleted from 01 and 07 (02 gains the definition it was missing). Verified: F chip wraps to a second line on narrow columns instead of clipping; swatches render 9px.
+- **New CSS:** `.prov-i::after` inline ⓘ in `_wlo.css`.
+- **Docs:** FEATURES R-D12 amended (headers name cards, never number provenance; inline ⓘ pattern; explainer holds cadence + last-change date); R-D11 example updated; DESIGN-SYSTEM §5 chip row + §7.11 ring entry rewritten; F10 §5 stale "adaptive · check-in Sep 8" bullet finally synced.
+- **Verify:** leak scan 45 phones / 0 hits; geometry unchanged (m1 rail 745 vs nav 758); browser captures of 01 Calories card (with wrap demonstrated), 03 held card, 05 week card. Caught: stale CSS cache in the preview browser (forced fetch revalidate) and a self-overlapping edit pair that mangled the held body — repaired and re-verified.

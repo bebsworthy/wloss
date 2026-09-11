@@ -140,8 +140,10 @@ empty state or an upsell.
 
 - **Hero number card** — trend-first weight framing ("Trend 179.1, down 0.6")
   with the progress-ribbon strip from F06; tap → F06.
-- **Calories-remaining ring** vs. the adaptive target from F07, with macro dots
-  and a provenance chip ("adaptive · check-in Sep 8"); tap → F07.
+- **Calories ring** — consumed vs. the adaptive target from F07, with macro
+  dots; the target wears an inline ⓘ that taps through to the explainer
+  (update cadence and last-change date live there; reads "provisional" when
+  held); tap → F07.
 - **Meals · today / tomorrow** — content-rendered (R-D14): the card exists
   only while ≥1 open planned slot exists; no plan (or a lapsed one) → no card,
   no empty state, no planner upsell. The next open meal renders as one row
