@@ -53,3 +53,14 @@ photo discipline · model cards with named open training data.
   follows the KMP fork (ADR-001/003/004).
 - **Crash policy: opt-in content-free ACRA reports** (q-000026). Transmitting ⇒ consent
   toggle + receipts + audit card; endpoint selection and content-freeing are Phase-D research.
+
+
+## Architecture doc — 2026-09-11
+- **docs/tech/ARCHITECTURE.md** written: (§1) ratified stack summary + product-engineering
+  invariants table ("constitution" with ruling refs); (§2) proposed code organization —
+  layered module graph (commonMain core / Android restricted impls / features / app),
+  enforced dependency rules D1–D8 (ports-and-adapters DIP: features cannot see
+  :core:network/:core:ai/:core:media/:core:vault; only :app binds), DerivedValue
+  provenance type, DRY single-owner anchors, testing architecture; (§3) open items.
+- §2 to be ratified as **ADR-005 (module graph & dependency rules)** at implementation
+  kickoff. Placeholder app id: `app.wlo` (confirm before release).

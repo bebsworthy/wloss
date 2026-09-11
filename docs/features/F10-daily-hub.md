@@ -139,7 +139,7 @@ explainer; "plan vs. actual" only renders when a plan exists.
   with the progress-ribbon strip from F06; tap → F06.
 - **Calories-remaining ring** vs. the adaptive target from F07, with macro dots
   and a provenance chip ("adaptive · check-in Sep 8"); tap → F07.
-- **Today's plan** — the next F03 meal as a card with one-tap "log as planned".
+- **Meals · today** — the next F03 meal as a card with one-tap "log as planned" (R-D13: forward-looking only; confirmed meals live solely in the diary; "plan" is the week plan's word).
 - **Quick-action rail** — photo-log (F02), weigh-in (F06), poop (F09), workout
   (F05); icons badge-dot when their owner has news (e.g., a PR from F05).
 - **Streak chip and report-card-ready pill** from F11 (display only).

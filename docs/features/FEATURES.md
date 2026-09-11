@@ -416,6 +416,16 @@ Ratified 2026-09-11.*
   "updates weekly · <last check-in date>"; the engine word "adaptive"
   belongs to the explainer's first sentence (F07), never the chip.
 
+- **R-D13 — Day-loop card names are literal (owner ruling, round 5).**
+  Hub cards name their content: "Meals · today" / "Meals · tomorrow" — the
+  word "plan" is reserved for the F03 week plan (Plan tab, plan vN). The
+  meals card is forward-looking only: one row for the next open meal
+  (planned kcal + provenance) beside its CTA, and a header count for the
+  day's coverage; confirmed meals appear exactly once, in the diary (R-D11).
+  A future sport schedule (F05) earns its own surface — it never shares the
+  meals card; until then exercise stays "context, never credit" (R-B2) in
+  the Close-the-day row.
+
 ---
 
 ## 4. Review notes (all 13 specs, read in full)

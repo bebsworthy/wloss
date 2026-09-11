@@ -46,12 +46,12 @@
       <div class="wf-note">↑ morning only; disappears once logged (R-B8: later re-weighs just join)</div>
       <div class="wf-box hero">Hero weight-trend card: “81.2 kg ↓0.3 kg” + ribbon strip</div>
       <div class="wf-box tall">Calories ring: remaining vs adaptive target + macro dots + prov chip</div>
-      <div class="wf-box row">Today’s plan card → “log as planned” (1 tap)</div>
+      <div class="wf-box row">Meals · today card → “log as planned” (1 tap)</div>
       <div class="wf-box grid"><div>📷 log</div><div>⚖ weigh</div><div>gut</div><div>workout</div></div>
       <div class="wf-note">quick-action rail — camera is primary; badge-dot = owner news</div>
       <div class="wf-box row">nav: Hub · Plan · Insights · Archive · Digestion</div>
     </div></div>
-    <div class="caption annotation"><b>Morning.</b> Weigh-in card leads until logged; hero answers “trend direction”; ring answers “calories remaining”; plan card answers “next action” — the first-screen contract (F10 §4) with zero scrolling.</div>
+    <div class="caption annotation"><b>Morning.</b> Weigh-in card leads until logged; hero answers “trend direction”; ring answers “calories remaining”; meals card answers “next action”; the diary wakes with the first entry — the first-screen contract (F10 §4) with zero scrolling.</div>
   </div>
 
   <div class="flowunit">
@@ -59,7 +59,7 @@
       <div class="wf-box solid row">status bar</div>
       <div class="wf-box row">Hub header (streak ticked after log)</div>
       <div class="wf-box tall">Budget ring card — sweeps to new total after the save arc (02)</div>
-      <div class="wf-box row">Today’s plan: lunch = done ✓ → dinner next</div>
+      <div class="wf-box row">Meals · today: lunch = done ✓ → dinner next</div>
       <div class="wf-box hero">Hero trend card</div>
       <div class="wf-box row">Diary slice: 2 entries + day-status marker</div>
       <div class="wf-box grid"><div>📷</div><div>⚖</div><div>gut</div><div>workout</div></div>
@@ -156,16 +156,16 @@
           <div style="display:flex; gap:14px; align-items:center;">
             <div class="ring ring-big" style="--fill:20">
               <div class="center">
-                <div class="stat-m">380</div>
+                <div class="stat-m">0</div>
                 <div class="receipt faint">of 1,900 kcal</div>
               </div>
             </div>
             <div style="flex:1">
-              <div class="stat-m">1,520 left</div>
+              <div class="stat-m">1,900 left</div>
               <div class="macrodots">
-                <span class="m"><span class="sw" style="background:var(--series-4)"></span>P 12/165</span>
-                <span class="m"><span class="sw" style="background:var(--series-1)"></span>C 58/215</span>
-                <span class="m"><span class="sw" style="background:var(--series-2)"></span>F 9/70</span>
+                <span class="m"><span class="sw" style="background:var(--series-4)"></span>P 0/165</span>
+                <span class="m"><span class="sw" style="background:var(--series-1)"></span>C 0/215</span>
+                <span class="m"><span class="sw" style="background:var(--series-2)"></span>F 0/70</span>
               </div>
               <div class="receipt faint" style="margin-top:8px;">tap the ring for today’s detail</div>
             </div>
@@ -173,15 +173,16 @@
         </div>
 
         <div class="card">
-          <div class="card-title">Today’s plan <span class="right receipt">week 12</span></div>
+          <div class="card-title">Meals · today <span class="right receipt">0 of 3</span></div>
           <div style="display:flex; justify-content:space-between; align-items:center; gap:10px;">
             <div>
-              <div style="font-weight:600;">Lunch · lentil curry + rice</div>
-              <div class="receipt">480 kcal · 21 g P · <span class="prov derived">planned</span></div>
+              <div style="font-weight:600;">Breakfast · oats &amp; kiwi</div>
+              <div class="receipt">380 kcal · <span class="prov derived">planned</span></div>
             </div>
             <a class="btn secondary small" href="02-photo-ladder-f02.html" style="text-decoration:none;">Log as planned</a>
           </div>
         </div>
+
 
         <div class="rail">
           <div class="qa primary"><span class="ic">📷</span>Log food</div>
@@ -245,14 +246,13 @@
         </div>
 
         <div class="card">
-          <div class="card-title">Today’s plan <span class="right receipt">1 of 3 confirmed</span></div>
-          <div class="stat-row">
-            <span class="label"><span class="dot logged"></span>&nbsp; Lunch · lentil curry</span>
-            <span class="value receipt">512 kcal <span class="prov measured">DB-verified</span></span>
-          </div>
-          <div class="stat-row">
-            <span class="label"><span class="dot open"></span>&nbsp; Dinner · salmon, potatoes</span>
-            <span class="value"><a class="btn secondary small" href="02-photo-ladder-f02.html" style="text-decoration:none;">Log as planned</a></span>
+          <div class="card-title">Meals · today <span class="right receipt">2 of 3 confirmed</span></div>
+          <div style="display:flex; justify-content:space-between; align-items:center; gap:10px;">
+            <div>
+              <div style="font-weight:600;">Dinner · salmon, potatoes</div>
+              <div class="receipt">1,018 kcal · <span class="prov derived">planned</span></div>
+            </div>
+            <a class="btn secondary small" href="02-photo-ladder-f02.html" style="text-decoration:none;">Log as planned</a>
           </div>
         </div>
 
@@ -304,7 +304,7 @@
       <b>Midday — after a log.</b>
       <ol>
         <li><span class="pin-ref">6</span>Ring swept with a 400 ms ease-out + tick at sweep end (F10 motion table); the save arc landed here from flow 02. Copy is a fact (“1,008 left”), never a verdict.</li>
-        <li><span class="pin-ref">7</span>Plan-card state machine (R-B1): confirmed slot shows actuals with the entry’s own provenance (DB-verified beats plan estimate); open slot still one tap. Weigh-in card is gone after logging; re-weighs would simply join (R-B8).</li>
+        <li><span class="pin-ref">7</span>The meals card is forward-looking only (R-D13): one row — the next open meal with planned kcal + provenance — beside its one-tap CTA (R-B1 prefill treaty). Confirmed meals collapse into the header count and appear exactly once, in the diary (R-D11 dedup). Weigh-in card is gone after logging; re-weighs would simply join (R-B8).</li>
       </ol>
     </div>
   </div>
@@ -325,10 +325,10 @@
         </div>
 
         <div class="card">
-          <div class="card-title">Tomorrow</div>
+          <div class="card-title">Meals · tomorrow <span class="right receipt">3 planned</span></div>
           <div style="display:flex; justify-content:space-between; align-items:center;">
             <div>
-              <div style="font-weight:600;">Saturday planned · 3 meals</div>
+              <div style="font-weight:600;">Saturday planned</div>
               <div class="receipt">1,880 kcal food sum · cook 1 · leftovers 2</div>
             </div>
             <a class="btn secondary small" href="05-plan-shop-f03-f04.html" style="text-decoration:none;">Review</a>
