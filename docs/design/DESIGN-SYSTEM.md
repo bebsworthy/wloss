@@ -346,7 +346,7 @@ items are treated [v1].)
 
 | Component | Owner | States / variants | Tag | Binding rules |
 |---|---|---|---|---|
-| Provenance chip | FEATURES §2.1 | `measured` / `derived` / `estimated` / `DB-verified (USDA FDC #…)` / `AI-estimated (on-device, vX)` / `user-entered` / `unknown` / `provisional` / `adaptive · check-in <date>` | [v1] | Mandatory on every derived number; tap → "how we got here" sheet; label-style pill |
+| Provenance chip | FEATURES §2.1, R-D11 | Anatomy: **user-word + ⓘ** — `measured` / `derived ⓘ` / `estimated ⓘ` / `DB-verified ⓘ (source on tap)` / `AI-estimated ⓘ` / `user-entered` / `unknown` / `provisional` / `adaptive ⓘ · check-in <date>`. Parameters (smoother + α, window, model version, source IDs, constants) live only in the ⓘ tap-through ("how we got here"), never in the chip label | [v1] | Mandatory on every derived number; tap → "how we got here" sheet; label-style pill |
 | "How we got here" sheet | each owner feature | formula + inputs + constants + exclusions + state | [v1] | First-class atom; formula version shown; receipts shortcut (F12) |
 | Data-quality status chip | F07 (pattern), generalized | `developing` / `updating` / `held` (+ reason) | [v1] | Amber + single 600 ms pulse when held; reason chip names the fix, one tap |
 | Day-status marker | F02 | `Logged` / `Skipped` / `Fasted` | [v1] | One tap in day header; inline fix offer on F07 adherence row; never a gap-shame |
@@ -445,6 +445,22 @@ device"), never repeated as nagging.
 **Sound:** default silent everywhere; the only sanctioned sound is F05's
 gentle rest-timer chime (gym context). F09 explicitly no-sound by default;
 F08 shutter silent always.
+
+**System leakage (banned in user copy, R-D11):** ms values and durations
+("250 ms digit-roll"), haptic names ("soft tick", "double micro-bounce",
+"Confirm ×2"), motion vocabulary as labels ("letterpress", "ink-bloom",
+"spring overshoot", "settled"), ruling and feature IDs ("R-U13", "F03
+§6", "screens 3–4"), engine/recognizer/model versions ("EWMA α 0.15",
+"recognizer v1.4", "engine transparent-v1"), algorithm parameters in
+chips, design-doc phrases ("offline is a non-state", "celebration is
+geometry"), and state-machine pre-explanations ("leads until logged",
+"fallback: provisional when held", "it disables itself during held
+weeks"). These belong in the prototype annotations and the ⓘ explainer —
+the UI states what is, and offers the next action. Companion rules: at
+most one helper line per card, phrased as the next action; no piece of
+information may appear twice on one screen (the second occurrence is
+removed, not restyled); when a state occurs it names itself
+("provisional") — it is never announced in advance.
 
 ---
 

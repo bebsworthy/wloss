@@ -358,3 +358,129 @@ The tone system, provenance-chip discipline, R-U13/R-U15/R-U16 execution,
 revert-as-v14, rubric publishing, kind-haptic vocabulary), and each frozen
 anatomy's row order are the set's strengths — the fix round is hygiene, not
 redesign.
+
+## 4. Round 2 — copy & density audit (2026-09-11, owner pass)
+
+Owner review of the current mocks flagged clutter, duplication, and
+technical specification text leaking into user copy. Audit method: every
+string inside the mock `.screen` surfaces (annotations excluded) scanned
+for ruling IDs, feature IDs, section refs, ms values, haptic/motion
+vocabulary, engine/recognizer versions, and design-doc phrases — plus a
+manual redundancy read. The scan is systemic: ~90 offending strings across
+the seven flows. Two rulings codify the fix (FEATURES §3):
+
+- **R-D10 — Units:** metric (kg) is the default; lb is a user setting.
+  The prototype persona converts back to kg (the previous round's lb
+  consolidation is reversed deliberately).
+- **R-D11 — Copy discipline:** no ms/haptic/motion params, no R-\*/F\* IDs,
+  no engine/recognizer versions, no design-doc phrases, no state
+  pre-explanations in user copy; provenance chips become **word + ⓘ** with
+  parameters one tap away in the how-we-got-here explainer; one helper line
+  per card, phrased as the next action; nothing appears twice on a screen;
+  states name themselves when they occur.
+
+Status: **plan only — awaiting owner go-ahead** (ticket WLO-0013).
+
+### 4.1 Units conversion (R-D10, mechanical)
+
+Main persona back to kg across flows 01–06 (flow 07 already metric; its
+meta already declares the distinct persona):
+
+| Surface | Now (lb) | Becomes (kg) |
+|---|---|---|
+| Trend hero / weigh prefill | 179.1 | 81.2 |
+| Yesterday / confirmation raw / 10-day best | 179.8 · 178.4 · 178.2 | 81.6 · 80.9 · 80.9 |
+| Trend history start (Aug 12) | 181.9 | 82.5 |
+| Weekly rate | −1.3 lb/wk | −0.6 kg/wk |
+| 30-day ribbon | −2.8 lb | −1.3 kg |
+| Outlier raw + guard copy | 188.3 · "9.2 lb above" | 85.4 · "4.5 kg above" |
+| Gain-day variant | 179.2 ↑0.3 · 179.5 | 81.3 ↑0.1 · 81.4 |
+| Check-in Sunday trend | 178.9 | 81.1 |
+| Body-Trend grade | −1.3 lb/wk vs −1.1 | −0.6 kg/wk vs −0.5 |
+| Share card | −9.2 lb | −4.2 kg |
+| How-we-got-here formula | Δtrend lb × 3,500 ÷ 7 | Δtrend kg × 7,700 ÷ 7 |
+| Unit chip on entry | lb | kg; "kg mirror 81.2" line deleted (kg *is* the display) |
+
+### 4.2 The four owner-flagged items (flow 01 m1)
+
+| String | Verdict | Action |
+|---|---|---|
+| "leads until logged" | mechanism narration; the ordering is visible without it | **remove** |
+| "yesterday 179.8 · trend 179.1" | duplicates the trend card directly below | **remove** (weigh card = action + CTA only) |
+| "DERIVED · EWMA α 0.15" | algorithm parameters are spec, not copy | **"derived ⓘ"** — α/window live in the how-we-got-here explainer |
+| "breakfast logged · tap the ring → energy detail · fallback: provisional when held" | three thoughts; state pre-explanation; "breakfast logged" dups the diary | **"tap the ring for today's detail"**; "provisional" appears as a chip when it happens (03 m5 already does) |
+
+### 4.3 Full sweep (annotated mocks only; wireframes quote spec by design)
+
+Legend: ❌ remove · ✍ rewrite · 📋 move out of the screen into the frame
+annotation (annotations already carry most; add where missing).
+
+**Flow 01**
+- ❌ m3 "in-band landing: double micro-bounce + success haptic"
+- ❌ m5 "silent channel · one pulse · dismissed = never re-fired for this gap (R-U1)"
+- ✍ m5 widget caption "WLO · every zone deep-links · lock screen: ●●●.●" → "WLO · Friday" + keep the ●●●.● redaction row
+- ✍ m1 plan meta "F03 · week 12" → "week 12"; m1 trend helper → "last 30 days · tap for history"
+- ⓘ every "derived · EWMA α 0.15" → "derived ⓘ" (m1/m2/m4)
+
+**Flow 02**
+- ✍ "reading the plate — on-device · recognizer v1.4" → "reading the plate — on-device"
+- ⓘ "AI-estimated (on-device, v1.4)" → "AI-estimated ⓘ · on-device" (all occurrences)
+- ❌ m2 "2 of 4 dealt — static frame of a 600–900 ms sequence"; ❌ "cancel is always available · no spinner, no server wait"
+- ✍ slider caption "detents every 5 g · 5 ms ticks · rail = physical max for class" → "5 g steps"
+- ✍ "save is live — editing is optional · photo discarded at save (R-U14) · median log 8 s" → "saves instantly · photo discarded — change in Settings"
+- ✍ "save is live at any confidence — a rough log beats no log · nothing here blocks you" → "a rough log beats no log — save anytime"
+- ✍ offline "on-device pipeline ran unchanged — nothing left the phone · offline is a non-state" → "worked offline — nothing left your phone"; footer "only servers WLO ever talks to here:…" → "OFF/USDA unreachable — matched locally instead"
+- ❌ m6 "swept 400 ms ease-out + soft tick · landed with one low 'settled'"; ✍ R-U14 line → "photo not saved · change in Settings"
+- ✍ swap sheet "list reconciles silently — no checked item is touched (screens 3–4)" → "your checked items stay checked"
+
+**Flow 03**
+- 📋 m1 choreography chips ("t 0–120 ms · chip stamps" ×4) + "frame shown at t ≈ 300 ms" → annotation block under the phone
+- ⓘ trend "EWMA α 0.15" → "derived ⓘ" (m1/m2/m5)
+- ❌ "engine transparent-v1" from the main card (sheet keeps it — that's the math page)
+- ❌ m4 "numerals count old → new · haptic: crisp tick-tick (Confirm ×2)…" and the "counting 1,950 → 1,900" chip (annotation)
+- ✍ m2 receipt: drop "how we got here" link duplication risk — keep once; ✍ m5 hold caption → "no debt, no penalty — gone when the data returns · mark an atypical week (travel / illness)"
+- ✍ m6 hand-off → "week regenerates · shopping list rebuilds — under 1 s"; "cone re-blooms · dates stay an estimate, not a promise"; ledger line → drop "(F13)", drop "engine transparent-v1"
+
+**Flow 04**
+- ❌ m1 "tick per metric · F13"; ✍ "prefilled with the trend · one decimal · kg mirror 81.2 · scale path auto-confirms: 0 taps" → "prefilled with your trend"
+- ✍ m2 ribbon caption "…band breathed 200 ms as today landed" → "−1.3 kg vs last month"
+- ✍ m4 logbook caption → "long-press a day to log it later"
+- ❌ m6 "silent shutter · always — camera sound is a discretion leak" (annotation)
+- ✍ m7 "the frame was discarded at save — the outline is the artifact, nothing to leak (R-U16) · tap any number → … · share = faceless vector strip only" → "no photo exists — outlines only, nothing to leak"; ❌ "chips count up over 400 ms…" caption
+- ✍ m8 "captured 11 of the last 12 weeks — a coverage stat, not a duty streak" → "11 of the last 12 weeks"; legend drops "(R-U13)"; "long-press any capture → 'set as reference' · gaps stay faint dots…" → "long-press to set a reference"
+- ✍ m3 guard sub "+3σ off your recent residuals · one tap either way · an admitted typo is fixed, not judged" → "+3σ off your recent residuals — fixed, not judged"
+
+**Flow 05**
+- ✍ m1 "hardest rules: … · deterministic · on-device" → drop "deterministic"; keep "on-device" once; "pantry influence: off — not enough data yet" stays (honest)
+- ✍ m2 "ENGINE TOP 3 · RANKED TO RESTORE SATURDAY" → "Top swaps for Saturday"; "Saturday after pick…delta chips fly to the day ring; it refills — the week's targets never move" → "stays in band — weekly targets never move"; "swaps respect your hard rules…" → "never suggests your allergens · browse all 214 recipes"
+- ✍ m3 "built from week Sep 14–20 · 240 ms · on-device — works with the network off, forever · targets" → "for the week of Sep 14 · works offline"; "manual add · you filed it here once — remembered ✓ learned" → "you added this before — kept here"
+- ❌ m4 "Servings edit — prototype · …needs a joint F03/F04 UX review" block (annotation); ✍ banner sub drops "deltas applied in place — nothing was cleared or regenerated" ("your checks are safe" covers it); ✍ onions "was ×3 · no bag size in place, still yours" → "was ×3 · still yours"
+- ❌ m5 "the checked section pulses once, in sequence · 300 ms · confetti-free…"; ✍ "aisle headers stay collapsed · the run is archived…" → "your run is archived — it sharpens future lists"; ✍ "pour: …(F04 §10)…" → "moves 14 items to the pantry"; ✍ sweep-review → "'buy 2 fewer eggs' next time · € ledger unlocks after 4 weeks"
+- ✍ m6 "expires in 2 d · dot breathes, 2 s" → "expires in 2 d"; "'plan around it' hands the item to F03 as a generation constraint ([v1.x])" → "plan meals that use it up (coming later)" ([v1.x] tag → annotation); ❌ R-S5 partial-stock caption; ⓘ inventory "derived · cadence 38 d" → "derived ⓘ · cadence 38 d" (cadence stays — geek stat)
+
+**Flow 06**
+- ❌ m1 "flip 1→6 · letterpress press-in 250 ms · tick haptic — heavier for an A"; ✍ composite "it disables itself during held weeks" → "not computed on held weeks"; ❌ PR "slides in with a particle shimmer — deliberately not confetti · deep impact haptic"
+- ❌ m2 "grades describe data, never virtue…" (annotation — it's the rubric's philosophy, not copy); ❌ "neutral · no streak-loss notifications, ever" (annotation)
+- ❌ m3 "fixed 4:5 · oversized numeral · wordmark" (annotation)
+- ⓘ m4 "confidence stored on entry" → ⓘ; ❌ "zone 3–4 halo = education by placement · tap chip to fan out · detent per snap"; ❌ "button morphs to check · sheet collapses 220 ms · soft settle haptic · no sound — bathroom"
+- ✍ m5 "correction → local training signal (correction-cache prior, R-B6) · nothing leaves the device" → "stays on your phone — sharpens your next scan"
+- ✍ m6 heatmap legend → "dashed = quiet days, never gaps · blank = no data yet"; "target in Targets (R-B3)" → "target from your Targets"; ❌ "the only action is 'show a doctor' — no diagnosis, no severity scoring" (annotation); ⓘ "fed from F02/F03 · zero re-entry" → "auto-filled ⓘ"
+- ⓘ m4/m5 dimmed Hub "derived · EWMA α 0.15" → "derived ⓘ"
+
+**Flow 07**
+- ❌ m2 "rotary ticks per kg · thock on 5s" and the delta caption "counts up as the dials turn · snap + 'thock' at every 5 kg…" (annotation)
+- ✍ m3 "tap any band → its assumptions (pace percentiles · 7,700 kcal/kg · formula BMR)" → "tap a band for its assumptions"; ❌ "this is the cold-start form — the mature cone lives at flow 03…flow 04" (annotation)
+- ✍ m4 "press = 0.94× spring + ripple…nothing is write-once" → "change anytime — the plan re-fits as v2"; keto "surface preview…re-arranges on the card face" → "macro dots become a carb-limit ring"
+- ✍ m5 gesture legend → "left = exclude · right = keep"; "the 119-item long tail lives in the Studio…(R-S6)" → "8 swipes here — the fine detail lives in the Studio"
+- ✍ m6 schedule: keep the pinned equation and the 1,500 floor (numbers-geek delight, user-meaningful); drop "dragging into it is refused, not clamped" and "in real time"
+- ✍ m7 ladder caption → "ranges, never a single promised date · rename a rung ('Size 34 jeans')" (80 ms/three-note motif → annotation); "Start hands off to the Hub → flow 01 — permission comes after your first log" → "permission comes after your first log"
+
+**Kept deliberately** (earn their place): "±30 %" honesty chips; "your scans: ±12 % · best on breakfast"; "lunch logged in 6 s"; "Computed on your device" (once per card); "how we got here" links; the 0.5 %/wk ≈ 0.46 kg ≈ −510 kcal/day triple; the pinned 12,600 equation; "an estimate, not a promise"; Bristol "your most common — dinner's 31 g of fiber is landing"; the reconciliation banner verbatim.
+
+### 4.4 Execution order (ticket WLO-0013)
+
+1. R-D10 kg conversion (mechanical, §4.1 table).
+2. Provenance ⓘ affordance (`.prov .q` glyph) + provenance sweep.
+3. Copy sweep per §4.3 (remove / rewrite / move-to-annotation).
+4. Re-render all changed frames; re-run the leak scanner against `.screen`
+   surfaces — target zero hits; design-bar sweep again.

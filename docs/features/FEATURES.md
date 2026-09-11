@@ -357,6 +357,26 @@ Ratified 2026-09-11.*
 - **R-D9 — F08 "Archive" icon:** an abstract stacked-outline glyph reading
   as "records" — deliberately not a camera or body glyph, so it stays
   neutral in any context.
+- **R-D10 — Units: metric default, imperial a user setting (owner ruling).**
+  kg (and metric throughout) is the default and fallback unit system; lb/lb
+  -per-week is a user setting. Every mass/length render is settings-driven —
+  no unit is ever hardcoded in copy. The prototypes demo the default (kg)
+  unless a page's meta declares otherwise; a unit chip on entry surfaces
+  ("kg") reflects the active setting.
+- **R-D11 — Copy discipline: information earns its place (owner ruling).**
+  User-facing copy never contains: motion/haptic parameters (ms values,
+  haptic names, easing/spring vocabulary), ruling IDs (R-\*) or feature IDs
+  (F\*\*, §refs), engine/recognizer/model versions or algorithm parameters
+  (EWMA α, window sizes), or design-doc phrases ("offline is a non-state",
+  "celebration is geometry"). Those live in the frame annotations and the
+  ⓘ explainers only. Provenance chips surface a user-word + ⓘ
+  ("derived ⓘ", "AI-estimated ⓘ", "adaptive ⓘ"); the technical parameters
+  sit one tap away in the how-we-got-here explainer — the §2.1 provenance
+  guarantee is preserved, its vocabulary is not. Each card carries at most
+  one helper line, phrased as the next action, never as mechanism; nothing
+  on a screen may duplicate information another card already shows; states
+  explain themselves when they occur and are never pre-explained ("fallback:
+  provisional when held" is the banned pattern).
 
 ---
 
