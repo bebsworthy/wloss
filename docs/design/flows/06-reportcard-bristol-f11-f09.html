@@ -1,0 +1,702 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>WLO · Flow 06 — Report card + Bristol sheet (F11 + F09)</title>
+<link rel="stylesheet" href="_wlo.css">
+<style>
+  /* flow-specific layout only — values come from _wlo.css tokens */
+  .grade-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .gcard {
+    border: 1px solid var(--outline); border-radius: 14px; background: var(--surface-sunken);
+    padding: 10px; display: flex; flex-direction: column; gap: 7px;
+  }
+  .gcard .gl {
+    display: flex; justify-content: space-between; align-items: baseline;
+    font-size: 10.5px; font-weight: 600; letter-spacing: .05em; text-transform: uppercase;
+    color: var(--text-tertiary);
+  }
+  .gcard .gn { font-weight: 500; letter-spacing: 0; text-transform: none; opacity: .7; }
+  .gcard .gr { font-size: 10.5px; line-height: 1.35; color: var(--text-tertiary); font-variant-numeric: var(--tnum); }
+  .stamp.dash { border-color: var(--outline); color: var(--text-tertiary); background: transparent; }
+
+  .bristol.fit .bcard { width: 43px; height: 58px; border-radius: 10px; }
+  .bristol.fit .bcard .swx { width: 22px; height: 17px; }
+  .bcard.zone { box-shadow: 0 0 0 4px var(--ideal-halo); }
+
+  .sharecard {
+    width: 206px; aspect-ratio: 4 / 5; border-radius: 20px; margin: 0 auto;
+    background: linear-gradient(165deg, var(--surface-raised) 0%, var(--surface-sunken) 100%);
+    border: 1px solid var(--outline); padding: 18px;
+    display: flex; flex-direction: column;
+  }
+  .sharecard .sc-word { font-size: 13px; font-weight: 800; letter-spacing: .3em; color: var(--text-tertiary); }
+  .sharecard .sc-hero { font-size: 64px; font-weight: 650; letter-spacing: -.03em; line-height: 1; font-variant-numeric: var(--tnum); color: var(--accent); margin-top: 18px; }
+  .sharecard .sc-hero small { font-size: 22px; font-weight: 550; color: var(--text-secondary); letter-spacing: 0; }
+  .sharecard .sc-sub { font-size: 12px; color: var(--text-secondary); margin-top: 6px; }
+  .sharecard .sc-foot { margin-top: auto; font-size: 10.5px; color: var(--text-tertiary); display: flex; justify-content: space-between; }
+
+  .chips-row { display: flex; gap: 6px; flex-wrap: wrap; }
+
+  .toast {
+    position: absolute; z-index: 46; left: 50%; bottom: 152px; transform: translateX(-50%);
+    background: var(--surface-raised); border: 1px solid var(--outline); border-radius: 999px;
+    padding: 9px 16px; display: flex; align-items: center; gap: 8px;
+    font-size: 12.5px; color: var(--text-primary); white-space: nowrap;
+  }
+  .toast .tick { color: var(--accent); font-weight: 700; }
+
+  .pbubble {
+    position: absolute; z-index: 5; background: var(--surface-raised);
+    border: 1px solid var(--outline); border-radius: 10px; padding: 6px 9px;
+    font-size: 10.5px; color: var(--text-secondary); white-space: nowrap;
+  }
+  .pbubble::after {
+    content: ""; position: absolute; bottom: -5px; left: 16px; width: 8px; height: 8px;
+    background: var(--surface-raised); border-right: 1px solid var(--outline); border-bottom: 1px solid var(--outline);
+    transform: rotate(45deg);
+  }
+  .pbubble.b2::after { left: 133px; }
+  .pbubble .sub { color: var(--text-tertiary); font-size: 9.5px; margin-top: 1px; }
+</style>
+</head>
+<body>
+<div class="page">
+
+<header>
+  <h1>Flow 06 — Report card + Bristol sheet</h1>
+  <div class="meta">
+    Spec: <a href="../../features/F11-insights-gamification.md">F11 Insights &amp; Gamification</a> ·
+    <a href="../../features/F09-gut-tracker.md">F09 Gut Tracker</a> ·
+    Motion: <a href="../DESIGN-SYSTEM.md">DESIGN-SYSTEM §4.1</a> rows F09/F11 · inventory §7.10/§7.12 ·
+    Rulings: R-U2 · R-U3 · R-U4 · R-U7 · R-U10 · R-U13 · 2026-09-11 · prototype, not implementation<br>
+    Companion flows: <a href="03-checkin-f07.html">03 check-in</a> · <a href="01-day-loop-f10.html">01 day loop</a> · <a href="04-weigh-in-trend-f06-f08.html">04 weigh-in</a> · <a href="index.html">index</a>
+  </div>
+</header>
+
+<!-- ============================= WIREFRAMES ============================= -->
+<div class="stage-title">Wireframes <small>· structure before skin — six screens: the Sunday ritual (F11) and the ten-second log (F09), one shared week (Sep 7–13)</small></div>
+<div class="stage">
+
+  <div class="flowunit">
+    <div class="phone wf"><div class="screen">
+      <div class="wf-box solid row">status bar</div>
+      <div class="wf-box row">Insights header · Sunday · report day · streak chip → <b>01</b></div>
+      <div class="wf-box tall">WEEKLY REPORT CARD — 6 domain cards in 2-col grid, flipping in sequence</div>
+      <div class="wf-note">↑ Energy A · Nutrition B+ · Movement A · Body Trend B · Gut — (dash, collecting) · Capture held (mid-stamp)</div>
+      <div class="wf-box row">Composite — not computed this week (held week rule)</div>
+      <div class="wf-box row">PR banner — particle shimmer, not confetti → <b>05</b> owns detection</div>
+      <div class="wf-box row">nav: Hub · Plan · <b>Insights</b> · Archive · Digestion</div>
+    </div></div>
+    <div class="caption annotation"><b>WF-1 · Mid-reveal.</b> Report day = check-in day (R-U2, → flow 03); cards flip 1→6, letterpress 250 ms per stamp; Gut renders a dash, Capture renders held — neither is a verdict.</div>
+  </div>
+
+  <div class="flowunit">
+    <div class="phone wf"><div class="screen">
+      <div class="wf-box solid row">status bar</div>
+      <div class="wf-box row">Insights header · report day</div>
+      <div class="wf-box tall">CAPTURE CARD EXPANDED (amber-edge) — stamp “held” · reason “&lt;4 weigh-ins this week” · what would unlock it · inputs with provenance → <b>04</b></div>
+      <div class="wf-box tall">“HOW WE GRADED THIS” — rubric version · inputs · quality score · composite state</div>
+      <div class="wf-box row">Streak &amp; freezes — oracles · freeze verbatim · repaired note · held = neutral</div>
+      <div class="wf-box row">Consistency Score tile [v1.x] — dormant (R-U3)</div>
+      <div class="wf-box row">nav</div>
+    </div></div>
+    <div class="caption annotation"><b>WF-2 · Complete + held anatomy.</b> Every grade carries inputs, rubric version, quality score; held shows reason + unlock, never shame; Wrapped [v1.x] lives deeper (R-U4).</div>
+  </div>
+
+  <div class="flowunit">
+    <div class="phone wf"><div class="screen">
+      <div class="wf-box solid row">status bar</div>
+      <div class="wf-box row">Composer header — long-press entry from any card/chart</div>
+      <div class="wf-box hero">SHARE-CARD PREVIEW — fixed 4:5 · oversized numeral · sparkline · wordmark “WLO”</div>
+      <div class="wf-box tall">PRIVACY CHECKLIST — weight trend ✓ · energy ✓ · meals ○ · Digestion ○ · Archive 🔒 “a pixel path does not exist”</div>
+      <div class="wf-note">↑ defaults: weight-trend + energy only · per-domain “never include in shares” master switch</div>
+      <div class="wf-box row">Render (~200 ms) → native share sheet</div>
+      <div class="wf-box row">nav</div>
+    </div></div>
+    <div class="caption annotation"><b>WF-3 · Share composer.</b> The card, not the database, is what leaves the phone; sensitive domains opt-in per share.</div>
+  </div>
+
+  <div class="flowunit">
+    <div class="phone wf"><div class="screen">
+      <div class="wf-box solid row">status bar · Hub dimmed behind</div>
+      <div class="wf-box row">Hub: quick-action rail — Digestion tile pressed (entry)</div>
+      <div class="wf-note">sheet — two taps open-to-saved: tile → Confirm</div>
+      <div class="wf-box row">Bristol sheet: title · classifier chip “Type 4 · 82 %” (on-device)</div>
+      <div class="wf-box tall">7-type watercolor carousel — center scaled 1.15 · halo on zone 3–4 · warm education line</div>
+      <div class="wf-box row">optional chips collapsed: blood · urgency · pain · photo (3 s auto-timer) · note</div>
+      <div class="wf-box row">Confirm · Type 4 — morph → 220 ms collapse · no sound</div>
+    </div></div>
+    <div class="caption annotation"><b>WF-4 · Two-tap log.</b> Classifier only pre-selects; one tap overrides; photo rung is equal; the keyboard never appears.</div>
+  </div>
+
+  <div class="flowunit">
+    <div class="phone wf"><div class="screen">
+      <div class="wf-box solid row">status bar</div>
+      <div class="wf-box row">Bristol sheet — chip now “Type 3 · user-set”, carousel on 3</div>
+      <div class="wf-box row">correction toast (1.2 s): “Noted — tunes your on-device model”</div>
+      <div class="wf-box row">stored on entry: prior suggestion Type 4 · 82 % · label “AI-suggested, corrected”</div>
+      <div class="wf-box row">optional chips · Confirm re-armed</div>
+      <div class="wf-note">R-B6: correction → local cache prior over frozen on-device model</div>
+    </div></div>
+    <div class="caption annotation"><b>WF-5 · Correction moment.</b> The toast thanks the signal, never questions the judgment; original confidence is stored on the entry.</div>
+  </div>
+
+  <div class="flowunit">
+    <div class="phone wf"><div class="screen">
+      <div class="wf-box solid row">status bar</div>
+      <div class="wf-box tall">Regularity heatmap · September (.heat) — ink-bloom 120 ms · dashed = quiet days, not gaps (R-U13) · hold-cell private bubble (auto-redacted)</div>
+      <div class="wf-box row">Fiber ring 64 % — spring overshoot · under-target breathe = invitation</div>
+      <div class="wf-box row">Red-flag doctor card — calm, once per episode · only action: show a doctor</div>
+      <div class="wf-box row">Frequency 0.4/day vs your 1.6 — personal-baseline band · “a quiet week, not a crisis”</div>
+      <div class="wf-box row">Unlock ring — “Trigger report unlocks in 5 days” [v1.x]</div>
+      <div class="wf-box row">nav: <b>Digestion</b></div>
+    </div></div>
+    <div class="caption annotation"><b>WF-6 · Couch stats.</b> Personal baselines only; quiet days are data; the doctor card is the calm ceiling of the whole feature.</div>
+  </div>
+
+</div>
+
+<!-- ============================= MOCKS ============================= -->
+<div class="stage-title">Annotated mocks <small>· dark canonical theme · pins explained under each phone</small></div>
+<div class="stage">
+
+  <!-- 1 · Report card mid-reveal -->
+  <div class="flowunit">
+    <div class="phone">
+      <div class="statusbar"><span>9:05</span><span class="icons">▮▮▮ ⌁ ▰</span></div>
+      <div class="screen">
+        <div class="apphead">
+          <div class="brand">WLO <small>Sunday, Sep 13 · report day</small></div>
+          <div class="actions"><a class="chip" href="01-day-loop-f10.html" style="text-decoration:none;">🔥 14</a><span class="chip">●</span></div>
+        </div>
+
+        <div class="card raised">
+          <div class="card-title">Weekly report card <span class="right"><span class="chip accent">revealing…</span>&nbsp; Sep 7 – 13 · W37</span></div>
+          <div class="grade-grid">
+            <div class="gcard">
+              <div class="gl">Energy <span class="gn">1</span></div>
+              <div class="stamp">A</div>
+              <div class="gr">6/7 days in band · median err 62 kcal · drift +70</div>
+            </div>
+            <div class="gcard">
+              <div class="gl">Nutrition <span class="gn">2</span></div>
+              <div class="stamp b" style="font-size:19px;">B+</div>
+              <div class="gr">P 158/165 g avg · fiber 24/27 g · 6/7 days logged</div>
+            </div>
+            <div class="gcard">
+              <div class="gl">Movement <span class="gn">3</span></div>
+              <div class="stamp">A</div>
+              <div class="gr">3/3 sessions · volume +4 % · 1 PR</div>
+            </div>
+            <div class="gcard">
+              <div class="gl">Body Trend <span class="gn">4</span></div>
+              <div class="stamp b">B</div>
+              <div class="gr">−0.6 kg/wk vs −0.5 plan · 3 weigh-ins</div>
+            </div>
+            <div class="gcard">
+              <div class="gl">Gut <span class="gn">5</span></div>
+              <div class="stamp dash">—</div>
+              <div class="gr">collecting · day 10 of 14 — regularity unlocks Sep 18</div>
+            </div>
+            <div class="gcard" style="opacity:.55; border-style:dashed;">
+              <div class="gl">Capture <span class="gn">6</span></div>
+              <div class="stamp held">held</div>
+              <div class="gr">&lt;4 weigh-ins this week — stamping…</div>
+            </div>
+          </div>
+          <div class="receipt faint" style="margin-top:9px;">flip 1→6 · letterpress press-in 250 ms · tick haptic — heavier for an A</div>
+          <div class="receipt" style="margin-top:3px;">composite <span class="prov held">not computed this week</span> — it disables itself during held weeks</div>
+        </div>
+
+        <div class="card accent-edge">
+          <div class="card-title">PR · Squat 82.5 kg × 5 <span class="right receipt">Sep 10 · from F05</span></div>
+          <div class="receipt faint">slides in with a particle shimmer — deliberately not confetti · deep impact haptic</div>
+        </div>
+
+        <div class="navbar">
+          <div class="tab"><span class="ic">◉</span>Hub</div>
+          <div class="tab"><span class="ic">▦</span>Plan</div>
+          <div class="tab active"><span class="ic">✦</span>Insights</div>
+          <div class="tab"><span class="ic">▣</span>Archive</div>
+          <div class="tab"><span class="ic">🌿</span>Digestion</div>
+        </div>
+      </div>
+      <span class="pin" style="top:56px; right:96px;">1</span>
+      <span class="pin" style="top:150px; right:30px;">2</span>
+      <span class="pin" style="top:392px; left:52px;">3</span>
+      <span class="pin" style="top:392px; right:52px;">4</span>
+      <span class="pin" style="top:560px; right:30px;">5</span>
+      <span class="pin" style="top:640px; right:30px;">6</span>
+    </div>
+    <div class="caption annotation">
+      <b>Sunday 09:05 — the weekly ritual (R-U2).</b>
+      <ol>
+        <li><span class="pin-ref">1</span>Report day shares the check-in day: Sunday by default, user-selectable (R-U2). The reveal lands beside the weekly check-in on the Hub (→ <a href="03-checkin-f07.html">flow 03</a>); its notification (“Your weekly report card is ready”) is generic copy, silent channel, fires once — one ritual, not two nudges.</li>
+        <li><span class="pin-ref">2</span>Six domains flip in sequence; each grade letterpresses in 250 ms with a tick haptic — heavier for an A (Confirm @ scale 1.0 vs 0.7, DESIGN-SYSTEM §5). Energy and Movement landed hardest this week. Shown mid-reveal: Capture still stamping (dashed, dimmed).</li>
+        <li><span class="pin-ref">3</span>Gut renders a <b>dash, not a failure</b> — regularity is hidden below 14 days of gut data (day 10 today; unlocks Sep 18). A dash is a statement about data, never about the body; no completeness model runs over the gut (R-U13).</li>
+        <li><span class="pin-ref">4</span>Capture is <span class="held-c">held</span> — amber, the strongest state color that exists: “&lt;4 weigh-ins this week” (3 logged). No grade is computed from thin data; full anatomy on screen 2.</li>
+        <li><span class="pin-ref">5</span>Composite states its refusal in prose and gets out of the way — the F07/Zolt held pattern generalized to grades (F11 §4).</li>
+        <li><span class="pin-ref">6</span>PR banner (insights styling): particle shimmer — <b>deliberately not confetti</b>; deep single impact haptic. F11 owns celebration styling; detection stays with F05.</li>
+      </ol>
+    </div>
+  </div>
+
+  <!-- 2 · Complete + held anatomy -->
+  <div class="flowunit">
+    <div class="phone">
+      <div class="statusbar"><span>9:08</span><span class="icons">▮▮▮ ⌁ ▰</span></div>
+      <div class="screen">
+        <div class="apphead">
+          <div class="brand">WLO <small>Sunday, Sep 13 · report day</small></div>
+          <div class="actions"><span class="chip">🔥 14</span><span class="chip">●</span></div>
+        </div>
+
+        <div class="card amber-edge">
+          <div class="card-title">Capture <span class="right prov held">held</span></div>
+          <div style="display:flex; gap:12px; align-items:flex-start;">
+            <div class="stamp held" style="width:56px; height:56px;">held</div>
+            <div style="flex:1;">
+              <div class="stat-m">Why: &lt;4 weigh-ins this week</div>
+              <div class="receipt dim" style="margin-top:3px;">What would unlock it: one more weigh-in — <b style="color:var(--text-primary)">today still counts</b>.</div>
+              <div class="btnrow" style="margin-top:10px;">
+                <a class="btn primary small" href="04-weigh-in-trend-f06-f08.html" style="text-decoration:none;">Log weigh-in</a>
+                <span class="btn ghost small">Dismiss — held is fine</span>
+              </div>
+            </div>
+          </div>
+          <div class="receipt">Sep 9 · 179.9 — Sep 10 · 179.8 — Sep 11 · 179.7 <span class="prov measured">scale · mornings</span></div>
+        </div>
+
+        <div class="card raised">
+          <div class="card-title">How we graded this · Capture <span class="right prov derived">tap any grade</span></div>
+          <div class="stat-row">
+            <span class="label">Rubric</span>
+            <span class="value receipt">capture v3.2 <span class="prov derived">changelog · changes never silent</span></span>
+          </div>
+          <div class="stat-row">
+            <span class="label">Inputs</span>
+            <span class="value receipt">3 weigh-ins · 6 day-logs · 3 sessions</span>
+          </div>
+          <div class="stat-row">
+            <span class="label">Quality score</span>
+            <span class="value stat-s">0.72 <span class="prov estimated">published · versioned in-app</span></span>
+          </div>
+          <div class="stat-row">
+            <span class="label">Composite</span>
+            <span class="value receipt">off this week <span class="prov held">held week</span></span>
+          </div>
+          <div class="receipt faint" style="margin-top:8px;">grades describe data, never virtue — “B, from 4 weigh-ins”</div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">Streak &amp; freezes <span class="right receipt">🔥 14 days</span></div>
+          <div class="stat-row">
+            <span class="label">Counts via</span>
+            <span class="value"><span class="chip">weigh-in</span><span class="chip">meal-log</span><span class="chip">workout</span></span>
+          </div>
+          <div class="stat-row">
+            <span class="label">Aug 30</span>
+            <span class="value receipt">Freeze used — streak intact, 2 left this month</span>
+          </div>
+          <div class="stat-row">
+            <span class="label">Aug 12</span>
+            <span class="value receipt"><span class="prov adaptive">repaired</span> sync bug · free, automatic</span>
+          </div>
+          <div class="receipt faint" style="margin-top:8px;">multi-oracle — user-tunable (R-U10) · held days are neutral · no streak-loss notifications, ever</div>
+        </div>
+
+        <div class="card sunken">
+          <div class="card-title">Consistency Score <span class="right chip blue">v1.x · dormant</span></div>
+          <div class="receipt dim">Unlocks after 4 weeks of data, then opt-in — hideable forever (R-U3). Annual Wrapped [v1.x] is an install-anniversary reveal (R-U4).</div>
+        </div>
+
+        <div class="navbar">
+          <div class="tab"><span class="ic">◉</span>Hub</div>
+          <div class="tab"><span class="ic">▦</span>Plan</div>
+          <div class="tab active"><span class="ic">✦</span>Insights</div>
+          <div class="tab"><span class="ic">▣</span>Archive</div>
+          <div class="tab"><span class="ic">🌿</span>Digestion</div>
+        </div>
+      </div>
+      <span class="pin" style="top:120px; right:30px;">7</span>
+      <span class="pin" style="top:376px; right:36px;">8</span>
+      <span class="pin" style="top:676px; right:30px;">9</span>
+      <span class="pin" style="top:806px; right:30px;">10</span>
+    </div>
+    <div class="caption annotation">
+      <b>Complete week, one grade held — the anatomy.</b>
+      <ol>
+        <li><span class="pin-ref">7</span>Held anatomy: reason verbatim (“&lt;4 weigh-ins this week”) + “what would unlock it” phrased as the fix, one tap away (→ <a href="04-weigh-in-trend-f06-f08.html">flow 04</a>). Amber card-edge; no red exists to reach for. Dismissing is silent and permanent.</li>
+        <li><span class="pin-ref">8</span>“How we graded this”: rubric <b>version</b> (changelogged — never a silent retune), exact <b>inputs</b>, <b>quality score</b>. Every grade carries all three; thresholds are published and versioned in-app (F11 §9).</li>
+        <li><span class="pin-ref">9</span>Streak economy (R-U10): multi-oracle by default, user-tunable; freeze moment verbatim “<b>Freeze used — streak intact, 2 left this month</b>”; bug-caused losses self-heal with a visible “repaired” note — free and automatic, no purchase path in the binary. Held days are neutral.</li>
+        <li><span class="pin-ref">10</span>Consistency Score tile exists only as a dormant [v1.x] row until ≥4 weeks of data, then opt-in, hideable forever (R-U3). Wrapped [v1.x] is chaptered, install-anniversary (R-U4) — out of scope for these mocks.</li>
+      </ol>
+    </div>
+  </div>
+
+  <!-- 3 · Share composer -->
+  <div class="flowunit">
+    <div class="phone">
+      <div class="statusbar"><span>9:11</span><span class="icons">▮▮▮ ⌁ ▰</span></div>
+      <div class="screen">
+        <div class="apphead">
+          <div class="brand">WLO <small>Share card · from Trend</small></div>
+          <div class="actions"><span class="chip">✕</span></div>
+        </div>
+
+        <div class="card sunken" style="padding:14px;">
+          <div class="sharecard">
+            <div class="sc-word">WLO</div>
+            <div class="sc-hero">−4.2<small> kg</small></div>
+            <div class="sc-sub">trend · 12 weeks · an estimate, not a promise</div>
+            <svg width="100%" height="60" viewBox="0 0 202 60" style="margin-top:14px;">
+              <path class="band" d="M0,26 L202,12 L202,44 L0,50 Z"/>
+              <polyline class="spark" points="0,44 20,42 40,45 60,38 80,40 100,33 120,35 140,28 160,30 180,22 202,18"/>
+            </svg>
+            <div class="sc-foot"><span>Sep 13</span><span>every number stays yours</span></div>
+          </div>
+          <div class="receipt faint" style="text-align:center; margin-top:10px;">fixed 4:5 · oversized numeral · wordmark</div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">Include on this card <span class="right receipt">defaults: weight-trend + energy</span></div>
+          <div class="stat-row">
+            <span class="label">Weight trend</span>
+            <span class="value"><span class="check on">✓</span><span class="receipt">on</span></span>
+          </div>
+          <div class="stat-row">
+            <span class="label">Energy</span>
+            <span class="value"><span class="check on">✓</span><span class="receipt">on</span></span>
+          </div>
+          <div class="stat-row">
+            <span class="label">Meals</span>
+            <span class="value"><span class="check"></span><span class="receipt faint">off — explicit per-share</span></span>
+          </div>
+          <div class="stat-row">
+            <span class="label">Digestion</span>
+            <span class="value"><span class="check"></span><span class="receipt faint">off — opt-in per share</span></span>
+          </div>
+          <div class="stat-row">
+            <span class="label">Archive</span>
+            <span class="value receipt faint">🔒 locked — “a pixel path does not exist”</span>
+          </div>
+          <div class="receipt faint" style="margin-top:8px;">per-domain “never include in shares” master switch overrides any default</div>
+        </div>
+
+        <div class="btnrow">
+          <a class="btn primary block" href="index.html" style="text-decoration:none;">Render · ~200 ms</a>
+        </div>
+        <div class="receipt faint" style="text-align:center; margin-top:6px;">renders on-device, then the native share sheet — the card, not the database, leaves the phone</div>
+
+        <div class="navbar">
+          <div class="tab"><span class="ic">◉</span>Hub</div>
+          <div class="tab"><span class="ic">▦</span>Plan</div>
+          <div class="tab active"><span class="ic">✦</span>Insights</div>
+          <div class="tab"><span class="ic">▣</span>Archive</div>
+          <div class="tab"><span class="ic">🌿</span>Digestion</div>
+        </div>
+      </div>
+      <span class="pin" style="top:150px; right:36px;">11</span>
+      <span class="pin" style="top:500px; right:30px;">12</span>
+      <span class="pin" style="top:680px; right:30px;">13</span>
+      <span class="pin" style="bottom:48px; right:30px;">14</span>
+    </div>
+    <div class="caption annotation">
+      <b>Share composer — long-press any card or chart.</b>
+      <ol>
+        <li><span class="pin-ref">11</span>The preview is the render target: fixed 4:5 PNG, oversized numeral, gradient chart, wordmark — designed as an artifact (Gyroscope’s growth loop), rendered locally in ~200 ms (S4 token).</li>
+        <li><span class="pin-ref">12</span>Defaults are weight-trend + energy only. Meals and Digestion sit behind explicit per-share toggles; gut content is opt-in per share — and its photos don’t exist to leak (processed on-device, discarded at save unless retention is explicitly enabled, R-U14).</li>
+        <li><span class="pin-ref">13</span>Archive is <b>locked, not toggled</b>: “a pixel path does not exist” — body photographs are never stored (R-U16); the faceless vector strip is the only silhouette artifact and is never a default. The per-domain “never include in shares” master switch overrides everything.</li>
+        <li><span class="pin-ref">14</span>One button: render (~200 ms) → native share sheet. Nothing leaves the phone without that tap; privacy state is persisted per card template (F11 §9).</li>
+      </ol>
+    </div>
+  </div>
+
+  <!-- 4 · Bristol sheet — two-tap flow -->
+  <div class="flowunit">
+    <div class="phone">
+      <div class="statusbar"><span>9:12</span><span class="icons">▮▮▮ ⌁ ▰</span></div>
+      <div class="screen">
+        <div class="apphead">
+          <div class="brand">WLO <small>Sunday, Sep 13</small></div>
+          <div class="actions"><span class="chip">🔥 14</span><span class="chip">●</span></div>
+        </div>
+        <div class="card">
+          <div class="card-title">Trend <span class="prov derived">derived · EWMA α 0.15</span></div>
+          <div style="display:flex; align-items:baseline; gap:12px;">
+            <div class="hero">178.9</div><span class="delta down">↓ 0.6</span>
+          </div>
+        </div>
+        <div class="rail">
+          <div class="qa"><span class="ic">📷</span>Log food</div>
+          <div class="qa"><span class="ic">⚖</span>Weigh</div>
+          <div class="qa primary"><span class="ic">🌿</span>Digestion</div>
+          <div class="qa"><span class="ic">🏋</span>Workout</div>
+        </div>
+
+        <div class="sheet-wrap"></div>
+        <div class="sheet">
+          <div class="grab"></div>
+          <div style="display:flex; justify-content:space-between; align-items:baseline; margin-bottom:4px;">
+            <div style="font-weight:650; font-size:16px; color:var(--text-primary);">Digestion</div>
+            <div class="receipt faint">Sun 09:12 · two taps to done</div>
+          </div>
+          <div class="receipt dim" style="margin-bottom:10px;">Type 4 · your most common — dinner’s 31 g of fiber is landing.</div>
+
+          <div style="display:flex; justify-content:center; gap:8px; align-items:center; margin-bottom:10px;">
+            <span class="chip accent" style="font-size:12.5px; padding:5px 10px;">Type 4 · 82 %</span>
+            <span class="prov estimated">on-device · confidence stored on entry</span>
+          </div>
+
+          <div class="bristol fit">
+            <div class="bcard"><div class="swx s1"></div>1</div>
+            <div class="bcard"><div class="swx s2"></div>2</div>
+            <div class="bcard zone"><div class="swx s3"></div>3</div>
+            <div class="bcard sel zone"><div class="swx s4"></div>4</div>
+            <div class="bcard"><div class="swx s5"></div>5</div>
+            <div class="bcard"><div class="swx s6"></div>6</div>
+            <div class="bcard"><div class="swx s7"></div>7</div>
+          </div>
+          <div class="receipt faint" style="text-align:center; margin:8px 0 12px;">zone 3–4 halo = education by placement · tap chip to fan out · detent per snap</div>
+
+          <div class="chips-row" style="margin-bottom:12px;">
+            <span class="chip">＋ blood</span><span class="chip">＋ urgency</span><span class="chip">＋ pain</span><span class="chip">＋ photo · 3 s</span><span class="chip">＋ note</span>
+          </div>
+
+          <div class="btn primary block">Confirm · Type 4</div>
+          <div class="receipt faint" style="text-align:center; margin-top:8px;">button morphs to check · sheet collapses 220 ms · soft settle haptic · <b>no sound — bathroom</b></div>
+        </div>
+      </div>
+      <span class="pin" style="top:248px; left:228px;">15</span>
+      <span class="pin" style="top:506px; left:118px;">16</span>
+      <span class="pin" style="top:556px; right:16px;">17</span>
+      <span class="pin" style="top:664px; right:20px;">18</span>
+      <span class="pin" style="bottom:96px; right:30px;">19</span>
+    </div>
+    <div class="caption annotation">
+      <b>Digestion tile → Bristol sheet — happy path is two taps.</b>
+      <ol>
+        <li><span class="pin-ref">15</span>Entry is the quick-action tile / nav “Digestion” (renamable, neutral leaf mark — R-U7). Navigation, notifications (“Digestion check-in ready”), widgets and settings never carry the taboo word; warm directness lives inside, where the user chose the context.</li>
+        <li><span class="pin-ref">16</span>The classifier only <b>pre-selects</b>: chip slides in “Type 4 · 82 %” (confidence ≥ 0.7 → accent). Tapping it fans out all 7 types for a one-tap override; the confidence is shown at capture and stored on the entry. On-device only by default; the photo is discarded at save (R-U14).</li>
+        <li><span class="pin-ref">17</span>Carousel: watercolor types — no photorealism, no faces, no emoji; center card scales 1.15 per snap with a detent haptic; the ideal zone (3–4) wears the faint green halo — placement, not verdict. The education line is day-one value (the fix for the category’s 60 % abandonment).</li>
+        <li><span class="pin-ref">18</span>Everything beyond type is optional and collapsed: blood, urgency, pain, photo, note. The photo rung is equal: hands-free 3 s auto-timer with 3·2·1 countdown rings (400 ms each), silent always. Pain renders as chips — 0–10 slider alternative is still open (F09 §10).</li>
+        <li><span class="pin-ref">19</span>Exactly one mandatory tap, zero text — the keyboard never appears unless note is opened. Confirm: morph → sheet collapses 220 ms with a soft settle haptic. <b>No sound by default</b> (bathroom discretion is structural, not a setting).</li>
+      </ol>
+    </div>
+  </div>
+
+  <!-- 5 · Correction moment -->
+  <div class="flowunit">
+    <div class="phone">
+      <div class="statusbar"><span>9:13</span><span class="icons">▮▮▮ ⌁ ▰</span></div>
+      <div class="screen">
+        <div class="apphead">
+          <div class="brand">WLO <small>Sunday, Sep 13</small></div>
+          <div class="actions"><span class="chip">🔥 14</span><span class="chip">●</span></div>
+        </div>
+        <div class="card">
+          <div class="card-title">Trend <span class="prov derived">derived · EWMA α 0.15</span></div>
+          <div style="display:flex; align-items:baseline; gap:12px;">
+            <div class="hero">178.9</div><span class="delta down">↓ 0.6</span>
+          </div>
+        </div>
+        <div class="rail">
+          <div class="qa"><span class="ic">📷</span>Log food</div>
+          <div class="qa"><span class="ic">⚖</span>Weigh</div>
+          <div class="qa primary"><span class="ic">🌿</span>Digestion</div>
+          <div class="qa"><span class="ic">🏋</span>Workout</div>
+        </div>
+
+        <div class="sheet-wrap"></div>
+        <div class="sheet">
+          <div class="grab"></div>
+          <div style="display:flex; justify-content:space-between; align-items:baseline; margin-bottom:10px;">
+            <div style="font-weight:650; font-size:16px; color:var(--text-primary);">Digestion</div>
+            <div class="receipt faint">corrected — one tap, no interrogation</div>
+          </div>
+
+          <div style="display:flex; justify-content:center; gap:8px; align-items:center; margin-bottom:10px;">
+            <span class="chip" style="font-size:12.5px; padding:5px 10px; color:var(--text-primary);">Type 3 · user-set</span>
+            <span class="prov derived">was Type 4 · 82 %</span>
+          </div>
+
+          <div class="bristol fit">
+            <div class="bcard"><div class="swx s1"></div>1</div>
+            <div class="bcard"><div class="swx s2"></div>2</div>
+            <div class="bcard sel zone"><div class="swx s3"></div>3</div>
+            <div class="bcard zone"><div class="swx s4"></div>4</div>
+            <div class="bcard"><div class="swx s5"></div>5</div>
+            <div class="bcard"><div class="swx s6"></div>6</div>
+            <div class="bcard"><div class="swx s7"></div>7</div>
+          </div>
+
+          <div class="card sunken" style="margin:12px 0; padding:10px 12px;">
+            <div class="stat-row" style="min-height:30px;"><span class="label">Stored on entry</span><span class="value receipt">type 3 · <b style="color:var(--text-primary)">user-set</b></span></div>
+            <div class="stat-row" style="min-height:30px;"><span class="label">Suggestion at capture</span><span class="value receipt">Type 4 · 82 %</span></div>
+            <div class="stat-row" style="min-height:30px;"><span class="label">Provenance label</span><span class="value"><span class="prov estimated">AI-suggested, corrected</span></span></div>
+          </div>
+
+          <div class="btn primary block">Confirm · Type 3</div>
+          <div class="receipt faint" style="text-align:center; margin-top:8px;">correction → local training signal (correction-cache prior, R-B6) · nothing leaves the device</div>
+        </div>
+
+        <div class="toast" style="bottom:436px;"><span class="tick">✓</span> Noted — tunes your on-device model <span class="faint" style="font-size:10.5px;">1.2 s</span></div>
+      </div>
+      <span class="pin" style="top:498px; left:150px;">20</span>
+      <span class="pin" style="top:384px; left:44px;">21</span>
+      <span class="pin" style="top:614px; left:26px;">22</span>
+    </div>
+    <div class="caption annotation">
+      <b>Correction — the classifier is demoted, never defended.</b>
+      <ol>
+        <li><span class="pin-ref">20</span>One tap on Type 3 overrides the pre-select; the chip re-labels “Type 3 · user-set”. The manual carousel is the same sheet, never a buried “advanced” mode (PoopCheck’s fatal omission, inverted).</li>
+        <li><span class="pin-ref">21</span>Correction toast, 1.2 s, verbatim: “<b>Noted — tunes your on-device model</b>” — it registers the signal and thanks it; it never questions the user’s judgment.</li>
+        <li><span class="pin-ref">22</span>The original suggestion and its confidence stay attached to the entry (“was Type 4 · 82 %”), so the provenance label reads “AI-suggested, corrected” — one of exactly four labels: user-set / AI-suggested, accepted / AI-suggested, corrected (and plain user history). Corrections queue to the local correction-cache prior (R-B6); fine-tuning is [future] and cloud is off by default.</li>
+      </ol>
+    </div>
+  </div>
+
+  <!-- 6 · Digestion stats -->
+  <div class="flowunit">
+    <div class="phone">
+      <div class="statusbar"><span>9:41</span><span class="icons">▮▮▮ ⌁ ▰</span></div>
+      <div class="screen">
+        <div class="apphead">
+          <div class="brand">Digestion <small>Sunday, Sep 13 · the couch view</small></div>
+          <div class="actions"><span class="chip">🔥 14</span><span class="chip">●</span></div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">Regularity · September <span class="right prov derived">derived</span></div>
+          <div style="position:relative;">
+            <div class="heat">
+              <div class="cell"></div><div class="cell"></div><div class="cell"></div><div class="cell"></div>
+              <div class="cell d3"><span class="d">4</span></div><div class="cell d4"><span class="d">5</span></div><div class="cell d3"><span class="d">6</span></div>
+              <div class="cell gap"><span class="d">7</span></div><div class="cell d1"><span class="d">8</span></div><div class="cell gap"><span class="d">9</span></div>
+              <div class="cell d1"><span class="d">10</span></div><div class="cell gap"><span class="d">11</span></div><div class="cell gap"><span class="d">12</span></div><div class="cell d1"><span class="d">13</span></div>
+            </div>
+            <div class="pbubble b2" style="top:44px; left:90px;"><b>Sep 10 · 1 entry · Type 4</b><div class="sub">private while pressed · auto-redacted</div></div>
+          </div>
+          <div class="receipt faint" style="margin-top:9px;">ink-bloom 120 ms · dashed = quiet days, not gaps (R-U13) · blanks = outside tracking / days to come</div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">Fiber <span class="right prov adaptive">fed from F02/F03 · zero re-entry</span></div>
+          <div style="display:flex; gap:14px; align-items:center;">
+            <div class="ring" style="--fill:64; width:92px; height:92px;">
+              <div class="center"><div class="stat-m">19 g</div><div class="receipt faint">of 30 g</div></div>
+            </div>
+            <div style="flex:1">
+              <div class="receipt dim">Under target — the ring <b style="color:var(--text-primary)">breathes</b>: an invitation, not an alarm.</div>
+              <div class="receipt faint" style="margin-top:5px;">target in Targets (R-B3) · overshoot as meals land</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card sunken amber-edge">
+          <div class="card-title">Worth showing a doctor <span class="right prov held">one per episode</span></div>
+          <div class="receipt dim">The last 7 days ran under 40 % of your usual frequency — <b style="color:var(--text-primary)">unusual for you</b>. If it persists, worth mentioning at your next visit.</div>
+          <div class="btnrow" style="margin-top:10px;">
+            <span class="btn secondary small">Add to doctor report</span>
+            <span class="btn ghost small">Mark discussed</span>
+          </div>
+          <div class="receipt faint" style="margin-top:8px;">the only action is “show a doctor” — no diagnosis, no severity scoring</div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">Frequency <span class="right receipt">this week 0.4/day</span></div>
+          <div style="display:flex; align-items:baseline; gap:10px;">
+            <div class="stat-l">0.4<span class="receipt faint">/day</span></div>
+            <div class="receipt dim">vs your <b style="color:var(--text-primary)">1.6</b> — a quiet week, not a crisis.</div>
+          </div>
+          <svg width="100%" height="64" viewBox="0 0 330 64" class="chartbg" style="margin-top:8px">
+            <rect x="0" y="20" width="330" height="20" class="band"/>
+            <line x1="0" y1="30" x2="330" y2="30" stroke="#5C6875" stroke-width="1.5" stroke-dasharray="4 4"/>
+            <polyline class="spark" points="20,56 68,40 116,56 165,40 213,56 261,56 310,40"/>
+          </svg>
+          <div class="receipt faint" style="margin-top:6px;">baseline is yours alone — population averages are never benchmarks</div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">Trigger report <span class="right chip blue">v1.x</span></div>
+          <div style="display:flex; gap:12px; align-items:center;">
+            <div class="ring" style="--fill:64; width:56px; height:56px;">
+              <div class="center"><span class="receipt" style="font-size:10px;">10/14</span></div>
+            </div>
+            <div style="flex:1">
+              <div class="stat-s">Trigger report unlocks in 5 days</div>
+              <div class="receipt faint" style="margin-top:2px;">Sep 18 · cards will carry effect size, window, n — F11’s correlation views gate at n ≥ 21 (“n = 9 — not enough data to claim anything”)</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="navbar">
+          <div class="tab"><span class="ic">◉</span>Hub</div>
+          <div class="tab"><span class="ic">▦</span>Plan</div>
+          <div class="tab"><span class="ic">✦</span>Insights</div>
+          <div class="tab"><span class="ic">▣</span>Archive</div>
+          <div class="tab active"><span class="ic">🌿</span>Digestion</div>
+        </div>
+      </div>
+      <span class="pin" style="top:150px; right:20px;">23</span>
+      <span class="pin" style="top:148px; left:152px;">24</span>
+      <span class="pin" style="top:420px; left:36px;">25</span>
+      <span class="pin" style="top:736px; right:30px;">26</span>
+      <span class="pin" style="top:812px; left:44px;">27</span>
+      <span class="pin" style="top:566px; right:30px;">28</span>
+    </div>
+    <div class="caption annotation">
+      <b>Digestion stats — weekly browsing, on the couch.</b>
+      <ol>
+        <li><span class="pin-ref">23</span>Month heatmap inks in with a 120 ms stagger, tinted by regularity score (4–5 sequential steps). <b>Dashed cells are quiet days, not gaps (R-U13)</b>: Sep 7, 9, 11, 12 — the recent Friday–Saturday pair plus two earlier — a quiet week is data, never an absence. Plain wells are outside the tracking window (started Sep 4); the future is blank, never pre-judged.</li>
+        <li><span class="pin-ref">24</span>Press-and-hold a cell for a private summary bubble — it exists only while pressed and is <b>auto-redacted</b> when photo concealment is on; nothing is screenshottable by accident.</li>
+        <li><span class="pin-ref">25</span>Fiber ring at 64 % (19 of 30 g): spring overshoot as meals land; under-target days breathe — an invitation, not an alarm (one of the five sanctioned ambient loops). Target authored by F09, living in Targets (R-B3); actuals flow from F02/F03 with zero re-entry.</li>
+        <li><span class="pin-ref">26</span>Frequency against the <b>personal baseline only</b>, verbatim framing: “0.4/day vs your 1.6 — a quiet week, not a crisis.” The band is the user’s own trailing window; population averages are never shown as benchmarks.</li>
+        <li><span class="pin-ref">27</span>Trigger report [v1.x]: the visible unlock ring (day 10 of 14) makes the cold start feel like leveling up, not a dead app. Cards will each name effect size, window, and n; F11’s own correlation views gate separately at n ≥ 21.</li>
+        <li><span class="pin-ref">28</span>Red-flag doctor card: one per episode, calm warm-tinted surface (amber is the ceiling — no red exists), weather-forecast framing, and a single action: “show a doctor”. No diagnosis, no severity score, never a push by default. “Unusual for you” — the banned-word list (“overdue”, “failed”, “abnormal”) is enforced in copy templates.</li>
+      </ol>
+    </div>
+  </div>
+
+</div>
+
+<!-- ============================= SELF-REVIEW ============================= -->
+<div class="review">
+  <h2>Self-review — design bar &amp; spec checklist (flow 06)</h2>
+  <div class="cols">
+    <div class="col"><div class="annotation">
+      <b>Design bar</b>
+      <ol>
+        <li><b>Provenance everywhere</b> — every grade carries inputs + rubric version + quality score (panel 8); classifier confidence shown at capture and stored on the entry (16, 22); baselines carry their trailing window (26); correlation gates named (F09 14-day ring, F11 n ≥ 21). No derived number renders bare. ✓</li>
+        <li><b>Tone — describe the data, never the person</b> — Gut’s dash says “collecting”, never a verdict; “B, from 4 weigh-ins” as the model sentence; “a quiet week, not a crisis”; “unusual for you”. F11 banned list (failed / cheat / bad / guilt) and F09 banned list (overdue / failed / abnormal) — both clean in all UI strings; app-wide list respected too. ✓</li>
+        <li><b>No-red discipline</b> — held is amber (the strongest state color that exists); the Bristol ideal zone is a halo, i.e. education by placement, not a verdict; the doctor card is calm warm-tint, one per episode, “show a doctor” as the only action; no alarm hue anywhere. ✓</li>
+        <li><b>R-U7</b> — nav, rail, tile, and the (annotated) notification all say “Digestion”; renamable; taboo words confined to inside the feature. ✓</li>
+        <li><b>R-U13</b> — quiet days render dashed in the heatmap and drive the frequency line; the gut is absent from every completeness model (its own report-card slot is a dash); gap reminders are personal-baseline-gated and default off. ✓</li>
+        <li><b>Rulings</b> — R-U2 report day = check-in day (→ <a href="03-checkin-f07.html">flow 03</a>, link also on the streak chip → <a href="01-day-loop-f10.html">flow 01</a>); R-U3 dormant tile; R-U4 Wrapped [v1.x]; R-U10 oracles + held-neutral + freeze verbatim + free repairs. ✓</li>
+        <li><b>Local-first</b> — grades, stats, share render (~200 ms), and the classifier are all on-device deterministic; no spinner, no cloud state anywhere in the flow. ✓</li>
+        <li><b>Density</b> — six mocks answer their questions above the fold at 390×844; whitespace spent only at the share preview and the reveal grid. ✓</li>
+      </ol>
+    </div></div>
+    <div class="col"><div class="annotation">
+      <b>Spec micro-interactions honored</b>
+      <ol>
+        <li>Grade stamps: letterpress press-in 250 ms per card, cards flip in sequence; tick haptic — heavier for an A (Confirm @ scale 1.0 vs 0.7). ✓ (mock 1, static by medium)</li>
+        <li>Bristol confirm: button morphs to check, sheet collapses 220 ms, soft settle haptic, <b>no sound</b> (bathroom). ✓</li>
+        <li>Correction toast verbatim, 1.2 s, never questions judgment. ✓ (mock 5)</li>
+        <li>Heatmap ink-bloom 120 ms stagger; hold-cell private bubble with auto-redaction under photo concealment. ✓ (mock 6)</li>
+        <li>Carousel: center scales 1.15 per snap + detent haptic; classifier chip slides in; tap fans out all 7 types. ✓ (mocks 4–5)</li>
+        <li>Fiber ring spring overshoot; under-target breathe = invitation (sanctioned ambient loop). ✓ (mock 6)</li>
+        <li>Photo rung equal: hands-free 3 s auto-timer, 3·2·1 countdown rings (400 ms each), silent; photo discarded at save by default (R-U14). ✓ (annotated, mock 4)</li>
+        <li>Share render ~200 ms (S4); PR banner particle shimmer — deliberately not confetti (M3 + impact). ✓ (mocks 1, 3)</li>
+        <li>Check-in reveal, stamp choreography, and weigh-in flows live in their own flows — linked, not duplicated (R-U2 day sequence: check-in → report card).</li>
+      </ol>
+      <b>Open items surfaced:</b> badge visual direction (minimal geometric vs slightly playful illustration) is FEATURES §6 item 7 — the gallery is kept out of these mocks rather than guessed; F09 pain-input granularity is open (0–10 slider vs 4-step chips) — chips are shown with the slider alternative noted; correlation cards are [v1.x] (both the F09 trigger report and F11’s n ≥ 21 views) — teased via the unlock ring only; Consistency Score (R-U3) and Wrapped (R-U4) appear as dormant/[v1.x] mentions, not v1 surfaces.
+    </div></div>
+  </div>
+</div>
+
+</div>
+</body>
+</html>

@@ -1,0 +1,605 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>WLO · Flow 02 — The photo ladder + correction loop (F02)</title>
+<link rel="stylesheet" href="_wlo.css">
+<style>
+  /* layout-only additions — every color/size here is a _wlo.css token or an rgba() of one */
+  .vf-top { position:absolute; top:52px; left:14px; right:14px; display:flex; justify-content:space-between; align-items:center; gap:6px; z-index:2; flex-wrap:wrap; }
+  .vf-chiprow { position:absolute; left:14px; right:14px; bottom:158px; display:flex; gap:6px; flex-wrap:wrap; justify-content:center; z-index:2; }
+  .vf-note { position:absolute; z-index:2; font-size:10.5px; color:var(--text-tertiary); }
+  .blob { position:absolute; border-radius:50%; }
+  .ghost-chip { display:inline-flex; align-items:center; padding:3px 8px; border-radius:var(--r-chip); border:1.5px dashed var(--text-tertiary); color:var(--text-tertiary); font-size:11.5px; font-weight:500; white-space:nowrap; }
+  .shimmer-band { position:absolute; left:0; right:0; height:56px; background:linear-gradient(100deg, transparent 18%, rgba(61,214,165,.16) 46%, transparent 72%); }
+  .itemrow { display:flex; align-items:center; gap:8px; min-height:44px; padding:5px 0; border-bottom:1px solid var(--outline); }
+  .itemrow:last-child { border-bottom:0; }
+  .itemrow .grow { flex:1; min-width:0; }
+  .slider { position:relative; height:38px; margin:4px 2px 0; }
+  .slider .track { position:absolute; left:0; right:0; top:17px; height:4px; border-radius:2px; background:var(--surface-sunken); border:1px solid var(--outline); }
+  .slider .ticks { position:absolute; left:0; right:14px; top:13px; height:12px; background:repeating-linear-gradient(90deg, var(--outline) 0 1px, transparent 1px 13px); }
+  .slider .fill { position:absolute; left:0; top:17px; height:4px; border-radius:2px 0 0 2px; background:var(--accent-dim); }
+  .slider .thumb { position:absolute; top:10px; width:18px; height:18px; border-radius:50%; background:var(--accent); box-shadow:0 0 0 4px var(--ideal-halo); }
+  .slider .railglyph { position:absolute; right:0; top:12px; color:var(--text-tertiary); font-size:11.5px; }
+  .strip-amber { display:flex; gap:8px; align-items:center; border:1px solid rgba(232,179,75,.4); background:rgba(232,179,75,.08); color:var(--held); border-radius:10px; padding:7px 10px; font-size:12.5px; margin-bottom:10px; }
+  .hintfield { background:var(--surface-sunken); border:1px solid var(--outline); border-radius:12px; padding:9px 12px; font-size:13px; color:var(--text-tertiary); }
+  .trail { background:var(--surface-sunken); border:1px solid var(--outline); border-radius:12px; padding:8px 12px; margin:10px 0; }
+  .trail .ln { display:flex; gap:8px; padding:3px 0; font-size:12px; font-variant-numeric:var(--tnum); color:var(--text-secondary); }
+  .blurd { filter:blur(3px); opacity:.7; }
+  .ringwrap { position:relative; width:96px; height:96px; flex:none; }
+  .ringwrap .center { position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; }
+</style>
+</head>
+<body>
+<div class="page">
+
+<header>
+  <h1>Flow 02 — The photo ladder + correction loop</h1>
+  <div class="meta">
+    Spec: <a href="../../features/F02-food-logging.md">F02 Food Logging &amp; AI Nutrient Estimation</a> · IA: <a href="../IA.md">IA.md §1</a> (capture-over-context) ·
+    Motion: <a href="../DESIGN-SYSTEM.md">DESIGN-SYSTEM §4.1</a> (F02 rows are binding) · 2026-09-11 · prototype, not implementation<br>
+    Companion flows: <a href="01-day-loop-f10.html">01 day loop</a> · <a href="03-checkin-f07.html">03 check-in</a> · <a href="04-weigh-in-trend-f06-f08.html">04 weigh-in</a> · <a href="index.html">index</a>
+  </div>
+</header>
+
+<!-- ============================= WIREFRAMES ============================= -->
+<div class="stage-title">Wireframes <small>· structure before skin — ladder → deal → correct → save, six states of one capture</small></div>
+<div class="stage">
+
+  <div class="flowunit">
+    <div class="phone wf"><div class="screen">
+      <div class="wf-box solid row">status bar</div>
+      <div class="wf-box row">✕ · “Lunch · from today’s plan” (context ← flow 01) · 1,277 kcal left</div>
+      <div class="wf-box tall">camera frame — segmentation mask desaturates non-food · depth mesh shimmers on · food regions marked</div>
+      <div class="wf-note">recognition made visible before it speaks (F02 §4)</div>
+      <div class="wf-box row">input ladder chips: photo · voice · barcode · type · search — equal status (R-U15), never buried</div>
+      <div class="wf-box grid"><div>🖼 gallery import</div><div>torch</div><div>shutter · 10 ms tick</div><div>hold = re-log last meal</div></div>
+    </div></div>
+    <div class="caption annotation"><b>Viewfinder.</b> The ladder is the chrome, not a menu: five equal rungs visible at rest (R-U15); photo is merely first, not privileged. Capture opens full-screen over whatever invoked it (IA §1).</div>
+  </div>
+
+  <div class="flowunit">
+    <div class="phone wf"><div class="screen">
+      <div class="wf-box solid row">status bar</div>
+      <div class="wf-box row">same top chrome</div>
+      <div class="wf-box tall">frame frozen · shimmer band sweeps · “reading the plate — on-device, v1.4”</div>
+      <div class="wf-box row">item chips dealing in: dal ✓ · rice ✓ · roti ◌ · ghee ◌ — 2 landed, 2 ghosted</div>
+      <div class="wf-note">600–900 ms total · spring damping 0.7 · soft tick per landing · no server spinner (local-first)</div>
+    </div></div>
+    <div class="caption annotation"><b>Analyzing.</b> The AI “deals” the foods. If <span class="chip" style="font-size:10px;">food-photo</span> cloud consent is on, a labeled second pass extends the shimmer — never a silent one (F12 receipts).</div>
+  </div>
+
+  <div class="flowunit">
+    <div class="phone wf"><div class="screen">
+      <div class="wf-box solid row">status bar</div>
+      <div class="wf-note">Hub diary blurred behind — capture-over-context, exit lands where you were</div>
+      <div class="wf-box tall">blurred budget ring + diary ghost</div>
+      <div class="wf-box">SHEET: grab · plate <b>581 kcal</b> + confidence ring 0.74 (green ≥ 0.7) · provenance chip · how-we-got-here</div>
+      <div class="wf-box">items ×3: dal 220 g · 196 · 0.81 | rice 200 g · 257 · 0.88 | roti 40 g · 128 · 0.61 — tap → swap / portion / “not this”</div>
+      <div class="wf-box">expanded chip: portion slider · 5 g detents · 5 ms ticks · clamp rail glyph</div>
+      <div class="wf-box row">hint field: “half the plate is dal, cooked in ghee” · 250 ms digit-roll</div>
+      <div class="wf-box row">Save (live) · Rescan</div>
+    </div></div>
+    <div class="caption annotation"><b>Result card — the hero.</b> A draft, never a decision: everything editable before save, Save is live immediately (F02 §4). Sanity rails run underneath every number.</div>
+  </div>
+
+  <div class="flowunit">
+    <div class="phone wf"><div class="screen">
+      <div class="wf-box solid row">status bar</div>
+      <div class="wf-box tall">blurred Hub ghost</div>
+      <div class="wf-box">SHEET: plate <b>726 kcal</b> · ring 0.46 — amber, irregular stroke · strip “rough guess — adjust what’s wrong”</div>
+      <div class="wf-box">items ×4 · two least-confident pre-expanded: roti 0.38 (grey) · aloo-gobi 0.44 (amber)</div>
+      <div class="wf-box row">Save still works · no modal nagging</div>
+    </div></div>
+    <div class="caption annotation"><b>Low confidence.</b> Uncertainty is shown, not policed: an amber strip + pre-expanded chips, zero modals, Save never disabled. Strip triggers &lt; 0.5 — stricter than the ring’s 0.4 grey boundary by design.</div>
+  </div>
+
+  <div class="flowunit">
+    <div class="phone wf"><div class="screen">
+      <div class="wf-box solid row">status bar</div>
+      <div class="wf-box tall">viewfinder ghost (scan context)</div>
+      <div class="wf-box">SHEET: “offline” glyph · on-device pipeline ran unchanged — nothing left the phone</div>
+      <div class="wf-box">fallback trail: barcode → miss (cache) → label photo → on-device OCR → local DB match · cached</div>
+      <div class="wf-box row">entry 295 kcal · measured (label) · Save · ladder chips still present (R-U15)</div>
+    </div></div>
+    <div class="caption annotation"><b>Offline.</b> A non-state (design bar §0.5): the same pipeline, an honest glyph, and a fallback trail that always lands on manual.</div>
+  </div>
+
+  <div class="flowunit">
+    <div class="phone wf"><div class="screen">
+      <div class="wf-box solid row">status bar</div>
+      <div class="wf-box row">Hub header ← save arc returns here</div>
+      <div class="wf-box tall">budget ring swept to 63 % (400 ms + soft tick) · 1,204 of 1,900 · 696 left</div>
+      <div class="wf-box">diary: breakfast 380 · chai 243 · <b>lunch 581 · AI-estimated (on-device, v1.4) · 0.74</b> · water</div>
+      <div class="wf-note">card folded to a 3 px chip and arced in · one low “settled” haptic · no confetti on logging</div>
+      <div class="wf-box row">Food Memory: “Same as Tuesday’s lunch?” · one-tap re-log</div>
+      <div class="wf-box row">nav</div>
+    </div></div>
+    <div class="caption annotation"><b>Save arc end-state.</b> The only celebration is geometry: ring sweep + count-up. Photo discarded at save by default (R-U14).</div>
+  </div>
+
+</div>
+
+<!-- ============================= MOCKS ============================= -->
+<div class="stage-title">Annotated mocks <small>· dark canonical theme · pins explained under each phone</small></div>
+<div class="stage">
+
+  <!-- 1 · Viewfinder -->
+  <div class="flowunit">
+    <div class="phone">
+      <div class="statusbar" style="z-index:36;"><span>12:51</span><span class="icons">▮▮▮ ⌁ ▰</span></div>
+      <div class="viewfinder">
+        <div class="frame">
+          <div class="blob" style="left:26px; bottom:34px; width:128px; height:76px; background:rgba(232,236,241,.72); border-radius:52%;"></div>
+          <div class="blob" style="right:30px; bottom:26px; width:98px; height:66px; background:#7A5C43; border:5px solid rgba(10,13,17,.55);"></div>
+          <div class="blob" style="right:64px; top:34px; width:66px; height:66px; background:#B39A7E;"></div>
+          <div class="blob" style="left:-24px; bottom:-30px; width:120px; height:90px; background:rgba(90,99,113,.38); border:1.5px dashed var(--text-tertiary); border-radius:40%;"></div>
+          <div class="mask"></div>
+          <span class="chip" style="position:absolute; left:10px; bottom:10px; background:rgba(5,7,10,.6);">depth mesh · ARCore ✓</span>
+          <span class="chip amber" style="position:absolute; right:10px; top:10px; background:rgba(5,7,10,.6);">non-food desaturated</span>
+          <div class="corners"></div>
+        </div>
+        <div class="vf-top">
+          <span class="chip" style="background:rgba(5,7,10,.6);">✕</span>
+          <a class="chip accent" href="01-day-loop-f10.html" style="text-decoration:none; background:rgba(5,7,10,.6);">Lunch · from today’s plan →</a>
+          <span class="chip" style="background:rgba(5,7,10,.6);">1,277 left</span>
+        </div>
+        <div class="vf-chiprow">
+          <span class="chip accent">📷 photo</span>
+          <span class="chip">🎙 voice</span>
+          <span class="chip">▤ barcode</span>
+          <span class="chip">✎ type</span>
+          <span class="chip">🔍 search</span>
+        </div>
+        <span class="chip" style="position:absolute; left:20px; bottom:84px; background:rgba(5,7,10,.6);">🖼 Photos</span>
+        <span class="chip" style="position:absolute; right:20px; bottom:84px; background:rgba(5,7,10,.6);">⚡ torch</span>
+        <div class="shutterbtn"></div>
+        <div class="vf-note" style="left:0; right:0; bottom:44px; text-align:center;">tap = capture · hold = re-log last meal · long-press-again = kcal quick-add</div>
+      </div>
+      <span class="pin" style="top:180px; right:40px;">1</span>
+      <span class="pin" style="top:300px; left:40px;">2</span>
+      <span class="pin" style="bottom:186px; left:30px;">3</span>
+      <span class="pin" style="bottom:120px; left:60px;">4</span>
+      <span class="pin" style="top:66px; right:80px;">5</span>
+    </div>
+    <div class="caption annotation">
+      <b>Viewfinder — the ladder is the chrome.</b>
+      <ol>
+        <li><span class="pin-ref">1</span>Segmentation mask: everything non-food desaturates briefly; the depth mesh shimmers on (motion table “Viewfinder segmentation”, ambient loop). Recognition is made visible before it speaks.</li>
+        <li><span class="pin-ref">2</span>Frame marks food regions (dal, rice, roti) while the table and hand go grey — the same scene, honestly partitioned.</li>
+        <li><span class="pin-ref">3</span>Input ladder as resting chrome: photo · voice · barcode · type · search — five <b>equal-status</b> rungs, never an “advanced” collapse (R-U15: assists never gate; sometimes typing is genuinely fastest).</li>
+        <li><span class="pin-ref">4</span>Shutter tap = 10 ms haptic tick (motion table, exact value); long-press = re-log last meal; long-press-again = kcal-only quick-add. Gallery import runs the identical pipeline — imported frames get the same treatment, no second-class path.</li>
+        <li><span class="pin-ref">5</span>Capture-over-context (IA §1): opened from flow 01’s “Log as planned”, so the plan prefill rides the header; budget context (“1,277 left”) is a number, not a verdict. Discretion default: nothing leaves the device here — any cloud pass requires the <span class="chip" style="font-size:10px;">food-photo</span> consent actively on at call time, and would use an EXIF-stripped, downscaled, plate-cropped copy (F02 §9).</li>
+      </ol>
+    </div>
+  </div>
+
+  <!-- 2 · Analyzing -->
+  <div class="flowunit">
+    <div class="phone">
+      <div class="statusbar" style="z-index:36;"><span>12:51</span><span class="icons">▮▮▮ ⌁ ▰</span></div>
+      <div class="viewfinder">
+        <div class="frame">
+          <div class="blob" style="left:26px; bottom:34px; width:128px; height:76px; background:rgba(232,236,241,.72); border-radius:52%;"></div>
+          <div class="blob" style="right:30px; bottom:26px; width:98px; height:66px; background:#7A5C43; border:5px solid rgba(10,13,17,.55);"></div>
+          <div class="blob" style="right:64px; top:34px; width:66px; height:66px; background:#B39A7E;"></div>
+          <div class="mask"></div>
+          <div class="shimmer-band" style="top:120px;"></div>
+          <div class="corners"></div>
+        </div>
+        <div class="vf-top">
+          <span class="chip" style="background:rgba(5,7,10,.6);">✕</span>
+          <span class="chip" style="background:rgba(5,7,10,.6);">depth ✓ · plate found</span>
+        </div>
+        <div class="vf-note" style="left:0; right:0; bottom:216px; text-align:center; color:var(--text-secondary);">reading the plate — on-device · recognizer v1.4</div>
+        <div class="vf-chiprow" style="bottom:150px;">
+          <span class="chip accent">dal tadka · 220 g</span>
+          <span class="chip accent">basmati rice · 200 g</span>
+          <span class="ghost-chip">roti · …</span>
+          <span class="ghost-chip">ghee · …</span>
+        </div>
+        <div class="vf-note" style="left:0; right:0; bottom:120px; text-align:center;">2 of 4 dealt — static frame of a 600–900 ms sequence</div>
+        <div class="vf-note" style="left:0; right:0; bottom:44px; text-align:center;">cancel is always available · no spinner, no server wait</div>
+      </div>
+      <span class="pin" style="top:250px; right:40px;">6</span>
+      <span class="pin" style="bottom:190px; right:34px;">7</span>
+      <span class="pin" style="bottom:130px; left:34px;">8</span>
+    </div>
+    <div class="caption annotation">
+      <b>Analyzing — the AI deals the foods.</b>
+      <ol>
+        <li><span class="pin-ref">6</span>Shimmer band sweeps the frozen frame for <b>600–900 ms</b> (motion table “Analysis shimmer”) — long enough to feel read, short enough to feel local.</li>
+        <li><span class="pin-ref">7</span>Item chips spring in <b>one by one, damping 0.7</b>, each landing with a <b>soft tick</b>. This static frame catches the deal mid-hand: two landed, two ghosted. Ghosts preview the count — the hand is never hidden.</li>
+        <li><span class="pin-ref">8</span>Copy names the truth: “on-device · recognizer v1.4” — a pipeline note, not a server spinner (local-first bar; offline is a non-state). With <span class="chip" style="font-size:10px;">food-photo</span> consented, a cloud second pass would <i>extend</i> this shimmer under a labeled chip and write an F12 receipt — never run silently, never block the on-device result from shipping.</li>
+      </ol>
+    </div>
+  </div>
+
+  <!-- 3 · Result card -->
+  <div class="flowunit">
+    <div class="phone">
+      <div class="statusbar"><span>12:52</span><span class="icons">▮▮▮ ⌁ ▰</span></div>
+      <div class="screen blurd">
+        <div class="apphead"><div class="brand">WLO <small>Friday, Sep 11</small></div><div class="actions"><span class="chip">🔥 12</span></div></div>
+        <div class="card"><div class="card-title">Today</div>
+          <div style="display:flex; gap:14px; align-items:center;">
+            <div class="ring ring-big" style="--fill:33"><div class="center"><div class="stat-m">623</div><div class="receipt faint">of 1,900</div></div></div>
+            <div style="flex:1"><div class="stat-m">1,277 left</div><div class="receipt faint" style="margin-top:6px;">lunch being logged…</div></div>
+          </div>
+        </div>
+        <div class="card sunken"><div class="card-title">Diary · today</div>
+          <div class="stat-row"><span class="label">Breakfast · oats &amp; kiwi</span><span class="value receipt">380 · <span class="prov estimated">AI-est</span></span></div>
+          <div class="stat-row"><span class="label">Chai · milk + 2 rusk</span><span class="value receipt">243 · <span class="prov derived">user-entered</span></span></div>
+        </div>
+      </div>
+      <div class="sheet-wrap"></div>
+      <div class="sheet" style="padding-bottom:26px;">
+        <div class="grab"></div>
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+          <div style="font-weight:600;">Lunch · 12:52</div>
+          <div style="display:flex; gap:5px;"><span class="chip">depth ✓</span><span class="chip">DB 3/3</span></div>
+        </div>
+        <div style="display:flex; gap:14px; align-items:center;">
+          <div class="ringwrap">
+            <svg width="96" height="96" viewBox="0 0 96 96">
+              <circle cx="48" cy="48" r="41" fill="none" stroke="var(--outline)" stroke-width="7"/>
+              <circle cx="48" cy="48" r="41" fill="none" stroke="var(--accent)" stroke-width="7" pathLength="100" stroke-dasharray="74 100" stroke-linecap="round" transform="rotate(-90 48 48)"/>
+            </svg>
+            <div class="center"><div class="stat-m">581</div><div class="receipt faint">kcal</div><div class="receipt" style="color:var(--accent); font-size:11px;">conf 0.74</div></div>
+          </div>
+          <div style="flex:1;">
+            <div class="stat-s">P 21 · C 104 · F 9 g</div>
+            <div style="margin-top:6px; display:flex; gap:5px; flex-wrap:wrap;">
+              <span class="prov estimated">AI-estimated (on-device, v1.4)</span>
+              <span class="receipt" style="color:var(--info);">how we got here →</span>
+            </div>
+            <div class="receipt faint" style="margin-top:6px;">dal + rice DB-matched (grams estimated) · roti full estimate</div>
+          </div>
+        </div>
+        <hr class="divider">
+        <div class="receipt faint" style="margin-bottom:2px;">ITEMS · TAP A CHIP TO CORRECT</div>
+        <div class="itemrow">
+          <div class="grow"><b style="font-weight:550;">Dal tadka</b><div class="receipt faint">DB · USDA FDC #173977</div></div>
+          <span class="receipt">220 g · <b style="color:var(--text-primary); font-weight:550;">196</b></span>
+          <span class="chip accent">0.81</span>
+          <span class="receipt faint">⋯</span>
+        </div>
+        <div class="itemrow">
+          <div class="grow"><b style="font-weight:550;">Basmati rice</b><div class="receipt faint">DB · OFF cache</div></div>
+          <span class="receipt">200 g · <b style="color:var(--text-primary); font-weight:550;">257</b></span>
+          <span class="chip accent">0.88</span>
+          <span class="receipt faint">⋯</span>
+        </div>
+        <div class="itemrow" style="border-bottom:0;">
+          <div class="grow"><b style="font-weight:550;">Roti · ghee-brushed</b><div class="receipt faint">full estimate · ghee inferred</div></div>
+          <span class="receipt">40 g · <b style="color:var(--text-primary); font-weight:550;">128</b></span>
+          <span class="chip amber">0.61</span>
+          <span class="receipt faint">⋯</span>
+        </div>
+        <div style="background:var(--surface-sunken); border:1px solid var(--outline); border-radius:12px; padding:8px 12px 10px; margin:2px 0 10px;">
+          <div style="display:flex; justify-content:space-between; align-items:center;">
+            <div style="display:flex; gap:5px;"><span class="chip">swap</span><span class="chip accent">portion</span><span class="chip">not this</span></div>
+            <span class="stat-s">40 g</span>
+          </div>
+          <div class="slider">
+            <div class="track"></div>
+            <div class="fill" style="width:33%;"></div>
+            <div class="ticks"></div>
+            <div class="thumb" style="left:calc(33% - 9px);"></div>
+            <span class="railglyph">▮ rail</span>
+          </div>
+          <div class="receipt faint" style="margin-top:2px;">detents every 5 g · 5 ms ticks · rail = physical max for class</div>
+        </div>
+        <div class="hintfield" style="margin-bottom:10px;">
+          “half the plate is dal, cooked in ghee”<span class="faint"> — plate-level hint, no word limit · re-estimates in a 250 ms digit-roll</span>
+        </div>
+        <div class="btnrow">
+          <a class="btn primary" href="#f02-save" style="text-decoration:none;">Save</a>
+          <span class="btn secondary">Rescan</span>
+        </div>
+        <div class="receipt faint" style="margin-top:8px;">save is live — editing is optional · photo discarded at save (R-U14) · median log 8 s</div>
+      </div>
+      <span class="pin" style="bottom:640px; right:38px;">9</span>
+      <span class="pin" style="bottom:520px; left:34px;">10</span>
+      <span class="pin" style="bottom:380px; left:34px;">11</span>
+      <span class="pin" style="bottom:272px; right:30px;">12</span>
+      <span class="pin" style="bottom:172px; left:34px;">13</span>
+      <span class="pin" style="bottom:96px; right:60px;">14</span>
+    </div>
+    <div class="caption annotation">
+      <b>Result card — the correction loop is the hero, not an apology.</b>
+      <ol>
+        <li><span class="pin-ref">9</span>Confidence ring draws <b>clockwise in 400 ms</b> around the kcal number (motion table). Color boundaries are <b>frozen</b>: green ≥ 0.7 = accent, amber 0.4–0.7 = held, grey &lt; 0.4 = text-secondary. This scan is 0.74 → green.</li>
+        <li><span class="pin-ref">10</span>Provenance chip is exact and mandatory: “AI-estimated (on-device, v1.4)”; every chip taps open the “how we got here” sheet (what the model saw, what depth said, what the DB returned, what you changed). DB-matched items keep “DB-verified” — only grams were estimated.</li>
+        <li><span class="pin-ref">11</span>Item chips carry per-item kcal + per-item confidence (0.88 green · 0.61 amber — both boundary cases on one card). Tap → <b>swap / portion / “not this”</b>; nothing auto-commits, 100 % editable before save.</li>
+        <li><span class="pin-ref">12</span>Portion slider: <b>detents every 5 g, 5 ms ticks</b>. Crossing a clamp rail fires a double-sided bump, the number flashes its rail glyph, and a <b>900 ms one-time tooltip</b> (“capped at a physical maximum — tap to override”) appears — once per food class, never again. Sanity rails (≤ 9 kcal/g fats, ≤ 4 cooked starches, mass × density ceiling) run under every number: <b>the 27M-kcal candy bar cannot render</b>, even as a glitch; a rail hit also downgrades confidence and shows its marker.</li>
+        <li><span class="pin-ref">13</span>Plate-level hint field — the text-steerable re-estimate. No word limit (SnapCalorie’s truncation is a named anti-pattern); numbers morph with a <b>250 ms digit-roll</b> and changed items re-spring.</li>
+        <li><span class="pin-ref">14</span>Save is live immediately — the two-tap happy path ends here. A failed rescan is a <b>2-frame 8 px horizontal shake, no red</b> — mistakes are data, urgency is never hue. <i>Open question (F02 §10):</i> the no-ARCore device tier — portion falls back to reference-object heuristics vs. user-confirmed grams; this mock assumes depth present.</li>
+      </ol>
+    </div>
+  </div>
+
+  <!-- 4 · Low confidence -->
+  <div class="flowunit">
+    <div class="phone">
+      <div class="statusbar"><span>19:07</span><span class="icons">▮▮▮ ⌁ ▰</span></div>
+      <div class="screen blurd">
+        <div class="apphead"><div class="brand">WLO <small>Friday, Sep 11 · evening</small></div><div class="actions"><span class="chip">🔥 12</span></div></div>
+        <div class="card"><div class="card-title">Today</div>
+          <div style="display:flex; gap:14px; align-items:center;">
+            <div class="ring ring-big" style="--fill:40"><div class="center"><div class="stat-m">766</div><div class="receipt faint">of 1,900</div></div></div>
+            <div style="flex:1"><div class="stat-m">1,134 left</div><div class="receipt faint" style="margin-top:6px;">dinner being logged…</div></div>
+          </div>
+        </div>
+        <div class="card sunken"><div class="card-title">Diary · today</div>
+          <div class="stat-row"><span class="label">Lunch · dal-chawal-thali 📷</span><span class="value receipt">581 · <span class="prov estimated">AI-est</span></span></div>
+        </div>
+      </div>
+      <div class="sheet-wrap"></div>
+      <div class="sheet" style="padding-bottom:26px;">
+        <div class="grab"></div>
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+          <div style="font-weight:600;">Dinner · 19:07 · mixed thali</div>
+          <span class="chip">depth ✓ · 4 items</span>
+        </div>
+        <div style="display:flex; gap:14px; align-items:center;">
+          <div class="ringwrap">
+            <svg width="96" height="96" viewBox="0 0 96 96">
+              <circle cx="48" cy="48" r="41" fill="none" stroke="var(--outline)" stroke-width="7"/>
+              <circle cx="48" cy="48" r="41" fill="none" stroke="var(--held)" stroke-width="7" pathLength="100" stroke-dasharray="9 3 14 2 11 4 7 2 12 3 33" transform="rotate(-90 48 48)"/>
+            </svg>
+            <div class="center"><div class="stat-m">726</div><div class="receipt faint">kcal</div><div class="receipt held-c" style="font-size:11px;">conf 0.46</div></div>
+          </div>
+          <div style="flex:1;">
+            <span class="prov held">AI-estimated (on-device, v1.4)</span>
+            <div class="receipt faint" style="margin-top:6px;">overlapping dishes · ghee quantity unclear — the ring’s stroke is irregular because the estimate is</div>
+          </div>
+        </div>
+        <div class="strip-amber" style="margin-top:10px;"> rough guess — adjust what’s wrong</div>
+        <div class="itemrow">
+          <div class="grow"><b style="font-weight:550;">Dal tadka</b><div class="receipt faint">full estimate</div></div>
+          <span class="receipt">220 g · <b style="color:var(--text-primary); font-weight:550;">196</b></span>
+          <span class="chip amber">0.62</span>
+          <span class="receipt faint">⋯</span>
+        </div>
+        <div class="itemrow">
+          <div class="grow"><b style="font-weight:550;">Basmati rice</b><div class="receipt faint">DB · OFF cache</div></div>
+          <span class="receipt">200 g · <b style="color:var(--text-primary); font-weight:550;">257</b></span>
+          <span class="chip accent">0.71</span>
+          <span class="receipt faint">⋯</span>
+        </div>
+        <div class="itemrow" style="border-bottom:0;">
+          <div class="grow"><b style="font-weight:550;">Roti</b><div class="receipt faint">least confident — pre-expanded</div></div>
+          <span class="receipt">40 g · <b style="color:var(--text-primary); font-weight:550;">128</b></span>
+          <span class="chip">0.38</span>
+        </div>
+        <div style="background:var(--surface-sunken); border:1px solid var(--outline); border-radius:12px; padding:8px 12px 10px; margin-bottom:8px;">
+          <div style="display:flex; justify-content:space-between; align-items:center;">
+            <div style="display:flex; gap:5px;"><span class="chip">swap</span><span class="chip accent">portion</span><span class="chip">not this</span></div>
+            <span class="stat-s">40 g</span>
+          </div>
+          <div class="slider">
+            <div class="track"></div>
+            <div class="fill" style="width:33%;"></div>
+            <div class="ticks"></div>
+            <div class="thumb" style="left:calc(33% - 9px);"></div>
+            <span class="railglyph">▮ rail</span>
+          </div>
+        </div>
+        <div class="itemrow" style="border-bottom:0;">
+          <div class="grow"><b style="font-weight:550;">Aloo-gobi</b><div class="receipt faint">2nd least confident — pre-expanded</div></div>
+          <span class="receipt">150 g · <b style="color:var(--text-primary); font-weight:550;">145</b></span>
+          <span class="chip amber">0.44</span>
+        </div>
+        <div style="background:var(--surface-sunken); border:1px solid var(--outline); border-radius:12px; padding:8px 12px; margin-bottom:10px;">
+          <div style="display:flex; gap:5px; flex-wrap:wrap;"><span class="chip">cauliflower dry</span><span class="chip">potato curry</span><span class="chip accent">keep as aloo-gobi</span></div>
+        </div>
+        <div class="btnrow">
+          <a class="btn primary" href="#f02-save" style="text-decoration:none;">Save</a>
+          <span class="btn secondary">Rescan</span>
+        </div>
+        <div class="receipt faint" style="margin-top:8px;">save is live at any confidence — a rough log beats no log · nothing here blocks you</div>
+      </div>
+      <span class="pin" style="bottom:690px; right:38px;">15</span>
+      <span class="pin" style="bottom:566px; left:34px;">16</span>
+      <span class="pin" style="bottom:330px; left:34px;">17</span>
+      <span class="pin" style="bottom:200px; right:30px;">18</span>
+      <span class="pin" style="bottom:96px; left:34px;">19</span>
+    </div>
+    <div class="caption annotation">
+      <b>Low confidence — shown, never policed.</b>
+      <ol>
+        <li><span class="pin-ref">15</span>Plate confidence 0.46 → <b>amber ring, irregular stroke</b> (precision as texture). Same 400 ms clockwise draw; boundaries stay frozen — 0.46 sits mid-amber, so amber it is.</li>
+        <li><span class="pin-ref">16</span>Scan &lt; 0.5 → the <b>“rough guess — adjust what’s wrong” amber strip</b>. The 0.5 strip trigger is deliberately stricter than the ring’s 0.4 grey boundary (F02 §4). One strip, no modal, no nag loop.</li>
+        <li><span class="pin-ref">17</span>The <b>two least-confident chips are pre-expanded</b> — roti 0.38 (grey: below the 0.4 boundary, so its chip is grey) and aloo-gobi 0.44 (amber) — with swap candidates offered inline. The correction is two taps from zero effort.</li>
+        <li><span class="pin-ref">18</span>Every item keeps its own boundary-honest chip: 0.71 green · 0.62 amber · 0.44 amber · 0.38 grey — one card demonstrating the whole frozen triad.</li>
+        <li><span class="pin-ref">19</span><b>Save still works</b> — at any confidence, no disabling, no gate. A rough log beats no log, and corrections persist as ground truth that improves future scans (the personalization loop shows up later as “your lunch scans improved ~12 %”).</li>
+      </ol>
+    </div>
+  </div>
+
+  <!-- 5 · Offline -->
+  <div class="flowunit">
+    <div class="phone">
+      <div class="statusbar" style="z-index:36;"><span>13:04</span><span class="icons">▮▮ ⌁ ▰</span></div>
+      <div class="viewfinder blurd">
+        <div class="frame">
+          <div class="blob" style="right:30px; bottom:26px; width:120px; height:80px; background:rgba(90,99,113,.4);"></div>
+          <div class="mask"></div>
+          <div class="corners"></div>
+        </div>
+      </div>
+      <div class="sheet-wrap"></div>
+      <div class="sheet" style="padding-bottom:26px;">
+        <div class="grab"></div>
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
+          <div style="font-weight:600;">Scan · 13:04</div>
+          <span class="chip blue">◌ offline</span>
+        </div>
+        <div class="receipt" style="margin-bottom:2px;">on-device pipeline ran unchanged — nothing left the phone · offline is a non-state</div>
+        <div class="trail">
+          <div class="ln"><span class="faint">1</span><span>▤ barcode → <b style="color:var(--text-secondary);">miss</b> · OFF cache only (offline)</span></div>
+          <div class="ln"><span class="faint">2</span><span>🖼 label photo → on-device OCR · “dal makhani · 118 kcal / 100 g”</span></div>
+          <div class="ln"><span class="faint">3</span><span>🔍 local DB → match · <b style="color:var(--text-secondary);">saved to cache for next time</b></span></div>
+        </div>
+        <div class="itemrow">
+          <div class="grow"><b style="font-weight:550;">Dal makhani · from label</b><div class="receipt faint">250 g served × 118 kcal/100 g</div></div>
+          <span class="receipt"><b style="color:var(--text-primary); font-weight:550;">295</b></span>
+          <span class="chip accent">0.83</span>
+        </div>
+        <div style="margin:4px 0 10px; display:flex; gap:5px; flex-wrap:wrap;">
+          <span class="prov measured">measured (label) · cached</span>
+          <span class="receipt" style="color:var(--info);">how we got here →</span>
+        </div>
+        <div class="vf-chiprow" style="position:static; justify-content:flex-start; margin-bottom:12px;">
+          <span class="chip">📷 photo</span><span class="chip">🎙 voice</span><span class="chip">✎ type it instead</span><span class="chip">🔍 search</span>
+        </div>
+        <div class="btnrow">
+          <a class="btn primary" href="#f02-save" style="text-decoration:none;">Save</a>
+          <span class="btn secondary">Fix match</span>
+        </div>
+        <div class="receipt faint" style="margin-top:8px;">only servers WLO ever talks to here: Open Food Facts · USDA FDC — and today, neither</div>
+      </div>
+      <span class="pin" style="bottom:470px; left:34px;">20</span>
+      <span class="pin" style="bottom:380px; left:34px;">21</span>
+      <span class="pin" style="bottom:250px; left:34px;">22</span>
+      <span class="pin" style="bottom:130px; right:34px;">23</span>
+    </div>
+    <div class="caption annotation">
+      <b>Offline — a non-state, not an error state.</b>
+      <ol>
+        <li><span class="pin-ref">20</span>The “offline” glyph is informational (info token), never urgent. The pipeline note is the point: <b>the on-device run is identical</b> — no degraded mode, no retry theater, no server spinner anywhere in WLO.</li>
+        <li><span class="pin-ref">21</span>Barcode miss → <b>label-OCR fallback</b>, shown as a legible trail (what failed, what caught it, what got cached). The fallback lands on manual-capable ground per rung (R-U15): “type it instead” and search remain one tap away inside the sheet.</li>
+        <li><span class="pin-ref">22</span>Label capture earns the strongest provenance tier — “measured (label)” — and the entry is cached so the next scan of this product is a hit. First capture becomes a permanent local food entry (captured once, reused forever).</li>
+        <li><span class="pin-ref">23</span>Discretion note, inverted: offline means <i>nothing</i> could leave even if it wanted to. Online, the cloud path needs <span class="chip" style="font-size:10px;">food-photo</span> consent at call time and ships EXIF-stripped, downscaled, plate-cropped pixels — with an F12 receipt naming category, provider, and payload. Offline, the same label OCR runs on-device at no consent cost.</li>
+      </ol>
+    </div>
+  </div>
+
+  <!-- 6 · Save arc end-state -->
+  <div class="flowunit" id="f02-save">
+    <div class="phone">
+      <div class="statusbar"><span>12:58</span><span class="icons">▮▮▮ ⌁ ▰</span></div>
+      <div class="screen">
+        <div class="apphead">
+          <div class="brand">WLO <small>Friday, Sep 11</small></div>
+          <div class="actions"><span class="chip">🔥 12</span><span class="chip">📋 ready</span><span class="chip" title="backup healthy">●</span></div>
+        </div>
+
+        <div class="card accent-edge">
+          <div class="card-title">Today <span class="prov adaptive">adaptive · check-in Sep 8</span></div>
+          <div style="display:flex; gap:14px; align-items:center;">
+            <div class="ring ring-big" style="--fill:63">
+              <div class="center"><div class="stat-m">1,204</div><div class="receipt faint">of 1,900 kcal</div></div>
+            </div>
+            <div style="flex:1">
+              <div class="stat-m">696 left</div>
+              <div class="macrodots">
+                <span class="m"><span class="sw" style="background:var(--series-4)"></span>P 37/165 g</span>
+                <span class="m"><span class="sw" style="background:var(--series-1)"></span>C 210/215</span>
+                <span class="m"><span class="sw" style="background:var(--series-2)"></span>F 24/70</span>
+              </div>
+              <div class="receipt faint" style="margin-top:8px;">swept 400 ms ease-out + soft tick · landed with one low “settled”</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">Diary · today <span class="right receipt">your scans: ±12 % · best on breakfast</span></div>
+          <div class="stat-row"><span class="label">Breakfast · oats &amp; kiwi</span><span class="value receipt">380 · <span class="prov estimated">AI-est</span></span></div>
+          <div class="stat-row"><span class="label">Chai · milk + 2 rusk</span><span class="value receipt">243 · <span class="prov derived">user-entered</span></span></div>
+          <div class="stat-row">
+            <span class="label"><b style="color:var(--text-primary); font-weight:550;">Lunch · dal-chawal-thali 📷</b><br><span class="receipt faint">8 s to log · corrected roti 35 → 40 g</span></span>
+            <span class="value" style="flex-direction:column; align-items:flex-end; gap:3px;"><span class="receipt">581</span><span style="display:flex; gap:4px;"><span class="prov estimated">AI-estimated (on-device, v1.4)</span><span class="chip accent">0.74</span></span></span>
+          </div>
+          <div class="stat-row"><span class="label">Water</span><span class="value receipt">1.0 / 2.5 L</span></div>
+          <div class="receipt faint" style="margin-top:8px;">photo discarded at save (R-U14 default) · “keep this one” was offered per capture · thumbnails are an opt-in</div>
+        </div>
+
+        <div class="card">
+          <div style="display:flex; justify-content:space-between; align-items:center; gap:10px;">
+            <div>
+              <div style="font-weight:600;">Same as Tuesday’s lunch?</div>
+              <div class="receipt">dal-chawal-thali · 581 kcal · Food Memory</div>
+            </div>
+            <span class="btn secondary small" style="cursor:pointer;">Log again · 1 tap</span>
+          </div>
+        </div>
+
+        <div class="card">
+          <div style="display:flex; justify-content:space-between; align-items:center;">
+            <div class="receipt dim">the Day loop continues here</div>
+            <div style="display:flex; gap:8px;">
+              <a class="btn secondary small" href="01-day-loop-f10.html" style="text-decoration:none;">Day loop</a>
+              <a class="btn secondary small" href="04-weigh-in-trend-f06-f08.html" style="text-decoration:none;">Weigh-in</a>
+            </div>
+          </div>
+        </div>
+
+        <div class="navbar">
+          <div class="tab active"><span class="ic">◉</span>Hub</div>
+          <div class="tab"><span class="ic">▦</span>Plan</div>
+          <div class="tab"><span class="ic">✦</span>Insights</div>
+          <div class="tab"><span class="ic">▣</span>Archive</div>
+          <div class="tab"><span class="ic">🌿</span>Digestion</div>
+        </div>
+      </div>
+      <span class="pin" style="top:150px; right:30px;">24</span>
+      <span class="pin" style="top:420px; right:30px;">25</span>
+      <span class="pin" style="top:560px; left:36px;">26</span>
+      <span class="pin" style="top:660px; right:34px;">27</span>
+    </div>
+    <div class="caption annotation">
+      <b>Save arc — the landing.</b>
+      <ol>
+        <li><span class="pin-ref">24</span>The result card <b>folds into a 3 px chip and arcs into the diary</b> while the budget ring <b>sweeps to its new total with a count-up</b> — 400 ms ease-out, soft tick at sweep end, and <b>one low “settled” haptic</b> on land (motion table “Save arc”). Ring math checks: 623 + 581 = 1,204 = 63 % of 1,900.</li>
+        <li><span class="pin-ref">25</span>The diary row is a provenance ledger: full chip “AI-estimated (on-device, v1.4)” + confidence badge 0.74, plus the correction trail (“roti 35 → 40 g”) — the ground-truth pair F11’s accuracy stats eat. Copy is a fact (“696 left”), never a verdict; “that’s a lot of calories” is banned copy and has no surface to live on.</li>
+        <li><span class="pin-ref">26</span><b>No confetti on logging</b> — celebration is geometry (ring sweep, count-up) and belongs to F11 milestones. The actual reward is the Food Memory card: this corrected meal is now a one-tap re-log (“same as Tuesday?”), the statistically most-used pattern in the category.</li>
+        <li><span class="pin-ref">27</span><b>R-U14:</b> the photo was processed in memory and <b>discarded at save by default</b>; the diary row shows no thumbnail because none was kept. Compressed-thumbnail mode and full-quality retention are explicit opt-ins; “keep this one” was offered per-capture, once, and never nagged.</li>
+        <li>Personal accuracy stat (“±12 % · best on breakfast”) rides the diary header — the honest, on-device version of a published-accuracy claim. Cross-links: back to the <a href="01-day-loop-f10.html">Day loop (01)</a>, or the morning’s <a href="04-weigh-in-trend-f06-f08.html">weigh-in (04)</a>.</li>
+      </ol>
+    </div>
+  </div>
+
+</div>
+
+<!-- ============================= SELF-REVIEW ============================= -->
+<div class="review">
+  <h2>Self-review — design bar &amp; spec checklist (flow 02)</h2>
+  <div class="cols">
+    <div class="col"><div class="annotation">
+      <b>Design bar</b>
+      <ol>
+        <li><b>Provenance chips on every number</b> — plate kcal (AI-estimated · on-device, v1.4), per-item conf chips, DB rows (USDA FDC # / OFF cache), label entry (measured · label), chai (user-entered), diary row + ring (adaptive · check-in Sep 8). None missing. ✓</li>
+        <li><b>Tone: numbers never judgment</b> — “1,277 left”, “696 left”, “rough guess — adjust what’s wrong” (the app indicts its own estimate, never the eater). Banned copy audit clean: no “that’s a lot of calories”, no cheat/bad/guilt anywhere. ✓</li>
+        <li><b>No red exists</b> — errors are a 2-frame 8 px shake (annotated on Rescan/barcode-miss); the strongest state color on any screen is amber; low confidence reads as texture (irregular stroke), not alarm. ✓</li>
+        <li><b>R-U7</b> — n/a on this surface (no Archive/Digestion naming decision touches it), but checked: nav labels in the save-arc mock use the frozen names; diary and hint copy contain no taboo words. ✓</li>
+        <li><b>R-U15 manual paths visible everywhere</b> — five equal ladder chips at viewfinder rest; “type it instead” + search survive inside the offline sheet; every fallback (barcode miss → label OCR → manual fields; recognition fail → chips stay editable) lands on manual without loss. ✓</li>
+        <li><b>Local-first</b> — no server spinner in any state; the analyzing copy names the on-device recognizer; offline is a non-state with an identical pipeline; the only servers named are OFF/USDA. ✓</li>
+        <li><b>Discretion by default</b> — cloud requires per-capability consent at call time, EXIF-stripped downscaled pixels, F12 receipt; photo discarded at save (R-U14) stated once on the surface, never nagged. ✓</li>
+        <li><b>Density</b> — the result card stacks 6 decisions (ring, provenance, 3 item chips, slider, hint, save) in one sheet with zero decoration; whitespace only around the confidence ring, the moment of decision. ✓</li>
+      </ol>
+    </div></div>
+    <div class="col"><div class="annotation">
+      <b>Spec micro-interactions honored (DESIGN-SYSTEM §4.1, F02 rows — all binding values)</b>
+      <ol>
+        <li>Shutter tap — <b>10 ms tick</b> haptic; long-press ladder (re-log last meal → kcal quick-add). ✓ (mock 1)</li>
+        <li>Viewfinder segmentation — non-food desaturates briefly, depth mesh shimmers on (ambient loop). ✓ (mock 1)</li>
+        <li>Analysis shimmer — <b>600–900 ms</b>, chips spring in one by one (<b>damping 0.7</b>), <b>soft tick per landing</b>; static frame shows 2 landed / 2 ghosted. ✓ (mock 2)</li>
+        <li>Confidence ring — <b>clockwise 400 ms</b>; frozen triad green ≥ 0.7 / amber 0.4–0.7 / grey &lt; 0.4; <b>irregular stroke at low confidence</b>. ✓ (mocks 3–4; one card shows all three bands)</li>
+        <li>Portion slider — <b>5 g detents, 5 ms ticks</b>; clamp rail = double-sided bump + number flashes rail glyph + <b>900 ms once-per-class tooltip</b>. ✓ (mock 3)</li>
+        <li>Hint re-estimate — <b>250 ms digit-roll</b>, changed items re-spring; no word limit. ✓ (mock 3)</li>
+        <li>Save arc — card folds to <b>3 px chip</b>, arcs into diary; ring sweep + count-up; <b>one low “settled”</b>; <b>no confetti on logging</b>. ✓ (mock 6)</li>
+        <li>Error grammar — <b>2-frame 8 px shake, no red</b> (80 ms shake token). ✓ (annotated; static medium cannot show it)</li>
+        <li>Low-confidence path — strip &lt; 0.5, two least-confident chips pre-expanded, no modal, Save live. ✓ (mock 4)</li>
+        <li>Offline path — identical pipeline, glyph, barcode-miss → label-OCR fallback, cache-on-hit. ✓ (mock 5)</li>
+      </ol>
+      <b>Open items surfaced:</b> the no-ARCore tier’s portion fallback (reference-object heuristics vs. user-confirmed grams — F02 §10, annotated on mock 3); OFF cache budget (full top-N vs. scan-seeded lazy cache — affects this mock’s “cached for next time”, F02 §10); cloud <span class="chip" style="font-size:10px;">food-photo</span> model-pinning half of §10 remains open (dataset half resolved by R-S12); clamp-rail numeric maxima per food class are named in spec as ranges (≤ 9 kcal/g fats, ≤ 4 cooked starches) — exact per-class tables are an implementation-phase artifact, mocked here as a single “rail” glyph.
+    </div></div>
+  </div>
+</div>
+
+</div>
+</body>
+</html>

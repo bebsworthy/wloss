@@ -1,0 +1,573 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>WLO · Flow 03 — The Sunday check-in → Apply → plan diff (F07 · F01)</title>
+<link rel="stylesheet" href="_wlo.css">
+<style>
+  /* flow-local: layout only — every color/token inherits from _wlo.css; no durations here (static medium) */
+  .od { /* un-landed odometer digit: dashed ghost slot, scales with its font */
+    display: inline-block; width: .58em; height: .94em;
+    border: 2px dashed var(--text-tertiary); border-radius: .16em;
+    transform: translateY(.1em); margin: 0 .025em;
+  }
+  .stamp-in { transform: rotate(-2deg); }        /* chip mid-stamp hint */
+  .rise { opacity: .45; transform: translateY(6px); } /* proposal row mid-rise */
+  .ledger-line {                                  /* the thin line that items itself under Apply */
+    border-left: 3px solid var(--accent); background: var(--surface-sunken);
+    border-radius: 0 12px 12px 0; padding: 9px 12px; margin-top: 10px;
+    font-variant-numeric: var(--tnum); font-size: 13px; color: var(--text-secondary);
+  }
+  .tl { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 10px; } /* reveal-timeline chips */
+</style>
+</head>
+<body>
+<div class="page">
+
+<header>
+  <h1>Flow 03 — The Sunday check-in → Apply → plan diff</h1>
+  <div class="meta">
+    Spec: <a href="../../features/F07-energy-engine.md">F07 Energy Engine</a> (§4 frozen anatomy) · diff hand-off: <a href="../../features/F01-onboarding-diet-plans.md">F01 Plan Studio</a> ·
+    Motion: <a href="../DESIGN-SYSTEM.md">DESIGN-SYSTEM §4.1</a> · components §7.8/§7.2 ·
+    Signature moment: “the engine proposes, the human applies” · 2026-09-11 · prototype, not implementation<br>
+    Companion flows: <a href="01-day-loop-f10.html">01 day loop (Hub context, R-U17 slot)</a> · <a href="07-onboarding-f01.html">07 onboarding (forecast cone lives there)</a> ·
+    <a href="06-reportcard-bristol-f11-f09.html">06 report card (Discuss/insights)</a> · <a href="index.html">index</a>
+  </div>
+</header>
+
+<!-- ============================= WIREFRAMES ============================= -->
+<div class="stage-title">Wireframes <small>· structure before skin — one card, one decision; the Week loop’s anchor</small></div>
+<div class="stage">
+
+  <div class="flowunit">
+    <div class="phone wf"><div class="screen">
+      <div class="wf-box solid row">status bar</div>
+      <div class="wf-box row">Hub header · Sunday 19:00 · streak chip</div>
+      <div class="wf-box tall">CHECK-IN CARD mid-reveal: 1 chip stamps → 2 trend odometer → 3 burn line draws → 4 proposal rises</div>
+      <div class="wf-note">↑ 500 ms choreography, beats annotated → mock 1</div>
+      <div class="wf-box hero">Trend card (yields the hero slot today, R-U17)</div>
+      <div class="wf-box row">nav</div>
+    </div></div>
+    <div class="caption annotation"><b>1 · Reveal.</b> The card opens like a story: state, then evidence, then the ask. Rhythm quote from F07 §4: <i>“this week’s story, then your decision.”</i></div>
+  </div>
+
+  <div class="flowunit">
+    <div class="phone wf"><div class="screen">
+      <div class="wf-box solid row">status bar</div>
+      <div class="wf-box row">Hub header · Sunday</div>
+      <div class="wf-box tall">CHECK-IN CARD — frozen anatomy top→bottom: ① status chip ② trend row ③ adherence + day dots + inline fix ④ expenditure row ⑤ proposal row + delta chips ⑥ Apply · Keep · Discuss</div>
+      <div class="wf-note">“Computed on your device” stated once on the card · swipe away = Keep</div>
+      <div class="wf-box row">ring waits: “updates the moment you Apply”</div>
+      <div class="wf-box row">nav</div>
+    </div></div>
+    <div class="caption annotation"><b>2 · Complete card.</b> The one screen in the app where targets are allowed to change — and only via ⑥ Apply. A skipped Sunday persists 7 days, zero guilt.</div>
+  </div>
+
+  <div class="flowunit">
+    <div class="phone wf"><div class="screen">
+      <div class="wf-box solid row">status bar</div>
+      <div class="wf-box row">Hub dimmed behind sheet</div>
+      <div class="wf-box tall">BOTTOM SHEET — four-term breakdown: BMR + Adjustment + Activity + Exercise context = measured TDEE</div>
+      <div class="wf-note">formula with constants · window · excluded rough days named · Algorithms-page link · doubles as Discuss’s local explainer (R-C7)</div>
+    </div></div>
+    <div class="caption annotation"><b>3 · “How we got here.”</b> Tap-through from rows ④/⑤; the math in the open — the trust feature, not an easter egg.</div>
+  </div>
+
+  <div class="flowunit">
+    <div class="phone wf"><div class="screen">
+      <div class="wf-box solid row">status bar</div>
+      <div class="wf-box row">Hub header</div>
+      <div class="wf-box tall">APPLY MOMENT — target numerals count 1,950 → 1,900 · double-tick haptic · thin ledger line items itself beneath (“tap to revert”)</div>
+      <div class="wf-note">ring re-stamps its provenance chip · plan v13 hand-off to F01 → mock 6</div>
+      <div class="wf-box row">nav</div>
+    </div></div>
+    <div class="caption annotation"><b>4 · Apply.</b> Committing feels like signing: crisp tick-tick, count-up, ledger. Reversible in one tap, forever.</div>
+  </div>
+
+  <div class="flowunit">
+    <div class="phone wf"><div class="screen">
+      <div class="wf-box solid row">status bar</div>
+      <div class="wf-box row">Hub header</div>
+      <div class="wf-box tall">HELD VARIANT — amber chip (pulsed once) + reason chip → tap = one-tap fix · trend/pace still shown · estimate frozen at reduced opacity · NO proposal row</div>
+      <div class="wf-note">auto-releases when the trigger clears · red nowhere</div>
+      <div class="wf-box row">nav</div>
+    </div></div>
+    <div class="caption annotation"><b>5 · Held.</b> The worst state in F07 says only “I can’t see clearly this week” — attention without alarm.</div>
+  </div>
+
+  <div class="flowunit">
+    <div class="phone wf"><div class="screen">
+      <div class="wf-box solid row">status bar</div>
+      <div class="wf-box row">Plan Studio · version badge v12 → v13 (ticked)</div>
+      <div class="wf-box tall">DIFF SUMMARY CARD — human-readable: “calories 1,950 → 1,900 · protein 160 → 165 g · weekend unchanged” + one-tap revert</div>
+      <div class="wf-box row">plan version history (readable diffs, revert per row)</div>
+      <div class="wf-note">F03 regenerates vs fresh budget · F04 rebuilds the list &lt; 1 s</div>
+      <div class="wf-box row">nav</div>
+    </div></div>
+    <div class="caption annotation"><b>6 · Plan diff (F01).</b> Every Apply is a plan version with a readable diff — “show me what changed” becomes a trust timeline.</div>
+  </div>
+
+</div>
+
+<!-- ============================= MOCKS ============================= -->
+<div class="stage-title">Annotated mocks <small>· dark canonical · one week of data (Week 12, w/c Sep 7) · pins explained under each phone</small></div>
+<div class="stage">
+
+  <!-- ============ MOCK 1 · mid-reveal ============ -->
+  <div class="flowunit" id="s1">
+    <div class="phone">
+      <div class="statusbar"><span>19:00</span><span class="icons">▮▮▮ ⌁ ▰</span></div>
+      <div class="screen">
+        <div class="apphead">
+          <div class="brand">WLO <small>Sunday, Sep 13 · check-in day</small></div>
+          <div class="actions"><span class="chip">🔥 14</span><span class="chip">●</span></div>
+        </div>
+
+        <div class="card raised">
+          <div class="card-title">Weekly check-in <span class="chip accent stamp-in">UPDATING</span></div>
+          <div class="stat-row">
+            <span class="label">Trend <span class="prov derived">derived · EWMA α 0.15</span></span>
+            <span class="value stat-m">178.9 <span class="delta down">−0.6 kg/wk</span> <span class="faint">on pace</span></span>
+          </div>
+          <div class="stat-row">
+            <span class="label">Measured burn</span>
+            <span class="value stat-l">2,4<span class="od"></span><span class="od"></span></span>
+          </div>
+          <svg width="100%" height="36" viewBox="0 0 330 36" style="margin:2px 0 6px">
+            <polyline class="spark" points="0,27 40,25 80,28 120,22 160,24 198,17"/>
+            <polyline class="spark-dim" points="198,17 240,20 282,13 330,15"/>
+          </svg>
+          <div class="stat-row rise">
+            <span class="label">Proposal</span>
+            <span class="value stat-s">1,900 kcal <span class="delta">−50</span> · P 165 <span class="delta">+5</span></span>
+          </div>
+          <div class="receipt faint rise" style="margin:6px 0 2px;">↑ rising last · Computed on your device</div>
+        </div>
+
+        <div class="tl">
+          <span class="chip">t 0–120 ms · chip stamps</span>
+          <span class="chip">t 120–260 ms · trend odometer rolls</span>
+          <span class="chip">t 180–420 ms · burn line draws L→R</span>
+          <span class="chip">t 380–500 ms · proposal rises</span>
+        </div>
+        <div class="receipt faint" style="margin-top:8px;">frame shown at t ≈ 300 ms · one card, one decision</div>
+
+        <div class="card">
+          <div class="card-title">Trend <span class="prov derived">derived · EWMA α 0.15</span></div>
+          <div style="display:flex; align-items:baseline; gap:12px;">
+            <div class="hero">178.9</div><span class="delta down">↓ 0.6</span>
+          </div>
+        </div>
+
+        <div class="navbar">
+          <div class="tab active"><span class="ic">◉</span>Hub</div>
+          <div class="tab"><span class="ic">▦</span>Plan</div>
+          <div class="tab"><span class="ic">✦</span>Insights</div>
+          <div class="tab"><span class="ic">▣</span>Archive</div>
+          <div class="tab"><span class="ic">🌿</span>Digestion</div>
+        </div>
+      </div>
+      <span class="pin" style="top:118px; right:36px;">1</span>
+      <span class="pin" style="top:196px; right:60px;">2</span>
+      <span class="pin" style="top:248px; left:36px;">3</span>
+      <span class="pin" style="top:300px; right:40px;">4</span>
+    </div>
+    <div class="caption annotation">
+      <b>Check-in card, mid-reveal (t ≈ 300 ms of 500).</b>
+      <ol>
+        <li><span class="pin-ref">1</span>Status chip <b>stamps in first</b> (0–120 ms, scale 1.06 → 1 with the soft badge-stamp thud) — state before numbers, the Zolt/MacroFactor pattern. Chip reads UPDATING; DEVELOPING renders blue, HELD amber (mock 5).</li>
+        <li><span class="pin-ref">2</span>Trend numeral <b>odometer-rolls</b> (120–260 ms) and has landed: 178.9. The un-landed digits render as dashed ghost slots — shown here on the burn numeral: <b>2,4</b> with two ghost cells still rolling.</li>
+        <li><span class="pin-ref">3</span>Expenditure line <b>draws left → right</b> (180–420 ms) while its numeral lands — evidence drawn in the order the eye reads it.</li>
+        <li><span class="pin-ref">4</span>Proposal row <b>rises last</b> (380–500 ms, 6 px + fade) — the ask arrives only after the story. The rhythm says <i>“this week’s story, then your decision.”</i> “Computed on your device” rides the card from the first frame, stated once (F07 §9).</li>
+      </ol>
+    </div>
+  </div>
+
+  <!-- ============ MOCK 2 · complete frozen anatomy ============ -->
+  <div class="flowunit" id="s2">
+    <div class="phone">
+      <div class="statusbar"><span>19:02</span><span class="icons">▮▮▮ ⌁ ▰</span></div>
+      <div class="screen">
+        <div class="apphead">
+          <div class="brand">WLO <small>Sunday, Sep 13 · check-in day</small></div>
+          <div class="actions"><span class="chip">🔥 14</span><span class="chip">●</span></div>
+        </div>
+
+        <div class="card raised">
+          <div class="card-title">Weekly check-in <span class="chip accent">UPDATING</span> <span class="prov">engine transparent-v1</span></div>
+
+          <div class="stat-row">
+            <span class="label">Trend <span class="prov derived">derived · EWMA α 0.15</span></span>
+            <span class="value stat-s">178.9 kg <span class="delta down">−0.6 kg/wk</span> <span class="faint">on pace</span></span>
+          </div>
+          <div class="stat-row">
+            <span class="label">Days logged <span class="faint">6/7</span></span>
+            <span class="value weekdots">
+              <span><span class="dot logged"></span><div class="lbl">M</div></span>
+              <span><span class="dot logged"></span><div class="lbl">T</div></span>
+              <span><span class="dot fasted"></span><div class="lbl">W</div></span>
+              <span><span class="dot logged"></span><div class="lbl">T</div></span>
+              <span><span class="dot logged"></span><div class="lbl">F</div></span>
+              <span><span class="dot logged"></span><div class="lbl">S</div></span>
+              <span><span class="dot open"></span><div class="lbl">S</div></span>
+            </span>
+          </div>
+          <div class="receipt" style="margin:2px 0 6px;">Sunday still open → one tap: <span class="chip accent">Logged</span> <span class="chip">Skipped</span> <span class="chip">Fasted</span></div>
+          <div class="stat-row">
+            <span class="label">Measured burn <a href="#s3" style="color:var(--info); text-decoration:none;">breakdown ▸</a></span>
+            <span class="value stat-s">2,440 <span class="delta up">+70 vs last wk</span> <span class="prov measured">calculator says 2,450</span></span>
+          </div>
+          <div class="stat-row">
+            <span class="label">Proposal <a href="#s3" style="color:var(--info); text-decoration:none;">how we got here</a></span>
+            <span class="value stat-s">1,900 kcal <span class="delta">−50</span> · P 165 g <span class="delta">+5</span></span>
+          </div>
+          <div class="receipt faint" style="margin:2px 0 8px;">C and F re-derived by your Balanced template · Computed on your device</div>
+
+          <div class="btnrow">
+            <a class="btn primary" href="#s4" style="text-decoration:none;">Apply</a>
+            <a class="btn secondary" href="#s2" style="text-decoration:none;">Keep</a>
+            <a class="btn ghost" href="06-reportcard-bristol-f11-f09.html" style="text-decoration:none;">Discuss</a>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">Today <span class="prov adaptive">adaptive · check-in Sep 6</span></div>
+          <div style="display:flex; gap:14px; align-items:center;">
+            <div class="ring ring-big" style="--fill:54">
+              <div class="center"><div class="stat-m">1,045</div><div class="receipt faint">of 1,950 kcal</div></div>
+            </div>
+            <div style="flex:1"><div class="receipt dim">The ring keeps yesterday’s target until you tap Apply — nothing changes behind your back. It updates the moment you do.</div></div>
+          </div>
+        </div>
+
+        <div class="navbar">
+          <div class="tab active"><span class="ic">◉</span>Hub</div>
+          <div class="tab"><span class="ic">▦</span>Plan</div>
+          <div class="tab"><span class="ic">✦</span>Insights</div>
+          <div class="tab"><span class="ic">▣</span>Archive</div>
+          <div class="tab"><span class="ic">🌿</span>Digestion</div>
+        </div>
+      </div>
+      <span class="pin" style="top:118px; right:150px;">5</span>
+      <span class="pin" style="top:162px; right:34px;">6</span>
+      <span class="pin" style="top:224px; right:120px;">7</span>
+      <span class="pin" style="top:296px; right:34px;">8</span>
+      <span class="pin" style="top:340px; right:34px;">9</span>
+      <span class="pin" style="top:416px; left:120px;">10</span>
+    </div>
+    <div class="caption annotation">
+      <b>The complete card — frozen anatomy (F07 §4), rows ①–⑥ top to bottom.</b>
+      <ol>
+        <li><span class="pin-ref">5</span><b>Row ① status chip</b> — UPDATING (≥ 10 usable paired days, no hold triggers), with the engine version beside it (algorithm versioning: every estimate carries <span class="prov">transparent-v1</span>; v1 ships Transparent only — R-A3, see self-review).</li>
+        <li><span class="pin-ref">6</span><b>Row ② trend row</b> — trend weight, weekly pace, on/off-pace in neutral wording only (“on pace”; the off-pace ceiling is “a touch slower than planned” — never “behind”, never a verdict).</li>
+        <li><span class="pin-ref">7</span><b>Row ③ adherence</b> — “6/7 days logged” + day-status dots. Wednesday’s fast renders as a <i>chosen</i> state (blue dot), never a gap (R-U13); Sunday is merely still open, and the fix is the inline Logged/Skipped/Fasted chips — one tap, never typed, never an interrogation.</li>
+        <li><span class="pin-ref">8</span><b>Row ④ expenditure</b> — measured 2,440, +70 vs last week, vs the static calculator (“calculator says 2,450” — the measured-beats-formula story in one chip); tap-through to the four-term breakdown (mock 3).</li>
+        <li><span class="pin-ref">9</span><b>Row ⑤ proposal</b> — new target + macro split, each with a delta chip (−50; P +5); tap-through to “how we got here”. Advisory until Applied — the only write path to targets.</li>
+        <li><span class="pin-ref">10</span><b>Row ⑥ actions</b> — Apply (primary) · Keep · Discuss. <b>Swiping the card away equals Keep</b> — no dismiss-without-decision shame. Keep: single soft tick, proposal folds away as “rolling over” — the engine still updates, no nagging shadow. Discuss: the local why-trail (mock 3); with <span class="prov">insights-chat</span> consent off it adds exactly one informational line and never prompts for cloud (R-C7). A skipped Sunday is fine: the card persists 7 days, the engine keeps computing, the next check-in simply covers the elapsed window — one soft nudge, never escalating.</li>
+      </ol>
+    </div>
+  </div>
+
+  <!-- ============ MOCK 3 · four-term breakdown sheet ============ -->
+  <div class="flowunit" id="s3">
+    <div class="phone">
+      <div class="statusbar"><span>19:03</span><span class="icons">▮▮▮ ⌁ ▰</span></div>
+      <div class="screen">
+        <div class="apphead">
+          <div class="brand">WLO <small>Sunday, Sep 13</small></div>
+          <div class="actions"><span class="chip">🔥 14</span></div>
+        </div>
+        <div class="card" style="opacity:.35;">
+          <div class="card-title">Weekly check-in <span class="chip accent">UPDATING</span></div>
+          <div class="stat-row"><span class="label">Measured burn</span><span class="value stat-s">2,440 <span class="delta up">+70</span></span></div>
+          <div class="stat-row"><span class="label">Proposal</span><span class="value stat-s">1,900 kcal <span class="delta">−50</span></span></div>
+        </div>
+      </div>
+      <div class="sheet-wrap"></div>
+      <div class="sheet">
+        <div class="grab"></div>
+        <div class="card-title" style="margin-bottom:10px;">Measured burn — how we got here <span class="prov adaptive">transparent-v1</span></div>
+        <div class="rows">
+          <div class="row"><div class="grow"><b>BMR</b><div class="sub">Mifflin-St Jeor on current weight · cited on the Algorithms page</div></div><span class="stat-m">1,690</span></div>
+          <div class="row"><div class="grow"><b>Adjustment</b><div class="sub">your personal correction term · 0 → +120 over 12 weeks — absorbs formula error, adaptation, untracked activity</div></div><span class="stat-m">+120</span></div>
+          <div class="row"><div class="grow"><b>Activity</b><div class="sub">steps → kcal · published mass-scaled fit</div></div><span class="stat-m">630</span></div>
+          <div class="row"><div class="grow"><b>Exercise context</b><div class="sub">F05 sessions, deliberately small weight · 0 (rest week) · ±30 % when present</div></div><span class="stat-m">0</span></div>
+          <div class="row"><div class="grow"><b>Measured TDEE</b><div class="sub">window Aug 31 – Sep 13 · 12 usable days · 2 rough days excluded (&gt;50 % uncorrected estimates — named, never hidden)</div></div><span class="stat-l">2,440</span></div>
+        </div>
+        <div class="receipt dim" style="margin-top:10px;"><b style="color:var(--text-primary)">Context, never credit</b> — activity and exercise refine the interpretation and can never raise your target (R-B2). No eat-back exists in the write path.</div>
+        <div class="receipt dim" style="margin-top:6px;">In a stall this +120 <i>is</i> the headline: the Adjustment term glows once and ticks upward — quiet applause. A plateau is your physiology adapting, and the plan follows it.</div>
+        <hr class="divider">
+        <div class="receipt">transparent-v1: TDEE ≈ avg intake − Δtrend kg × 7,700 ÷ 7 · constants published (7,700 kcal/kg · 3,500/lb, R-A1) · <span class="chip" style="margin-left:2px;">Algorithms page · reproduce it yourself</span></div>
+        <div class="receipt faint" style="margin-top:8px;">This trail is also Discuss’s local explainer when insights-chat is off (R-C7): one informational line — “chatting about this needs the insights-chat toggle; this page works without it” — never a prompt to enable cloud.</div>
+      </div>
+      <span class="pin" style="top:300px; right:34px;">11</span>
+      <span class="pin" style="top:436px; left:36px;">12</span>
+      <span class="pin" style="top:492px; right:40px;">13</span>
+      <span class="pin" style="top:560px; left:36px;">14</span>
+    </div>
+    <div class="caption annotation">
+      <b>Four-term breakdown (frozen decomposition, tap-through from rows ④/⑤).</b>
+      <ol>
+        <li><span class="pin-ref">11</span>The terms: BMR + Adjustment + Activity + Exercise context = 2,440. Every term is documented and cited; Adjustment — the correction that grows as the engine learns you — is the app’s best story, told in one sub-line.</li>
+        <li><span class="pin-ref">12</span><b>Context, never credit (R-B2)</b> is stated on the sheet itself: exercise cannot raise the target, enforced in the write path — structurally, not by convention.</li>
+        <li><span class="pin-ref">13</span>The window and its rejects are named: 12 usable days, “2 rough days excluded” — weak data is held and explained, never silently blended.</li>
+        <li><span class="pin-ref">14</span>Formula + constants in the open (7,700 kcal/kg, R-A1) with the Algorithms-page chip — publishing the recipe is the trust feature; at a plateau the Adjustment term glows once (“quiet applause”, motion table §4.1). Report-card readers arrive here from flow <a href="06-reportcard-bristol-f11-f09.html">06</a>.</li>
+      </ol>
+    </div>
+  </div>
+
+  <!-- ============ MOCK 4 · Apply ============ -->
+  <div class="flowunit" id="s4">
+    <div class="phone">
+      <div class="statusbar"><span>19:04</span><span class="icons">▮▮▮ ⌁ ▰</span></div>
+      <div class="screen">
+        <div class="apphead">
+          <div class="brand">WLO <small>Sunday, Sep 13</small></div>
+          <div class="actions"><span class="chip">🔥 14</span><span class="chip">●</span></div>
+        </div>
+
+        <div class="card raised accent-edge">
+          <div class="card-title">Targets <span class="chip accent">APPLIED</span></div>
+          <div style="display:flex; align-items:baseline; gap:12px;">
+            <div class="stat-l" style="font-size:40px;">1,900</div>
+            <span class="delta down">−50</span>
+            <span class="chip">counting 1,950 → 1,900</span>
+          </div>
+          <div class="receipt dim" style="margin-top:6px;">numerals count old → new · haptic: crisp tick-tick (Confirm ×2) — committing feels like signing</div>
+          <div class="ledger-line">Applied · −50 kcal · Week 12 · <u>tap to revert</u></div>
+          <div class="receipt faint" style="margin-top:6px;">ledger entry #13 — snapshot: intake 7 d · trend 178.9 · burn 2,440 · engine transparent-v1 · browsable &amp; exportable (F13)</div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">Today <span class="prov adaptive">adaptive · check-in Sep 13</span></div>
+          <div style="display:flex; gap:14px; align-items:center;">
+            <div class="ring ring-big" style="--fill:55">
+              <div class="center"><div class="stat-m">1,045</div><div class="receipt faint">of 1,900 kcal</div></div>
+            </div>
+            <div style="flex:1">
+              <div class="receipt dim">Same meals, fresh budget.</div>
+              <div class="receipt faint" style="margin-top:4px;">provenance re-stamps: “check-in Sep 6” → <b style="color:var(--accent)">“check-in Sep 13”</b></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">Hand-off</div>
+          <div class="stat-row"><span class="label">Plan</span><span class="value receipt">v13 written · <a href="#s6" style="color:var(--info); text-decoration:none;">see the diff ▸</a></span></div>
+          <div class="stat-row"><span class="label">Week ahead</span><span class="value receipt">F03 regenerates vs fresh budget · F04 rebuilds the list</span></div>
+          <div class="stat-row"><span class="label">Next check-in</span><span class="value receipt">Sun Sep 20 · cone re-blooms → <a href="07-onboarding-f01.html" style="color:var(--info); text-decoration:none;">07</a></span></div>
+          <div class="receipt faint" style="margin-top:6px;">forecast dates remain an estimate, not a promise</div>
+        </div>
+
+        <div class="navbar">
+          <div class="tab active"><span class="ic">◉</span>Hub</div>
+          <div class="tab"><span class="ic">▦</span>Plan</div>
+          <div class="tab"><span class="ic">✦</span>Insights</div>
+          <div class="tab"><span class="ic">▣</span>Archive</div>
+          <div class="tab"><span class="ic">🌿</span>Digestion</div>
+        </div>
+      </div>
+      <span class="pin" style="top:150px; right:60px;">15</span>
+      <span class="pin" style="top:238px; left:40px;">16</span>
+      <span class="pin" style="top:352px; right:34px;">17</span>
+    </div>
+    <div class="caption annotation">
+      <b>The Apply commit.</b>
+      <ol>
+        <li><span class="pin-ref">15</span>Double-tick haptic (crisp tick-tick, Confirm ×2) as the numerals <b>count 1,950 → 1,900</b> — the delta is felt, not just read. Apply is always user-tapped: never scheduled, never batched, atomic.</li>
+        <li><span class="pin-ref">16</span>The <b>thin ledger line items itself</b> beneath: “Applied · −50 kcal · Week 12 · tap to revert.” Every check-in decision is ledgered with its input snapshot, browsable, exportable — the user’s cut becomes a citable n=1 experiment. Revert is one tap and writes forward; history is never rewritten.</li>
+        <li><span class="pin-ref">17</span>The ring’s <b>provenance chip re-stamps</b> to the new check-in date — provenance follows the write. Hand-off: plan v13 (F01, mock 6), F03/F04 regenerate, forecast cone re-blooms (flow 07) — and any date on this screen stays hedged: <i>an estimate, not a promise</i>.</li>
+      </ol>
+    </div>
+  </div>
+
+  <!-- ============ MOCK 5 · HELD variant ============ -->
+  <div class="flowunit" id="s5">
+    <div class="phone">
+      <div class="statusbar"><span>19:02</span><span class="icons">▮▮▮ ⌁ ▰</span></div>
+      <div class="screen">
+        <div class="apphead">
+          <div class="brand">WLO <small>Sunday, Sep 13 · check-in day</small></div>
+          <div class="actions"><span class="chip">🔥 14</span><span class="chip">●</span></div>
+        </div>
+
+        <div class="card amber-edge">
+          <div class="card-title">Weekly check-in <span class="chip amber">HELD</span> <span class="prov held">pulsed once · 600 ms</span></div>
+
+          <div style="margin:2px 0 8px;">
+            <span class="chip amber">3 unlogged days — can’t compare like with like</span>
+            <span class="receipt faint"> · tap for the fix</span>
+          </div>
+          <div class="card sunken" style="margin-bottom:10px;">
+            <div class="receipt dim">Thursday to Saturday have no entries and no status, so this week can’t be compared with last. Fastest fix, one tap:</div>
+            <div style="display:flex; gap:8px; margin-top:8px;">
+              <span class="btn primary small">Mark Thu–Sat Skipped</span>
+              <span class="btn secondary small">log tomorrow’s weigh-in</span>
+            </div>
+            <div class="receipt faint" style="margin-top:8px;">the hold auto-releases the moment the trigger clears — no debt, no penalty · the same hold can be self-flagged: one “atypical week” tap (travel / illness)</div>
+          </div>
+
+          <div class="stat-row">
+            <span class="label">Trend <span class="prov derived">derived · EWMA α 0.15</span></span>
+            <span class="value stat-s">178.9 kg <span class="delta down">−0.6 kg/wk</span> <span class="faint">on pace</span></span>
+          </div>
+          <div class="stat-row">
+            <span class="label">Measured burn</span>
+            <span class="value stat-s" style="opacity:.55;">2,370 <span class="prov held">frozen at last good · Sep 6</span></span>
+          </div>
+          <div class="stat-row">
+            <span class="label">Proposal</span>
+            <span class="value receipt faint">none this week — it re-opens when the data does</span>
+          </div>
+
+          <div class="btnrow" style="margin-top:6px;">
+            <span class="btn primary">Fix the data</span>
+            <span class="btn ghost">Close</span>
+          </div>
+          <div class="receipt faint" style="margin-top:8px;">swiping away closes too — the card waits up to 7 days, zero guilt</div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">Today <span class="prov held">provisional · estimate held</span></div>
+          <div style="display:flex; gap:14px; align-items:center;">
+            <div class="ring ring-big" style="--fill:54">
+              <div class="center"><div class="stat-m">1,045</div><div class="receipt faint">of 1,950 kcal</div></div>
+            </div>
+            <div style="flex:1"><div class="receipt dim">The ring falls back to a “provisional” chip while the engine can’t see clearly. Amber is the strongest color this state gets — red is reserved for nothing.</div></div>
+          </div>
+        </div>
+
+        <div class="navbar">
+          <div class="tab active"><span class="ic">◉</span>Hub</div>
+          <div class="tab"><span class="ic">▦</span>Plan</div>
+          <div class="tab"><span class="ic">✦</span>Insights</div>
+          <div class="tab"><span class="ic">▣</span>Archive</div>
+          <div class="tab"><span class="ic">🌿</span>Digestion</div>
+        </div>
+      </div>
+      <span class="pin" style="top:118px; right:70px;">18</span>
+      <span class="pin" style="top:158px; left:36px;">19</span>
+      <span class="pin" style="top:392px; right:34px;">20</span>
+      <span class="pin" style="top:478px; left:40px;">21</span>
+    </div>
+    <div class="caption annotation">
+      <b>HELD variant — same Sunday, had the week gone quiet.</b>
+      <ol>
+        <li><span class="pin-ref">18</span>Amber status chip, <b>pulsed exactly once (600 ms)</b> — attention without alarm; the pulse never repeats. Held is the strongest state color in the feature; red is reserved for nothing.</li>
+        <li><span class="pin-ref">19</span>The <b>reason chip names the fix</b>: “3 unlogged days — can’t compare like with like.” Tapping it opens the one-tap fix (“mark those days Skipped, or log tomorrow’s weigh-in”) — fixing data is one tap, never an interrogation. Trigger here: ≥ 3 trailing days with no record <i>and</i> no status mark; a user-flagged atypical week (travel/illness) holds the same way.</li>
+        <li><span class="pin-ref">20</span>Trend and pace <b>stay visible</b> (the week still happened); the estimate is <b>frozen at its last good value (2,370, Sep 6) at reduced opacity</b>; there is <b>no proposal row</b> — unlike weeks aren’t compared, full stop.</li>
+        <li><span class="pin-ref">21</span>The hold <b>auto-releases</b> when the trigger clears — the engine simply starts seeing again. No guilt copy exists to release. Day statuses stay one-tap and never shamed (R-U13); the ring drops to its “provisional” chip (flow 01, pin 3).</li>
+      </ol>
+    </div>
+  </div>
+
+  <!-- ============ MOCK 6 · Plan Studio diff ============ -->
+  <div class="flowunit" id="s6">
+    <div class="phone">
+      <div class="statusbar"><span>19:08</span><span class="icons">▮▮▮ ⌁ ▰</span></div>
+      <div class="screen">
+        <div class="apphead">
+          <div class="brand">Plan Studio <small>Sunday, Sep 13</small></div>
+          <div class="actions"><span class="chip accent">v12 → v13 ✓</span></div>
+        </div>
+
+        <div class="card accent-edge">
+          <div class="card-title">What changed · v13 <span class="right receipt">written by check-in Apply · Week 12</span></div>
+          <div class="stat-row">
+            <span class="label">Calories</span>
+            <span class="value stat-s"><s class="faint">1,950</s> → <b>1,900</b> <span class="delta down">−50</span></span>
+          </div>
+          <div class="stat-row">
+            <span class="label">Protein</span>
+            <span class="value stat-s"><s class="faint">160 g</s> → <b>165 g</b> <span class="delta up">+5</span></span>
+          </div>
+          <div class="stat-row">
+            <span class="label">Weekend schedule</span>
+            <span class="value receipt faint">unchanged</span>
+          </div>
+          <div class="receipt faint" style="margin-top:4px;">everything else identical · C and F re-derived by the Balanced template</div>
+          <div class="btnrow" style="margin-top:8px;">
+            <span class="btn secondary">Revert to v12</span>
+            <span class="btn primary">Done</span>
+          </div>
+          <div class="receipt faint" style="margin-top:8px;">revert is one tap and writes v14 (a copy of v12) — history is never rewritten · ledgered like every write</div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">Version history <span class="right receipt">readable diffs · one-tap revert</span></div>
+          <div class="rows">
+            <div class="row"><div class="grow"><b>v13</b> · today<div class="sub">check-in · calories −50 · protein +5</div></div><span class="chip accent">now</span></div>
+            <div class="row"><div class="grow"><b>v12</b> · Sep 6<div class="sub">check-in · calories +40 as burn re-measured</div></div><span class="chip">revert</span></div>
+            <div class="row"><div class="grow"><b>v11</b> · Aug 30<div class="sub">you · weekend +150 kcal</div></div><span class="chip">revert</span></div>
+          </div>
+        </div>
+
+        <div class="card sunken">
+          <div class="card-title">Hand-off</div>
+          <div class="receipt dim">F03 regenerates the week against the fresh budget · F04 rebuilds the shopping list — under 1 s, nothing to wait for.</div>
+          <div class="receipt faint" style="margin-top:6px;">forecast cone re-blooms on the trend chart → flow <a href="07-onboarding-f01.html" style="color:var(--info);">07</a> · goal dates stay an estimate, not a promise</div>
+        </div>
+
+        <div class="navbar">
+          <div class="tab"><span class="ic">◉</span>Hub</div>
+          <div class="tab active"><span class="ic">▦</span>Plan</div>
+          <div class="tab"><span class="ic">✦</span>Insights</div>
+          <div class="tab"><span class="ic">▣</span>Archive</div>
+          <div class="tab"><span class="ic">🌿</span>Digestion</div>
+        </div>
+      </div>
+      <span class="pin" style="top:112px; right:60px;">22</span>
+      <span class="pin" style="top:180px; right:34px;">23</span>
+      <span class="pin" style="top:318px; left:40px;">24</span>
+      <span class="pin" style="top:520px; right:34px;">25</span>
+    </div>
+    <div class="caption annotation">
+      <b>Plan-diff view (F01) — after Apply.</b>
+      <ol>
+        <li><span class="pin-ref">22</span>The Studio’s <b>version badge ticks v12 → v13</b> (tick haptic) — every Apply writes a plan version; F07’s write path and F01’s versioning are the same auditable event.</li>
+        <li><span class="pin-ref">23</span>The <b>diff summary card is human-readable</b>: “calories 1,950 → 1,900 · protein 160 → 165 g · weekend unchanged” — old values struck faint, new values bold, delta chips describing (never judging). “Show me what changed since I started” becomes a trust timeline no competitor ships.</li>
+        <li><span class="pin-ref">24</span><b>One-tap revert</b> on the card and per history row; a revert writes a new version (v14 = copy of v12) — the ledger stays append-only, and the check-in card’s “tap to revert” (mock 4) lands on the same mechanism.</li>
+        <li><span class="pin-ref">25</span><b>Hand-off is instant</b>: F03 regenerates the week’s plan against the fresh budget and F04 rebuilds the shopping list in &lt; 1 s; the forecast cone re-blooms (700 ms ease-out) in flow 07.</li>
+      </ol>
+    </div>
+  </div>
+
+</div>
+
+<!-- ============================= SELF-REVIEW ============================= -->
+<div class="review">
+  <h2>Self-review — design bar &amp; spec checklist (flow 03)</h2>
+  <div class="cols">
+    <div class="col"><div class="annotation">
+      <b>Design bar</b>
+      <ol>
+        <li><b>Provenance chips on every derived number</b> — trend (derived · EWMA α 0.15), burn (measured, engine transparent-v1), proposal (adaptive template re-derivation), ring target (adaptive · check-in Sep 6 → re-stamps Sep 13), held estimate (frozen at last good), breakdown terms (each cited). None missing. ✓</li>
+        <li><b>Tone</b> — “on pace”, “6/7 days logged”, “none this week — it re-opens when the data does”. Plateau framing = adaptation (“your physiology adapting, and the plan follows”; Adjustment glow as “quiet applause”); the body is never stubborn, no “over budget”, no verdict words anywhere in mock copy. ✓</li>
+        <li><b>No red</b> — held renders amber with a single 600 ms pulse; deltas use neutral/accent only; the strongest color in the flow is amber. Red is reserved for nothing. ✓</li>
+        <li><b>R-U13</b> — Wednesday’s fast is a chosen state (blue dot), Sunday is “still open” with a one-tap fix; day statuses never shamed, gut absent from the completeness model. ✓</li>
+        <li><b>Local-first, stated once</b> — “Computed on your device” appears on the check-in card only (F07 §9); no spinners, no network states, works in a bunker. ✓</li>
+        <li><b>Ledger + reversibility</b> — Apply appends entry #13 with an input snapshot; “tap to revert” on the ledger line and one-tap revert in the Studio; reverts write forward, history immutable. ✓</li>
+        <li><b>Published constants</b> — 7,700 kcal/kg · 3,500/lb (R-A1) shown in the breakdown formula with the Algorithms-page chip and “reproduce it yourself”; rough days excluded by name. ✓</li>
+        <li><b>Hedged dates</b> — the only dates outside the calendar (next check-in, forecast re-bloom) carry “an estimate, not a promise”; the cone itself lives in flow 07. ✓</li>
+        <li><b>No dismiss-shame; no missed-Sunday guilt</b> — swipe away = Keep; a skipped check-in persists 7 days with the engine still computing, next check-in covers the elapsed window, nudges never escalate. ✓</li>
+      </ol>
+    </div></div>
+    <div class="col"><div class="annotation">
+      <b>Frozen anatomy &amp; motion compliance</b>
+      <ol>
+        <li><b>Anatomy row-by-row (F07 §4)</b> — ① status chip (+ reason on hold, mock 5) · ② trend row with neutral on/off-pace wording · ③ adherence “6/7” + day dots + inline Logged/Skipped/Fasted fix · ④ expenditure with Δ-vs-last-week (mock 4) and Δ-vs-calculator + tap-through · ⑤ proposal + per-macro delta chip + “how we got here” · ⑥ Apply/Keep/Discuss — all present in order (mock 2, pins 5–10). “Computed on your device” once. ✓</li>
+        <li><b>Reveal = 500 ms, four beats</b> — chip stamps → trend odometer → expenditure line draws L→R → proposal rises (mock 1 timeline chips, frame at t ≈ 300 ms). ✓</li>
+        <li><b>Apply</b> — double-tick (Confirm ×2), numerals count 1,950 → 1,900, ledger line items itself beneath. <b>Keep</b> — single soft tick, proposal folds as “rolling over”. <b>Held</b> — amber pulse once (600 ms), estimate at reduced opacity, no proposals, trend/pace remain. <b>Plateau</b> — Adjustment term glows once. All values match motion table §4.1. ✓</li>
+        <li><b>R-C7 honored</b> — Discuss with insights-chat off renders the local trail (mock 3) plus exactly one informational line; never a prompt to enable cloud. Report-card deep-link: flow 06. ✓</li>
+        <li><b>F01 diff contract</b> — version badge tick, human-readable diff summary, history with readable diffs and one-tap revert (mock 6); F03 regenerates, F04 rebuilds &lt; 1 s. ✓</li>
+        <li><b>Consistency</b> — one week of data everywhere: 178.9 kg · −0.6 kg/wk · 6/7 · 2,440 = 1,690 + 120 + 630 + 0 · +70 vs 2,370 · vs formula 2,450 · 1,950 → 1,900 · P 160 → 165 · Week 12 · v12 (Sep 6) → v13 (Sep 13) · ledger #13. ✓</li>
+      </ol>
+      <b>Open items surfaced:</b> <b>R-A3</b> — v1 ships the Transparent engine only (closed form shown in mock 3); the Adaptive spline with per-user time constant is <span class="prov">v1.x</span> opt-in and default only after benchmarking — the engine chip and self-review annotate this, no dual-engine UI drawn. <b>R-A7</b> — weekly cadence is the default ritual; opt-in daily ships in v1 but proposals stay Apply-only (not mocked). <b>R-A6</b> — forecast is partition-free in v1 (composition-aware rates v1.x), so no fat-fraction claims appear near the cone hand-off. Dual-engine overlay and scenario simulator remain [v1.x]; engine telemetry [future].
+    </div></div>
+  </div>
+</div>
+
+</div>
+</body>
+</html>

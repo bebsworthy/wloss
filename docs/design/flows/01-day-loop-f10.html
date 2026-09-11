@@ -1,0 +1,529 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>WLO · Flow 01 — The Day loop (F10)</title>
+<link rel="stylesheet" href="_wlo.css">
+<style>
+  .ring-big { width: 116px; height: 116px; }
+  .macrodots { display: flex; gap: 10px; margin-top: 10px; }
+  .macrodots .m { display: flex; align-items: center; gap: 5px; font-size: 12px; font-variant-numeric: var(--tnum); color: var(--text-secondary); }
+  .macrodots .sw { width: 9px; height: 9px; border-radius: 3px; }
+  .widget {
+    width: 328px; height: 164px; border-radius: 24px; background: var(--surface);
+    border: 1px solid var(--outline); padding: 16px; display: flex; flex-direction: column; justify-content: space-between;
+  }
+  .notif {
+    width: 358px; border-radius: 22px; background: var(--surface-raised);
+    border: 1px solid var(--outline); padding: 13px 16px; display: flex; gap: 12px;
+  }
+  .notif .app-ic { width: 34px; height: 34px; border-radius: 10px; background: var(--accent); color:#07271C; display:flex; align-items:center; justify-content:center; font-weight: 800; flex: none; }
+  .notif .acts { display: flex; gap: 8px; margin-top: 9px; }
+  .notif .acts span { border: 1px solid var(--outline); border-radius: 999px; padding: 4px 12px; font-size: 12px; font-weight: 550; color: var(--text-primary); }
+</style>
+</head>
+<body>
+<div class="page">
+
+<header>
+  <h1>Flow 01 — The Day loop</h1>
+  <div class="meta">
+    Spec: <a href="../../features/F10-daily-hub.md">F10 Daily Hub &amp; Nudges</a> · IA: <a href="../IA.md">IA.md §2</a> ·
+    Signature moment: “5-second doctrine” (FEATURES §2.4) · 2026-09-11 · prototype, not implementation<br>
+    Companion flows: <a href="02-photo-ladder-f02.html">02 photo ladder</a> · <a href="04-weigh-in-trend-f06-f08.html">04 weigh-in</a> · <a href="03-checkin-f07.html">03 check-in</a> · <a href="index.html">index</a>
+  </div>
+</header>
+
+<!-- ============================= WIREFRAMES ============================= -->
+<div class="stage-title">Wireframes <small>· structure before skin — card order is the Adaptive Day Model (rule-based, inspectable)</small></div>
+<div class="stage">
+
+  <div class="flowunit">
+    <div class="phone wf"><div class="screen">
+      <div class="wf-box solid row">status bar</div>
+      <div class="wf-box row">Hub header · date · streak chip · ⚙ (backup dot)</div>
+      <div class="wf-box">Weigh-in card (leads until logged) → <b>04</b></div>
+      <div class="wf-note">↑ morning only; disappears once logged (R-B8: later re-weighs just join)</div>
+      <div class="wf-box hero">Hero trend card: “Trend 179.1 ↓0.6” + ribbon strip</div>
+      <div class="wf-box tall">Calories ring: remaining vs adaptive target + macro dots + prov chip</div>
+      <div class="wf-box row">Today’s plan card → “log as planned” (1 tap)</div>
+      <div class="wf-box grid"><div>📷 log</div><div>⚖ weigh</div><div>gut</div><div>workout</div></div>
+      <div class="wf-note">quick-action rail — camera is primary; badge-dot = owner news</div>
+      <div class="wf-box row">nav: Hub · Plan · Insights · Archive · Digestion</div>
+    </div></div>
+    <div class="caption annotation"><b>Morning.</b> Weigh-in card leads until logged; hero answers “trend direction”; ring answers “calories remaining”; plan card answers “next action” — the first-screen contract (F10 §4) with zero scrolling.</div>
+  </div>
+
+  <div class="flowunit">
+    <div class="phone wf"><div class="screen">
+      <div class="wf-box solid row">status bar</div>
+      <div class="wf-box row">Hub header (streak ticked after log)</div>
+      <div class="wf-box tall">Budget ring card — sweeps to new total after the save arc (02)</div>
+      <div class="wf-box row">Today’s plan: lunch = done ✓ → dinner next</div>
+      <div class="wf-box hero">Hero trend card</div>
+      <div class="wf-box row">Diary slice: 2 entries + day-status marker</div>
+      <div class="wf-box grid"><div>📷</div><div>⚖</div><div>gut</div><div>workout</div></div>
+      <div class="wf-box row">nav</div>
+    </div></div>
+    <div class="caption annotation"><b>Midday.</b> Plan card leads (Adaptive Day Model); logged slots collapse to one line; ring re-swept on return from capture.</div>
+  </div>
+
+  <div class="flowunit">
+    <div class="phone wf"><div class="screen">
+      <div class="wf-box solid row">status bar</div>
+      <div class="wf-box row">Hub header</div>
+      <div class="wf-box row">“Close the day” card — one-tap day status</div>
+      <div class="wf-box row">“Plan tomorrow” → F03 (copy-today preset)</div>
+      <div class="wf-box tall">Budget ring (evening in-band = micro-bounce)</div>
+      <div class="wf-box hero">Hero</div>
+      <div class="wf-box grid"><div>📷</div><div>⚖</div><div>gut</div><div>workout</div></div>
+      <div class="wf-box row">nav</div>
+    </div></div>
+    <div class="caption annotation"><b>Evening (~19:00).</b> Day-closure + plan-tomorrow surface; recap stays an in-app card (R-U9).</div>
+  </div>
+
+  <div class="flowunit">
+    <div class="phone wf"><div class="screen">
+      <div class="wf-box solid row">status bar</div>
+      <div class="wf-box row">Hub header · Sunday</div>
+      <div class="wf-box tall">F07 CHECK-IN CARD — promoted into hero slot (R-U17): status chip → trend → adherence → expenditure → proposal → Apply/Keep/Discuss</div>
+      <div class="wf-note">frozen anatomy, top-to-bottom → flow <b>03</b></div>
+      <div class="wf-box hero">Trend card (returns tomorrow)</div>
+      <div class="wf-box row">Budget ring</div>
+      <div class="wf-box row">nav</div>
+    </div></div>
+    <div class="caption annotation"><b>Check-in day.</b> The Week loop’s anchor displaces the hero for one day (R-U17); swiping it away = Keep, never shame.</div>
+  </div>
+
+  <div class="flowunit">
+    <div class="phone wf"><div class="screen">
+      <div class="wf-box solid row">status bar</div>
+      <div class="wf-box row">night layout — hero + ring only</div>
+      <div class="wf-note">minimal night layout (Adaptive Day Model)</div>
+      <div class="wf-box row">notification: silent channel · ≤2 actions · animated collapse · “Why am I seeing this?”</div>
+      <div class="wf-note">Nudge Contract: cap 1/day, quiet 21:30–07:30, dismissed never re-fires</div>
+      <div class="wf-box" style="height:120px">4×2 widget: hero + ring + spark; every zone deep-links; lock-screen redaction = dots</div>
+    </div></div>
+    <div class="caption annotation"><b>Night &amp; off-app surfaces.</b> Widget and nudge follow the same provenance/tone rules as in-app.</div>
+  </div>
+
+</div>
+
+<!-- ============================= MOCKS ============================= -->
+<div class="stage-title">Annotated mocks <small>· dark canonical theme · pins explained under each phone</small></div>
+<div class="stage">
+
+  <!-- Morning -->
+  <div class="flowunit">
+    <div class="phone">
+      <div class="statusbar"><span>9:41</span><span class="icons">▮▮▮ ⌁ ▰</span></div>
+      <div class="screen">
+        <div class="apphead">
+          <div class="brand">WLO <small>Friday, Sep 11</small></div>
+          <div class="actions">
+            <span class="chip">🔥 12</span>
+            <span class="chip">📋 ready</span>
+            <span class="chip" title="backup healthy">●</span>
+          </div>
+        </div>
+
+        <div class="card accent-edge">
+          <div class="card-title">Weigh-in <span class="right faint">leads until logged</span></div>
+          <div style="display:flex; align-items:center; justify-content:space-between; gap:10px;">
+            <div>
+              <div class="stat-m">Step on, snap, or type</div>
+              <div class="receipt" style="margin-top:2px;">yesterday 179.8 · trend <b style="color:var(--text-primary)">179.1</b></div>
+            </div>
+            <a class="btn primary small" href="04-weigh-in-trend-f06-f08.html" style="text-decoration:none;">Log</a>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">Trend <span class="prov derived">derived · EWMA α 0.15</span></div>
+          <div style="display:flex; align-items:baseline; gap:12px;">
+            <div class="hero">179.1</div>
+            <span class="delta down">↓ 0.6</span>
+          </div>
+          <svg width="100%" height="44" viewBox="0 0 330 44" style="margin-top:8px">
+            <path class="band" d="M0,18 L330,26 L330,44 L0,38 Z"/>
+            <polyline class="spark-dim" points="0,30 30,24 60,33 90,20 120,28 150,22 180,30 210,19 240,27 270,17 300,25 330,14"/>
+            <polyline class="spark" points="0,27 33,26 66,28 99,25 132,26 165,23 198,23 231,20 264,19 297,17 330,14"/>
+          </svg>
+          <div class="receipt faint" style="margin-top:4px;">scale dots vs trend · ribbon = 30-day change · tap for history</div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">Today <span class="prov adaptive">adaptive · check-in Sep 8</span></div>
+          <div style="display:flex; gap:14px; align-items:center;">
+            <div class="ring ring-big" style="--fill:38">
+              <div class="center">
+                <div class="stat-m">1,180</div>
+                <div class="receipt faint">of 1,900 kcal</div>
+              </div>
+            </div>
+            <div style="flex:1">
+              <div class="stat-m">720 left</div>
+              <div class="macrodots">
+                <span class="m"><span class="sw" style="background:var(--series-4)"></span>P 92/165 g</span>
+                <span class="m"><span class="sw" style="background:var(--series-1)"></span>C 118/215</span>
+                <span class="m"><span class="sw" style="background:var(--series-2)"></span>F 38/70</span>
+              </div>
+              <div class="receipt faint" style="margin-top:8px;">tap the ring → energy detail · <span class="prov estimated" style="margin-left:2px;">fallback: provisional</span> when held</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">Today’s plan <span class="right receipt">F03 · week 12</span></div>
+          <div style="display:flex; justify-content:space-between; align-items:center; gap:10px;">
+            <div>
+              <div style="font-weight:600;">Lunch · lentil curry + rice</div>
+              <div class="receipt">480 kcal · 21 g P · <span class="prov derived">planned</span></div>
+            </div>
+            <a class="btn secondary small" href="02-photo-ladder-f02.html" style="text-decoration:none;">Log as planned</a>
+          </div>
+        </div>
+
+        <div class="rail">
+          <div class="qa primary"><span class="ic">📷</span>Log food</div>
+          <div class="qa"><span class="ic">⚖</span>Weigh</div>
+          <div class="qa"><span class="ic">🌿</span>Digestion</div>
+          <div class="qa"><span class="ic">🏋</span>Workout<span class="badge"></span></div>
+        </div>
+
+        <div class="navbar">
+          <div class="tab active"><span class="ic">◉</span>Hub</div>
+          <div class="tab"><span class="ic">▦</span>Plan</div>
+          <div class="tab"><span class="ic">✦</span>Insights</div>
+          <div class="tab"><span class="ic">▣</span>Archive</div>
+          <div class="tab"><span class="ic">🌿</span>Digestion</div>
+        </div>
+      </div>
+      <span class="pin" style="top:54px; right:70px;">1</span>
+      <span class="pin" style="top:210px; right:30px;">2</span>
+      <span class="pin" style="top:330px; left:36px;">3</span>
+      <span class="pin" style="top:560px; right:30px;">4</span>
+      <span class="pin" style="bottom:120px; left:34px;">5</span>
+    </div>
+    <div class="caption annotation">
+      <b>Morning — first-screen contract.</b>
+      <ol>
+        <li><span class="pin-ref">1</span>Streak chip + report-ready pill are display-only (F11 owns); backup-health dot rides the gear menu — never a nag badge (IA §1.1).</li>
+        <li><span class="pin-ref">2</span>Hero = trend-first framing, never raw weight alone; the raw 179.8 stays small print (F06 frozen card). Delta chip: neutral/accent hues only — no alarm-red exists in the theme.</li>
+        <li><span class="pin-ref">3</span>Provenance chips mandatory (FEATURES §2.1): trend chip names the smoother; ring chip names the target source (“adaptive · check-in Sep 8”) and falls back to a “provisional” chip when the engine is <span class="held-c">held</span>.</li>
+        <li><span class="pin-ref">4</span>“Log as planned” = zero-tap-path meal replay (F10 §4 input minimization; R-B1 prefill treaty).</li>
+        <li><span class="pin-ref">5</span>Quick-action rail: camera is primary; badge-dot on workout = PR news from F05; long-press camera = kcal-only quick-add. Every action starts here and finishes ≤2 taps (5-second doctrine).</li>
+      </ol>
+    </div>
+  </div>
+
+  <!-- Midday -->
+  <div class="flowunit">
+    <div class="phone">
+      <div class="statusbar"><span>12:47</span><span class="icons">▮▮▮ ⌁ ▰</span></div>
+      <div class="screen">
+        <div class="apphead">
+          <div class="brand">WLO <small>Friday, Sep 11</small></div>
+          <div class="actions"><span class="chip">🔥 12</span><span class="chip" title="backup healthy">●</span></div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">Today <span class="prov adaptive">adaptive · check-in Sep 8</span></div>
+          <div style="display:flex; gap:14px; align-items:center;">
+            <div class="ring ring-big" style="--fill:63">
+              <div class="center"><div class="stat-m">1,660</div><div class="receipt faint">of 1,900 kcal</div></div>
+            </div>
+            <div style="flex:1">
+              <div class="stat-m">240 left</div>
+              <div class="macrodots">
+                <span class="m"><span class="sw" style="background:var(--series-4)"></span>P 128/165</span>
+                <span class="m"><span class="sw" style="background:var(--series-1)"></span>C 171/215</span>
+                <span class="m"><span class="sw" style="background:var(--series-2)"></span>F 52/70</span>
+              </div>
+              <div class="receipt" style="margin-top:8px;">lunch logged in 6 s <span class="faint">· photo</span></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">Today’s plan <span class="right receipt">1 of 3 confirmed</span></div>
+          <div class="stat-row">
+            <span class="label"><span class="dot logged"></span>&nbsp; Lunch · lentil curry</span>
+            <span class="value receipt">512 kcal <span class="prov measured">DB-verified</span></span>
+          </div>
+          <div class="stat-row">
+            <span class="label"><span class="dot open"></span>&nbsp; Dinner · salmon, potatoes</span>
+            <span class="value"><a class="btn secondary small" href="02-photo-ladder-f02.html" style="text-decoration:none;">Log as planned</a></span>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">Trend <span class="prov derived">derived · EWMA α 0.15</span></div>
+          <div style="display:flex; align-items:baseline; gap:12px;">
+            <div class="hero">179.1</div><span class="delta down">↓ 0.6</span>
+            <span class="receipt faint" style="margin-left:auto;">this morning</span>
+          </div>
+        </div>
+
+        <div class="card sunken">
+          <div class="card-title">Diary · today <span class="right weekdots">
+            <span><span class="dot logged"></span><div class="lbl">M</div></span>
+            <span><span class="dot logged"></span><div class="lbl">T</div></span>
+            <span><span class="dot fasted"></span><div class="lbl">W</div></span>
+            <span><span class="dot logged"></span><div class="lbl">T</div></span>
+            <span><span class="dot logged"></span><div class="lbl">F</div></span></span>
+          </div>
+          <div class="stat-row"><span class="label">Breakfast · oats &amp; kiwi</span><span class="value receipt">380 · <span class="prov estimated">AI-est</span></span></div>
+          <div class="stat-row"><span class="label">Lunch · lentil curry + rice 📷</span><span class="value receipt">512 · <span class="prov measured">DB-verified</span></span></div>
+          <div class="stat-row"><span class="label">Water</span><span class="value receipt">1.25 / 2.5 L</span></div>
+        </div>
+
+        <div class="rail">
+          <div class="qa primary"><span class="ic">📷</span>Log food</div>
+          <div class="qa"><span class="ic">⚖</span>Weigh</div>
+          <div class="qa"><span class="ic">🌿</span>Digestion</div>
+          <div class="qa"><span class="ic">🏋</span>Workout</div>
+        </div>
+
+        <div class="navbar">
+          <div class="tab active"><span class="ic">◉</span>Hub</div>
+          <div class="tab"><span class="ic">▦</span>Plan</div>
+          <div class="tab"><span class="ic">✦</span>Insights</div>
+          <div class="tab"><span class="ic">▣</span>Archive</div>
+          <div class="tab"><span class="ic">🌿</span>Digestion</div>
+        </div>
+      </div>
+      <span class="pin" style="top:120px; right:30px;">6</span>
+      <span class="pin" style="top:300px; right:64px;">7</span>
+    </div>
+    <div class="caption annotation">
+      <b>Midday — after a log.</b>
+      <ol>
+        <li><span class="pin-ref">6</span>Ring swept to 63 % with a 400 ms ease-out + tick at sweep end (F10 motion table); the save arc landed here from flow 02. Copy is a fact (“240 left”), never a verdict.</li>
+        <li><span class="pin-ref">7</span>Plan-card state machine (R-B1): confirmed slot shows actuals with the entry’s own provenance (DB-verified beats plan estimate); open slot still one tap. Weigh-in card is gone after logging; re-weighs would simply join (R-B8).</li>
+      </ol>
+    </div>
+  </div>
+
+  <!-- Evening -->
+  <div class="flowunit">
+    <div class="phone">
+      <div class="statusbar"><span>20:36</span><span class="icons">▮▮▮ ⌁ ▰</span></div>
+      <div class="screen">
+        <div class="apphead"><div class="brand">WLO <small>Friday, Sep 11 · evening</small></div>
+          <div class="actions"><span class="chip">🔥 12</span><span class="chip">●</span></div></div>
+
+        <div class="card accent-edge">
+          <div class="card-title">Close the day</div>
+          <div class="stat-row"><span class="label">Meals</span><span class="value receipt">3 logged · 1,910 kcal</span></div>
+          <div class="stat-row"><span class="label">Movement</span><span class="value receipt">Push A · 320 kcal <span class="prov estimated">est ±30%</span></span></div>
+          <div class="stat-row"><span class="label">Mark day</span><span class="value"><span class="chip accent">Logged</span> <span class="chip">Skipped</span> <span class="chip">Fasted</span></span></div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">Tomorrow</div>
+          <div style="display:flex; justify-content:space-between; align-items:center;">
+            <div>
+              <div style="font-weight:600;">Saturday planned · 3 meals</div>
+              <div class="receipt">1,880 kcal · cook 1 · leftovers 2</div>
+            </div>
+            <a class="btn secondary small" href="05-plan-shop-f03-f04.html" style="text-decoration:none;">Review</a>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">Today <span class="prov adaptive">adaptive · check-in Sep 8</span></div>
+          <div style="display:flex; gap:14px; align-items:center;">
+            <div class="ring ring-big" style="--fill:100">
+              <div class="center"><div class="stat-m">1,910</div><div class="receipt faint">of 1,900 · +10</div></div>
+            </div>
+            <div style="flex:1">
+              <div class="stat-m">Evening in band</div>
+              <div class="receipt dim" style="margin-top:2px;">+10 kcal on a −290 kcal/wk plan — inside daily variance (±150). The week is what compounds.</div>
+              <div class="receipt faint" style="margin-top:6px;">in-band landing: double micro-bounce + success haptic</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="navbar">
+          <div class="tab active"><span class="ic">◉</span>Hub</div>
+          <div class="tab"><span class="ic">▦</span>Plan</div>
+          <div class="tab"><span class="ic">✦</span>Insights</div>
+          <div class="tab"><span class="ic">▣</span>Archive</div>
+          <div class="tab"><span class="ic">🌿</span>Digestion</div>
+        </div>
+      </div>
+      <span class="pin" style="top:120px; right:30px;">8</span>
+      <span class="pin" style="top:430px; left:40px;">9</span>
+    </div>
+    <div class="caption annotation">
+      <b>Evening.</b>
+      <ol>
+        <li><span class="pin-ref">8</span>“Close the day” = one-tap day status (R-B1); exercise shows as context with its honest ±30 % chip — structurally incapable of raising the target (R-B2, “context, never credit”).</li>
+        <li><span class="pin-ref">9</span>Over-budget by 10 kcal renders as <i>information</i> (“inside daily variance”) — the ring shows state, not sin; no red exists to reach for (F07 rule). Plan-tomorrow links to flow 05 with the copy-today preset.</li>
+      </ol>
+    </div>
+  </div>
+
+  <!-- Check-in day -->
+  <div class="flowunit">
+    <div class="phone">
+      <div class="statusbar"><span>19:02</span><span class="icons">▮▮▮ ⌁ ▰</span></div>
+      <div class="screen">
+        <div class="apphead"><div class="brand">WLO <small>Sunday, Sep 13 · check-in day</small></div>
+          <div class="actions"><span class="chip">🔥 14</span><span class="chip">●</span></div></div>
+
+        <div class="card raised">
+          <div class="card-title">Weekly check-in <span class="chip accent">UPDATING</span></div>
+          <div class="stat-row">
+            <span class="label">Trend</span>
+            <span class="value stat-s">178.9 <span class="delta down">−0.6 kg/wk</span> <span class="faint">on pace</span></span>
+          </div>
+          <div class="stat-row">
+            <span class="label">Days logged</span>
+            <span class="value weekdots">
+              <span><span class="dot logged"></span><div class="lbl">M</div></span>
+              <span><span class="dot logged"></span><div class="lbl">T</div></span>
+              <span><span class="dot fasted"></span><div class="lbl">W</div></span>
+              <span><span class="dot logged"></span><div class="lbl">T</div></span>
+              <span><span class="dot logged"></span><div class="lbl">F</div></span>
+              <span><span class="dot logged"></span><div class="lbl">S</div></span>
+              <span><span class="dot open"></span><div class="lbl">S</div></span>
+            </span>
+          </div>
+          <div class="stat-row">
+            <span class="label">Measured burn</span>
+            <span class="value stat-s">2,440 <span class="delta up">+70</span> <span class="prov measured">vs formula 2,450</span></span>
+          </div>
+          <div class="stat-row">
+            <span class="label">Proposal</span>
+            <span class="value stat-s">1,900 kcal <span class="delta">−50</span> · P 165 <span class="delta">+5</span></span>
+          </div>
+          <div class="receipt faint" style="margin:8px 0;">Computed on your device · <u>how we got here</u></div>
+          <div class="btnrow">
+            <a class="btn primary" href="03-checkin-f07.html" style="text-decoration:none;">Apply</a>
+            <a class="btn secondary" href="03-checkin-f07.html" style="text-decoration:none;">Keep</a>
+            <a class="btn ghost" href="03-checkin-f07.html" style="text-decoration:none;">Discuss</a>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">Trend <span class="prov derived">derived · EWMA α 0.15</span></div>
+          <div style="display:flex; align-items:baseline; gap:12px;">
+            <div class="hero">178.9</div><span class="delta down">↓ 0.4</span>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">Today <span class="prov adaptive">adaptive · check-in Sep 8</span></div>
+          <div style="display:flex; gap:14px; align-items:center;">
+            <div class="ring ring-big" style="--fill:55">
+              <div class="center"><div class="stat-m">1,045</div><div class="receipt faint">of 1,900 kcal</div></div>
+            </div>
+            <div style="flex:1"><div class="receipt dim">Yesterday’s proposal sits one tap away — the ring updates the moment you Apply.</div></div>
+          </div>
+        </div>
+
+        <div class="navbar">
+          <div class="tab active"><span class="ic">◉</span>Hub</div>
+          <div class="tab"><span class="ic">▦</span>Plan</div>
+          <div class="tab"><span class="ic">✦</span>Insights</div>
+          <div class="tab"><span class="ic">▣</span>Archive</div>
+          <div class="tab"><span class="ic">🌿</span>Digestion</div>
+        </div>
+      </div>
+      <span class="pin" style="top:120px; right:30px;">10</span>
+      <span class="pin" style="top:284px; right:36px;">11</span>
+    </div>
+    <div class="caption annotation">
+      <b>Check-in day (R-U17).</b>
+      <ol>
+        <li><span class="pin-ref">10</span>Check-in card occupies the hero slot for the day; trend card returns tomorrow. Frozen anatomy compressed here — full sequence in flow 03.</li>
+        <li><span class="pin-ref">11</span>Status chip before numbers (Zolt/MacroFactor pattern); “6/7 logged” renders day dots with Wednesday’s fast marked as chosen, never missed. Swiping the card away = Keep (no dismiss-shame).</li>
+      </ol>
+    </div>
+  </div>
+
+  <!-- Notification + widget -->
+  <div class="flowunit">
+    <div class="phone" style="background:#08090B;">
+      <div class="statusbar"><span>9:12</span><span class="icons">▮▮▮ ⌁ ▰</span></div>
+      <div class="screen" style="padding-top:56px;">
+        <div class="notif" style="margin-bottom:14px;">
+          <div class="app-ic">W</div>
+          <div style="flex:1">
+            <div style="display:flex; justify-content:space-between;"><b style="font-size:13px;">WLO</b><span class="faint" style="font-size:11px;">now</span></div>
+            <div style="font-size:13.5px; margin-top:2px;">Breakfast is still open — want the 5-second photo path?</div>
+            <div class="acts"><span>Log breakfast</span><span>Snooze 1 h</span></div>
+          </div>
+        </div>
+        <div class="receipt faint" style="margin:2px 4px 18px;">silent channel · one pulse · dismissed = never re-fired for this gap (R-U1)</div>
+
+        <div class="widget">
+          <div style="display:flex; justify-content:space-between; align-items:baseline;">
+            <div>
+              <div class="hero" style="font-size:44px;">179.1</div>
+              <div class="receipt"><span class="down">▼ 0.6</span> · trend</div>
+            </div>
+            <div class="ring" style="--fill:63; width:64px; height:64px;">
+              <div class="center"><span class="stat-s">720</span><span class="faint" style="font-size:9px;">left</span></div>
+            </div>
+          </div>
+          <svg width="100%" height="30" viewBox="0 0 296 30">
+            <polyline class="spark" points="0,20 30,19 60,21 90,17 120,18 150,15 180,16 210,12 240,13 270,10 296,7"/>
+          </svg>
+          <div class="receipt faint">WLO · every zone deep-links · lock screen: ●●●.●</div>
+        </div>
+      </div>
+      <span class="pin" style="top:110px; right:22px;">12</span>
+      <span class="pin" style="top:400px; right:26px;">13</span>
+    </div>
+    <div class="caption annotation">
+      <b>Off-app surfaces.</b>
+      <ol>
+        <li><span class="pin-ref">12</span>Nudge copy is an invitation, never a verdict; ≤2 action buttons; overflow holds “Pause nudges for a week”. Permission was requested once, in context, after the first successful log.</li>
+        <li><span class="pin-ref">13</span>4×2 widget: hero + ring + sparkline; all zones deep-link; refresh is event-driven (save) + daily — never a poller (Glance 30-min floor). Lock-screen mode redacts numerals to dots.</li>
+      </ol>
+    </div>
+  </div>
+
+</div>
+
+<!-- ============================= SELF-REVIEW ============================= -->
+<div class="review">
+  <h2>Self-review — design bar &amp; spec checklist (flow 01)</h2>
+  <div class="cols">
+    <div class="col"><div class="annotation">
+      <b>Design bar</b>
+      <ol>
+        <li><b>Provenance chips on every derived number</b> — trend (derived · EWMA), ring (adaptive · check-in), plan calories (planned), expenditure (est ±30 %), diary entries (AI-est / DB-verified). None missing. ✓</li>
+        <li><b>Tone</b> — “720 left”, “+10 … inside daily variance”, “Breakfast is still open — want…?”. No failed/missed/over-as-verdict; banned list clean. ✓</li>
+        <li><b>No red / no alarm</b> — +10 kcal renders neutral-delta; urgency only via position (weigh card leads). No red token exists. ✓</li>
+        <li><b>R-U7 naming</b> — nav + rail say “Digestion” and “Archive”; no taboo words anywhere; notification copy generic. ✓</li>
+        <li><b>R-U13</b> — Wednesday fast renders as a *chosen* state (dot legend), never a gap; gut is absent from any completeness model. ✓</li>
+        <li><b>R-U15</b> — weigh-in card copy “Step on, snap, or type” states three equal paths up front. ✓</li>
+        <li><b>Local-first</b> — no spinner anywhere; offline never referenced as a state; “Computed on your device” on the check-in card. ✓</li>
+        <li><b>Density</b> — 4 cards answer 3 questions above the fold at 390×844; whitespace only at hero/ring. ✓</li>
+      </ol>
+    </div></div>
+    <div class="col"><div class="annotation">
+      <b>Spec micro-interactions honored</b>
+      <ol>
+        <li>Hero spring count-up ~600 ms; delta chip 150 ms pop (motion table §4.1) — annotated, static by medium.</li>
+        <li>Ring 400 ms ease-out sweep + end tick; in-band evening landing = double micro-bounce + success haptic. ✓ (noted in mock)</li>
+        <li>Rail 32 ms press-scale + tick; camera long-press = kcal quick-add. ✓</li>
+        <li>Card collapse via swipe-up + 5 s undo — reserved for the diary slice card (not shown collapsed). ✓</li>
+        <li>Nudge: silent channel, ≤2 actions, animated collapse, dismissal memory, one-tap pause. ✓</li>
+        <li>R-U17 promotion shown; R-U9 recap in-app only. ✓</li>
+        <li>Widget: event-driven refresh, redaction state, R-U12 single framework. ✓</li>
+        <li>No confetti on logging — celebration stays geometric (ring sweep only). ✓</li>
+      </ol>
+      <b>Open items surfaced:</b> widget interactivity ceiling (F10 §10 open question) stays [v1] static zones; streak-chip tick values unspecified in spec → design-system default (150 ms pop) applied.
+    </div></div>
+  </div>
+</div>
+
+</div>
+</body>
+</html>

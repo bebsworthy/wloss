@@ -46,8 +46,34 @@ docs/
                             ai-platform, data-vault)
 ```
 
+UI/UX design (Phase 2) lives in a third tree, produced per
+`docs/design/KICKOFF.md`:
+
+```
+docs/design/
+├── KICKOFF.md              The phase prompt (mission, design bar, DoD)
+├── research/
+│   └── synthesis.md        UI-level pattern mining (19 docs) + platform
+│                           research; pattern → source → WLO surface
+├── DESIGN-SYSTEM.md        ★ Tokens, consolidated motion/haptics table,
+│                           component inventory (all 13 specs swept)
+├── IA.md                   Navigation model, surface map, deep links,
+│                           widget surfaces, accessibility pragmatics
+└── flows/                  7 key-flow prototypes (HTML phone frames;
+    │                       open flows/index.html in a browser)
+    ├── index.html          ★ START HERE for prototypes
+    ├── _wlo.css            Design-system tokens as CSS (shared)
+    └── 01…07-*.html        day-loop · photo-ladder · check-in · weigh-in+
+                            archive · plan-shop · reportcard+bristol ·
+                            onboarding — each: wireframe → annotated mock
+                            → self-review
+```
+
 Reading order for newcomers: `docs/objective.md` → `docs/features/FEATURES.md`
 → the feature spec you're working on → `docs/research/synthesis.md` for the "why".
+For UI work: `docs/design/DESIGN-SYSTEM.md` → `docs/design/IA.md` → the flow
+prototype you're touching; `docs/design/research/synthesis.md` for pattern
+provenance.
 
 **Governing docs:** `FEATURES.md` §3 rulings (R-B*/R-A*/R-U*/R-C*/R-S*) are
 frozen cross-feature decisions — do not contradict them in feature docs or

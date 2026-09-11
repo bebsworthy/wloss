@@ -1,0 +1,701 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>WLO · Flow 07 — Onboarding wizard (F01)</title>
+<link rel="stylesheet" href="_wlo.css">
+<style>
+  /* flow-specific layout only — colors/values come from _wlo.css tokens */
+  .steps { display:flex; align-items:center; gap:4px; margin:0 2px 10px; }
+  .steps .seg { flex:1; height:3px; border-radius:2px; background:var(--outline); }
+  .steps .seg.done { background:var(--accent-dim); }
+  .steps .seg.on { background:var(--accent); }
+  .steps .skiplink { flex:none; margin-left:9px; font-size:11px; font-weight:550; color:var(--text-tertiary); }
+
+  .welcome { margin:26px 4px 18px; }
+  .welcome .wm { font-size:40px; font-weight:800; letter-spacing:-.02em; color:var(--text-primary); }
+  .welcome .wm span { color:var(--accent); }
+  .welcome .value { font-size:19px; font-weight:600; line-height:1.35; color:var(--text-primary); margin-top:18px; letter-spacing:-.01em; }
+  .welcome .arch { font-size:14.5px; color:var(--text-secondary); margin-top:10px; }
+  .welcome .chips { display:flex; gap:6px; flex-wrap:wrap; margin-top:14px; }
+
+  .dials { display:flex; gap:12px; margin-top:4px; }
+  .dial { flex:1; text-align:center; }
+  .dial svg { width:118px; height:118px; }
+  .dial .dl { font-size:10.5px; font-weight:600; letter-spacing:.05em; text-transform:uppercase; color:var(--text-tertiary); margin-top:2px; }
+  .dial .prov { margin-top:5px; }
+  .tickring { fill:none; stroke:var(--outline); stroke-width:7; stroke-dasharray:1.3 6.87; }
+  .tickring.big { stroke:var(--text-tertiary); stroke-width:9; stroke-dasharray:2.6 38.57; }
+  .dialtrack { fill:none; stroke:var(--outline); stroke-width:3.5; }
+  .arc { fill:none; stroke:var(--accent); stroke-width:3.5; stroke-linecap:round; }
+  .dnum { fill:var(--text-primary); font-size:22px; font-weight:600; font-variant-numeric:var(--tnum); }
+  .deltarow { display:flex; align-items:center; gap:10px; margin-top:10px; }
+
+  .sl-track { stroke:var(--outline); stroke-width:3; stroke-linecap:round; }
+  .sl-tick { stroke:var(--text-tertiary); stroke-width:2; }
+  .sl-label { fill:var(--text-tertiary); font-size:10.5px; font-variant-numeric:var(--tnum); }
+  .sl-thumb { fill:var(--accent); }
+  .sl-wall { stroke:var(--held); stroke-width:2.5; }
+
+  .fan-outer { fill:rgba(31,107,84,.16); }
+  .fan-mid { fill:rgba(31,107,84,.32); }
+  .fan-axis { fill:var(--text-tertiary); font-size:10px; font-variant-numeric:var(--tnum); }
+  .fan-note { fill:var(--developing); font-size:10px; font-style:italic; }
+
+  .tcard { border:1px solid var(--outline); border-radius:16px; background:var(--surface); padding:12px 14px; margin-bottom:8px; }
+  .tcard.sel { background:var(--surface-raised); border-color:rgba(61,214,165,.55); box-shadow:0 0 0 4px var(--ideal-halo); }
+  .tcard .tname { font-size:15px; font-weight:600; color:var(--text-primary); display:flex; justify-content:space-between; align-items:center; }
+  .tcard .trules { font-size:12.5px; color:var(--text-secondary); margin-top:4px; }
+  .macrodots { display:flex; gap:10px; margin-top:8px; }
+  .macrodots .m { display:flex; align-items:center; gap:5px; font-size:12px; font-variant-numeric:var(--tnum); color:var(--text-secondary); }
+  .macrodots .sw { width:9px; height:9px; border-radius:3px; }
+
+  .deck { position:relative; height:238px; margin:4px 0 8px; }
+  .qcard { position:absolute; left:4px; right:4px; top:6px; height:210px; border-radius:20px;
+           background:var(--surface-raised); border:1px solid var(--outline); padding:18px 16px;
+           display:flex; flex-direction:column; }
+  .qcard.behind { transform:scale(.94) translateY(16px); opacity:.45; }
+  .qcard.flung { transform:rotate(-9deg) translateX(-58px); }
+  .qcard .qc-kicker { font-size:11px; font-weight:550; letter-spacing:.04em; text-transform:uppercase; color:var(--text-tertiary); }
+  .qcard .q { font-size:27px; font-weight:650; letter-spacing:-.01em; color:var(--text-primary); margin:auto 0 8px; }
+  .qcard .dirchips { display:flex; justify-content:space-between; }
+
+  .sch-legend { display:flex; gap:12px; margin-top:8px; font-size:11.5px; color:var(--text-secondary); }
+  .sch-legend .sw { width:9px; height:9px; border-radius:3px; display:inline-block; margin-right:4px; vertical-align:-1px; }
+
+  .ladder { margin:2px 0 6px 6px; }
+  .ladder .rung { position:relative; padding:7px 0 7px 16px; border-left:2px dashed var(--outline); margin-left:4px; }
+  .ladder .rung::before { content:""; position:absolute; left:-5.5px; top:13px; width:8px; height:8px; border-radius:50%; background:var(--text-tertiary); }
+  .ladder .rung.goal { border-left-color:rgba(61,214,165,.5); }
+  .ladder .rung.goal::before { background:var(--accent); box-shadow:0 0 0 4px var(--ideal-halo); }
+  .ladder .rung .rr { display:flex; justify-content:space-between; align-items:baseline; gap:8px; }
+  .here { display:flex; align-items:center; gap:8px; margin:0 0 10px 12px; }
+</style>
+</head>
+<body>
+<div class="page">
+
+<header>
+  <h1>Flow 07 — Onboarding wizard</h1>
+  <div class="meta">
+    Spec: <a href="../../features/F01-onboarding-diet-plans.md">F01 Onboarding, Goals &amp; Diet Plan Studio</a> · IA: <a href="../IA.md">IA.md §5</a> ·
+    Signature moment: the 600 ms forecast bloom — the first-win design (F01 §6) · 2026-09-11 · prototype, not implementation<br>
+    Companion flows: <a href="01-day-loop-f10.html">01 Day loop (Hub landing after Start)</a> · <a href="03-checkin-f07.html">03 check-in (mature cone)</a> · <a href="04-weigh-in-trend-f06-f08.html">04 weigh-in &amp; trend</a> · <a href="index.html">index</a>
+  </div>
+</header>
+
+<!-- ============================= WIREFRAMES ============================= -->
+<div class="stage-title">Wireframes <small>· structure before skin — 8 steps in &lt; 3 minutes, zero account, zero network; every step skippable (“later”, never “incomplete”)</small></div>
+<div class="stage">
+
+  <div class="flowunit">
+    <div class="phone wf"><div class="screen">
+      <div class="wf-box solid row">status bar</div>
+      <div class="wf-box row">progress: 8 slim segments · 1st lit · “skip for now” ghost — on every step</div>
+      <div class="wf-box tall">WLO wordmark · one sentence of value · one sentence of architecture (“no account, no server, no ads”)</div>
+      <div class="wf-note">privacy stated once, here — never re-nagged</div>
+      <div class="wf-box row">primary button: “Set up my plan”</div>
+      <div class="wf-box row">secondary button: “I’m coming from another app” → F13 import branch</div>
+      <div class="wf-note">equal first-class path; v1 = generic CSV/JSON, offline (R-S4)</div>
+      <div class="wf-box row">“takes about 3 minutes” line</div>
+      <div class="wf-box row">no permission dialogs anywhere — notifications come later (F10)</div>
+    </div></div>
+    <div class="caption annotation"><b>Step 1 — Welcome &amp; privacy.</b> One card proves “different” before asking anything: value sentence, architecture sentence, two equal buttons. Skip-all exits to a Balanced default plan from whatever is known.</div>
+  </div>
+
+  <div class="flowunit">
+    <div class="phone wf"><div class="screen">
+      <div class="wf-box solid row">status bar</div>
+      <div class="wf-box row">progress: seg 2 lit · “Later →”</div>
+      <div class="wf-box tall">two rotary dials: current (prefilled) → target · delta counts up beside them</div>
+      <div class="wf-note">provenance chip per field: measured / user-entered / estimated</div>
+      <div class="wf-box row">pace slider + tick marks · 0.5 %/week default · hard cap at 1.0 %/week (the wall)</div>
+      <div class="wf-box">counter-offer card — only when the slider is pushed into the wall</div>
+      <div class="wf-note">Reject haptic + negotiation, never a silent clamp (R-B2 · Appendix A #4)</div>
+      <div class="wf-box row">“have a date in mind?” → converts to implied pace</div>
+      <div class="wf-box row">Continue → forecast · skip → defaults chip estimated</div>
+    </div></div>
+    <div class="caption annotation"><b>Step 2 — Goal.</b> Two dials and a slider; the only numbers with write authority over v1. Date-goals are demoted to implied pace — dates are advisory, never a countdown.</div>
+  </div>
+
+  <div class="flowunit">
+    <div class="phone wf"><div class="screen">
+      <div class="wf-box solid row">status bar</div>
+      <div class="wf-box row">progress: seg 3 lit · “Later →”</div>
+      <div class="wf-box tall">forecast fan: decelerating center line → 78.0 · 3 bands widening with horizon</div>
+      <div class="wf-note">bloom 600 ms optimistic→pessimistic; middle band carries slow shimmer</div>
+      <div class="wf-box row">ESTIMATED chip (types itself in) · “on trend … · range …” dates</div>
+      <div class="wf-box row">copy: “formula-based — will sharpen as you log” · “an estimate, not a promise”</div>
+      <div class="wf-note">R-A5 cold-start mode; ESTIMATED until F07 has ≥ 14 days of real data</div>
+      <div class="wf-box row">tap any band → its assumptions (“how we got here”)</div>
+      <div class="wf-box row">Continue → templates</div>
+    </div></div>
+    <div class="caption annotation"><b>Step 3 — Live forecast preview.</b> The first dopamine hit, honestly hedged: on screen ≤ 30 s after entering a goal, rendered by F07, wide on purpose. Screenshots survive.</div>
+  </div>
+
+  <div class="flowunit">
+    <div class="phone wf"><div class="screen">
+      <div class="wf-box solid row">status bar</div>
+      <div class="wf-box row">progress: seg 4 lit · “Later →”</div>
+      <div class="wf-box tall">template gallery: Balanced Deficit (default) · High-Protein · Keto — rules in plain language on each face</div>
+      <div class="wf-note">0.94× spring press · selection ripple in the template’s accent · keto previews its surface reshuffle</div>
+      <div class="wf-box row">“more” hint: Mediterranean · Low-Carb · IF 16:8/5:2/6:1 · Custom — 7 seeds</div>
+      <div class="wf-note">no template privileged: plain JSON, editable later in the Studio</div>
+      <div class="wf-box row">Continue → quiz · skip → Balanced default</div>
+    </div></div>
+    <div class="caption annotation"><b>Step 4 — Template gallery.</b> Cards, not a funnel: every card names its rules in plain language; the choice re-arranges tracker surfaces and is reversible forever.</div>
+  </div>
+
+  <div class="flowunit">
+    <div class="phone wf"><div class="screen">
+      <div class="wf-box solid row">status bar</div>
+      <div class="wf-box row">progress: seg 5 lit · “Later →”</div>
+      <div class="wf-box tall">swipe deck: one card mid-swipe (tilted, flinging left = exclude) · next card peeking behind</div>
+      <div class="wf-note">left fling = exclude (double-tick) · right = okay (single snap)</div>
+      <div class="wf-box row">pile counter “3 / 8” — rolling odometer</div>
+      <div class="wf-box row">“hold a card → why we ask”</div>
+      <div class="wf-note">R-S6: 8-card core in v1; the 119-item long tail lives in the Studio</div>
+      <div class="wf-box row">Continue → schedule</div>
+    </div></div>
+    <div class="caption annotation"><b>Step 5 — Preference quiz.</b> Eight swipes, not forty questions; answers write the PreferenceProfile and re-filter F03/F04 immediately.</div>
+  </div>
+
+  <div class="flowunit">
+    <div class="phone wf"><div class="screen">
+      <div class="wf-box solid row">status bar</div>
+      <div class="wf-box row">progress: seg 6 lit · “Later →”</div>
+      <div class="wf-box tall">7-bar schedule chart (weekday ×5, weekend ×2) · weekly total pinned while bars drag</div>
+      <div class="wf-note">drag weekend up → weekday siblings compensate in real time; sum is the invariant</div>
+      <div class="wf-box row">pinned total row: “same weekly deficit”</div>
+      <div class="wf-box row">skip note: “flat by default” — flat 1,800 × 7</div>
+      <div class="wf-note">skipped schedule ships chip estimated in the Studio</div>
+      <div class="wf-box row">Continue → milestones</div>
+    </div></div>
+    <div class="caption annotation"><b>Step 6 — Schedule (skippable).</b> Optional calorie cycling with the weekly total pinned — a visible invariant, not arithmetic trust.</div>
+  </div>
+
+  <div class="flowunit">
+    <div class="phone wf"><div class="screen">
+      <div class="wf-box solid row">status bar</div>
+      <div class="wf-box row">progress: seg 7 lit · seg 8 = Start</div>
+      <div class="wf-box tall">milestone ladder: 4–8 rungs · “you are here” on top · each rung a projected date RANGE</div>
+      <div class="wf-note">ranges only while F07 is DEVELOPING; never a single promised date; 80 ms stagger</div>
+      <div class="wf-box row">rungs renameable (“Size 34 jeans”)</div>
+      <div class="wf-box row">summary receipt: budget · macros · pace · rungs · skips → estimated</div>
+      <div class="wf-box row">primary: “Start — write Plan v1” → F10 Hub · ghost: “browse the Studio first”</div>
+      <div class="wf-note">no notification prompt here — that moment belongs to the first log (F10)</div>
+    </div></div>
+    <div class="caption annotation"><b>Steps 7–8 — Milestones &amp; Start.</b> The ladder makes a 14.4 kg goal winnable; Start is the plan’s first write (Plan v1) and hands off to the Day loop.</div>
+  </div>
+
+</div>
+
+<!-- ============================= MOCKS ============================= -->
+<div class="stage-title">Annotated mocks <small>· dark canonical theme · pins explained under each phone</small></div>
+<div class="stage">
+
+  <!-- 1 · Welcome & privacy -->
+  <div class="flowunit">
+    <div class="phone">
+      <div class="statusbar"><span>9:41</span><span class="icons">▮▮▮ ⌁ ▰</span></div>
+      <div class="screen">
+        <div class="steps">
+          <span class="seg on"></span><span class="seg"></span><span class="seg"></span><span class="seg"></span><span class="seg"></span><span class="seg"></span><span class="seg"></span><span class="seg"></span>
+          <span class="skiplink">skip for now</span>
+        </div>
+        <div class="apphead" style="margin-top:26px;">
+          <div class="brand" style="font-size:15px;">WLO <small>set up · 1 of 8</small></div>
+          <div class="actions"><span class="chip">✈ works offline</span></div>
+        </div>
+
+        <div class="welcome">
+          <div class="wm">WLO<span>.</span></div>
+          <div class="value">Set a goal and watch an honest forecast bloom around it — a plan you own, versioned like a document.</div>
+          <div class="arch">No account, no server, no ads — every number is computed and kept on this device.</div>
+          <div class="chips">
+            <span class="chip">no email</span>
+            <span class="chip">no sign-up</span>
+            <span class="chip">airplane-mode safe</span>
+            <span class="chip">free forever · GPLv3</span>
+          </div>
+        </div>
+
+        <a class="btn primary block" href="07-onboarding-f01.html" style="text-decoration:none;">Set up my plan</a>
+        <div style="height:8px;"></div>
+        <a class="btn secondary block" href="07-onboarding-f01.html" style="text-decoration:none;">I’m coming from another app</a>
+
+        <div class="receipt faint" style="margin:12px 4px 0;">takes about 3 minutes · every step skippable — “later”, never “incomplete”</div>
+
+        <div class="card" style="margin-top:16px;">
+          <div class="card-title">The next 7 steps <span class="right receipt">back is always free</span></div>
+          <div class="stat-row"><span class="label">Goal &amp; pace</span><span class="value receipt">2 dials · 1 slider</span></div>
+          <div class="stat-row"><span class="label">Forecast</span><span class="value receipt">3 bands · <span class="prov estimated">ESTIMATED</span></span></div>
+          <div class="stat-row"><span class="label">Diet template</span><span class="value receipt">7 cards · one pick</span></div>
+          <div class="stat-row"><span class="label">8 quick swipes</span><span class="value receipt">foods, household, cooking</span></div>
+          <div class="stat-row"><span class="label">Schedule · milestones</span><span class="value receipt">both optional</span></div>
+        </div>
+      </div>
+      <span class="pin" style="top:56px; right:56px;">1</span>
+      <span class="pin" style="top:250px; right:24px;">2</span>
+      <span class="pin" style="top:474px; left:22px;">3</span>
+      <span class="pin" style="top:536px; right:22px;">4</span>
+    </div>
+    <div class="caption annotation">
+      <b>Welcome &amp; privacy — the proof-before-ask screen.</b>
+      <ol>
+        <li><span class="pin-ref">1</span>Slim segmented progress + “skip for now” on <i>every</i> step: skips are framed as “later”, never “incomplete” (F01 §6). The meta-skip is real: skipping everything one-taps a Balanced default plan from whatever is known (F01 §4 fallback a).</li>
+        <li><span class="pin-ref">2</span>Exactly one sentence of value, one of architecture — “no account, no server, no ads”. Privacy statements are made once, on the surface itself, never repeated as nagging (DESIGN-SYSTEM §8). The ✈ chip states the offline posture; no spinner exists anywhere in the wizard.</li>
+        <li><span class="pin-ref">3</span>Import branch is an equal first-class path, not a detour: F13’s wizard parses generic CSV/JSON fully offline at v1 (R-S4); MFP/Lose It!/Paprika/Mealime converters are v1.x. “Your data outlives the app” is the wedge — Mealime’s shutdown is the case study.</li>
+        <li><span class="pin-ref">4</span>Zero permissions asked in the wizard: notification permission arrives once, in context, <i>after the first successful log</i> (F10 §4 / IA §5). The “about 3 minutes” line is the budget contract — active plan in &lt; 3 min, where “active” = plan written + first log ≤ 24 h (F01 §1).</li>
+      </ol>
+    </div>
+  </div>
+
+  <!-- 2 · Goal -->
+  <div class="flowunit">
+    <div class="phone">
+      <div class="statusbar"><span>9:43</span><span class="icons">▮▮▮ ⌁ ▰</span></div>
+      <div class="screen">
+        <div class="steps">
+          <span class="seg done"></span><span class="seg on"></span><span class="seg"></span><span class="seg"></span><span class="seg"></span><span class="seg"></span><span class="seg"></span><span class="seg"></span>
+          <span class="skiplink">Later →</span>
+        </div>
+        <div class="apphead"><div class="brand">WLO <small>set up · 2 of 8 · ~40 s in</small></div></div>
+
+        <div class="card">
+          <div class="card-title">Goal <span class="right receipt">rotary ticks per kg · thock on 5s</span></div>
+          <div class="dials">
+            <div class="dial">
+              <svg viewBox="0 0 120 120">
+                <circle class="tickring" cx="60" cy="60" r="52"/>
+                <circle class="tickring big" cx="60" cy="60" r="52"/>
+                <circle class="dialtrack" cx="60" cy="60" r="44"/>
+                <circle class="arc" cx="60" cy="60" r="44" stroke-dasharray="121 277" transform="rotate(-90 60 60)"/>
+                <text class="dnum" x="60" y="66" text-anchor="middle">92.4</text>
+              </svg>
+              <div class="dl">current</div>
+              <span class="prov measured">measured · Health Connect</span>
+            </div>
+            <div class="dial">
+              <svg viewBox="0 0 120 120">
+                <circle class="tickring" cx="60" cy="60" r="52"/>
+                <circle class="tickring big" cx="60" cy="60" r="52"/>
+                <circle class="dialtrack" cx="60" cy="60" r="44"/>
+                <circle class="arc" cx="60" cy="60" r="44" stroke-dasharray="88 277" transform="rotate(-90 60 60)"/>
+                <text class="dnum" x="60" y="66" text-anchor="middle">78.0</text>
+              </svg>
+              <div class="dl">target</div>
+              <span class="prov measured">user-entered</span>
+            </div>
+          </div>
+          <div class="deltarow">
+            <span class="delta down">− 14.4 kg</span>
+            <span class="receipt faint">counts up as the dials turn · snap + “thock” at every 5 kg (90 · 85 · 80…)</span>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">Pace <span class="prov estimated">0.5 %/wk ≈ 0.46 kg ≈ −510 kcal/day</span></div>
+          <svg width="100%" viewBox="0 0 330 58" style="margin-top:2px;">
+            <line class="sl-track" x1="14" y1="24" x2="302" y2="24"/>
+            <line class="sl-tick" x1="62" y1="20" x2="62" y2="28"/>
+            <line class="sl-tick" x1="158" y1="20" x2="158" y2="28"/>
+            <line class="sl-tick" x1="254" y1="20" x2="254" y2="28"/>
+            <line class="sl-tick" x1="14" y1="17" x2="14" y2="31"/>
+            <line class="sl-tick" x1="110" y1="17" x2="110" y2="31"/>
+            <line class="sl-tick" x1="206" y1="17" x2="206" y2="31"/>
+            <line class="sl-wall" x1="302" y1="12" x2="302" y2="36"/>
+            <line class="sl-tick" x1="302" y1="17" x2="302" y2="31"/>
+            <circle class="sl-thumb" cx="110" cy="24" r="9"/>
+            <text class="sl-label" x="14" y="48" text-anchor="middle">0.25</text>
+            <text class="sl-label" x="110" y="48" text-anchor="middle">0.5</text>
+            <text class="sl-label" x="206" y="48" text-anchor="middle">0.75</text>
+            <text class="sl-label" x="298" y="48" text-anchor="end">1.0 — the wall</text>
+          </svg>
+          <div class="receipt" style="margin-top:4px;">prefer a date? “by June” converts to an <b>implied pace</b> and is shown as pace — dates are advisory, never a countdown (Appendix A)</div>
+        </div>
+
+        <div class="card amber-edge">
+          <div class="card-title">The wall <span class="right receipt">only if you push past 1.0 %/wk</span></div>
+          <div style="font-size:14px; color:var(--text-primary); line-height:1.45;">“At your stats, 1.0 %/week is the fastest we’ll suggest — June 12 isn’t a promise we’ll make; here’s June 28 at a sustainable pace.”</div>
+          <div class="receipt faint" style="margin-top:8px;">slider stops at the cap with a Reject haptic · counter-offer card slides up · Accept June 28 / keep 0.5 %</div>
+        </div>
+
+        <a class="btn primary block" href="07-onboarding-f01.html" style="text-decoration:none;">Continue — see the forecast</a>
+        <div class="receipt faint" style="margin:10px 4px 0;">skip → Balanced plan from what’s known · any field left on its default ships <span class="prov estimated">estimated</span></div>
+      </div>
+      <span class="pin" style="top:170px; right:24px;">5</span>
+      <span class="pin" style="top:400px; right:24px;">6</span>
+      <span class="pin" style="top:562px; left:22px;">7</span>
+      <span class="pin" style="top:648px; right:24px;">8</span>
+    </div>
+    <div class="caption annotation">
+      <b>Goal — dials, slider, and the wall.</b>
+      <ol>
+        <li><span class="pin-ref">5</span>Current weight prefill carries its own provenance: <span class="prov measured">measured · Health Connect</span> when F06/F13 supplied it, <span class="prov measured">user-entered</span> when typed, <span class="prov estimated">estimated</span> when skipped. Dials: rotary haptic tick per kg, magnetic snap + soft “thock” (<span class="held-c">PRIMITIVE_THUD</span> @ low scale) at 5 kg multiples; the −14.4 delta counts up beside them (soft spring).</li>
+        <li><span class="pin-ref">6</span>Pace is the honest primitive: 0.5 %/week default with detent ticks; the ±1.0 %/wk pace cap is <b>hard validation in the write path</b> (Appendix A invariant 4), so the slider is physically incapable of expressing an unsafe plan.</li>
+        <li><span class="pin-ref">7</span>The wall is a designed refusal, not a clamp: Reject haptic (the one sanctioned reject-for-a-setting, R-D6 vocabulary) + this counter-offer card, verbatim from the spec. Safety framed as respect — “we don’t do crash math” — and the floor behind it (1,200 F / 1,500 M) is non-negotiable in code (R-B2, F01 §9).</li>
+        <li><span class="pin-ref">8</span>Date-goals (“by June 12”) convert to implied pace and render as pace forever; <code>targetDate</code> stays advisory in the ratified schema. The forecast appears ≤ 30 s after this step — the F01 objective the next screen exists to honor.</li>
+      </ol>
+    </div>
+  </div>
+
+  <!-- 3 · Forecast bloom -->
+  <div class="flowunit">
+    <div class="phone">
+      <div class="statusbar"><span>9:44</span><span class="icons">▮▮▮ ⌁ ▰</span></div>
+      <div class="screen">
+        <div class="steps">
+          <span class="seg done"></span><span class="seg done"></span><span class="seg on"></span><span class="seg"></span><span class="seg"></span><span class="seg"></span><span class="seg"></span><span class="seg"></span>
+          <span class="skiplink">Later →</span>
+        </div>
+        <div class="apphead"><div class="brand">WLO <small>set up · 3 of 8 · ~70 s in</small></div></div>
+
+        <div class="card raised">
+          <div class="card-title">Forecast to 78.0 kg <span class="prov estimated">ESTIMATED▍</span></div>
+          <svg class="chartbg" width="100%" viewBox="0 0 330 150">
+            <path class="fan-outer" d="M14,122 C104,60 224,24 318,14 L318,76 C214,84 104,102 14,124 Z"/>
+            <path class="fan-mid" d="M14,121 C110,66 230,38 318,26 L318,58 C224,66 110,88 14,123 Z"/>
+            <path class="spark" d="M14,122 C104,80 224,58 318,46" stroke-width="2.5"/>
+            <text class="fan-axis" x="18" y="140">today · 92.4</text>
+            <text class="fan-axis" x="312" y="38" text-anchor="end">78.0</text>
+            <text class="fan-note" x="150" y="74">shimmer</text>
+            <text class="fan-axis" x="14" y="160">Sep ’26</text>
+            <text class="fan-axis" x="152" y="160" text-anchor="middle">Jan ’27</text>
+            <text class="fan-axis" x="316" y="160" text-anchor="end">May ’27</text>
+          </svg>
+          <div style="display:flex; align-items:baseline; gap:10px; margin-top:10px;">
+            <div class="stat-l">May 6</div>
+            <span class="receipt">on trend · range <b style="color:var(--text-primary)">Mar 22 – Jul 5</b></span>
+          </div>
+          <div class="receipt dim" style="margin-top:4px;">an estimate, not a promise. formula-based — will sharpen as you log.</div>
+          <div class="receipt faint" style="margin-top:6px;">bands widen with horizon — wide because we know nothing about you yet · good. tap any band → its assumptions (pace percentiles · 7,700 kcal/kg · formula BMR)</div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">Why the curve bends</div>
+          <div class="stat-row"><span class="label">Now · 92.4 kg</span><span class="value receipt">0.46 kg/wk · −510 kcal/day</span></div>
+          <div class="stat-row"><span class="label">Near goal · 80 kg</span><span class="value receipt">~0.40 kg/wk · BMR falls with you</span></div>
+          <div class="receipt faint" style="margin-top:6px;">deceleration is modeled, not drawn — the last kilos honestly take longer</div>
+        </div>
+
+        <a class="btn primary block" href="07-onboarding-f01.html" style="text-decoration:none;">Continue — pick a diet</a>
+        <div class="receipt faint" style="margin:10px 4px 0;">this is the cold-start form — the mature cone lives at <a href="03-checkin-f07.html">flow 03 (check-in)</a> and on your chart in <a href="04-weigh-in-trend-f06-f08.html">flow 04</a></div>
+      </div>
+      <span class="pin" style="top:130px; right:24px;">9</span>
+      <span class="pin" style="top:170px; right:60px;">10</span>
+      <span class="pin" style="top:342px; left:22px;">11</span>
+      <span class="pin" style="top:470px; right:24px;">12</span>
+    </div>
+    <div class="caption annotation">
+      <b>Forecast bloom — the first-win moment.</b>
+      <ol>
+        <li><span class="pin-ref">9</span>R-A5 cold-start mode, mandatory in v1: formula-BMR-based bands, deliberately wide (“wide because we know nothing about you yet — good”). The center line integrates F07’s deceleration core — BMR re-estimated at future bodyweight, partition-free in v1 (R-A6), so the last kilos visibly take longer.</li>
+        <li><span class="pin-ref">10</span>Motion: bands bloom outward over 600 ms, optimistic → pessimistic, so the eye reads range, not point; the middle band carries the slow shimmer — one of the five sanctioned ambient loops, suppressed under reduced motion (haptics unaffected).</li>
+        <li><span class="pin-ref">11</span>The <span class="prov estimated">ESTIMATED</span> chip types itself in with a caret blink and stays until F07 holds ≥ 14 days of real data; the Studio then shows the provenance transition on every affected number (formula → measured). Date copy is range-first: “on trend May 6 · range Mar 22 – Jul 5” — never a single promised date.</li>
+        <li><span class="pin-ref">12</span>Every band is tappable → its assumptions (“how we got here”: pace percentiles, 7,700 kcal/kg per R-A1, formula BMR + inputs). The hedge appears exactly once. Cross-link: this cone’s mature, data-fed form is flow 03’s check-in and flow 04’s trend chart.</li>
+      </ol>
+    </div>
+  </div>
+
+  <!-- 4 · Template gallery -->
+  <div class="flowunit">
+    <div class="phone">
+      <div class="statusbar"><span>9:46</span><span class="icons">▮▮▮ ⌁ ▰</span></div>
+      <div class="screen">
+        <div class="steps">
+          <span class="seg done"></span><span class="seg done"></span><span class="seg done"></span><span class="seg on"></span><span class="seg"></span><span class="seg"></span><span class="seg"></span><span class="seg"></span>
+          <span class="skiplink">Later →</span>
+        </div>
+        <div class="apphead"><div class="brand">WLO <small>set up · 4 of 8 · ~90 s in</small></div></div>
+
+        <div class="tcard sel">
+          <div class="tname">Balanced Deficit <span class="chip accent">selected</span></div>
+          <div class="trules">The default. 30P / 40C / 30F, flat week, nothing excluded — the plan that survives real life.</div>
+          <div class="macrodots">
+            <span class="m"><span class="sw" style="background:var(--series-4)"></span>P 30 %</span>
+            <span class="m"><span class="sw" style="background:var(--series-1)"></span>C 40 %</span>
+            <span class="m"><span class="sw" style="background:var(--series-2)"></span>F 30 %</span>
+          </div>
+        </div>
+
+        <div class="tcard">
+          <div class="tname">High-Protein</div>
+          <div class="trules">35–40 % protein · pins a protein-floor ring in the food log so the cut protects muscle.</div>
+          <div class="macrodots">
+            <span class="m"><span class="sw" style="background:var(--series-4)"></span>P 35–40 %</span>
+            <span class="m"><span class="sw" style="background:var(--series-1)"></span>C ·</span>
+            <span class="m"><span class="sw" style="background:var(--series-2)"></span>F ·</span>
+          </div>
+        </div>
+
+        <div class="tcard">
+          <div class="tname">Keto</div>
+          <div class="trules">Under 30 g carbs a day. Carbs get a hard cap ring instead of macro dots; a short “what ketosis is” card comes with it; a fat-adaptation check-in note lands around day 10.</div>
+          <div class="receipt faint" style="margin-top:8px;">surface preview: macro dots → <b style="color:var(--text-primary)">carb-limit ring ⭘</b> · re-arranges on the card face</div>
+        </div>
+
+        <div class="card sunken">
+          <div class="card-title">More in the library <span class="right receipt">7 seeds · v1</span></div>
+          <div class="receipt">Mediterranean · Low-Carb · IF 16:8 / 5:2 / 6:1 · Custom — every one plain JSON, editable and excludable later in the Studio.</div>
+        </div>
+
+        <a class="btn primary block" href="07-onboarding-f01.html" style="text-decoration:none;">Continue — 8 quick swipes</a>
+        <div class="receipt faint" style="margin:10px 4px 0;">press = 0.94× spring + ripple in the template’s accent · changing later re-fits the plan as v2, nothing is write-once</div>
+      </div>
+      <span class="pin" style="top:200px; right:24px;">13</span>
+      <span class="pin" style="top:356px; left:22px;">14</span>
+      <span class="pin" style="top:560px; right:24px;">15</span>
+    </div>
+    <div class="caption annotation">
+      <b>Template gallery — cards, not a funnel.</b>
+      <ol>
+        <li><span class="pin-ref">13</span>Each card names its rules in plain language — keto’s face carries the cap ring, the education card and the day-10 note so the commitment is legible before the tap (F01 §3). Rules are data: one <code>DietPlan</code> schema, no special cases.</li>
+        <li><span class="pin-ref">14</span>Micro-interactions: spring scale to 0.94× on press, selection ripple in the template’s accent color (teal here), and the keto card previews its surface reshuffle — macro dots re-arranging into the carb-limit ring (motion table §4.1, F01 rows).</li>
+        <li><span class="pin-ref">15</span>No template is privileged: all seven ship as inspectable JSON, all editable, all excludable. The only F01 AI touchpoint — “refine my template” — is <b>not here</b>: v1 ships the deterministic constraint→field applier only; cloud refinement waits for v1.x behind F12’s <code>meal-planning</code> consent (R-S10).</li>
+      </ol>
+    </div>
+  </div>
+
+  <!-- 5 · Swipe quiz -->
+  <div class="flowunit">
+    <div class="phone">
+      <div class="statusbar"><span>9:48</span><span class="icons">▮▮▮ ⌁ ▰</span></div>
+      <div class="screen">
+        <div class="steps">
+          <span class="seg done"></span><span class="seg done"></span><span class="seg done"></span><span class="seg done"></span><span class="seg on"></span><span class="seg"></span><span class="seg"></span><span class="seg"></span>
+          <span class="skiplink">Later →</span>
+        </div>
+        <div class="apphead"><div class="brand">WLO <small>set up · 5 of 8 · ~110 s in</small></div></div>
+
+        <div class="deck">
+          <div class="qcard behind">
+            <div class="qc-kicker">next up</div>
+            <div class="q">Dairy?</div>
+          </div>
+          <div class="qcard flung">
+            <div class="qc-kicker">card 3 of 8</div>
+            <div class="q">Shellfish?</div>
+            <div class="dirchips">
+              <span class="chip">✕ exclude</span>
+              <span class="chip accent">✓ okay</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="stat-row">
+            <span class="label">Pile</span>
+            <span class="value"><span class="stat-m">3 / 8</span><span class="receipt faint">rolling odometer</span></span>
+          </div>
+          <div class="stat-row">
+            <span class="label">Deck</span>
+            <span class="value receipt">diet style · allergens · dislikes · household · cooking · budget</span>
+          </div>
+          <div class="stat-row">
+            <span class="label">Gesture</span>
+            <span class="value receipt">left fling = exclude (double-tick) · right = okay (single snap)</span>
+          </div>
+        </div>
+
+        <div class="receipt" style="margin:0 4px;">hold any card → <b>“why we ask”</b>: “no shellfish → never suggested in plans or lists” (F03 recipes · F04 shopping)</div>
+        <div class="receipt faint" style="margin:8px 4px 0;">the 119-item long tail lives in the Studio, where its effect is visible — 8 swipes here, not 40 (R-S6)</div>
+
+        <a class="btn primary block" href="07-onboarding-f01.html" style="text-decoration:none;">Continue — schedule</a>
+      </div>
+      <span class="pin" style="top:190px; right:22px;">16</span>
+      <span class="pin" style="top:392px; right:24px;">17</span>
+      <span class="pin" style="top:614px; left:22px;">18</span>
+    </div>
+    <div class="caption annotation">
+      <b>Preference quiz — an instrument, not intake paperwork.</b>
+      <ol>
+        <li><span class="pin-ref">16</span>R-S6 frozen scope: an 8-card core (diet style, allergens, dislikes, household 1–6+, cooking frequency/skill, budget band). The 119-item dislike gallery stays in the Studio and F03’s filters — onboarding never becomes Mealime’s 40-swipe gauntlet.</li>
+        <li><span class="pin-ref">17</span>Swipe grammar: left fling = exclude with a 10 ms double-tick; right lands with a single snap tick; the pile counter is a tiny rolling odometer (3/8); long-press opens “why we ask”, phrased as the rule it drives — never interrogation.</li>
+        <li><span class="pin-ref">18</span>Answers write the <code>PreferenceProfile</code> and immediately re-filter F03’s recipe space and F04’s defaults — the effect is visible tonight, not someday. Skipping leaves sensible defaults chip <span class="prov estimated">estimated</span>; the quiz is re-runnable later as tastes change.</li>
+      </ol>
+    </div>
+  </div>
+
+  <!-- 6 · Schedule bars -->
+  <div class="flowunit">
+    <div class="phone">
+      <div class="statusbar"><span>9:50</span><span class="icons">▮▮▮ ⌁ ▰</span></div>
+      <div class="screen">
+        <div class="steps">
+          <span class="seg done"></span><span class="seg done"></span><span class="seg done"></span><span class="seg done"></span><span class="seg done"></span><span class="seg on"></span><span class="seg"></span><span class="seg"></span>
+          <span class="skiplink">Later →</span>
+        </div>
+        <div class="apphead"><div class="brand">WLO <small>set up · 6 of 8 · optional step</small></div></div>
+
+        <div class="card raised">
+          <div class="card-title">Week shape <span class="chip accent">12,600 kcal — pinned</span></div>
+          <svg width="100%" viewBox="0 0 330 118">
+            <line x1="6" y1="40" x2="324" y2="40" stroke="#5C6875" stroke-width="1" stroke-dasharray="3 4"/>
+            <rect x="12"  y="48" width="30" height="52" rx="3" fill="rgba(31,107,84,.20)"/>
+            <rect x="56"  y="48" width="30" height="52" rx="3" fill="rgba(31,107,84,.20)"/>
+            <rect x="100" y="48" width="30" height="52" rx="3" fill="rgba(31,107,84,.20)"/>
+            <rect x="144" y="48" width="30" height="52" rx="3" fill="rgba(31,107,84,.20)"/>
+            <rect x="188" y="48" width="30" height="52" rx="3" fill="rgba(31,107,84,.20)"/>
+            <rect x="232" y="20" width="30" height="80" rx="3" fill="rgba(31,107,84,.50)"/>
+            <rect x="276" y="20" width="30" height="80" rx="3" fill="rgba(31,107,84,.50)"/>
+            <text class="fan-axis" x="27"  y="43" text-anchor="middle">1,560</text>
+            <text class="fan-axis" x="71"  y="43" text-anchor="middle">1,560</text>
+            <text class="fan-axis" x="115" y="43" text-anchor="middle">1,560</text>
+            <text class="fan-axis" x="159" y="43" text-anchor="middle">1,560</text>
+            <text class="fan-axis" x="203" y="43" text-anchor="middle">1,560</text>
+            <text class="fan-axis" x="247" y="14" text-anchor="middle">2,400</text>
+            <text class="fan-axis" x="291" y="14" text-anchor="middle">2,400</text>
+            <line x1="6" y1="100" x2="324" y2="100" stroke="#2A323D" stroke-width="1"/>
+            <text class="fan-axis" x="27"  y="113" text-anchor="middle">M</text>
+            <text class="fan-axis" x="71"  y="113" text-anchor="middle">T</text>
+            <text class="fan-axis" x="115" y="113" text-anchor="middle">W</text>
+            <text class="fan-axis" x="159" y="113" text-anchor="middle">T</text>
+            <text class="fan-axis" x="203" y="113" text-anchor="middle">F</text>
+            <text class="fan-axis" x="247" y="113" text-anchor="middle">S</text>
+            <text class="fan-axis" x="291" y="113" text-anchor="middle">S</text>
+          </svg>
+          <div class="sch-legend">
+            <span><span class="sw" style="background:rgba(31,107,84,.20)"></span>weekday · each −240 vs flat</span>
+            <span><span class="sw" style="background:rgba(31,107,84,.50)"></span>weekend · each +600</span>
+          </div>
+          <div class="receipt dim" style="margin-top:8px;">12,600 kcal — the same deficit. Dragging a weekend bar up compensates the weekday siblings in real time; the dashed line is the flat 1,800 you started from.</div>
+          <div class="receipt faint" style="margin-top:6px;">arithmetic, pinned: 5 × 1,560 + 2 × 2,400 = 12,600 = 1,800 × 7 · every bar stays above the 1,500 floor — dragging into it is refused, not clamped</div>
+        </div>
+
+        <div class="card">
+          <div class="stat-row">
+            <span class="label">Cadence</span>
+            <span class="value receipt">weekly default · daily supported (R-S6)</span>
+          </div>
+          <div class="stat-row">
+            <span class="label">Skip</span>
+            <span class="value receipt">flat by default — 1,800 × 7, chip <span class="prov estimated">estimated</span></span>
+          </div>
+        </div>
+
+        <a class="btn primary block" href="07-onboarding-f01.html" style="text-decoration:none;">Continue — milestones</a>
+        <div class="receipt faint" style="margin:10px 4px 0;">“later” is a full answer — the Studio edits the schedule any Sunday, with the same pinned total</div>
+      </div>
+      <span class="pin" style="top:120px; right:24px;">19</span>
+      <span class="pin" style="top:476px; right:24px;">20</span>
+      <span class="pin" style="top:560px; left:22px;">21</span>
+    </div>
+    <div class="caption annotation">
+      <b>Schedule — the pinned invariant, skippable.</b>
+      <ol>
+        <li><span class="pin-ref">19</span>Weekly cadence unlocks Lose It!-style cycling. The pinned weekly total is the visible invariant (Appendix A validation 3: the schedule must sum exactly to the weekly budget). Shown mid-drag: each weekend bar +600, each of the five weekday siblings paid −240 live — 5 × 1,560 + 2 × 2,400 = 12,600 = the flat 1,800 × 7 you started from. Same deficit, different shape.</li>
+        <li><span class="pin-ref">20</span>The step is optional and copy says so: “flat by default”, “later”, never “incomplete”. A skipped schedule ships chip <span class="prov estimated">estimated</span> in the Studio and is mentioned once, gently, never again.</li>
+        <li><span class="pin-ref">21</span>The calorie floor is enforced here too: bars refuse to cross 1,500 (the persona’s floor) — a refusal with the same Reject haptic as the pace wall, never a silent clamp (R-B2). Cadence: weekly default, daily supported (R-S6).</li>
+      </ol>
+    </div>
+  </div>
+
+  <!-- 7 · Milestones + Start -->
+  <div class="flowunit">
+    <div class="phone">
+      <div class="statusbar"><span>9:52</span><span class="icons">▮▮▮ ⌁ ▰</span></div>
+      <div class="screen">
+        <div class="steps">
+          <span class="seg done"></span><span class="seg done"></span><span class="seg done"></span><span class="seg done"></span><span class="seg done"></span><span class="seg done"></span><span class="seg on"></span><span class="seg"></span>
+          <span class="skiplink">draft it, decide later</span>
+        </div>
+        <div class="apphead"><div class="brand">WLO <small>set up · 7 of 8 · ~2:30 in</small></div></div>
+
+        <div class="card raised">
+          <div class="card-title">Milestones <span class="right receipt">every ~3 kg · 5 rungs</span></div>
+          <div class="here">
+            <span class="chip accent">you are here</span>
+            <span class="receipt">92.4 kg · Sep 11</span>
+          </div>
+          <div class="ladder">
+            <div class="rung">
+              <div class="rr"><span class="stat-s">89.4 kg</span><span class="receipt faint">~ Oct 20 – Nov 8</span></div>
+            </div>
+            <div class="rung">
+              <div class="rr"><span class="stat-s">86.4 kg</span><span class="receipt faint">~ Nov 30 – Jan 7</span></div>
+            </div>
+            <div class="rung">
+              <div class="rr"><span class="stat-s">83.4 kg</span><span class="receipt faint">~ Jan 11 – Mar 10</span></div>
+            </div>
+            <div class="rung">
+              <div class="rr"><span class="stat-s">80.4 kg</span><span class="receipt faint">~ Feb 24 – May 11</span></div>
+            </div>
+            <div class="rung goal">
+              <div class="rr"><span class="stat-s" style="color:var(--accent);">78.0 kg — goal</span><span class="receipt faint">~ Mar 22 – Jul 5</span></div>
+            </div>
+          </div>
+          <div class="receipt faint" style="margin-top:4px;">ranges come from the same band math as the forecast — while the engine is <span class="devc">DEVELOPING</span> you get ranges only, never a single promised date</div>
+          <div class="receipt faint" style="margin-top:4px;">rungs rename: “Size 34 jeans” is a goal too · rungs land 80 ms apart with a rising three-note motif</div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">Plan v1 preview <span class="right receipt">everything is editable later</span></div>
+          <div class="stat-row"><span class="label">Budget</span><span class="value receipt">1,800 kcal · flat · <span class="prov estimated">formula estimate</span></span></div>
+          <div class="stat-row"><span class="label">Macros</span><span class="value receipt">30P / 40C / 30F · Balanced Deficit</span></div>
+          <div class="stat-row"><span class="label">Pace</span><span class="value receipt">0.5 %/wk · ≈ 0.46 kg</span></div>
+          <div class="stat-row"><span class="label">Exclusions</span><span class="value receipt">shellfish · dairy — from 3 swipes</span></div>
+          <div class="stat-row"><span class="label">Schedule</span><span class="value receipt">skipped → flat, <span class="prov estimated">estimated</span></span></div>
+        </div>
+
+        <a class="btn primary block" href="01-day-loop-f10.html" style="text-decoration:none;">Start — write Plan v1</a>
+        <div style="height:8px;"></div>
+        <a class="btn ghost block" href="07-onboarding-f01.html" style="text-decoration:none;">Browse the Studio first</a>
+        <div class="receipt faint" style="margin:10px 4px 0;">Start hands off to the Hub → <a href="01-day-loop-f10.html">flow 01</a> · no notification prompt here — permission comes after your first successful log</div>
+      </div>
+      <span class="pin" style="top:150px; right:24px;">22</span>
+      <span class="pin" style="top:388px; right:24px;">23</span>
+      <span class="pin" style="top:600px; left:22px;">24</span>
+      <span class="pin" style="top:708px; right:24px;">25</span>
+    </div>
+    <div class="caption annotation">
+      <b>Milestones &amp; Start — the commit.</b>
+      <ol>
+        <li><span class="pin-ref">22</span>Date projections are <b>ranges only</b> while F07 sits in <span class="devc">DEVELOPING</span> (cold-start band math, same engine as step 3); a single promised date is never rendered. With no weight trend at all the projections are hidden entirely — not grayed — and they re-project as data arrives (F01 §4 gating).</li>
+        <li><span class="pin-ref">23</span>Ladder mechanics: ~3 kg steps → 5 rungs (inside the 4–8 rule); each drops in with 80 ms stagger and the rising three-note pentatonic motif (&lt; 0.5 s total); completed rungs earn a stitched underline later. Renameable rungs convert abstractions into winnable games (“Size 34 jeans”).</li>
+        <li><span class="pin-ref">24</span>Start is the plan’s first write: <code>Plan v1</code>, <code>createdBy: studio@F01</code> (Appendix A.2 — one of exactly two writers, ever). F10’s Hub takes over (flow 01); the verification metric is the loop — plan written + first log ≤ 24 h. Everything skipped ships chip <span class="prov estimated">estimated</span> and is editable in the Studio; every future edit is vN+1 with a diff.</li>
+        <li><span class="pin-ref">25</span>No celebration theater: rungs land with geometry + haptics — confetti does not exist in WLO, and F11 owns what little celebration later earns. And still no notification permission: that ask belongs to the moment after the first successful log (F10 §4), never to onboarding.</li>
+      </ol>
+    </div>
+  </div>
+
+</div>
+
+<!-- ============================= SELF-REVIEW ============================= -->
+<div class="review">
+  <h2>Self-review — design bar &amp; spec checklist (flow 07)</h2>
+  <div class="cols">
+    <div class="col"><div class="annotation">
+      <b>Design bar</b>
+      <ol>
+        <li><b>Provenance on every derived number, skipped-fields-estimated</b> — current weight (<span class="prov measured">measured · Health Connect</span> / user-entered), target (user-entered), pace→kg conversion (derived), forecast (<span class="prov estimated">ESTIMATED</span> until ≥ 14 days of data, R-A5), budget (<span class="prov estimated">formula estimate</span> until F07 measures), skipped schedule (<span class="prov estimated">estimated</span>). Nothing renders naked. ✓</li>
+        <li><b>Tone — “later”, never “incomplete”</b> — every skip is a “Later →”, the wall copy negotiates instead of obeying, safety reads as respect (“the fastest we’ll suggest”), zero guilt/shame strings; banned-list audit clean (no failed/missed/over/incomplete). ✓</li>
+        <li><b>No red, no alarm</b> — the strongest color anywhere is amber on the wall marker; refusals are haptic + copy, never hue. Ranges and skips render neutral/accent. ✓</li>
+        <li><b>Zero-account / offline</b> — the architecture sentence is the second sentence of the product; airplane-mode chip on screen 1; no email field, no sign-up, no spinner in any of the 8 steps; the only cloud touchpoint (refinement) is v1.x and consented at point of use (F12). ✓</li>
+        <li><b>First-win design</b> — forecast on screen ~70 s in, ≤ 30 s after goal entry, honestly hedged, screenshot-survives; the value is delivered before any ask beyond a goal. ✓</li>
+        <li><b>Density</b> — welcome is the only airy screen (deliberate: one decision); every other screen is receipt-dense; whitespace spent at the dials and the bloom. ✓</li>
+        <li><b>R-U15</b> — n/a (no capture assists exist in the wizard); its spirit is honored structurally: the import branch is an equal path, free text is the last resort, and manual always lands somewhere. ✓</li>
+        <li><b>R-U7 naming</b> — quiz chips are foods and “exclude / okay”, never verdicts; no taboo vocabulary anywhere. ✓</li>
+      </ol>
+    </div></div>
+    <div class="col"><div class="annotation">
+      <b>Spec micro-interactions honored</b>
+      <ol>
+        <li>Forecast bands bloom outward 600 ms, optimistic → pessimistic; middle-band slow shimmer (sanctioned ambient loop); <span class="prov estimated">ESTIMATED</span> types itself in with caret blink. ✓ (static medium — annotated)</li>
+        <li>Dials: haptic tick per kg, magnetic 5 kg “thock” snap, delta counts up. Pace slider: detent ticks; wall = Reject haptic + counter-offer card — a refusal in code (R-B2 floor · Appendix A #4 pace cap), never a clamp. ✓</li>
+        <li>Template cards: 0.94× spring press, accent ripple, keto surface-icon reshuffle preview. ✓</li>
+        <li>Quiz: left fling + double-tick, right single snap, rolling-odometer pile counter, “why we ask” long-press. ✓</li>
+        <li>Schedule: sibling bars compensate in real time while the weekly total stays pinned (12,600 = 1,800 × 7 = 5 × 1,560 + 2 × 2,400 — arithmetic audited; the spec’s “5 × 1,800 + 2 × 2,400” example is rendered mid-drag so the invariant, not the example, is what the screen teaches). ✓</li>
+        <li>Milestones: 80 ms stagger, rising three-note pentatonic &lt; 0.5 s, date <i>ranges</i> gated ranges-only while DEVELOPING, hidden entirely with no trend. ✓</li>
+        <li>Import branch: count-up receipt tally + unmapped side tray — annotated at v1 scope (generic CSV/JSON offline, R-S4; converters v1.x). ✓</li>
+        <li>Reduced motion: bloom/type-in/stagger collapse to instant settles; haptics carry the ritual. ✓</li>
+      </ol>
+      <b>Open items surfaced:</b> cloud refinement is <b>v1.x</b> (R-S10) — the v1 wizard is deterministic-only and the F12 consent surface never appears during onboarding; Diet DNA overlay needs imported history (v1.x); adaptive engine + dual-engine overlay v1.x (this cone is Transparent cold-start); quiz re-run and onboarding replay v1.x; milestone single dates will never exist, by design.
+    </div></div>
+  </div>
+</div>
+
+</div>
+</body>
+</html>
