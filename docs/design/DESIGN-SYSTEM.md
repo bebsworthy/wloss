@@ -430,8 +430,8 @@ comparisons to other humans. F07 — the body is never "stubborn"; no "over
 budget"; metabolic language descriptive. F08 — language photographic
 (compare, reference, develop), never judgmental. F09 — "overdue"/"failed"/
 "abnormal" banned ("unusual for you"); population averages never benchmarks.
-F10 — nudge copy: invitations, never verdicts ("Breakfast is still open —
-want the 5-second photo path?"); no streak-loss notifications. F11 — "failed/
+F10 — nudge copy: invitations, never verdicts ("Lunch is still open —
+want to log it?"); no streak-loss notifications. F11 — "failed/
 cheat/bad/guilt" enforced on all copy templates; "describe the data, never
 the person." F12 — proud, never scaremongering; no consent bundling, no
 pre-checked consents, no nag loops.
@@ -461,6 +461,20 @@ most one helper line per card, phrased as the next action; no piece of
 information may appear twice on one screen (the second occurrence is
 removed, not restyled); when a state occurs it names itself
 ("provisional") — it is never announced in advance.
+
+**Self-congratulation (banned in user copy, R-D15):** the app never
+narrates its own performance — no speed claims ("logged in 6 s", "saves
+instantly", "under 1 s, nothing to wait for"), no ease counts ("one tap",
+"two taps to done", "8 quick swipes"), no pre-emptive capability pitches
+("works offline" before the fact). The app proves itself by being useful:
+success is shown by the updated state (the ring sweeps, the entry appears),
+affordances are stated as instructions ("tap for history", "tap to
+reopen"), and a capability is disclosed only as a post-hoc fact at the
+moment it happened ("worked offline — nothing left your phone").
+Data-practice disclosures at the trust decision (onboarding's "No account,
+no server, no ads — every number is computed and kept on this device") are
+facts, not boasts, and stay. Timing and effort numbers live in the
+annotations for the design reader, never on the screen.
 
 ---
 

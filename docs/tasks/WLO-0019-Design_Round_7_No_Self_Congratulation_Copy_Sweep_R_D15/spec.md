@@ -1,0 +1,7 @@
+## Execution record (2026-09-11)
+
+- **Brag sweep (13 screen edits, 6 flows):** 01 — "lunch logged in 6 s · photo" deleted from both ring cards; nudge → "Lunch is still open — want to log it?". 02 — "saves instantly · photo discarded" → "photo discarded on save". 03 — "one tap:" → "mark it:", "Fastest fix, one tap:" clause dropped, "revert is one tap" → "reverting writes v14", header "readable diffs · one-tap revert" → "readable diffs", hand-off "under 1 s, nothing to wait for" → "nothing to do" (caught by the new scanner pattern, missed in the approved table). 05 — "works offline" chip clause dropped; "one tap, self-reported" → "self-reported". 06 — "two taps to done" → "Sun 09:12"; "corrected — one tap, no interrogation" → "corrected — no interrogation". 07 — "8 quick swipes" → "8 swipes" (label + button).
+- **Kept** (ruled facts, not boasts): "worked offline — nothing left your phone" (post-hoc, 02), affordance hints ("tap for history" / "tap to reopen"), onboarding data-practice lines, calorie-wall "fastest we'll suggest".
+- **FEATURES §3 R-D15** recorded; **DESIGN-SYSTEM §8** gains the self-congratulation banned list and the F10 nudge example is updated.
+- **Scanner** now enforces R-D15 (speed claims, ease counts, ease pitches, pre-emptive capability) with the 07 allow-list; committed to the repo as `flows/_leakscan.py`. 45 phones / 0 hits.
+- **Verify:** geometry unchanged (ring card is ring-height-driven — no pin drift); browser captures of 01 (m2, nudge) and 03 (gap card, plan studio) confirmed.

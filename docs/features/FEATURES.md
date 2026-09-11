@@ -440,6 +440,20 @@ Ratified 2026-09-11.*
   affordance; skips and replaces are neutral decisions that shrink the header
   count, and a slot still open past its day is never penalized.
 
+- **R-D15 — No self-congratulation (owner ruling, round 7).** Screen copy
+  never narrates the app's own performance: no speed claims ("logged in
+  6 s", "saves instantly", "under 1 s"), no ease counts ("one tap", "two
+  taps to done", "8 quick swipes"), no pre-emptive capability pitches
+  ("works offline" before the fact). The app proves itself by being useful —
+  success is shown by the updated state (the ring sweeps, the entry
+  appears), affordances are stated as instructions ("tap for history",
+  "tap to reopen"), and a capability is disclosed only as a post-hoc fact
+  at the moment it happened ("worked offline — nothing left your phone").
+  Data-practice disclosures at the trust decision (onboarding's no-account /
+  computed-on-this-device lines) are facts, not boasts, and stay. Timing and
+  effort numbers belong to annotations for the design reader, never to the
+  screen.
+
 ---
 
 ## 4. Review notes (all 13 specs, read in full)
