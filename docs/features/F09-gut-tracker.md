@@ -265,6 +265,8 @@ Vault and Lock (F13).
   *(Resolved for v1: R-B6 — correction-cache prior over a frozen on-device model;
   fine-tuning stays [future] pending an F12 platform ruling.)*
 - Pain input granularity: 0–10 slider vs 4-step chips (logging speed vs resolution).
+  *(Resolved: R-D8 — 4-step chips at capture, expandable to a 0–10 slider in the
+  entry detail.)*
 - Caregiver / multi-profile logging (logging for a child or partner) — deferred; touches
   F13's profile model. *(Scope ruled: R-B9 — arrives with multi-profile [v1.x].)*
 - Whether the F06 weight-noise annotation should be automatic or strictly opt-in — some

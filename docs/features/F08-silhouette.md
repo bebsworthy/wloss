@@ -250,7 +250,8 @@ valid captures.
 - Does the capture-due nudge consume the F10 daily nudge budget or ride outside it?
   (Answered in the master doc: R-U13 — inside the budget, baseline-relative.)
 - Section naming: "Archive" vs "Vault" vs "Atlas" — answered in the master doc:
-  R-U7 freezes "Archive"; icon still needs a discretion review.
+  R-U7 freezes "Archive"; icon resolved by R-D9 — an abstract stacked-outline
+  glyph reading as "records" (never a camera or body glyph).
 - Angle set: answered in the master doc — R-U6 freezes 2 mandatory angles
   (front/side) + optional back.
 - Multi-profile (F13/F01): per-profile archives and independent locks need a final

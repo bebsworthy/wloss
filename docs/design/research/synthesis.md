@@ -13,8 +13,8 @@ visuals, discretion UI). Nothing here re-litigates *features* — that verdict
 already lives in the feature-level synthesis. Each pattern below carries:
 source (file + near-verbatim quote), and **where it lands in WLO** (the
 spec/surface that should adopt it). Collisions with frozen R-\* rulings are
-flagged in §3 — none required stopping work; three design-level calls are
-proposed as new R-D\* rulings (§4).
+flagged in §3 — none required stopping work; the design-level calls are
+ratified as the R-D1–R-D9 rulings in FEATURES §3 (2026-09-11).
 
 ---
 
@@ -142,7 +142,7 @@ surfaces, fixed brand colors for key actions and emphasis."
 held=amber, trend-neutral) — a wallpaper-driven hue shift can drift accents
 toward alarm-adjacent territory. **Dark-first fixed scheme is the base;
 dynamic tint at most opt-in and surfaces-only** (never semantic roles, never
-data-viz hues). Rationale recorded in DESIGN-SYSTEM §color; proposed as R-D1.
+data-viz hues). Rationale recorded in DESIGN-SYSTEM §color; ratified as R-D1.
 
 ### 2.3 Number-forward typography
 
@@ -230,7 +230,7 @@ scale where they land within tolerance.
 Survey: **Vico** (Apache-2.0, active, line/column/candlestick layers,
 markers) · ComposeCharts (Apache-2.0, lighter) · YCharts (dormant — do not
 adopt) · kizitonwose/Calendar (MIT, has a HeatMap mode). **Adopted split
-(proposed as R-D4):**
+(R-D4):**
 - Vico: energy-balance bar/line combo, sparkline hosts, generic line charts.
 - Custom Canvas (`DrawScope`): the forecast cone (per-x band pairs +
   animated widening), macro/budget rings (trivial arcs), the progress ribbon
@@ -263,7 +263,7 @@ questions with recommended options rather than designed around silently:
 - **C1 — user-selectable gain/loss palette vs "no alarm-red anywhere."**
   F06 §4 explicitly adopts Happy Scale's user-configurable delta colors
   ("green/red/blue/purple selectable"), while the design bar and F07 reserve
-  red for nothing and ban alarm-red. Resolution proposed (R-D5): WLO's own
+  red for nothing and ban alarm-red. Resolution (R-D5, ratified): WLO's own
   default rendering is a neutral, CVD-safe delta pair; the user may choose an
   accent pair from a curated palette; red is never a WLO default, never used
   by WLO's own urgency/anomaly rendering, and urgency is always
@@ -284,7 +284,7 @@ hand-off (rejected features — no UI adoption).
 
 ---
 
-## 4. Design decisions proposed for freezing (R-D\*, pending owner approval)
+## 4. Design decisions frozen as rulings (R-D1–R-D9, ratified 2026-09-11 via ticket WLO-0011)
 
 These emerged from research as load-bearing, cross-feature, and worth the
 same immutability as R-\* rulings (recorded in FEATURES §3 only after owner

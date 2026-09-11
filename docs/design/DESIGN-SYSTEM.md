@@ -32,7 +32,7 @@ later phase); values here are the contract prototypes and code both follow.*
 **Dark-first, fixed semantic palette.** The weigh-in happens at 6 a.m. in a
 dark bathroom; dark is the canonical theme, light is the derived one. Dynamic
 color (Material You) is **opt-in and surfaces-only** — semantic and data-viz
-roles are never wallpaper-sourced (proposed R-D1; rationale in research
+roles are never wallpaper-sourced (R-D1; rationale in research
 synthesis §3/C1, §2.2).
 
 ### 1.1 Neutral core (dark values; light theme inverts tones, keeps roles)
@@ -72,7 +72,7 @@ for nothing"). Confidence colors are the one spec-frozen triad: green
 (F02 §4).
 
 User-selectable delta accents (F06's Happy Scale clause; resolution of
-collision C1, proposed R-D5): a curated, CVD-safe picker of accent pairs
+collision C1, R-D5): a curated, CVD-safe picker of accent pairs
 (Okabe-Ito derived: teal/bluish-green, blue, orange, purple); **red is never
 offered as a WLO default and never used by WLO's own urgency/anomaly
 rendering**. Default pair: `accent` / `neutral-delta`.
@@ -286,7 +286,7 @@ never celebrate (F02 rule).
 
 ## 5. Haptics — the "kind haptics" vocabulary
 
-**Rule (proposed R-D6):** data outcomes always feel the same regardless of
+**Rule (R-D6):** data outcomes always feel the same regardless of
 whether the news is good — Confirm-class, short and light. `Reject` weight is
 reserved for blocking errors (invalid BYOK key, corrupt import, the F01
 calorie-floor wall) — never for a data result. Haptics bypass reduced-motion
@@ -318,7 +318,7 @@ pulse max per the Nudge Contract).
 
 ## 6. Charts & data objects
 
-Adopted split (proposed R-D4; rationale research §2.7): **Vico** for
+Adopted split (R-D4; rationale research §2.7): **Vico** for
 standard line/bar (energy-balance combo, stats-hub charts, sparkline hosts);
 **custom Canvas** for the four signature objects below (no library models
 them honestly); one shared month-heatmap implementation (kizitonwose

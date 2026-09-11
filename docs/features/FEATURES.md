@@ -309,6 +309,55 @@ these are binding until amended *here* (feature docs must not re-litigate them).
   trained on open-licensed (OSI/CC-class) datasets only, each named on its
   model card; no proprietary training data anywhere in the zoo.
 
+### Design
+
+*From the UI/UX design phase (ticket WLO-0011; deliverables under
+`docs/design/`, rationale in `docs/design/research/synthesis.md` §4).
+Ratified 2026-09-11.*
+
+- **R-D1 — Theming: dark-first, fixed semantics, dynamic color
+  surfaces-only.** The base theme is dark-first (the 6 a.m. weigh-in
+  happens in a dark bathroom) with a fixed semantic palette — no alarm-red
+  token exists; `held` = amber. Material You dynamic color is opt-in and
+  applies to surfaces/accents only; semantic states and data-viz series
+  are never wallpaper-sourced.
+- **R-D2 — Navigation: five-tab bottom nav.** Hub · Plan · Insights ·
+  Archive · Digestion. F02 capture is a flow-over-context, never a tab;
+  F06 is reached from the Hub's numbers; F01/F12/F13 live under Settings.
+  Archive and Digestion stay visible tabs — hiding discretion-gated
+  flagship features behind a "More" sheet reads as shame, which R-U7
+  exists to prevent.
+- **R-D3 — Typography: Inter, single family.** Inter (OFL-1.1,
+  GPLv3-compatible per R-S1) is the only UI family. Tabular figures
+  (`tnum`) are mandatory wherever numbers change or align; display optical
+  sizing for hero numerals. No second typeface.
+- **R-D4 — Charting split.** Vico (Apache-2.0) for standard line/bar
+  charts; custom Compose Canvas for the four signature objects (forecast
+  cone, progress ribbon, rings, odometer numerals); one shared
+  month-heatmap implementation reused by F05/F09/F11. YCharts rejected as
+  dormant.
+- **R-D5 — Delta colors: neutral default, curated accents, red never.**
+  Resolves F06's user-selectable gain/loss palette clause against the
+  no-alarm-red bar (research collision C1): the default delta pair is
+  CVD-safe neutral (down = teal accent, up = neutral grey); users may pick
+  accents from a curated Okabe-Ito-derived set. Red is never a WLO default
+  and never used by WLO's own urgency/anomaly rendering — urgency is
+  position + copy, never hue.
+- **R-D6 — Kind haptics.** Every data-outcome haptic is Confirm-class
+  (short, light) regardless of whether the news is good. Reject-weight
+  haptics are reserved for true blocking errors (invalid BYOK key, corrupt
+  import, F01's calorie-floor wall) and never used for data results.
+  Haptics remain the feedback channel when reduced-motion is on.
+- **R-D7 — Badge visual direction (resolves §6 item 7):** minimal
+  geometric marks with the number foregrounded — numbers-first, no
+  illustrations, no mascots (F11 badge gallery).
+- **R-D8 — F09 pain input (resolves the AMBIGUOUS flag in F09 §4):**
+  4-step chips (none / mild / moderate / severe) at capture, expandable to
+  a 0–10 slider in the entry detail.
+- **R-D9 — F08 "Archive" icon:** an abstract stacked-outline glyph reading
+  as "records" — deliberately not a camera or body glyph, so it stays
+  neutral in any context.
+
 ---
 
 ## 4. Review notes (all 13 specs, read in full)
@@ -368,7 +417,8 @@ Consistency Score, Wear OS, cloud paths beyond BYOK-consented ones.
 4. OFF offline cache sizing vs lazy cache (F02/F13).
 5. Exercise library content pipeline (author vs curate) — follows R-S2.
 6. Classifier architecture for F09 when personalization lands (F12 platform).
-7. Badge visual direction (needs design exploration — F11).
+7. ~~Badge visual direction~~ — resolved: R-D7 (minimal geometric,
+   numbers-first).
 8. F04 servings-change reconciliation pattern (prototype with F03).
 
 ---

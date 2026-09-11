@@ -43,3 +43,13 @@ static HTML prototypes only — no Compose code.
 - **Blocked on owner:** 9 open questions (q-000011…q-000019): six R-D* freezing
   proposals, badge direction, F09 pain input, Archive icon. R-D* entries are
   recorded in FEATURES §3 only after answers; ticket remains `doing` until then.
+
+## Close-out (2026-09-11)
+
+- All 9 questions answered: each question's recommended option (suggestion 1)
+  was approved. R-D1–R-D9 are recorded in FEATURES.md §3 "Design"; FEATURES §6
+  item 7 marked resolved; F09's pain-input and F08's icon open items now point
+  at their rulings.
+- Design docs updated from "proposed/pending" to ratified (synthesis §4,
+  DESIGN-SYSTEM, IA §1, flows/index).
+- KICKOFF definition of done: all items met. Ticket moved to done.

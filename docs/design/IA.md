@@ -11,7 +11,7 @@ R-U12 (one widget framework), R-U17 (hero-slot promotion).*
 ## 1. Navigation model
 
 **Five-tab bottom navigation + one flow-over-context capture layer**
-(proposed as R-D2):
+(R-D2):
 
 ```
 ┌────────────────────────────────────────────────┐
