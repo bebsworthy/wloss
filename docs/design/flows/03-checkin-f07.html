@@ -127,8 +127,8 @@
         <div class="card raised">
           <div class="card-title">Weekly check-in <span class="chip accent stamp-in">UPDATING</span></div>
           <div class="stat-row">
-            <span class="label">Trend <span class="faint">· on pace</span> <span class="prov derived">EWMA α 0.15</span></span>
-            <span class="value stat-m">178.9 <span class="delta down">−1.3 lb/wk</span></span>
+            <span class="label">Trend <span class="faint">· on pace</span> <span class="prov derived">derived</span></span>
+            <span class="value stat-m">81.1 <span class="delta down">−0.6 kg/wk</span></span>
           </div>
           <div class="stat-row">
             <span class="label">Measured burn</span>
@@ -145,18 +145,12 @@
           <div class="receipt faint rise" style="margin:6px 0 2px;">↑ rising last · Computed on your device</div>
         </div>
 
-        <div class="tl">
-          <span class="chip">t 0–120 ms · chip stamps</span>
-          <span class="chip">t 120–260 ms · trend odometer rolls</span>
-          <span class="chip">t 180–420 ms · burn line draws L→R</span>
-          <span class="chip">t 380–500 ms · proposal rises</span>
-        </div>
-        <div class="receipt faint" style="margin-top:8px;">frame shown at t ≈ 300 ms · one card, one decision</div>
+        <div class="receipt faint" style="margin-top:8px;">one card, one decision</div>
 
         <div class="card">
-          <div class="card-title">Trend <span class="prov derived">derived · EWMA α 0.15</span></div>
+          <div class="card-title">Trend <span class="prov derived">derived</span></div>
           <div style="display:flex; align-items:baseline; gap:12px;">
-            <div class="hero">178.9</div><span class="delta down">↓ 0.6</span>
+            <div class="hero">81.1</div><span class="delta down">↓ 0.3</span>
           </div>
         </div>
 
@@ -177,7 +171,7 @@
       <b>Check-in card, mid-reveal (t ≈ 300 ms of 500).</b>
       <ol>
         <li><span class="pin-ref">1</span>Status chip <b>stamps in first</b> (0–120 ms, scale 1.06 → 1 with the soft badge-stamp thud) — state before numbers, the Zolt/MacroFactor pattern. Chip reads UPDATING; DEVELOPING renders blue, HELD amber (mock 5).</li>
-        <li><span class="pin-ref">2</span>Trend numeral <b>odometer-rolls</b> (120–260 ms) and has landed: 178.9. The un-landed digits render as dashed ghost slots — shown here on the burn numeral: <b>2,4</b> with two ghost cells still rolling.</li>
+        <li><span class="pin-ref">2</span>Trend numeral <b>odometer-rolls</b> (120–260 ms) and has landed: 81.1. The un-landed digits render as dashed ghost slots — shown here on the burn numeral: <b>2,4</b> with two ghost cells still rolling.</li>
         <li><span class="pin-ref">3</span>Expenditure line <b>draws left → right</b> (180–420 ms) while its numeral lands — evidence drawn in the order the eye reads it.</li>
         <li><span class="pin-ref">4</span>Proposal row <b>rises last</b> (380–500 ms, 6 px + fade) — the ask arrives only after the story. The rhythm says <i>“this week’s story, then your decision.”</i> “Computed on your device” rides the card from the first frame, stated once (F07 §9).</li>
       </ol>
@@ -198,8 +192,8 @@
           <div class="card-title">Weekly check-in <span class="chip accent">UPDATING</span></div>
 
           <div class="stat-row">
-            <span class="label">Trend <span class="faint">· on pace</span> <span class="prov derived">EWMA α 0.15</span></span>
-            <span class="value stat-s">178.9 <span class="delta down">−1.3 lb/wk</span></span>
+            <span class="label">Trend <span class="faint">· on pace</span> <span class="prov derived">derived</span></span>
+            <span class="value stat-s">81.1 <span class="delta down">−0.6 kg/wk</span></span>
           </div>
           <div class="stat-row">
             <span class="label">Days logged <span class="faint">6/7</span></span>
@@ -222,7 +216,7 @@
             <span class="label">Proposal</span>
             <span class="value stat-s" style="white-space:nowrap;">1,900 kcal <span class="delta">−50</span> · P 165 <span class="delta">+5</span></span>
           </div>
-          <div class="receipt faint" style="margin:2px 0 8px;">C and F re-derived by your Balanced template · <a href="#s3" style="color:var(--info); text-decoration:none;">how we got here</a> · Computed on your device · engine <span class="prov" style="margin-left:2px;">transparent-v1</span></div>
+          <div class="receipt faint" style="margin:2px 0 8px;">C and F re-derived by your Balanced template · <a href="#s3" style="color:var(--info); text-decoration:none;">how we got here</a> · Computed on your device</div>
 
           <div class="btnrow">
             <a class="btn primary" href="#s4" style="text-decoration:none;">Apply</a>
@@ -259,7 +253,7 @@
     <div class="caption annotation">
       <b>The complete card — frozen anatomy (F07 §4), rows ①–⑥ top to bottom.</b>
       <ol>
-        <li><span class="pin-ref">5</span><b>Row ① status chip</b> — UPDATING (≥ 10 usable paired days, no hold triggers), with the engine version beside it (algorithm versioning: every estimate carries <span class="prov">transparent-v1</span>; v1 ships Transparent only — R-A3, see self-review).</li>
+        <li><span class="pin-ref">5</span><b>Row ① status chip</b> — UPDATING (≥ 10 usable paired days, no hold triggers); the engine version lives in the how-we-got-here sheet, not on the card face (algorithm versioning: every estimate carries <span class="prov">transparent-v1</span>; v1 ships Transparent only — R-A3, see self-review).</li>
         <li><span class="pin-ref">6</span><b>Row ② trend row</b> — trend weight, weekly pace, on/off-pace in neutral wording only (“on pace”; the off-pace ceiling is “a touch slower than planned” — never “behind”, never a verdict).</li>
         <li><span class="pin-ref">7</span><b>Row ③ adherence</b> — “6/7 days logged” + day-status dots. Wednesday’s fast renders as a <i>chosen</i> state (blue dot), never a gap (R-U13); Sunday is merely still open, and the fix is the inline Logged/Skipped/Fasted chips — one tap, never typed, never an interrogation.</li>
         <li><span class="pin-ref">8</span><b>Row ④ expenditure</b> — measured 2,440, +70 vs last week, vs the static calculator (“calculator says 2,450” — the measured-beats-formula story in one chip); tap-through to the four-term breakdown (mock 3).</li>
@@ -292,14 +286,14 @@
           <div class="row"><div class="grow"><b>BMR</b><div class="sub">Mifflin-St Jeor on current weight · cited on the Algorithms page</div></div><span class="stat-m">1,690</span></div>
           <div class="row"><div class="grow"><b>Adjustment</b><div class="sub">your personal correction term · 0 → +120 over 12 weeks — absorbs formula error, adaptation, untracked activity</div></div><span class="stat-m">+120</span></div>
           <div class="row"><div class="grow"><b>Activity</b><div class="sub">steps → kcal · published mass-scaled fit</div></div><span class="stat-m">630</span></div>
-          <div class="row"><div class="grow"><b>Exercise context</b><div class="sub">F05 sessions, deliberately small weight · 0 (rest week) · ±30 % when present</div></div><span class="stat-m">0</span></div>
+          <div class="row"><div class="grow"><b>Exercise context</b><div class="sub">your logged sessions, counted lightly · 0 (rest week) · ±30 % when present</div></div><span class="stat-m">0</span></div>
           <div class="row"><div class="grow"><b>Measured TDEE</b><div class="sub">window Aug 31 – Sep 13 · 12 usable days · 2 rough days excluded (&gt;50 % uncorrected estimates — named, never hidden)</div></div><span class="stat-l">2,440</span></div>
         </div>
-        <div class="receipt dim" style="margin-top:10px;"><b style="color:var(--text-primary)">Context, never credit</b> — activity and exercise refine the interpretation and can never raise your target (R-B2). No eat-back exists in the write path.</div>
+        <div class="receipt dim" style="margin-top:10px;"><b style="color:var(--text-primary)">Context, never credit</b> — activity and exercise refine the interpretation and can never raise your target — there is no eat-back, anywhere in the app.</div>
         <div class="receipt dim" style="margin-top:6px;">In a stall this +120 <i>is</i> the headline: the Adjustment term glows once and ticks upward — quiet applause. A plateau is your physiology adapting, and the plan follows it.</div>
         <hr class="divider">
-        <div class="receipt">transparent-v1: TDEE ≈ avg intake − Δtrend lb × 3,500 ÷ 7 · constants published (3,500 kcal/lb · 7,700/kg, R-A1) · <span class="chip" style="margin-left:2px;">Algorithms page · reproduce it yourself</span></div>
-        <div class="receipt faint" style="margin-top:8px;">This trail is also Discuss’s local explainer when insights-chat is off (R-C7): one informational line — “chatting about this needs the insights-chat toggle; this page works without it” — never a prompt to enable cloud.</div>
+        <div class="receipt">transparent-v1: TDEE ≈ avg intake − Δtrend kg × 7,700 ÷ 7 · constants published (7,700 kcal/kg) · <span class="chip" style="margin-left:2px;">Algorithms page · reproduce it yourself</span></div>
+        <div class="receipt faint" style="margin-top:8px;">This trail is also Discuss’s local explainer when insights-chat is off: one informational line — “chatting about this needs the insights-chat toggle; this page works without it” — never a prompt to enable cloud.</div>
       </div>
       <span class="pin" style="top:300px; right:34px;">11</span>
       <span class="pin" style="top:442px; right:150px;">12</span>
@@ -332,11 +326,10 @@
           <div style="display:flex; align-items:baseline; gap:12px;">
             <div class="stat-l" style="font-size:40px;">1,900</div>
             <span class="delta down">−50</span>
-            <span class="chip">counting 1,950 → 1,900</span>
+           
           </div>
-          <div class="receipt dim" style="margin-top:6px;">numerals count old → new · haptic: crisp tick-tick (Confirm ×2) — committing feels like signing</div>
           <div class="ledger-line">Applied · −50 kcal · Week 12 · <u>tap to revert</u></div>
-          <div class="receipt faint" style="margin-top:6px;">ledger entry #13 — snapshot: intake 7 d · trend 178.9 · burn 2,440 · engine transparent-v1 · browsable &amp; exportable (F13)</div>
+          <div class="receipt faint" style="margin-top:6px;">ledger entry #13 — snapshot: intake 7 d · trend 81.1 · burn 2,440 · browsable &amp; exportable</div>
         </div>
 
         <div class="card">
@@ -355,7 +348,7 @@
         <div class="card">
           <div class="card-title">Hand-off</div>
           <div class="stat-row"><span class="label">Plan</span><span class="value receipt">v13 written · <a href="#s6" style="color:var(--info); text-decoration:none;">see the diff ▸</a></span></div>
-          <div class="stat-row"><span class="label">Week ahead</span><span class="value receipt">F03 regenerates vs fresh budget · F04 rebuilds the list</span></div>
+          <div class="stat-row"><span class="label">Week ahead</span><span class="value receipt">the week regenerates · the shopping list rebuilds</span></div>
           <div class="stat-row"><span class="label">Next check-in</span><span class="value receipt">Sun Sep 20 · cone re-blooms → <a href="07-onboarding-f01.html" style="color:var(--info); text-decoration:none;">07</a></span></div>
           <div class="receipt faint" style="margin-top:6px;">forecast dates remain an estimate, not a promise</div>
         </div>
@@ -369,7 +362,7 @@
         </div>
       </div>
       <span class="pin" style="top:150px; right:60px;">15</span>
-      <span class="pin" style="top:238px; left:40px;">16</span>
+      <span class="pin" style="top:250px; right:190px;">16</span>
       <span class="pin" style="top:330px; right:14px;">17</span>
     </div>
     <div class="caption annotation">
@@ -405,12 +398,12 @@
               <span class="btn primary small">Mark Thu–Sat Skipped</span>
               <span class="btn secondary small">log tomorrow’s weigh-in</span>
             </div>
-            <div class="receipt faint" style="margin-top:8px;">auto-releases when the trigger clears — no debt, no penalty · self-flaggable as an atypical week (travel / illness)</div>
+            <div class="receipt faint" style="margin-top:8px;">no debt, no penalty — gone when the data returns · mark an atypical week (travel / illness)</div>
           </div>
 
           <div class="stat-row">
-            <span class="label">Trend <span class="faint">· on pace</span> <span class="prov derived">EWMA α 0.15</span></span>
-            <span class="value stat-s">178.9 <span class="delta down">−1.3 lb/wk</span></span>
+            <span class="label">Trend <span class="faint">· on pace</span> <span class="prov derived">derived</span></span>
+            <span class="value stat-s">81.1 <span class="delta down">−0.6 kg/wk</span></span>
           </div>
           <div class="stat-row">
             <span class="label">Measured burn</span>
@@ -505,7 +498,7 @@
 
         <div class="card sunken">
           <div class="card-title">Hand-off</div>
-          <div class="receipt dim">F03 regenerates vs the fresh budget · F04 rebuilds the list — under 1 s, nothing to wait for.</div>
+          <div class="receipt dim">the week regenerates against the fresh budget · the shopping list rebuilds — under 1 s, nothing to wait for.</div>
           <div class="receipt faint" style="margin-top:6px;">cone re-blooms → flow <a href="07-onboarding-f01.html" style="color:var(--info);">07</a> · dates stay an estimate, not a promise</div>
         </div>
 
@@ -542,7 +535,7 @@
     <div class="col"><div class="annotation">
       <b>Design bar</b>
       <ol>
-        <li><b>Provenance chips on every derived number</b> — trend (derived · EWMA α 0.15), burn (measured, engine transparent-v1), proposal (adaptive template re-derivation), ring target (adaptive · check-in Sep 6 → re-stamps Sep 13), held estimate (frozen at last good), breakdown terms (each cited). None missing. ✓</li>
+        <li><b>Provenance chips on every derived number</b> — trend (derived ⓘ), burn (measured, engine transparent-v1), proposal (adaptive template re-derivation), ring target (adaptive · check-in Sep 6 → re-stamps Sep 13), held estimate (frozen at last good), breakdown terms (each cited). None missing. ✓</li>
         <li><b>Tone</b> — “on pace”, “6/7 days logged”, “none this week — it re-opens when the data does”. Plateau framing = adaptation (“your physiology adapting, and the plan follows”; Adjustment glow as “quiet applause”); the body is never stubborn, no “over budget”, no verdict words anywhere in mock copy. ✓</li>
         <li><b>No red</b> — held renders amber with a single 600 ms pulse; deltas use neutral/accent only; the strongest color in the flow is amber. Red is reserved for nothing. ✓</li>
         <li><b>R-U13</b> — Wednesday’s fast is a chosen state (blue dot), Sunday is “still open” with a one-tap fix; day statuses never shamed, gut absent from the completeness model. ✓</li>
@@ -557,7 +550,7 @@
       <b>Frozen anatomy &amp; motion compliance</b>
       <ol>
         <li><b>Anatomy row-by-row (F07 §4)</b> — ① status chip (+ reason on hold, mock 5) · ② trend row with neutral on/off-pace wording · ③ adherence “6/7” + day dots + inline Logged/Skipped/Fasted fix · ④ expenditure with Δ-vs-last-week (mock 4) and Δ-vs-calculator + tap-through · ⑤ proposal + per-macro delta chip + “how we got here” · ⑥ Apply/Keep/Discuss — all present in order (mock 2, pins 5–10). “Computed on your device” once. ✓</li>
-        <li><b>Reveal = 500 ms, four beats</b> — chip stamps → trend odometer → expenditure line draws L→R → proposal rises (mock 1 timeline chips, frame at t ≈ 300 ms). ✓</li>
+        <li><b>Reveal = 500 ms, four beats</b> — chip stamps → trend odometer → expenditure line draws L→R → proposal rises (frame at t ≈ 300 ms). ✓</li>
         <li><b>Apply</b> — double-tick (Confirm ×2), numerals count 1,950 → 1,900, ledger line items itself beneath. <b>Keep</b> — single soft tick, proposal folds as “rolling over”. <b>Held</b> — amber pulse once (600 ms), estimate at reduced opacity, no proposals, trend/pace remain. <b>Plateau</b> — Adjustment term glows once. All values match motion table §4.1. ✓</li>
         <li><b>R-C7 honored</b> — Discuss with insights-chat off renders the local trail (mock 3) plus exactly one informational line; never a prompt to enable cloud. Report-card deep-link: flow 06. ✓</li>
         <li><b>F01 diff contract</b> — version badge tick, human-readable diff summary, history with readable diffs and one-tap revert (mock 6); F03 regenerates, F04 rebuilds &lt; 1 s. ✓</li>

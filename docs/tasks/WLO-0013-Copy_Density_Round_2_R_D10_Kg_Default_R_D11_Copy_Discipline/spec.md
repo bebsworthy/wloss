@@ -18,3 +18,11 @@ provenance anatomy + §8 system-leakage bans updated. Execute on owner go-ahead.
 - [ ] Design-bar sweep (provenance, tone, no-red, R-U7/U13/U15/U16) still passes.
 
 Status: todo — plan proposed, awaiting owner go-ahead.
+
+
+## Executed 2026-09-11 (owner go-ahead same day)
+
+- P0 kg conversion done across flows 01–06 per REVIEW §4.1 (guard delta corrected to 4.2 kg — plan's 4.5 was an arithmetic slip; table amended).
+- P1 provenance ⓘ shipped as CSS `.prov::after` (word + ⓘ on every chip; parameters live in the tap-through explainer); full §4.3 sweep + duplication pass done.
+- P2 leak scanner (upgraded to scan whole non-wf phones — sheets/viewfinders/toasts) over 44 annotated surfaces: 0 hits. ~35 frames re-rendered in-browser and re-inspected; pins re-seated where copy removals shifted layouts (01 p3, 02 p21/p25, 03 p16).
+- Execution record with deviations: REVIEW.md §4.5.

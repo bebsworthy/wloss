@@ -195,15 +195,13 @@
           <span class="chip" style="background:rgba(5,7,10,.6);">✕</span>
           <span class="chip" style="background:rgba(5,7,10,.6);">depth ✓ · plate found</span>
         </div>
-        <div class="vf-note" style="left:0; right:0; bottom:216px; text-align:center; color:var(--text-secondary);">reading the plate — on-device · recognizer v1.4</div>
+        <div class="vf-note" style="left:0; right:0; bottom:216px; text-align:center; color:var(--text-secondary);">reading the plate — on-device</div>
         <div class="vf-chiprow" style="bottom:150px;">
           <span class="chip accent">dal tadka · 220 g</span>
           <span class="chip accent">basmati rice · 200 g</span>
           <span class="ghost-chip">roti · …</span>
           <span class="ghost-chip">ghee · …</span>
         </div>
-        <div class="vf-note" style="left:0; right:0; bottom:120px; text-align:center;">2 of 4 dealt — static frame of a 600–900 ms sequence</div>
-        <div class="vf-note" style="left:0; right:0; bottom:44px; text-align:center;">cancel is always available · no spinner, no server wait</div>
       </div>
       <span class="pin" style="top:250px; right:40px;">6</span>
       <span class="pin" style="bottom:190px; right:34px;">7</span>
@@ -214,7 +212,7 @@
       <ol>
         <li><span class="pin-ref">6</span>Shimmer band sweeps the frozen frame for <b>600–900 ms</b> (motion table “Analysis shimmer”) — long enough to feel read, short enough to feel local.</li>
         <li><span class="pin-ref">7</span>Item chips spring in <b>one by one, damping 0.7</b>, each landing with a <b>soft tick</b>. This static frame catches the deal mid-hand: two landed, two ghosted. Ghosts preview the count — the hand is never hidden.</li>
-        <li><span class="pin-ref">8</span>Copy names the truth: “on-device · recognizer v1.4” — a pipeline note, not a server spinner (local-first bar; offline is a non-state). With <span class="chip" style="font-size:10px;">food-photo</span> consented, a cloud second pass would <i>extend</i> this shimmer under a labeled chip and write an F12 receipt — never run silently, never block the on-device result from shipping.</li>
+        <li><span class="pin-ref">8</span>Copy names the truth: “reading the plate — on-device” (the recognizer build lives in the ⓘ explainer) — a pipeline note, not a server spinner (local-first bar; offline is a non-state). With <span class="chip" style="font-size:10px;">food-photo</span> consented, a cloud second pass would <i>extend</i> this shimmer under a labeled chip and write an F12 receipt — never run silently, never block the on-device result from shipping.</li>
       </ol>
     </div>
   </div>
@@ -254,7 +252,7 @@
           <div style="flex:1;">
             <div class="stat-s">P 21 · C 104 · F 9 g</div>
             <div style="margin-top:6px; display:flex; gap:5px; flex-wrap:wrap;">
-              <span class="prov estimated">AI-estimated (on-device, v1.4)</span>
+              <span class="prov estimated">AI-estimated · on-device</span>
               <span class="receipt" style="color:var(--info);">how we got here →</span>
             </div>
             <div class="receipt faint" style="margin-top:6px;">dal + rice DB-matched (grams estimated) · roti full estimate</div>
@@ -292,16 +290,16 @@
             <div class="thumb" style="left:calc(33% - 9px);"></div>
             <span class="railglyph">▮ rail</span>
           </div>
-          <div class="receipt faint" style="margin-top:2px;">detents every 5 g · 5 ms ticks · rail = physical max for class</div>
+          <div class="receipt faint" style="margin-top:2px;">5 g steps</div>
         </div>
         <div class="hintfield" style="margin-bottom:10px;">
-          “half the plate is dal, cooked in ghee”<span class="faint"> — plate-level hint, no word limit · re-estimates in a 250 ms digit-roll</span>
+          “half the plate is dal, cooked in ghee”<span class="faint"> — plate-level hint, no word limit · re-estimates as you type</span>
         </div>
         <div class="btnrow">
           <a class="btn primary" href="#f02-save" style="text-decoration:none;">Save</a>
           <span class="btn secondary">Rescan</span>
         </div>
-        <div class="receipt faint" style="margin-top:8px;">save is live — editing is optional · photo discarded at save (R-U14) · median log 8 s</div>
+        <div class="receipt faint" style="margin-top:8px;">saves instantly · photo discarded — change in Settings</div>
       </div>
       <span class="pin" style="bottom:640px; right:38px;">9</span>
       <span class="pin" style="bottom:520px; left:34px;">10</span>
@@ -314,7 +312,7 @@
       <b>Result card — the correction loop is the hero, not an apology.</b>
       <ol>
         <li><span class="pin-ref">9</span>Confidence ring draws <b>clockwise in 400 ms</b> around the kcal number (motion table). Color boundaries are <b>frozen</b>: green ≥ 0.7 = accent, amber 0.4–0.7 = held, grey &lt; 0.4 = text-secondary. This scan is 0.74 → green.</li>
-        <li><span class="pin-ref">10</span>Provenance chip is exact and mandatory: “AI-estimated (on-device, v1.4)”; every chip taps open the “how we got here” sheet (what the model saw, what depth said, what the DB returned, what you changed). DB-matched items keep “DB-verified” — only grams were estimated.</li>
+        <li><span class="pin-ref">10</span>Provenance chip is the word + ⓘ: “AI-estimated · on-device”; every chip taps open the “how we got here” sheet (which recognizer build, what the model saw, what depth said, what the DB returned, what you changed) (what the model saw, what depth said, what the DB returned, what you changed). DB-matched items keep “DB-verified” — only grams were estimated.</li>
         <li><span class="pin-ref">11</span>Item chips carry per-item kcal + per-item confidence (0.88 green · 0.61 amber — both boundary cases on one card). Tap → <b>swap / portion / “not this”</b>; nothing auto-commits, 100 % editable before save.</li>
         <li><span class="pin-ref">12</span>Portion slider: <b>detents every 5 g, 5 ms ticks</b>. Crossing a clamp rail fires a double-sided bump, the number flashes its rail glyph, and a <b>900 ms one-time tooltip</b> (“capped at a physical maximum — tap to override”) appears — once per food class, never again. Sanity rails (≤ 9 kcal/g fats, ≤ 4 cooked starches, mass × density ceiling) run under every number: <b>the 27M-kcal candy bar cannot render</b>, even as a glitch; a rail hit also downgrades confidence and shows its marker.</li>
         <li><span class="pin-ref">13</span>Plate-level hint field — the text-steerable re-estimate. No word limit (SnapCalorie’s truncation is a named anti-pattern); numbers morph with a <b>250 ms digit-roll</b> and changed items re-spring.</li>
@@ -355,7 +353,7 @@
             <div class="center"><div class="stat-m">726</div><div class="receipt faint">kcal</div><div class="receipt held-c" style="font-size:11px;">conf 0.46</div></div>
           </div>
           <div style="flex:1;">
-            <span class="prov held">AI-estimated (on-device, v1.4)</span>
+            <span class="prov held">AI-estimated · on-device</span>
             <div class="receipt faint" style="margin-top:6px;">overlapping dishes · ghee quantity unclear — the ring’s stroke is irregular because the estimate is uncertain: precision rendered as texture, not alarm</div>
           </div>
         </div>
@@ -402,7 +400,7 @@
           <a class="btn primary" href="#f02-save" style="text-decoration:none;">Save</a>
           <span class="btn secondary">Rescan</span>
         </div>
-        <div class="receipt faint" style="margin-top:8px;">save is live at any confidence — a rough log beats no log · nothing here blocks you</div>
+        <div class="receipt faint" style="margin-top:8px;">a rough log beats no log — save anytime</div>
       </div>
       <span class="pin" style="bottom:690px; right:38px;">15</span>
       <span class="pin" style="bottom:590px; left:10px;">16</span>
@@ -440,7 +438,7 @@
           <div style="font-weight:600;">Scan · 13:04</div>
           <span class="chip blue">◌ offline</span>
         </div>
-        <div class="receipt" style="margin-bottom:2px;">on-device pipeline ran unchanged — nothing left the phone · offline is a non-state</div>
+        <div class="receipt" style="margin-bottom:2px;">worked offline — nothing left your phone</div>
         <div class="trail">
           <div class="ln"><span class="faint">1</span><span>▤ barcode → <b style="color:var(--text-secondary);">miss</b> · OFF cache only (offline)</span></div>
           <div class="ln"><span class="faint">2</span><span>🖼 label photo → on-device OCR · “dal makhani · 118 kcal / 100 g”</span></div>
@@ -462,10 +460,10 @@
           <a class="btn primary" href="#f02-save" style="text-decoration:none;">Save</a>
           <span class="btn secondary">Fix match</span>
         </div>
-        <div class="receipt faint" style="margin-top:8px;">only servers WLO ever talks to here: Open Food Facts · USDA FDC — and today, neither</div>
+        <div class="receipt faint" style="margin-top:8px;">OFF/USDA unreachable — matched locally instead</div>
       </div>
       <span class="pin" style="bottom:470px; left:34px;">20</span>
-      <span class="pin" style="bottom:380px; left:34px;">21</span>
+      <span class="pin" style="bottom:352px; right:16px;">21</span>
       <span class="pin" style="bottom:250px; left:34px;">22</span>
       <span class="pin" style="bottom:130px; right:34px;">23</span>
     </div>
@@ -503,7 +501,6 @@
                 <span class="m"><span class="sw" style="background:var(--series-1)"></span>C 210/215</span>
                 <span class="m"><span class="sw" style="background:var(--series-2)"></span>F 24/70</span>
               </div>
-              <div class="receipt faint" style="margin-top:8px;">swept 400 ms ease-out + soft tick · landed with one low “settled”</div>
             </div>
           </div>
         </div>
@@ -514,10 +511,10 @@
           <div class="stat-row"><span class="label">Chai · milk + 2 rusk</span><span class="value receipt">243 · <span class="prov derived">user-entered</span></span></div>
           <div class="stat-row">
             <span class="label"><b style="color:var(--text-primary); font-weight:550;">Lunch · dal-chawal-thali 📷</b><br><span class="receipt faint">8 s · roti 35 → 40 g</span></span>
-            <span class="value" style="flex-direction:column; align-items:flex-end; gap:3px;"><span class="receipt">581</span><span style="display:flex; gap:4px;"><span class="prov estimated">AI-estimated (on-device, v1.4)</span><span class="chip accent">0.74</span></span></span>
+            <span class="value" style="flex-direction:column; align-items:flex-end; gap:3px;"><span class="receipt">581</span><span style="display:flex; gap:4px;"><span class="prov estimated">AI-estimated · on-device</span><span class="chip accent">0.74</span></span></span>
           </div>
           <div class="stat-row"><span class="label">Water</span><span class="value receipt">1.0 / 2.5 L</span></div>
-          <div class="receipt faint" style="margin-top:6px;">photo discarded at save (R-U14) · “keep this one” offered per capture · thumbnails opt-in</div>
+          <div class="receipt faint" style="margin-top:6px;">photo not saved · change in Settings</div>
         </div>
 
         <div class="card">
@@ -541,7 +538,7 @@
         </div>
       </div>
       <span class="pin" style="top:150px; right:30px;">24</span>
-      <span class="pin" style="top:455px; left:12px;">25</span>
+      <span class="pin" style="top:477px; left:12px;">25</span>
       <span class="pin" style="top:572px; left:12px;">26</span>
       <span class="pin" style="top:660px; right:34px;">27</span>
     </div>
@@ -549,7 +546,7 @@
       <b>Save arc — the landing.</b>
       <ol>
         <li><span class="pin-ref">24</span>The result card <b>folds into a 3 px chip and arcs into the diary</b> while the budget ring <b>sweeps to its new total with a count-up</b> — 400 ms ease-out, soft tick at sweep end, and <b>one low “settled” haptic</b> on land (motion table “Save arc”). Ring math checks: 623 + 581 = 1,204 = 63 % of 1,900.</li>
-        <li><span class="pin-ref">25</span>The diary row is a provenance ledger: full chip “AI-estimated (on-device, v1.4)” + confidence badge 0.74, plus the correction trail (“roti 35 → 40 g”) — the ground-truth pair F11’s accuracy stats eat. Copy is a fact (“696 left”), never a verdict; “that’s a lot of calories” is banned copy and has no surface to live on.</li>
+        <li><span class="pin-ref">25</span>The diary row is a provenance ledger: full chip “AI-estimated · on-device” (ⓘ carries the recognizer build) + confidence badge 0.74, plus the correction trail (“roti 35 → 40 g”) — the ground-truth pair F11’s accuracy stats eat. Copy is a fact (“696 left”), never a verdict; “that’s a lot of calories” is banned copy and has no surface to live on.</li>
         <li><span class="pin-ref">26</span><b>No confetti on logging</b> — celebration is geometry (ring sweep, count-up) and belongs to F11 milestones. The actual reward is the Food Memory card: this corrected meal is now a one-tap re-log (“same as Tuesday?”), the statistically most-used pattern in the category.</li>
         <li><span class="pin-ref">27</span><b>R-U14:</b> the photo was processed in memory and <b>discarded at save by default</b>; the diary row shows no thumbnail because none was kept. Compressed-thumbnail mode and full-quality retention are explicit opt-ins; “keep this one” was offered per-capture, once, and never nagged.</li>
         <li>Personal accuracy stat (“±12 % · best on breakfast”) rides the diary header — the honest, on-device version of a published-accuracy claim. Cross-links: back to the <a href="01-day-loop-f10.html">Day loop (01)</a>, or the morning’s <a href="04-weigh-in-trend-f06-f08.html">weigh-in (04)</a>.</li>
@@ -566,12 +563,12 @@
     <div class="col"><div class="annotation">
       <b>Design bar</b>
       <ol>
-        <li><b>Provenance chips on every number</b> — plate kcal (AI-estimated · on-device, v1.4), per-item conf chips, DB rows (USDA FDC # / OFF cache), label entry (measured · label), chai (user-entered), diary row + ring (adaptive · check-in Sep 8). None missing. ✓</li>
+        <li><b>Provenance chips on every number</b> — plate kcal (AI-estimated · on-device), per-item conf chips, DB rows (USDA FDC # / OFF cache), label entry (measured · label), chai (user-entered), diary row + ring (adaptive · check-in Sep 8). None missing. ✓</li>
         <li><b>Tone: numbers never judgment</b> — “1,277 left”, “696 left”, “rough guess — adjust what’s wrong” (the app indicts its own estimate, never the eater). Banned copy audit clean: no “that’s a lot of calories”, no cheat/bad/guilt anywhere. ✓</li>
         <li><b>No red exists</b> — errors are a 2-frame 8 px shake (annotated on Rescan/barcode-miss); the strongest state color on any screen is amber; low confidence reads as texture (irregular stroke), not alarm. ✓</li>
         <li><b>R-U7</b> — n/a on this surface (no Archive/Digestion naming decision touches it), but checked: nav labels in the save-arc mock use the frozen names; diary and hint copy contain no taboo words. ✓</li>
         <li><b>R-U15 manual paths visible everywhere</b> — five equal ladder chips at viewfinder rest; “type it instead” + search survive inside the offline sheet; every fallback (barcode miss → label OCR → manual fields; recognition fail → chips stay editable) lands on manual without loss. ✓</li>
-        <li><b>Local-first</b> — no server spinner in any state; the analyzing copy names the on-device recognizer; offline is a non-state with an identical pipeline; the only servers named are OFF/USDA. ✓</li>
+        <li><b>Local-first</b> — no server spinner in any state; the analyzing copy names the on-device pipeline; offline is a non-state with an identical pipeline; the only servers named are OFF/USDA. ✓</li>
         <li><b>Discretion by default</b> — cloud requires per-capability consent at call time, EXIF-stripped downscaled pixels, F12 receipt; photo discarded at save (R-U14) stated once on the surface, never nagged. ✓</li>
         <li><b>Density</b> — the result card stacks 6 decisions (ring, provenance, 3 item chips, slider, hint, save) in one sheet with zero decoration; whitespace only around the confidence ring, the moment of decision. ✓</li>
       </ol>

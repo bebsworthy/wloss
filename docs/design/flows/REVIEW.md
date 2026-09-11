@@ -379,7 +379,7 @@ the seven flows. Two rulings codify the fix (FEATURES §3):
   per card, phrased as the next action; nothing appears twice on a screen;
   states name themselves when they occur.
 
-Status: **plan only — awaiting owner go-ahead** (ticket WLO-0013).
+Status: **executed 2026-09-11** (ticket WLO-0013, owner go-ahead received).
 
 ### 4.1 Units conversion (R-D10, mechanical)
 
@@ -393,7 +393,7 @@ meta already declares the distinct persona):
 | Trend history start (Aug 12) | 181.9 | 82.5 |
 | Weekly rate | −1.3 lb/wk | −0.6 kg/wk |
 | 30-day ribbon | −2.8 lb | −1.3 kg |
-| Outlier raw + guard copy | 188.3 · "9.2 lb above" | 85.4 · "4.5 kg above" |
+| Outlier raw + guard copy | 188.3 · "9.2 lb above" | 85.4 · "4.2 kg above" |
 | Gain-day variant | 179.2 ↑0.3 · 179.5 | 81.3 ↑0.1 · 81.4 |
 | Check-in Sunday trend | 178.9 | 81.1 |
 | Body-Trend grade | −1.3 lb/wk vs −1.1 | −0.6 kg/wk vs −0.5 |
@@ -484,3 +484,28 @@ annotation (annotations already carry most; add where missing).
 3. Copy sweep per §4.3 (remove / rewrite / move-to-annotation).
 4. Re-render all changed frames; re-run the leak scanner against `.screen`
    surfaces — target zero hits; design-bar sweep again.
+
+### 4.5 Execution record (2026-09-11)
+
+All four steps done; leak scanner over the 44 annotated phone surfaces: **0
+hits** (scanner upgraded mid-round: it now scopes the whole non-wireframe
+`.phone` — sheets, viewfinders, toasts included — which surfaced five extra
+leaks the screen-only pass had missed, all fixed: the portion-sheet "250 ms
+digit-roll", the check-in math sheet's `(R-B2)`/`(R-C7)`/`F05 sessions`, the
+ Bristol correction toast "1.2 s", onboarding's "(Appendix A)" cite, and
+flow 05's "Engine top 3 · ranked to restore Saturday" kicker + "slides out
+left" mechanism line). Deviations from the plan, all improvements:
+
+- Provenance ⓘ implemented once as CSS (`.prov::after` in `_wlo.css`) —
+  every chip renders word + ⓘ with no per-chip HTML churn; parameters moved
+  to the ⓘ tap-through explainer per R-D11.
+- §4.1 correction: guard delta is **4.2 kg**, not 4.5 (85.4 − 81.2 = 4.2;
+  the plan row carried an arithmetic slip, table above amended).
+- m2 swap sheet keeps the "1,900 / 1,900" Saturday line (the ring beside it
+  shows the same number; only the mechanism narration was removed).
+- "later bands sit still" (flow 05 timeline legend) trimmed — ambient-motion
+  narration the plan's list had not caught.
+- Pin nudges after copy removals: 01 p3, 02 p21/p25, 03 p16; trend-history
+  ribbon caption tightened to fit one line in kg.
+- Re-rendered ~35 changed frames in the browser and re-inspected each;
+  kg persona, ⓘ anatomy, and tone verified against the design bar.

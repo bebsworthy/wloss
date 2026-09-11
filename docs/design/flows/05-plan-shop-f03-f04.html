@@ -142,7 +142,7 @@
             <span class="prov adaptive">adaptive · check-in Sep 6</span>
           </div>
           <div class="receipt" style="margin-top:8px;"><b style="color:var(--text-primary)">Why this plan</b> · 3 cook events · 4 leftovers · 9 shared ingredients ≈ <b style="color:var(--text-primary)">€4.10</b> under an unshared week</div>
-          <div class="receipt faint" style="margin-top:3px;">hardest rules: no mushrooms (excluded) · fish 2×/wk (template) · pantry influence: off — not enough data yet · <span class="prov derived">deterministic · on-device</span></div>
+          <div class="receipt faint" style="margin-top:3px;">hardest rules: no mushrooms (excluded) · fish 2×/wk (template) · pantry influence: off — not enough data yet · <span class="prov derived">on-device</span></div>
         </div>
 
         <div class="card">
@@ -236,8 +236,8 @@
           <b style="font-size:15px; color:var(--text-primary);">Swap Saturday dinner</b>
           <span class="chip">✕</span>
         </div>
-        <div class="receipt" style="margin:8px 0 2px;">out: braised lamb, orzo ×4 · 1,240 kcal · 58 g P · <span class="prov derived">planned</span> — slides out left, replacement slides in</div>
-        <div class="card-title" style="margin-top:10px;">Engine top 3 · ranked to restore Saturday</div>
+        <div class="receipt" style="margin:8px 0 2px;">out: braised lamb, orzo ×4 · 1,240 kcal · 58 g P · <span class="prov derived">planned</span></div>
+        <div class="card-title" style="margin-top:10px;">Top swaps for Saturday</div>
         <div class="sugg">
           <div class="grow">
             <div style="color:var(--text-primary); font-weight:600;">Roast chicken, lemon potatoes</div>
@@ -266,11 +266,11 @@
           <div class="ring" style="--fill:100; width:52px; height:52px;">
             <div class="center"><span class="stat-s" style="font-size:11px;">1,900</span></div>
           </div>
-          <div class="receipt">Saturday after pick: 1,900 / 1,900 · in band<br>
-          <span class="faint">delta chips fly to the day ring; it re-fills — the week’s targets never move</span></div>
+          <div class="receipt">Saturday after pick: 1,900 / 1,900<br>
+          <span class="faint">stays in band — weekly targets never move</span></div>
         </div>
-        <div class="receipt faint" style="margin-top:10px;">swaps respect your hard rules — nothing carrying your allergens is ever suggested · or browse the 214-recipe library</div>
-        <div class="receipt faint">the list reconciles silently — no checked item is touched (screens 3–4)</div>
+        <div class="receipt faint" style="margin-top:10px;">never suggests your allergens · browse all 214 recipes</div>
+        <div class="receipt faint">your checked items stay checked</div>
       </div>
       <span class="pin" style="top:455px; left:24px;">8</span>
       <span class="pin" style="top:565px; right:105px;">9</span>
@@ -297,7 +297,7 @@
           <div class="brand">WLO <small>Sunday, Sep 13 · shop day</small></div>
           <div class="actions"><span class="chip">Shopping ▾</span><span class="chip">To buy · 11</span></div>
         </div>
-        <div class="receipt faint" style="margin:0 4px 10px;">built from week Sep 14–20 · 240 ms · on-device — works with the network off, forever · targets <span class="prov adaptive">adaptive · check-in Sep 13</span></div>
+        <div class="receipt faint" style="margin:0 4px 10px;">for the week of Sep 14 · works offline · targets <span class="prov adaptive">adaptive · check-in Sep 13</span></div>
 
         <div class="card" style="padding-top:6px;">
           <div class="card-title">Shopping <span class="right receipt">Consolidate ✓ · raw lines</span></div>
@@ -319,7 +319,7 @@
 
           <div class="aisle-h"><span>Household</span><span>1</span></div>
           <div class="rows aisle">
-            <div class="row"><span class="check"></span><div class="grow"><div class="name">cat food 1 bag</div><div class="sub">manual add · you filed it here once — remembered ✓ <span class="prov">learned</span></div></div></div>
+            <div class="row"><span class="check"></span><div class="grow"><div class="name">cat food 1 bag</div><div class="sub">you added this before — kept here</div></div></div>
           </div>
 
           <div class="aisle-h"><span>Pantry</span><span>4</span></div>
@@ -381,24 +381,19 @@
         <div class="card accent-edge">
           <div class="card-title">Reconciliation <span class="right receipt">14:41 · plan edit from the store</span></div>
           <div style="color:var(--text-primary); font-weight:600; font-size:14.5px; line-height:1.35;">Plan changed: 2 items added, 1 quantity up. Your checks are safe.</div>
-          <div class="receipt" style="margin-top:6px;">Tuesday’s soup → nacho night · deltas applied in place — nothing was cleared or regenerated</div>
-          <div class="receipt faint" style="margin-top:3px;">F03’s week view shows the same diff: “onion qty +2 — your checked items are untouched”</div>
+          <div class="receipt" style="margin-top:6px;">Tuesday’s soup → nacho night</div>
+          <div class="receipt faint" style="margin-top:3px;">the plan’s week view shows the same diff: “onion qty +2 — your checked items are untouched”</div>
           <div class="btnrow" style="margin-top:10px;">
             <a class="btn secondary small" href="05-plan-shop-f03-f04.html" style="text-decoration:none;">Review changes</a>
             <a class="btn primary small" href="05-plan-shop-f03-f04.html" style="text-decoration:none;">Got it</a>
           </div>
         </div>
 
-        <div class="proto">
-          <div class="receipt"><b style="color:var(--text-primary)">Servings edit — prototype</b> · curry ×2 → ×4 becomes one summary chip: <span class="delta up">+1 onion</span> <span class="delta up">+200 g rice</span> — not per-ingredient noise</div>
-          <div class="receipt faint" style="margin-top:4px;">open pattern (FEATURES §6.8 #8) · per-item chips like eggs “+2” are the settled mechanic; the summary chip is the lean for serving-dial edits — needs a joint F03/F04 UX review</div>
-        </div>
-
         <div class="card" style="padding-top:6px;">
           <div class="aisle-h"><span>Produce</span><span>6</span></div>
           <div class="rows aisle">
             <div class="row"><span class="check"></span><div class="grow"><div class="name">jalapeños ×1 <span class="chip accent">new</span></div><div class="sub">appended at its aisle · unchecked</div></div></div>
-            <div class="row"><span class="check"></span><div class="grow"><div class="name">red onions ×5 <span class="delta up" style="font-size:12px;">+2</span></div><div class="sub">was ×3 · nacho pico — still in place, still yours</div></div></div>
+            <div class="row"><span class="check"></span><div class="grow"><div class="name">red onions ×5 <span class="delta up" style="font-size:12px;">+2</span></div><div class="sub">was ×3 · still yours</div></div></div>
             <div class="row"><span class="check"></span><div class="grow"><div class="name">baby spinach 200 g</div><div class="sub"><span class="prov">for: Thai curry ×4</span></div></div></div>
           </div>
 
@@ -449,8 +444,7 @@
           <div style="display:flex; gap:5px; margin:6px 0 8px;">
             <span class="wavesq"></span><span class="wavesq"></span><span class="wavesq"></span><span class="wavesq" style="opacity:.45;"></span><span class="wavesq" style="opacity:.3;"></span><span class="wavesq" style="opacity:.2;"></span><span class="wavesq" style="opacity:.15;"></span><span class="wavesq" style="opacity:.1;"></span>
           </div>
-          <div class="receipt">the checked section pulses once, in sequence · 300 ms · confetti-free — celebration is geometry</div>
-          <div class="receipt faint" style="margin-top:4px;">aisle headers stay collapsed · the run is archived — purchase history powers cadence &amp; projections</div>
+          <div class="receipt faint" style="margin-top:4px;">your run is archived — it sharpens future lists</div>
         </div>
 
         <div class="card accent-edge">
@@ -462,14 +456,13 @@
             <a class="btn secondary" href="05-plan-shop-f03-f04.html" style="text-decoration:none;">Sweep all</a>
             <a class="btn primary" href="05-plan-shop-f03-f04.html" style="text-decoration:none;">Purchased only</a>
           </div>
-          <div class="receipt faint" style="margin-top:8px;">pour: the checked cards share-element into the Pantry tab · the count odometer rolls 127 → 141</div>
-          <div class="receipt faint">scope default is open (F04 §10): smart perishable-detection vs a persisted per-user toggle</div>
+          <div class="receipt faint" style="margin-top:8px;">moves 14 items to the pantry</div>
         </div>
 
         <div class="card">
           <div class="card-title">Sweep review <span class="right chip">optional</span></div>
           <div class="stat-row" style="min-height:36px;"><span class="label">Used vs discarded</span><span class="value receipt">one tap, self-reported · neutral, always</span></div>
-          <div class="receipt faint">waste is information with an exit ramp — “buy 2 fewer eggs” becomes a suggestion chip on the next generation; the € ledger waits for 4 weeks of history: “not enough history to claim this”</div>
+          <div class="receipt faint">“buy 2 fewer eggs” next time · € ledger unlocks after 4 weeks</div>
         </div>
 
         <div class="navbar">
@@ -509,7 +502,7 @@
           <div class="card-title">Use soon <span class="right receipt">3 items</span></div>
           <div class="stat-row" style="min-height:34px;">
             <span class="label"><span class="dot" style="background:var(--held);"></span>&nbsp; spinach 100 g</span>
-            <span class="value receipt">expires in 2 d · dot breathes, 2 s</span>
+            <span class="value receipt">expires in 2 d</span>
           </div>
           <div class="stat-row" style="min-height:34px;">
             <span class="label"><span class="dot" style="background:var(--held);"></span>&nbsp; feta (open) 80 g</span>
@@ -519,18 +512,18 @@
             <span class="label"><span class="dot" style="background:var(--held);"></span>&nbsp; eggs ×6</span>
             <span class="value receipt">Sep 17</span>
           </div>
-          <div class="receipt faint" style="margin-top:4px;">timeline banded: this week 3 · next week 5 · later 133 — later bands sit still</div>
+          <div class="receipt faint" style="margin-top:4px;">timeline banded: this week 3 · next week 5 · later 133</div>
         </div>
 
         <div class="card accent-edge">
           <div class="card-title">Use it or plan it · spinach</div>
-          <div class="receipt" style="margin-bottom:8px;">expires in 2 d — one actionable card per expiring item, never ambient anxiety</div>
+          <div class="receipt" style="margin-bottom:8px;">expires in 2 d</div>
           <div class="btnrow">
             <a class="btn secondary small" href="05-plan-shop-f03-f04.html" style="text-decoration:none;">Add to list</a>
             <a class="btn secondary small" href="05-plan-shop-f03-f04.html" style="text-decoration:none;">Plan around it</a>
             <a class="btn ghost small" href="05-plan-shop-f03-f04.html" style="text-decoration:none;">Mark used</a>
           </div>
-          <div class="receipt faint" style="margin-top:8px;">“plan around it” hands the item to F03 as a generation constraint (pantry-aware generation, [v1.x])</div>
+          <div class="receipt faint" style="margin-top:8px;">plan meals that use it up (coming later)</div>
         </div>
 
         <div class="card">
@@ -555,7 +548,6 @@
             <span class="label">tofu 200 g</span>
             <span class="value receipt faint">new — no run-out claim (no cadence yet)</span>
           </div>
-          <div class="receipt" style="margin-top:6px;">staples auto-deduct from every generated list · partial-stock “need 5, have 3 → buy 2”: <b style="color:var(--text-primary)">off</b> — one-time prompt at first generation, remember-choice (R-S5)</div>
           <div class="receipt faint" style="margin-top:4px;">turnover — fast 41 · medium 88 · never 12: the quiet answer to “why do I own three half-used grains?”</div>
           <div class="receipt faint">waste &amp; cost stats refuse to appear before 4 weeks of data; unit prices before 3 purchases of an item</div>
         </div>
@@ -577,7 +569,7 @@
       <b>Tuesday 18:31 — midweek glance.</b>
       <ol>
         <li><span class="pin-ref">25</span>Expiry dots breathe — 2 s period, <b>only in the “use soon” band</b>; later bands sit still. Urgency without alarm-red guilt: position, copy and one slow ambient loop (suppressed under reduced motion; haptics unaffected). No manipulative urgency anywhere — nothing in-aisle demands attention, and F04’s signals nag at most once per item per week.</li>
-        <li><span class="pin-ref">26</span>“Use it or plan it”: every expiring item carries exactly one action card — rebuy, hand to F03, or mark used — so no pantry signal becomes ambient anxiety.</li>
+        <li><span class="pin-ref">26</span>“Use it or plan it”: every expiring item carries exactly one action card — rebuy, hand to F03, or mark used — so no pantry signal becomes ambient anxiety. “Plan around it” as a F03 generation constraint is the v1.x pantry-aware-generation item — v1 ships the three exits shown.</li>
         <li><span class="pin-ref">27</span>Staples auto-deduct from every generation; partial-stock math is <b>off by default (R-S5)</b> — one-time prompt at first generation with remember-choice, so deductions never surprise (the #1 trust risk in this feature; the breakdown stays one tap from the number).</li>
         <li><span class="pin-ref">28</span>The run-out projection states its basis (consumption estimate from purchase cadence) <b>or doesn’t appear</b> — tofu, new since Sunday, gets no claim. The turnover ring is the quiet diagnostic; waste and cost stats refuse until ≥ 4 weeks of history (“not enough history to claim this”).</li>
       </ol>
@@ -593,7 +585,7 @@
     <div class="col"><div class="annotation">
       <b>Design bar</b>
       <ol>
-        <li><b>Provenance chips on every derived number</b> — week targets (adaptive · check-in), planned meals (planned), leftovers (leftover · Tue batch), confirmed days (measured / DB-verified), AI-estimated recipe nutrition rolling up as `AI-est` on the day (Sat brunch — mixed-provenance days never pass as verified), day deltas (Δ +4), run-out projection (derived · cadence 38 d), “why this plan” (deterministic · on-device). The one-tap “how we got here” trail stands behind each. ✓</li>
+        <li><b>Provenance chips on every derived number</b> — week targets (adaptive · check-in), planned meals (planned), leftovers (leftover · Tue batch), confirmed days (measured / DB-verified), AI-estimated recipe nutrition rolling up as `AI-est` on the day (Sat brunch — mixed-provenance days never pass as verified), day deltas (Δ +4), run-out projection (derived · cadence 38 d), “why this plan” (on-device). The one-tap “how we got here” trail stands behind each. ✓</li>
         <li><b>Tone — verdict-free, quoting the specs’ own copy:</b> “Friday’s plan met real life — replanned. Nothing owed.” (F03 §6) · banner verbatim (F04 §4) · “not yet meaningful” (F03 §4) · “≈ €4.10 under an unshared week” (F03 §5, forward-framed) · waste as “information with an exit ramp” (F04 §6). Banned list clean: no failed / missed / cheat / off-plan / over-as-verdict. ✓</li>
         <li><b>No red, no urgency theater</b> — Saturday’s +12 % renders the number in neutral hue; expiry uses one slow amber breathe in one band; no countdowns, no nag badges; nothing in-aisle demands attention (F04 §6). No alarm token exists to reach for. ✓</li>
         <li><b>R-U13 n/a</b> (no gut/silhouette surfaces in this flow) — but the <b>refusal family</b> is honored throughout: adherence &lt; 3 logged days → “not yet meaningful”; waste/cost &lt; 4 weeks and unit prices &lt; 3 purchases refused; run-out projections state their basis or don’t appear. ✓</li>

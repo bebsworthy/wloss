@@ -72,11 +72,11 @@
   <div class="flowunit">
     <div class="phone wf"><div class="screen">
       <div class="wf-box solid row">status bar</div>
-      <div class="wf-box row">Weigh-in header · unit chip (lb, profile-sticky)</div>
+      <div class="wf-box row">Weigh-in header · unit chip (kg, profile-sticky)</div>
       <div class="wf-box row">Segmented: Scale · Snap · Type — equal weight, no default-shaming</div>
       <div class="wf-box grid" style="grid-template-columns:1fr 1fr;"><div>Bluetooth: “92.1 arriving…”</div><div>OCR thumb: brackets + value</div></div>
       <div class="wf-note">↑ assists offered above the pad, never instead (R-U15)</div>
-      <div class="wf-box">Display: 179.1 · lb · ±0.1 stepper</div>
+      <div class="wf-box">Display: 81.2 · kg · ±0.1 stepper</div>
       <div class="wf-box tall">Number pad 1–9 · . · 0 · ⌫</div>
       <div class="wf-box row">date chip: this morning · back-date</div>
       <div class="wf-box row">Save weigh-in</div>
@@ -88,7 +88,7 @@
     <div class="phone wf"><div class="screen">
       <div class="wf-box solid row">status bar</div>
       <div class="wf-box row">“Saved” header · elapsed chip</div>
-      <div class="wf-box hero">CONFIRMATION (frozen order): 1 trend hero “179.1 ↓ 0.6” (odometer) → 2 raw “178.4 scale” small → 3 progress ribbon</div>
+      <div class="wf-box hero">CONFIRMATION (frozen order): 1 trend hero “81.2 ↓ 0.3” (odometer) → 2 raw “80.9 scale” small → 3 progress ribbon</div>
       <div class="wf-note">↑ single soft tick on save · gain = identical anatomy, neutral color</div>
       <div class="wf-box tall">Gain-day variant inset: same card, ↑ delta in neutral, same tick</div>
       <div class="wf-box row">re-weighs join quietly (R-B8) · back to Hub → 01</div>
@@ -180,7 +180,7 @@
       <div class="screen">
         <div class="apphead">
           <div class="brand">Weigh-in <small>Friday · 07:12</small></div>
-          <div class="actions"><span class="chip" title="unit is profile-sticky">lb</span></div>
+          <div class="actions"><span class="chip" title="unit is profile-sticky">kg</span></div>
         </div>
 
         <div class="seg">
@@ -192,8 +192,7 @@
         <div class="assist">
           <div class="a">
             <div class="t">Scale · paired</div>
-            <div class="stat-m" style="margin-top:2px;">178.6 <span class="faint" style="font-size:13px;">arriving…</span></div>
-            <div class="receipt faint" style="margin-top:2px;">tick per metric · F13</div>
+            <div class="stat-m" style="margin-top:2px;">81.0 <span class="faint" style="font-size:13px;">arriving…</span></div>
           </div>
           <div class="a">
             <div class="t">Snap display</div>
@@ -203,7 +202,7 @@
                 <path d="M148 8 H162 V18" fill="none" stroke="var(--accent)" stroke-width="2.5" stroke-linecap="round"/>
                 <path d="M162 42 V52 H148" fill="none" stroke="var(--accent)" stroke-width="2.5" stroke-linecap="round"/>
                 <path d="M22 52 H8 V42" fill="none" stroke="var(--accent)" stroke-width="2.5" stroke-linecap="round"/>
-                <text x="85" y="37" text-anchor="middle" fill="var(--text-primary)" font-size="16" font-weight="600" style="font-variant-numeric: var(--tnum);">178.4</text>
+                <text x="85" y="37" text-anchor="middle" fill="var(--text-primary)" font-size="16" font-weight="600" style="font-variant-numeric: var(--tnum);">80.9</text>
               </svg>
             </div>
             <div class="receipt faint" style="margin-top:4px;">on-device OCR · no cloud</div>
@@ -211,8 +210,8 @@
         </div>
 
         <div class="disp">
-          <div class="hero" style="font-size:48px;">179.1</div>
-          <span class="chip">lb</span>
+          <div class="hero" style="font-size:48px;">81.2</div>
+          <span class="chip">kg</span>
           <span class="stepper"><span class="st">− 0.1</span><span class="st">+ 0.1</span></span>
         </div>
 
@@ -229,7 +228,7 @@
         </div>
 
         <a class="btn primary block" href="#" style="text-decoration:none;">Save weigh-in</a>
-        <div class="receipt faint" style="margin-top:8px; text-align:center;">prefilled with the trend · one decimal · kg mirror 81.2 · scale path auto-confirms: 0 taps</div>
+        <div class="receipt faint" style="margin-top:8px; text-align:center;">prefilled with your trend</div>
       </div>
       <span class="pin" style="top:148px; left:14px;">1</span>
       <span class="pin" style="top:148px; right:14px;">2</span>
@@ -259,10 +258,10 @@
           <div class="card-title">Confirmation <span class="prov measured">measured · scale</span></div>
           <div style="display:flex; align-items:baseline; gap:12px;">
             <span class="receipt faint">Trend</span>
-            <div class="hero">179.1</div>
-            <span class="delta down">↓ 0.6</span>
+            <div class="hero">81.2</div>
+            <span class="delta down">↓ 0.3</span>
           </div>
-          <div class="receipt" style="margin-top:2px;">raw <b style="color:var(--text-primary)">178.4</b> · scale · 07:12 — stays small print</div>
+          <div class="receipt" style="margin-top:2px;">raw <b style="color:var(--text-primary)">80.9</b> · scale · 07:12 — stays small print</div>
           <svg width="100%" height="64" viewBox="0 0 330 64" style="margin-top:10px">
             <path class="band" d="M0,18 L330,32 L330,40 L0,30 Z"/>
             <polygon points="146,25 168,19.5 190,26 190,27.5 168,22 146,26.5" fill="var(--neutral-delta)" opacity=".3"/>
@@ -274,17 +273,17 @@
             <circle cx="275" cy="32" r="2.2" fill="var(--text-tertiary)"/><circle cx="310" cy="36" r="2.2" fill="var(--text-tertiary)"/>
             <circle cx="330" cy="38" r="3.2" fill="var(--accent)"/>
           </svg>
-          <div class="receipt faint" style="margin-top:4px;">ribbon = area to 30 days ago · <span class="down">−2.8 lb</span> · band breathed 200 ms as today landed</div>
+          <div class="receipt faint" style="margin-top:4px;">ribbon = area to 30 days ago · <span class="down">−1.3 kg</span></div>
         </div>
 
         <div class="card sunken">
           <div class="card-title">Gain-day variant <span class="right receipt">identical anatomy</span></div>
           <div style="display:flex; align-items:baseline; gap:12px;">
             <span class="receipt faint">Trend</span>
-            <div class="stat-l">179.2</div>
-            <span class="delta up">↑ 0.3</span>
+            <div class="stat-l">81.3</div>
+            <span class="delta up">↑ 0.1</span>
           </div>
-          <div class="receipt" style="margin-top:2px;">raw 179.5 · scale</div>
+          <div class="receipt" style="margin-top:2px;">raw 81.4 · scale</div>
           <svg width="100%" height="34" viewBox="0 0 300 34" style="margin-top:8px">
             <path d="M0,12 L300,20 L300,24 L0,17 Z" fill="var(--neutral-delta)" opacity=".18"/>
             <line x1="0" y1="12" x2="300" y2="20" stroke="var(--text-tertiary)" stroke-width="1.5" stroke-dasharray="3 3"/>
@@ -293,7 +292,7 @@
           <div class="receipt faint" style="margin-top:4px;">same tick · same motion · neutral color — a gain day feels identical in effort, different only in the small print.</div>
         </div>
 
-        <div class="receipt faint" style="margin:2px 4px;">re-weighs join the day quietly (R-B8) · back to the Hub hero → <a href="01-day-loop-f10.html" style="color:var(--info); text-decoration:none;">flow 01</a></div>
+        <div class="receipt faint" style="margin:2px 4px;">re-weighs join the day quietly · back to the Hub hero</div>
       </div>
       <span class="pin" style="top:126px; left:120px;">4</span>
       <span class="pin" style="top:250px; right:30px;">5</span>
@@ -302,7 +301,7 @@
     <div class="caption annotation">
       <b>Confirmation — the frozen F06 card order.</b>
       <ol>
-        <li><span class="pin-ref">4</span>Frozen anatomy, top to bottom: 1 trend hero (“Trend 179.1 ↓ 0.6”, odometer rolls digit-by-digit, 400 ms, tabular digits) → 2 raw “178.4 scale” small beneath → 3 ribbon. Never raw-first; the scale is the trickster, the trend is the message.</li>
+        <li><span class="pin-ref">4</span>Frozen anatomy, top to bottom: 1 trend hero (“Trend 81.2 ↓ 0.3”, odometer rolls digit-by-digit, 400 ms, tabular digits) → 2 raw “80.9 scale” small beneath → 3 ribbon. Never raw-first; the scale is the trickster, the trend is the message.</li>
         <li><span class="pin-ref">5</span>Single soft haptic on save — the only celebration this moment gets. Ribbon: accent band above the line (progress as area), neutral fill where a day pops above the reference; thickness eased 200 ms (“breathe”) as the new point landed.</li>
         <li><span class="pin-ref">6</span>The gain variant is the same card with the delta in <span class="up">neutral</span>: identical tick, identical spring, no sad animation. Direction is described, never judged; “over” is never applied to a body number.</li>
       </ol>
@@ -320,15 +319,15 @@
         <div class="card" style="opacity:.45;">
           <div style="display:flex; align-items:baseline; gap:12px;">
             <span class="receipt faint">Trend</span>
-            <div class="hero">179.1</div><span class="delta up">↑ 9.2</span>
+            <div class="hero">81.2</div><span class="delta up">↑ 4.2</span>
           </div>
-          <div class="receipt" style="margin-top:2px;">raw 188.3 · scale · 07:12</div>
+          <div class="receipt" style="margin-top:2px;">raw 85.4 · scale · 07:12</div>
         </div>
         <div class="sheet-wrap"></div>
         <div class="sheet">
           <div class="grab"></div>
-          <div class="stat-m" style="margin:4px 0 2px;">9.2 lb above yesterday — keep or correct?</div>
-          <div class="receipt faint" style="margin-bottom:12px;">±3σ off your recent residuals · one tap either way · an admitted typo is fixed, not judged</div>
+          <div class="stat-m" style="margin:4px 0 2px;">4.2 kg above yesterday — keep or correct?</div>
+          <div class="receipt faint" style="margin-bottom:12px;">±3σ off your recent residuals — fixed, not judged</div>
           <div class="btnrow">
             <a class="btn primary" href="#" style="text-decoration:none;">Keep</a>
             <a class="btn secondary" href="#" style="text-decoration:none;">Correct</a>
@@ -341,7 +340,7 @@
     <div class="caption annotation">
       <b>Outlier guard — data quality, not discipline.</b>
       <ol>
-        <li><span class="pin-ref">7</span>One line, spec-verbatim (shown in kg; the lb persona renders “9.2 lb above yesterday — keep or correct?”). The guard fires on statistical distance from your own residuals — never against a goal, a pace, or another human.</li>
+        <li><span class="pin-ref">7</span>One line, spec-verbatim (“4.2 kg above yesterday — keep or correct?” — the lb setting renders the same guard in lb). The guard fires on statistical distance from your own residuals — never against a goal, a pace, or another human.</li>
         <li><span class="pin-ref">8</span>Keep and Correct are equal-weight buttons; Keep is the default-colored action because the number is usually true. No judgment copy exists for this state — errors are data (F02’s shake rule generalized: the fix is mechanical, the tone is flat).</li>
       </ol>
     </div>
@@ -362,7 +361,7 @@
 
         <div style="display:flex; gap:6px; margin-bottom:8px;">
           <span class="chip accent">30d</span><span class="chip">90d</span><span class="chip">1y</span><span class="chip">all</span>
-          <span class="prov derived" style="margin-left:auto;">derived · EWMA α 0.15</span>
+          <span class="prov derived" style="margin-left:auto;">derived</span>
         </div>
 
         <div class="card" style="padding:10px;">
@@ -381,8 +380,8 @@
             </svg>
           </div>
           <div style="display:flex; justify-content:space-between; margin-top:6px;">
-            <span class="receipt faint">Aug 12 · 181.9</span>
-            <span class="receipt">ribbon: −2.8 lb vs 30 d · scrubber: N = 30</span>
+            <span class="receipt faint">Aug 12 · 82.5</span>
+            <span class="receipt">ribbon −1.3 kg / 30 d · N = 30</span>
             <span class="receipt faint">Sep 11</span>
           </div>
         </div>
@@ -390,11 +389,11 @@
         <div class="card">
           <div class="stat-row">
             <span class="label">Weekly rate</span>
-            <span class="value stat-s"><span class="delta down">−1.3 lb/wk</span> <span class="prov derived">derived</span></span>
+            <span class="value stat-s"><span class="delta down">−0.6 kg/wk</span> <span class="prov derived">derived</span></span>
           </div>
           <div class="stat-row">
             <span class="label">Progress number</span>
-            <span class="value stat-s" style="white-space:nowrap;">10-day best <b>178.2</b> <span class="faint">· or steady</span></span>
+            <span class="value stat-s" style="white-space:nowrap;">10-day best <b>80.9</b> <span class="faint">· or steady</span></span>
           </div>
           <div class="stat-row">
             <span class="label">Body-fat</span>
@@ -415,7 +414,7 @@
           <div class="receipt" style="margin-top:4px;">keep weighing — trend forms in a few days</div>
         </div>
 
-        <div class="receipt faint" style="margin:0 4px 8px;">logbook: every raw entry + provenance column · long-press any date to back-fill (zero-phase values re-settle, 300 ms)</div>
+        <div class="receipt faint" style="margin:0 4px 8px;">long-press a day to log it later</div>
 
         <div class="navbar">
           <div class="tab active"><span class="ic">◉</span>Hub</div>
@@ -501,7 +500,6 @@
         </div>
         <div class="coach"><span class="chip amber">left ankle out of frame — step back 30 cm</span></div>
         <div class="shutterbtn bloom" style="opacity:.85;"></div>
-        <div class="vfprint">silent shutter · always — camera sound is a discretion leak</div>
       </div>
       <span class="pin" style="top:34px; left:10px;">16</span>
       <span class="pin" style="bottom:252px; left:30px;">17</span>
@@ -557,7 +555,7 @@
             <span class="chip">shoulders +0.2 · within noise</span>
             <span class="chip accent">thighs −0.3 cm</span>
           </div>
-          <div class="receipt faint" style="margin-top:8px;">chips count up over 400 ms · deltas inside the noise band stay grey — no fake number · the outlines differ by less than the eye expects; the profile carries the signal</div>
+          <div class="receipt faint" style="margin-top:8px;">deltas inside the noise band stay grey — no fake number · the outlines differ by less than the eye expects; the profile carries the signal</div>
         </div>
 
         <div class="card">
@@ -575,7 +573,7 @@
           <div class="receipt faint" style="margin-top:6px;">quiet-scale payoff · pairs with the weekly report card → <a href="06-reportcard-bristol-f11-f09.html" style="color:var(--info); text-decoration:none;">flow 06</a></div>
         </div>
 
-        <div class="receipt faint" style="margin:0 4px;">the frame was discarded at save — the outline is the artifact; nothing to leak (R-U16) · tap any number → “how we got here” · share = faceless vector strip only</div>
+        <div class="receipt faint" style="margin:0 4px;">no photo exists — outlines only, nothing to leak</div>
       </div>
       <span class="pin" style="top:150px; left:24px;">19</span>
       <span class="pin" style="top:356px; right:32px;">20</span>
@@ -604,7 +602,7 @@
           </div>
         </div>
 
-        <div class="receipt faint" style="margin:0 4px 8px;">captured 11 of the last 12 weeks — a coverage stat, not a duty streak</div>
+        <div class="receipt faint" style="margin:0 4px 8px;">11 of the last 12 weeks</div>
 
         <div class="tgrid">
           <div class="th ref"><svg width="34" height="40" viewBox="0 0 40 46"><path d="M20 3.2 C22.4 3.2 24 5.2 24 7.4 C24 9.2 23.2 10.4 22.6 11.6 C26.4 13.2 28.8 16.4 29.2 20.4 C29.6 24 28.2 27.2 27.4 30.8 C26.9 33.6 27 37 26.8 40.8 L22.6 40.8 C22.6 37.2 22 34.8 20 32.4 C18 34.8 17.4 37.2 17.4 40.8 L13.2 40.8 C13 37 13.1 33.6 12.6 30.8 C11.8 27.2 10.4 24 10.8 20.4 C11.2 16.4 13.6 13.2 17.4 11.6 C16.8 10.4 16 9.2 16 7.4 C16 5.2 17.6 3.2 20 3.2 Z" fill="none" stroke="var(--accent)" stroke-width="1.6"/></svg><span>Jun 14 · ★</span></div>
@@ -616,7 +614,7 @@
           <div class="th"><svg width="34" height="40" viewBox="0 0 40 46"><path d="M20 3.2 C22.4 3.2 24 5.2 24 7.4 C24 9.2 23.2 10.4 22.6 11.6 C26.4 13.2 28.8 16.4 29.2 20.4 C29.6 24 28.2 27.2 27.4 30.8 C26.9 33.6 27 37 26.8 40.8 L22.6 40.8 C22.6 37.2 22 34.8 20 32.4 C18 34.8 17.4 37.2 17.4 40.8 L13.2 40.8 C13 37 13.1 33.6 12.6 30.8 C11.8 27.2 10.4 24 10.8 20.4 C11.2 16.4 13.6 13.2 17.4 11.6 C16.8 10.4 16 9.2 16 7.4 C16 5.2 17.6 3.2 20 3.2 Z" fill="none" stroke="var(--text-tertiary)" stroke-width="1.6"/></svg><span>Aug 2</span></div>
           <div class="th"><svg width="34" height="40" viewBox="0 0 40 46"><path d="M20 3.2 C22.4 3.2 24 5.2 24 7.4 C24 9.2 23.2 10.4 22.6 11.6 C26.4 13.2 28.8 16.4 29.2 20.4 C29.6 24 28.2 27.2 27.4 30.8 C26.9 33.6 27 37 26.8 40.8 L22.6 40.8 C22.6 37.2 22 34.8 20 32.4 C18 34.8 17.4 37.2 17.4 40.8 L13.2 40.8 C13 37 13.1 33.6 12.6 30.8 C11.8 27.2 10.4 24 10.8 20.4 C11.2 16.4 13.6 13.2 17.4 11.6 C16.8 10.4 16 9.2 16 7.4 C16 5.2 17.6 3.2 20 3.2 Z" fill="none" stroke="var(--text-secondary)" stroke-width="1.6"/></svg><span>Aug 9</span></div>
         </div>
-        <div class="receipt faint" style="margin:6px 4px 0;">★ reference · dashed = flagged (excluded from delta claims) · dot = newest · faint dots = gaps, never mentioned (R-U13)</div>
+        <div class="receipt faint" style="margin:6px 4px 0;">★ reference · dashed = flagged (excluded from delta claims) · dot = newest · faint dots = gaps, never mentioned</div>
 
         <div class="card" style="margin-top:12px;">
           <div class="card-title">Compare <span class="right receipt">vs reference · Jun 14</span></div>
@@ -625,7 +623,7 @@
             <div style="width:2px; height:70px; background:var(--accent); border-radius:1px; margin:0 18px;"></div>
             <svg width="64" height="76" viewBox="0 0 40 46"><path d="M20 3.2 C22.4 3.2 24 5.2 24 7.4 C24 9.2 23.2 10.4 22.6 11.6 C26.4 13.2 28.8 16.4 29.2 20.4 C29.6 24 28.2 27.2 27.4 30.8 C26.9 33.6 27 37 26.8 40.8 L22.6 40.8 C22.6 37.2 22 34.8 20 32.4 C18 34.8 17.4 37.2 17.4 40.8 L13.2 40.8 C13 37 13.1 33.6 12.6 30.8 C11.8 27.2 10.4 24 10.8 20.4 C11.2 16.4 13.6 13.2 17.4 11.6 C16.8 10.4 16 9.2 16 7.4 C16 5.2 17.6 3.2 20 3.2 Z" fill="none" stroke="var(--accent)" stroke-width="1.6"/></svg>
           </div>
-          <div class="receipt faint" style="margin-top:6px; text-align:center;">drag the wipe divider · snaps to the centerline · synchronized scrub, one detent per capture pair</div>
+          <div class="receipt faint" style="margin-top:6px; text-align:center;">drag the wipe divider · snaps to the centerline · synchronized scrub</div>
         </div>
 
         <div class="card sunken">
@@ -633,7 +631,7 @@
           <div class="receipt">2 captures · 9 days — comparisons need 3 captures across 14 days. Until then: capture, never conclude.</div>
         </div>
 
-        <div class="receipt faint" style="margin:2px 4px;">long-press any capture → “set as reference” · gaps stay faint dots and are never mentioned again (R-U13) · no gap-shame, ever</div>
+        <div class="receipt faint" style="margin:2px 4px;">long-press to set a reference</div>
 
         <div class="navbar">
           <div class="tab"><span class="ic">◉</span>Hub</div>

@@ -7,6 +7,6 @@
 ## backlog
 
 ## todo
-- WLO-0013
 
 ## doing
+- WLO-0014
