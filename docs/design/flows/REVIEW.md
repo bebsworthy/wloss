@@ -261,6 +261,36 @@ Legend: ✅ strength · ⚠ defect · · minor. Screen IDs: `w` = wireframe,
 
 ## 3. Improvement plan
 
+> **### Resolution — fix round 1 (2026-09-11, same day): every item below is
+> fixed and re-verified in the browser.** Notes and corrections:
+>
+> - **P0-1 "ghost numerals" — real, root cause found deeper than the review
+>   guessed:** `.ring-big` was defined only in flow 01's local `<style>`, so
+>   the ring collapsed to 0×0 in flows 02/03 and its absolutely-centered
+>   numerals escaped over the card text. Fixed by promoting `.ring-big` to
+>   `_wlo.css`. (The original captures were also blurred by smooth-scroll —
+>   the review pipeline now disables it.)
+> - **P0-2 offline darkness — real, root cause was z-order, not luminance:**
+>   `.sheet` painted *under* `.sheet-wrap`'s 60 % black overlay. Fixed with
+>   `z-index: 45` on `.sheet`; the screen now renders at full theme
+>   brightness.
+> - **Corrections to §2 (capture/misread artifacts, code was already
+>   correct):** 02 m6's Food Memory CTA already read "Log again · 1 tap";
+>   05 m1's "AIry influence" was actually "pantry influence" with a pin
+>   sitting on the word. §2 is kept as the historical first-pass record.
+> - **Systemic fixes shipped in `_wlo.css`:** navbar pinned absolutely to
+>   the frame bottom (kills the floating-nav void on short screens), 96 px
+>   screen scroll-clearance, `.delta` chips never wrap mid-token, R-D9
+>   Archive glyph primitive (`.ic-arch`), `.sheet` z-order.
+> - **Persona/unit coherence:** the main persona is lb across flows 01–06
+>   (all kg/wk labels converted, the "92.1" stray value and the kg outlier
+>   guard fixed, share card now −9.2 lb); flow 07 is a *deliberately
+>   distinct* metric onboarding persona, noted as such in its page meta, and
+>   flow 02's meta documents how its noon (the dal-chawal-thali branch)
+>   relates to flow 01's.
+> - All ~25 pin positions that sat on text were moved to whitespace; per-
+>   frame height trims put every frame's key content clear of the nav.
+
 ### P0 — correctness (fix before the set is shown to anyone)
 
 1. **Ghost-numeral overlap on ring cards** (02 m6, 03 m2/m4/m5): the

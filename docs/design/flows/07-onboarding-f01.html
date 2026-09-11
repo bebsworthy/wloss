@@ -56,7 +56,7 @@
            background:var(--surface-raised); border:1px solid var(--outline); padding:18px 16px;
            display:flex; flex-direction:column; }
   .qcard.behind { transform:scale(.94) translateY(16px); opacity:.45; }
-  .qcard.flung { transform:rotate(-9deg) translateX(-58px); }
+  .qcard.flung { transform:rotate(-9deg) translateX(-24px); }
   .qcard .qc-kicker { font-size:11px; font-weight:550; letter-spacing:.04em; text-transform:uppercase; color:var(--text-tertiary); }
   .qcard .q { font-size:27px; font-weight:650; letter-spacing:-.01em; color:var(--text-primary); margin:auto 0 8px; }
   .qcard .dirchips { display:flex; justify-content:space-between; }
@@ -81,6 +81,7 @@
   <div class="meta">
     Spec: <a href="../../features/F01-onboarding-diet-plans.md">F01 Onboarding, Goals &amp; Diet Plan Studio</a> · IA: <a href="../IA.md">IA.md §5</a> ·
     Signature moment: the 600 ms forecast bloom — the first-win design (F01 §6) · 2026-09-11 · prototype, not implementation<br>
+    Persona: a <b>fresh onboarding user, metric</b> (92.4 → 78.0 kg) — deliberately distinct from the lb persona of flows 01–06; a second locale check, not an inconsistency.<br>
     Companion flows: <a href="01-day-loop-f10.html">01 Day loop (Hub landing after Start)</a> · <a href="03-checkin-f07.html">03 check-in (mature cone)</a> · <a href="04-weigh-in-trend-f06-f08.html">04 weigh-in &amp; trend</a> · <a href="index.html">index</a>
   </div>
 </header>
@@ -316,10 +317,8 @@
           <div class="receipt" style="margin-top:4px;">prefer a date? “by June” converts to an <b>implied pace</b> and is shown as pace — dates are advisory, never a countdown (Appendix A)</div>
         </div>
 
-        <div class="card amber-edge">
-          <div class="card-title">The wall <span class="right receipt">only if you push past 1.0 %/wk</span></div>
-          <div style="font-size:14px; color:var(--text-primary); line-height:1.45;">“At your stats, 1.0 %/week is the fastest we’ll suggest — June 12 isn’t a promise we’ll make; here’s June 28 at a sustainable pace.”</div>
-          <div class="receipt faint" style="margin-top:8px;">slider stops at the cap with a Reject haptic · counter-offer card slides up · Accept June 28 / keep 0.5 %</div>
+        <div class="card amber-edge" style="padding:10px 14px;">
+          <div class="receipt dim"><b style="color:var(--text-primary)">The wall</b> · only if you push past 1.0 %/wk — the slider stops with a Reject haptic and a counter-offer slides up: “1.0 %/week is the fastest we’ll suggest — here’s June 28 at a sustainable pace.”</div>
         </div>
 
         <a class="btn primary block" href="07-onboarding-f01.html" style="text-decoration:none;">Continue — see the forecast</a>
@@ -328,7 +327,7 @@
       <span class="pin" style="top:170px; right:24px;">5</span>
       <span class="pin" style="top:400px; right:24px;">6</span>
       <span class="pin" style="top:562px; left:22px;">7</span>
-      <span class="pin" style="top:648px; right:24px;">8</span>
+      <span class="pin" style="top:662px; left:12px;">8</span>
     </div>
     <div class="caption annotation">
       <b>Goal — dials, slider, and the wall.</b>
@@ -360,7 +359,6 @@
             <path class="spark" d="M14,122 C104,80 224,58 318,46" stroke-width="2.5"/>
             <text class="fan-axis" x="18" y="140">today · 92.4</text>
             <text class="fan-axis" x="312" y="38" text-anchor="end">78.0</text>
-            <text class="fan-note" x="150" y="74">shimmer</text>
             <text class="fan-axis" x="14" y="160">Sep ’26</text>
             <text class="fan-axis" x="152" y="160" text-anchor="middle">Jan ’27</text>
             <text class="fan-axis" x="316" y="160" text-anchor="end">May ’27</text>
@@ -425,8 +423,8 @@
           <div class="trules">35–40 % protein · pins a protein-floor ring in the food log so the cut protects muscle.</div>
           <div class="macrodots">
             <span class="m"><span class="sw" style="background:var(--series-4)"></span>P 35–40 %</span>
-            <span class="m"><span class="sw" style="background:var(--series-1)"></span>C ·</span>
-            <span class="m"><span class="sw" style="background:var(--series-2)"></span>F ·</span>
+            <span class="m"><span class="sw" style="background:var(--series-1)"></span>C 30 %</span>
+            <span class="m"><span class="sw" style="background:var(--series-2)"></span>F 25–30 %</span>
           </div>
         </div>
 
@@ -620,14 +618,13 @@
               <div class="rr"><span class="stat-s">83.4 kg</span><span class="receipt faint">~ Jan 11 – Mar 10</span></div>
             </div>
             <div class="rung">
-              <div class="rr"><span class="stat-s">80.4 kg</span><span class="receipt faint">~ Feb 24 – May 11</span></div>
+              <div class="rr"><span class="stat-s">80.4 kg</span><span class="receipt faint">~ Feb 24 – Mar 21</span></div>
             </div>
             <div class="rung goal">
               <div class="rr"><span class="stat-s" style="color:var(--accent);">78.0 kg — goal</span><span class="receipt faint">~ Mar 22 – Jul 5</span></div>
             </div>
           </div>
-          <div class="receipt faint" style="margin-top:4px;">ranges come from the same band math as the forecast — while the engine is <span class="devc">DEVELOPING</span> you get ranges only, never a single promised date</div>
-          <div class="receipt faint" style="margin-top:4px;">rungs rename: “Size 34 jeans” is a goal too · rungs land 80 ms apart with a rising three-note motif</div>
+          <div class="receipt faint" style="margin-top:4px;">ranges while the engine is <span class="devc">DEVELOPING</span>, never a single promised date · rungs rename (“Size 34 jeans”) · land 80 ms apart, rising three-note motif</div>
         </div>
 
         <div class="card">
@@ -642,12 +639,12 @@
         <a class="btn primary block" href="01-day-loop-f10.html" style="text-decoration:none;">Start — write Plan v1</a>
         <div style="height:8px;"></div>
         <a class="btn ghost block" href="07-onboarding-f01.html" style="text-decoration:none;">Browse the Studio first</a>
-        <div class="receipt faint" style="margin:10px 4px 0;">Start hands off to the Hub → <a href="01-day-loop-f10.html">flow 01</a> · no notification prompt here — permission comes after your first successful log</div>
+        <div class="receipt faint" style="margin:10px 4px 0;">Start hands off to the Hub → <a href="01-day-loop-f10.html">flow 01</a> — permission comes after your first log</div>
       </div>
       <span class="pin" style="top:150px; right:24px;">22</span>
-      <span class="pin" style="top:388px; right:24px;">23</span>
+      <span class="pin" style="top:428px; left:12px;">23</span>
       <span class="pin" style="top:600px; left:22px;">24</span>
-      <span class="pin" style="top:708px; right:24px;">25</span>
+      <span class="pin" style="top:680px; right:14px;">25</span>
     </div>
     <div class="caption annotation">
       <b>Milestones &amp; Start — the commit.</b>

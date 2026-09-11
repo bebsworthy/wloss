@@ -193,7 +193,7 @@
             <div class="gcard">
               <div class="gl">Body Trend <span class="gn">4</span></div>
               <div class="stamp b">B</div>
-              <div class="gr">−0.6 kg/wk vs −0.5 plan · 3 weigh-ins</div>
+              <div class="gr">−1.3 lb/wk vs −1.1 plan · 3 weigh-ins</div>
             </div>
             <div class="gcard">
               <div class="gl">Gut <span class="gn">5</span></div>
@@ -219,7 +219,7 @@
           <div class="tab"><span class="ic">◉</span>Hub</div>
           <div class="tab"><span class="ic">▦</span>Plan</div>
           <div class="tab active"><span class="ic">✦</span>Insights</div>
-          <div class="tab"><span class="ic">▣</span>Archive</div>
+          <div class="tab"><span class="ic ic-arch"></span>Archive</div>
           <div class="tab"><span class="ic">🌿</span>Digestion</div>
         </div>
       </div>
@@ -316,7 +316,7 @@
           <div class="tab"><span class="ic">◉</span>Hub</div>
           <div class="tab"><span class="ic">▦</span>Plan</div>
           <div class="tab active"><span class="ic">✦</span>Insights</div>
-          <div class="tab"><span class="ic">▣</span>Archive</div>
+          <div class="tab"><span class="ic ic-arch"></span>Archive</div>
           <div class="tab"><span class="ic">🌿</span>Digestion</div>
         </div>
       </div>
@@ -349,7 +349,7 @@
         <div class="card sunken" style="padding:14px;">
           <div class="sharecard">
             <div class="sc-word">WLO</div>
-            <div class="sc-hero">−4.2<small> kg</small></div>
+            <div class="sc-hero">−9.2<small> lb</small></div>
             <div class="sc-sub">trend · 12 weeks · an estimate, not a promise</div>
             <svg width="100%" height="60" viewBox="0 0 202 60" style="margin-top:14px;">
               <path class="band" d="M0,26 L202,12 L202,44 L0,50 Z"/>
@@ -388,20 +388,20 @@
         <div class="btnrow">
           <a class="btn primary block" href="index.html" style="text-decoration:none;">Render · ~200 ms</a>
         </div>
-        <div class="receipt faint" style="text-align:center; margin-top:6px;">renders on-device, then the native share sheet — the card, not the database, leaves the phone</div>
+        <div class="receipt faint" style="text-align:center; margin-top:5px;">rendered on-device — the card leaves, never the database</div>
 
         <div class="navbar">
           <div class="tab"><span class="ic">◉</span>Hub</div>
           <div class="tab"><span class="ic">▦</span>Plan</div>
           <div class="tab active"><span class="ic">✦</span>Insights</div>
-          <div class="tab"><span class="ic">▣</span>Archive</div>
+          <div class="tab"><span class="ic ic-arch"></span>Archive</div>
           <div class="tab"><span class="ic">🌿</span>Digestion</div>
         </div>
       </div>
       <span class="pin" style="top:150px; right:36px;">11</span>
       <span class="pin" style="top:500px; right:30px;">12</span>
       <span class="pin" style="top:680px; right:30px;">13</span>
-      <span class="pin" style="bottom:48px; right:30px;">14</span>
+<span class="pin" style="bottom:112px; right:12px;">14</span>
     </div>
     <div class="caption annotation">
       <b>Share composer — long-press any card or chart.</b>
@@ -596,7 +596,7 @@
         </div>
 
         <div class="card sunken amber-edge">
-          <div class="card-title">Worth showing a doctor <span class="right prov held">one per episode</span></div>
+          <div class="card-title">Worth showing a doctor <span class="right receipt">one per episode</span></div>
           <div class="receipt dim">The last 7 days ran under 40 % of your usual frequency — <b style="color:var(--text-primary)">unusual for you</b>. If it persists, worth mentioning at your next visit.</div>
           <div class="btnrow" style="margin-top:10px;">
             <span class="btn secondary small">Add to doctor report</span>
@@ -611,41 +611,32 @@
             <div class="stat-l">0.4<span class="receipt faint">/day</span></div>
             <div class="receipt dim">vs your <b style="color:var(--text-primary)">1.6</b> — a quiet week, not a crisis.</div>
           </div>
-          <svg width="100%" height="64" viewBox="0 0 330 64" class="chartbg" style="margin-top:8px">
-            <rect x="0" y="20" width="330" height="20" class="band"/>
-            <line x1="0" y1="30" x2="330" y2="30" stroke="#5C6875" stroke-width="1.5" stroke-dasharray="4 4"/>
-            <polyline class="spark" points="20,56 68,40 116,56 165,40 213,56 261,56 310,40"/>
+          <svg width="100%" height="44" viewBox="0 0 330 44" class="chartbg" style="margin-top:8px">
+            <rect x="0" y="14" width="330" height="14" class="band"/>
+            <line x1="0" y1="21" x2="330" y2="21" stroke="#5C6875" stroke-width="1.5" stroke-dasharray="4 4"/>
+            <polyline class="spark" points="20,38 68,26 116,38 165,26 213,38 261,38 310,26"/>
           </svg>
-          <div class="receipt faint" style="margin-top:6px;">baseline is yours alone — population averages are never benchmarks</div>
+          <div class="receipt faint" style="margin-top:4px;">baseline is yours alone — population averages are never benchmarks</div>
         </div>
 
-        <div class="card">
-          <div class="card-title">Trigger report <span class="right chip blue">v1.x</span></div>
-          <div style="display:flex; gap:12px; align-items:center;">
-            <div class="ring" style="--fill:64; width:56px; height:56px;">
-              <div class="center"><span class="receipt" style="font-size:10px;">10/14</span></div>
-            </div>
-            <div style="flex:1">
-              <div class="stat-s">Trigger report unlocks in 5 days</div>
-              <div class="receipt faint" style="margin-top:2px;">Sep 18 · cards will carry effect size, window, n — F11’s correlation views gate at n ≥ 21 (“n = 9 — not enough data to claim anything”)</div>
-            </div>
-          </div>
+        <div class="card" style="padding:10px 14px;">
+          <div class="receipt dim"><b style="color:var(--text-primary)">Trigger report</b> <span class="chip blue" style="font-size:10px; margin:0 3px;">v1.x</span> unlocks in 5 days · cards carry effect size, window, n — correlation views gate at n ≥ 21 <span class="faint">(“not enough data to claim anything”)</span></div>
         </div>
 
         <div class="navbar">
           <div class="tab"><span class="ic">◉</span>Hub</div>
           <div class="tab"><span class="ic">▦</span>Plan</div>
           <div class="tab"><span class="ic">✦</span>Insights</div>
-          <div class="tab"><span class="ic">▣</span>Archive</div>
+          <div class="tab"><span class="ic ic-arch"></span>Archive</div>
           <div class="tab active"><span class="ic">🌿</span>Digestion</div>
         </div>
       </div>
-      <span class="pin" style="top:150px; right:20px;">23</span>
-      <span class="pin" style="top:148px; left:152px;">24</span>
+      <span class="pin" style="top:112px; right:12px;">23</span>
+      <span class="pin" style="top:196px; left:12px;">24</span>
       <span class="pin" style="top:420px; left:36px;">25</span>
-      <span class="pin" style="top:736px; right:30px;">26</span>
-      <span class="pin" style="top:812px; left:44px;">27</span>
-      <span class="pin" style="top:566px; right:30px;">28</span>
+      <span class="pin" style="top:648px; right:12px;">26</span>
+      <span class="pin" style="top:724px; left:12px;">27</span>
+      <span class="pin" style="top:528px; right:12px;">28</span>
     </div>
     <div class="caption annotation">
       <b>Digestion stats — weekly browsing, on the couch.</b>

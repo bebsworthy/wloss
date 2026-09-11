@@ -119,7 +119,7 @@ html, body {
 .phone .screen {
   position: absolute; inset: 0;
   overflow-y: auto; overflow-x: hidden;
-  padding: 44px 16px 24px;
+  padding: 44px 16px 96px;
   scrollbar-width: none;
 }
 .phone .screen::-webkit-scrollbar { display: none; }
@@ -196,7 +196,7 @@ html, body {
 .prov.held { color: var(--held); border-color: rgba(232,179,75,.4); }
 
 .delta {
-  display: inline-flex; align-items: center; gap: 3px;
+  display: inline-flex; align-items: center; gap: 3px; white-space: nowrap;
   font-size: 13px; font-weight: 600; font-variant-numeric: var(--tnum);
   padding: 2px 7px; border-radius: var(--r-chip); background: rgba(138,147,166,.1);
 }
@@ -247,6 +247,7 @@ html, body {
   align-items: center; justify-content: center; text-align: center; z-index: 1;
 }
 .ring.macro { background: conic-gradient(var(--series-4) calc(var(--p,0)*1%), var(--outline) 0); }
+.ring-big { width: 116px; height: 116px; }
 
 /* quick-action rail */
 .rail { display: flex; gap: 8px; margin-bottom: var(--gap-screen); }
@@ -263,11 +264,13 @@ html, body {
   background: var(--info);
 }
 
-/* bottom nav */
+/* bottom nav — pinned to the frame bottom like the real app; content
+   scrolls beneath the gradient fade, and .screen's 96px bottom padding
+   guarantees the last row can scroll clear of it. */
 .navbar {
-  position: sticky; bottom: 0; left: 0; right: 0; z-index: 20;
-  display: flex; margin: 8px -16px -24px; padding: 6px 8px 22px;
-  background: linear-gradient(transparent, var(--bg) 22%);
+  position: absolute; bottom: 0; left: 0; right: 0; z-index: 20;
+  display: flex; margin: 0; padding: 6px 8px 22px;
+  background: linear-gradient(transparent, var(--bg) 30%);
 }
 .navbar .tab {
   flex: 1; display: flex; flex-direction: column; align-items: center; gap: 3px;
@@ -276,10 +279,19 @@ html, body {
 .navbar .tab .ic { font-size: 20px; }
 .navbar .tab.active { color: var(--accent); }
 
+/* R-D9 Archive icon — abstract stacked-outline glyph ("records");
+   never a camera or body glyph. Sized to sit beside the 10.5px label. */
+.ic-arch { position: relative; width: 15px; height: 15px; display: inline-block; }
+.ic-arch::before, .ic-arch::after {
+  content: ""; position: absolute; border: 1.7px solid currentColor; border-radius: 4px;
+}
+.ic-arch::before { inset: 0 3px 4px 3px; }
+.ic-arch::after { inset: 5px 0 0 0; opacity: .45; }
+
 /* bottom sheet overlay */
 .sheet-wrap { position: absolute; inset: 0; z-index: 40; background: rgba(5,7,10,.6); }
 .sheet {
-  position: absolute; left: 0; right: 0; bottom: 0;
+  position: absolute; left: 0; right: 0; bottom: 0; z-index: 45;
   background: var(--surface-raised); border-radius: var(--r-sheet) var(--r-sheet) 0 0;
   padding: 14px 18px 34px; border-top: 1px solid var(--outline);
 }
