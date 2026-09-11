@@ -254,7 +254,8 @@ valid captures.
 - Angle set: answered in the master doc — R-U6 freezes 2 mandatory angles
   (front/side) + optional back.
 - Multi-profile (F13/F01): per-profile archives and independent locks need a final
-  access-model decision.
+  access-model decision. *(Scope ruled: R-B9 — single-profile v1 with a
+  partition-ready schema; the access model lands with multi-profile [v1.x].)*
 - Vector-outline rendering: capture-time derivation budget (target < 2 s/angle on
   mid-range hardware) and the contour-simplification tolerance — implementation
   decisions that affect how faithful the stored outline feels in compare view.

@@ -58,7 +58,7 @@ Core objectives:
 
 **Cardio & steps (second-class by design, first-class enough)**
 
-- Native cardio entries are minimal: type, duration, perceived effort, optional distance — three taps from the session screen. Depth comes from **F13**: Health Connect workouts, steps, and HR streams import automatically and appear on the same timeline as lifting sessions.
+- Native cardio entries are minimal: type, duration, perceived effort, optional distance — three taps from the session screen. Depth comes from **F13**: Health Connect workouts, steps, and HR streams import automatically and appear on the same timeline as lifting sessions. (v1 scope ruled — R-S11: this minimal set + HC import is the whole of v1 cardio; native pacing/zone charts are later work.)
 - Steps never require logging in F05; the F10 daily step ring and F07's Activity term consume them directly from F13. F05 renders them only as training context ("rest-day steps carried the week").
 
 **Supersets & circuits**
@@ -149,6 +149,6 @@ Core objectives:
 
 - **Exercise library licensing/attribution:** bundle an open exercise database vs. author a minimal WLO set with animated demos — needs a master-doc decision on content provenance rules. *(Resolved: R-S2 — authored minimal set (CC0) + community additions; no proprietary bundled database.)*
 - **Recovery-model calibration:** Fitbod's ~22%/exercise heuristic is community reverse-engineered; WLO needs its own default constants — published and tweakable, but which baseline?
-- **Cardio depth in v1:** minimal logging + Health Connect import only, or native pacing/zone charts from day one?
+- **Cardio depth in v1:** minimal logging + Health Connect import only, or native pacing/zone charts from day one? *(Resolved: R-S11 — minimal + HC import.)*
 - **Schema sharing with F13:** should the session/set schema be designed for open export first (Hevy-compatible CSV) to enable migration tooling?
 - **Who renders the muscle heatmap** — F05 owns computation and the chart, but F11 wants it inside weekly reports; propose F05 exposes a renderable component, F11 embeds it.

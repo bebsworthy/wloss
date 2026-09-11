@@ -186,6 +186,12 @@ these are binding until amended *here* (feature docs must not re-litigate them).
   (lowest-of-day for weight, last-in for girths) are **derived views** consumed
   by trend math, F07, and exports; the raw points stay queryable (time-of-day
   lens, weigh-count stats) and ship in exports.
+- **R-B9 — Profiles: single-profile v1, partition-ready schema (owner
+  ruling).** Every domain row carries `profileId` (default profile created
+  at onboarding); per-profile vault partitions, biometric locks, and backup
+  bundles arrive with multi-profile [v1.x]. Health Connect is single-profile
+  per device: the sole profile owns the connection in v1;
+  weight-signature household routing stays [future] (F06).
 
 ### Algorithm constants (published on F07's Algorithms page)
 
@@ -197,6 +203,14 @@ these are binding until amended *here* (feature docs must not re-litigate them).
 - **R-A5 —** F07 cold-start forecast mode is **[v1] mandatory** (F01's
   onboarding preview depends on it): formula-BMR-based, wide bands, `ESTIMATED`
   chip, "will sharpen as you log".
+- **R-A6 — Forecast energy partitioning: partition-free in v1.** The 3-band
+  forecast uses the single 7,700 kcal/kg constant (R-A1) with the published
+  caveat near goal; composition-aware fat-fraction rates (informed by F05
+  training context) ship [v1.x] with their own published assumptions.
+- **R-A7 — Check-in cadence: weekly default, opt-in daily in v1 (owner
+  call).** The Sunday ritual stays the default and the weekly report card
+  (R-U2) is unchanged; power users may opt into a daily check-in cadence at
+  v1 — daily proposals remain Apply-only.
 
 ### UX policy
 
@@ -259,6 +273,9 @@ these are binding until amended *here* (feature docs must not re-litigate them).
 - **R-U17 — Check-in hero-slot promotion (F10):** on the user's check-in day
   (Sunday default) the F07 check-in card is promoted into the Daily Hub's hero
   slot for that day, displacing the trend card; the trend returns the next day.
+- **R-U18 — Backup bundles exclude photo attachments by default**
+  (explicit per-bundle opt-in), matching R-U14's photos-default-off posture;
+  the SAF-folder attachment offload remains the [v1.x] space-reclaim path.
 
 ### Content & scope
 
@@ -281,6 +298,16 @@ these are binding until amended *here* (feature docs must not re-litigate them).
   Monash-grade category coverage is [future] (licensing-dependent).
 - **R-S9 — Health Connect nutrition writes (F13):** kcal/macros at v1;
   micronutrients when the food DB supports them.
+- **R-S10 — `meal-planning` cloud generation ships [v1.x]:** v1 is
+  deterministic-only for both F01 template refinement and F03 plan/recipe
+  generation; the consent + BYOK path lands with the first cloud-capable
+  release. (Owner call, ticket WLO-0007.)
+- **R-S11 — F05 cardio scope in v1:** minimal native entries
+  (type/duration/effort/distance) + Health Connect import via F13; native
+  pacing/zone charts are later work.
+- **R-S12 — Model training-data policy:** every model in F12's zoo is
+  trained on open-licensed (OSI/CC-class) datasets only, each named on its
+  model card; no proprietary training data anywhere in the zoo.
 
 ---
 
@@ -341,8 +368,72 @@ Consistency Score, Wear OS, cloud paths beyond BYOK-consented ones.
 4. OFF offline cache sizing vs lazy cache (F02/F13).
 5. Exercise library content pipeline (author vs curate) — follows R-S2.
 6. Classifier architecture for F09 when personalization lands (F12 platform).
-7. Multi-profile vault partitioning + Health Connect's single-profile constraint (F13/F01).
-8. Badge visual direction (needs design exploration — F11).
-9. F04 servings-change reconciliation pattern (prototype with F03).
-10. Whether `meal-planning` cloud generation ships in v1 or v1.x (F01/F03
-    work without it; it is the first BYOK showcase — product-call).
+7. Badge visual direction (needs design exploration — F11).
+8. F04 servings-change reconciliation pattern (prototype with F03).
+
+---
+
+## Appendix A — The Targets schema (ratified, WLO-0006)
+
+*The contract every target-consuming feature reads. Authority is frozen by
+R-B2; this appendix freezes the object itself.*
+
+### A.1 Document shape
+
+`Targets` is a versioned document, one active instance per profile (R-B9:
+v1 is single-profile; the `profileId` field ships from day one). Versions
+are immutable: every write creates `vN+1`; "revert" is a new version that
+copies an older one, never a history rewrite. Each version carries the
+envelope `{schemaVersion, version, parentVersion, createdAt, createdBy}`
+(`createdBy` ∈ `studio@F01` | `apply@F07`) plus:
+
+- **`goal`** — `{targetWeightKg, pacePctPerWeek, targetDate?}`; `targetDate`
+  is advisory and always rendered as its implied pace (F01 §3).
+- **`energy`** — `{cadence: daily|weekly, budgetKcal | weeklyBudgetKcal,
+  schedule[7], floorKcal}`. Schedule entries are kcal per weekday and, when
+  cadence is weekly, must sum exactly to the weekly budget (F01's pinned
+  invariant). Floor defaults 1,200 F / 1,500 M (F07 §3); override requires
+  a persistent acknowledgment and can never weaken validation.
+- **`macros`** — a preset name or custom `{proteinG|proteinPct, carbPct,
+  fatPct}` plus optional rings `proteinFloorG`, `carbCapG` (keto),
+  eating-window rules for IF variants — one schema, no special cases
+  (F01 §3).
+- **`fiber`** — `{targetG}`; default authored by F09 at plan creation
+  (R-B3). Exactly one number; plan divergence renders in F03, never here.
+- **`water`** — `{targetMl}`; intake is logged by F02 (one-tap quick-add +
+  drink entries).
+- **`workout`** — `{cadencePerWeek}` (context for F05; read-only there).
+- **`surfaces`** — which rings/timers/cards pin where (from the F01
+  template; consumed by F02/F10).
+
+### A.2 Write API
+
+Writers are exactly two, enforced by the write path, not convention:
+
+1. **F01** — plan creation and Studio edits; every save is a new version
+   with a human-readable diff and one-tap revert.
+2. **F07** — adaptive adjustments, **only via explicit Apply** at check-in:
+   atomic, ledgered in the check-in decision ledger (input snapshot,
+   estimate, decision), reversible through the same ledger.
+
+Validation invariants — rejections are hard, never silent clamps:
+
+1. **Floor** — no version may budget below `floorKcal`; imports carrying
+   unsafe historical targets land as history, never as the active plan.
+2. **No eat-back** — exercise expenditure is structurally incapable of
+   raising eating targets; F05/F13 inputs are read-only context.
+3. **Schedule sum** — weekly-cadence schedules must sum to the weekly
+   budget.
+4. **Pace cap** — `pacePctPerWeek` clamped to ±1.0 % body weight/week.
+
+AI proposals (template refinement, [v1.x] per R-S10) are drafts against
+this API: apply/discard, never auto-commit.
+
+### A.3 Read API: the day projection
+
+Consumers never parse the schedule themselves; they read the derived **day
+projection** — `{date → kcal, macros g, fiber g, water ml}` resolved from
+cadence + schedule + applied F07 deltas, cached, and provenance-chipped
+("adaptive · check-in Sep 8"). F02 renders it as the budget ring, F03
+generates against it, F10 quotes it, F11 grades against it. All other
+features depend only on the projection, never on Targets internals.

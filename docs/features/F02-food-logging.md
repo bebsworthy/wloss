@@ -256,4 +256,6 @@ Food Facts, USDA FDC, and the user's own BYOK provider.
 - **Cloud model policy:** does `food-photo` pin one model per provider, or let
   the user choose per category (F12 defaults to user choice)? And which open
   datasets/licenses are acceptable for the shipped recognizer — a project-level
-  decision before model v1.
+  decision before model v1. *(Dataset policy resolved: R-S12 — open-licensed
+  datasets only, each named on the model card; the model-pinning half remains
+  open.)*

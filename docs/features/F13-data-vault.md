@@ -50,8 +50,7 @@ Core objectives (verifiable):
 **Schema (Room/SQLite, relational core).** Normalized entities: profiles,
 days, food items, meals, recipes, plan entries, workouts/exercises/set-logs,
 weigh-ins, body measurements, silhouette records, Bristol logs, targets,
-check-in results, badge/streak ledger (F11), notification settings (F10).
-Food entries reference the catalog by ID with **archive-don't-delete**
+check-in results, badge/streak ledger (F11), notification settings (F10). Every domain row carries a `profileId` (default profile created at onboarding — partition-ready per R-B9; per-profile vault partitions, locks, and backup bundles arrive with multi-profile [v1.x]). Food entries reference the catalog by ID with **archive-don't-delete**
 semantics (Waistline's diary-by-reference: history stays honest when a product
 is reformulated; items are archived, never orphaned).
 
@@ -108,11 +107,14 @@ staged-and-validated restore).
 WorkManager writes `wlo_backup_<date>.json` plus an integrity manifest;
 write-new-then-rotate keeps the last N (default 7); backup health surfaces on
 F10, and a week without a successful backup raises one respectful nudge.
+Photo attachments are **excluded from bundles by default** (explicit
+per-bundle opt-in — R-U18, matching R-U14's posture).
 Security: biometric app lock (BiometricPrompt, PIN fallback) with a
 configurable timeout; optional attachment encryption [v1.x].
 
 **Health Connect.** Two-way sync with per-datatype consent (weight, body
-composition, steps, exercise, nutrition). WLO-authored records win on WLO
+composition, steps, exercise, nutrition). HC is single-profile per device:
+in v1 the sole profile owns the connection (R-B9). WLO-authored records win on WLO
 surfaces; multi-source weight deduplicates with the min-of-day import rule
 (Happy Scale's semantics) so smoothing stays deterministic.
 
@@ -265,11 +267,13 @@ with F01 owning the ritual and F13 the data mechanics.
   by default or per-bundle choice?
   *(Encryption and rotation resolved: R-U5 — encrypted by default with a user
   passphrase and a lockout warning at setup; plaintext is an explicit
-  per-export choice; rotation default 7. Attachments-in-bundles default
-  remains open.)*
+  per-export choice; rotation default 7. Attachments-in-bundles resolved by
+  R-U18: excluded by default, per-bundle opt-in.)*
 - Health Connect nutrition write granularity: kcal/macros only, or full
   micronutrient coverage where the DB has it?
   *(Resolved: R-S9 — kcal/macros at v1; micronutrients when the food DB
   supports them.)*
 - Multi-profile: how do profiles partition the vault, backups, and Health
   Connect (which is single-profile per device)?
+  *(Scope ruled: R-B9 — single-profile v1 with `profileId` on every row;
+  partitioning, locks, and backup separation land with multi-profile [v1.x].)*

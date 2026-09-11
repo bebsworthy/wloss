@@ -81,7 +81,8 @@ category is a master-doc decision, not a feature-level new toggle.
 | Pose guidance (silhouette alignment) | F08 | 8 MB | bundled |
 
 Every model has a tappable **model card**: purpose, published benchmark +
-methodology, license, version, hash. Downloads are hash-pinned, fetched from
+methodology, license, version, hash, and training data (open-licensed
+datasets only, each named — R-S12). Downloads are hash-pinned, fetched from
 pinned public URLs (e.g. Hugging Face) — WLO runs no backend. The manager
 shows per-model/total storage with one-tap reclaim, plus version eval deltas.
 
