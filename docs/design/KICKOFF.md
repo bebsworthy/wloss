@@ -144,6 +144,11 @@ Priority order (each maps to a signature moment in FEATURES §2.4):
    states, share composer privacy checklist.
 7. **Onboarding wizard** (F01): welcome → goal dials → forecast bloom →
    template gallery → swipe quiz → schedule bars → milestones → start.
+8. **The session** (F05, added round 9 — owner-prioritized above further
+   digestion coverage; same round, cardio ruled first-class and R-S11
+   amended): strength preview with visible progression rules → prefilled
+   set logging + rest ring → live cardio (GPS distance, HR zones, route
+   trace) → honest plate fallback → substitutions → receipt summary.
 
 ## Working rules
 

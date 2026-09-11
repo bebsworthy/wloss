@@ -1,0 +1,596 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>WLO · Flow 08 — The session (F05)</title>
+<link rel="stylesheet" href="_wlo.css">
+<style>
+  /* session-local primitives — values from the shared tokens only */
+  .shead { display: flex; justify-content: space-between; align-items: center; margin: 2px 2px 12px; }
+  .shead .ttl { font-size: 17px; font-weight: 700; letter-spacing: -.01em; }
+  .shead .ttl small { color: var(--text-tertiary); font-weight: 500; font-size: 12px; margin-left: 8px; }
+
+  .setrow {
+    display: flex; align-items: center; gap: 10px; min-height: 56px;
+    padding: 8px 12px; border: 1px solid var(--outline); border-radius: 14px;
+    background: var(--surface); margin-bottom: 8px; font-variant-numeric: var(--tnum);
+    font-size: 14px;
+  }
+  .setrow .sn {
+    width: 28px; height: 28px; border-radius: 10px; border: 1.5px solid var(--outline);
+    display: flex; align-items: center; justify-content: center; font-size: 12px;
+    color: var(--text-tertiary); flex: none;
+  }
+  .setrow.done { opacity: .55; }
+  .setrow.done .sn { background: var(--accent); border-color: var(--accent); color: #07271C; }
+  .setrow.cur { border-color: rgba(61,214,165,.5); background: var(--surface-raised); }
+  .setrow .grow { flex: 1; min-width: 0; }
+  .setrow .prev { display: block; font-size: 11px; color: var(--text-tertiary); }
+  .setrow.warm { border-style: dashed; opacity: .6; min-height: 46px; font-size: 13px; }
+  .setrow .loadbtn { border: 1px solid var(--outline); border-radius: 9px; padding: 4px 9px; font-size: 13px; color: var(--text-primary); background: var(--surface); white-space: nowrap; }
+
+  .restring { display: flex; align-items: center; gap: 9px; }
+  .restring .rring {
+    width: 38px; height: 38px; border-radius: 50%; flex: none; position: relative;
+    background: conic-gradient(var(--accent) calc(var(--p,0)*1%), var(--outline) 0);
+  }
+  .restring .rring::before { content: ""; position: absolute; inset: 4px; border-radius: 50%; background: var(--surface-raised); }
+  .restring .rtime {
+    position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+    font-size: 10px; font-weight: 650; font-variant-numeric: var(--tnum); z-index: 1;
+  }
+  .restring .rbtn { border: 1px solid var(--outline); border-radius: 9px; padding: 5px 10px; font-size: 12.5px; color: var(--text-secondary); background: var(--surface); font-variant-numeric: var(--tnum); }
+
+  .rpechips { display: flex; gap: 6px; align-items: center; }
+  .rpechips .lbl { font-size: 11px; color: var(--text-tertiary); margin-right: 2px; }
+  .rpechips .chip { min-width: 36px; justify-content: center; font-variant-numeric: var(--tnum); }
+
+  .prband {
+    display: flex; align-items: center; gap: 8px;
+    background: rgba(61,214,165,.09); border: 1px solid rgba(61,214,165,.35);
+    border-radius: 12px; padding: 8px 12px; margin: -2px 0 8px;
+    font-size: 13px; font-weight: 600; color: var(--accent); font-variant-numeric: var(--tnum);
+  }
+
+  .barbell { display: flex; align-items: center; justify-content: center; gap: 3px; height: 44px; margin: 10px 0 2px; }
+  .barbell .sleeve { width: 14px; height: 10px; border-radius: 3px; background: var(--outline); }
+  .barbell .bar { flex: 1; max-width: 74px; height: 7px; border-radius: 3px; background: var(--outline); }
+  .barbell .pl { width: 11px; border-radius: 3px; background: var(--series-1); }
+
+  .queueline {
+    display: flex; justify-content: space-between; align-items: center; gap: 8px;
+    border-top: 1px solid var(--outline); margin-top: 10px; padding-top: 10px;
+  }
+  .rows .row .grow .sub { display: block; margin-top: 1px; }
+</style>
+</head>
+<body>
+<div class="page">
+
+<header>
+  <h1>Flow 08 — The session</h1>
+  <div class="meta">
+    Spec: <a href="../../features/F05-exercise.md">F05 Exercise Planning &amp; Tracking</a> ·
+    Signature moment: logging that survives one thumb and a running rest clock (F05 §2) · 2026-09-12 · prototype, not implementation<br>
+    Companion flows: <a href="01-day-loop-f10.html">01 day loop</a> (Hub entry, rail) · <a href="03-checkin-f07.html">03 check-in</a> (training context) · <a href="04-weigh-in-trend-f06-f08.html">04 weigh-in</a> (bodyweight bridge) · <a href="index.html">index</a>
+  </div>
+</header>
+
+<!-- ============================= WIREFRAMES ============================= -->
+<div class="stage-title">Wireframes <small>· structure before skin — the session is a flow-over-context, like capture: entered from the Hub, focused while live</small></div>
+<div class="stage">
+
+  <div class="flowunit">
+    <div class="phone wf"><div class="screen">
+      <div class="wf-box solid row">status bar</div>
+      <div class="wf-box row">Hub header · date · streak chip · ⚙</div>
+      <div class="wf-box hero">Hero trend card → 01</div>
+      <div class="wf-box">Calories ring → 01</div>
+      <div class="wf-box">Today’s session — lift days: “Lower A · 6 exercises · ~50 min” · cardio days: “Easy run · 5 km · ~30 min” · [Start]</div>
+      <div class="wf-note">↑ movement days only — the Adaptive Day Model slots it under the ring; on rest days it is absent and recovery framing lives in Insights, never a guilt card. Steps need no card at all: they arrive via Health Connect and feed the step ring.</div>
+      <div class="wf-box grid"><div>📷</div><div>⚖</div><div>gut</div><div>workout ▸ same screen</div></div>
+      <div class="wf-note">rail workout = second entry; widget start/pause = third (notification resurrector for a killed session)</div>
+      <div class="wf-box row">nav: Hub active</div>
+    </div></div>
+    <div class="caption annotation"><b>Entry.</b> Three doors, one screen: the Hub session card (training days), the rail’s workout button, the widget. Flow 01’s screens were a rest day — which is why no session card appears there.</div>
+  </div>
+
+  <div class="flowunit">
+    <div class="phone wf"><div class="screen">
+      <div class="wf-box solid row">status bar</div>
+      <div class="wf-box row">Session header: “Lower A · exercise 2 of 6” · rest chip (ring + time ± 15 s)</div>
+      <div class="wf-box row">Exercise name + last-time primer</div>
+      <div class="wf-box tall">Set rows: warm-up (dashed, lighter) · done sets (dimmed, check) · current set (prefilled 102.5 × 8 + Confirm)</div>
+      <div class="wf-box row">RPE chips (optional, never blocking)</div>
+      <div class="wf-box row">Shortcuts: confirm remaining · duplicate last · swap (long-press)</div>
+      <div class="wf-box row">Up next · Finish session</div>
+      <div class="wf-note">no bottom nav while live — focused mode; confirm button sits in the thumb arc; PR banner slides up from the set row when a best falls</div>
+    </div></div>
+    <div class="caption annotation"><b>Logging loop.</b> Every number arrives prefilled from last session (or the engine’s preview adjustment); the common case never opens a keyboard — deviation is the only path to the numpad.</div>
+  </div>
+
+  <div class="flowunit">
+    <div class="phone wf"><div class="screen">
+      <div class="wf-box solid row">status bar</div>
+      <div class="wf-box row">Live header: “Run · outdoors” · auto-pause chip</div>
+      <div class="wf-box hero">Elapsed timer (the hero) — 32:14</div>
+      <div class="wf-box row">Distance (GPS ⓘ) · current pace · HR + zone ⓘ</div>
+      <div class="wf-box tall">Route trace (on-device only) · map never leaves the phone</div>
+      <div class="wf-box grid"><div>Pause</div><div>Finish</div></div>
+      <div class="wf-note">no nav while live, like the strength loop; zero mandatory input outdoors — one distance field on erg/treadmill</div>
+    </div></div>
+    <div class="caption annotation"><b>Cardio loop.</b> The mirror of the logging loop: the screen does the work (time · distance · pace · zone), auto-pause handles traffic lights, and the summary below closes either session the same way.</div>
+  </div>
+
+  <div class="flowunit">
+    <div class="phone wf"><div class="screen">
+      <div class="wf-box solid row">status bar</div>
+      <div class="wf-box row">Summary header: “Lower A — saved”</div>
+      <div class="wf-box row">Receipt stats: duration · sets · tonnage</div>
+      <div class="wf-box row">PR card: e1RM old → new ⓘ</div>
+      <div class="wf-box row">Muscles worked chips</div>
+      <div class="wf-box row">Expenditure est. ±30 % ⓘ — context only</div>
+      <div class="wf-box grid"><div>Share receipt</div><div>Done</div></div>
+      <div class="wf-box row">nav: Hub active</div>
+    </div></div>
+    <div class="caption annotation"><b>Finish — shared by both loops.</b> The summary restates what happened in receipt style; the receipt renders as a shareable image. Expenditure appears here exactly once, wearing its uncertainty — and is structurally incapable of raising the food target (enforced in the engine’s write path, not by copy).</div>
+  </div>
+
+</div>
+
+<!-- ============================= ANNOTATED MOCKS ============================= -->
+<div class="stage-title">Annotated mocks — strength <small>· Saturday, Sep 12, lower day · kg persona (R-D10) · cardio mocks follow in the next stage</small></div>
+<div class="stage">
+
+  <!-- 1 · Session preview -->
+  <div class="flowunit">
+    <div class="phone">
+      <div class="statusbar"><span>10:12</span><span class="icons">▮▮▮ ⌁ ▰</span></div>
+      <div class="screen">
+        <div class="shead">
+          <div class="ttl">Today’s session</div>
+          <div class="actions"><span class="chip">⋯</span></div>
+        </div>
+        <div class="card">
+          <div style="display:flex; justify-content:space-between; align-items:baseline;">
+            <div style="font-size:24px; font-weight:650; letter-spacing:-.01em;">Lower A</div>
+            <div class="receipt faint">last: Tue Sep 8 · 20 of 20 sets</div>
+          </div>
+          <div class="receipt faint" style="margin-top:2px;">6 exercises · ~50 min · est</div>
+        </div>
+        <div class="card accent-edge">
+          <div class="card-title">Adjusted for today <span class="right faint">editable before start</span></div>
+          <div class="stat-row" style="min-height:0; padding:2px 0;">
+            <span class="label">Squat</span>
+            <span class="value receipt">100 → <b style="color:var(--text-primary)">102.5 kg</b> · <span class="prov-i">all sets reached 8 at RPE 8</span></span>
+          </div>
+          <div class="stat-row" style="min-height:0; padding:2px 0; border-top:0;">
+            <span class="label">Everything else</span>
+            <span class="value receipt faint">holds</span>
+          </div>
+        </div>
+        <div class="rows" style="margin-bottom:12px;">
+          <div class="row"><span class="grow">Squat<span class="sub">primary: quads</span></span><span class="receipt">4 × 8 · 102.5</span></div>
+          <div class="row"><span class="grow">Romanian deadlift<span class="sub">primary: hamstrings</span></span><span class="receipt">3 × 10 · 70</span></div>
+          <div class="row"><span class="grow">Leg curl<span class="sub">primary: hamstrings</span></span><span class="receipt">3 × 12 · 55</span></div>
+          <div class="row"><span class="grow">Leg extension<span class="sub">primary: quads</span></span><span class="receipt">3 × 12 · 45</span></div>
+          <div class="row"><span class="grow">Calf raise<span class="sub">primary: calves</span></span><span class="receipt">4 × 15 · 60</span></div>
+          <div class="row"><span class="grow">Hanging leg raise<span class="sub">primary: core</span></span><span class="receipt">3 × 10 · bodyweight</span></div>
+        </div>
+        <a class="btn primary block" href="#" style="text-decoration:none;">Start session</a>
+        <a class="btn ghost block" href="#" style="text-decoration:none; margin-top:8px;">View template · Lower A v3</a>
+      </div>
+      <div class="navbar">
+        <div class="tab active"><span class="ic">◉</span>Hub</div>
+        <div class="tab"><span class="ic">▦</span>Plan</div>
+        <div class="tab"><span class="ic">✦</span>Insights</div>
+        <div class="tab"><span class="ic ic-arch"></span>Archive</div>
+        <div class="tab"><span class="ic">🌿</span>Digestion</div>
+      </div>
+      <span class="pin" style="top:172px; right:24px;">1</span>
+      <span class="pin" style="top:388px; right:24px;">2</span>
+      <span class="pin" style="top:64px; left:20px;">3</span>
+    </div>
+    <div class="caption annotation">
+      <b>Preview — the engine shows its work before the first rep.</b>
+      <ol>
+        <li><span class="pin-ref">1</span>Adjustments are sentences, not decrees (F05 §3): suggestion → rule → inputs, with the cause worn inline on the changed load (“all sets reached 8 at RPE 8”) and the ⓘ carrying the rule text and its inputs. Cap: jumps never exceed 10 %/session. Everything is editable before start — generated ≠ imposed.</li>
+        <li><span class="pin-ref">2</span>Loads and rep targets are the template’s, pre-adjusted; nothing here needs typing. Bodyweight lifts render “bodyweight” and scale live when F06’s number changes (explicit user-tapped entries only).</li>
+        <li><span class="pin-ref">3</span>Entry per wireframe 1: this screen replaces the Hub on tap; nav stays with Hub active because the session has not detached yet — going live (mock 2) drops the nav for focus. The template name is literal (R-D13’s spirit: name things what they are) and versions, v3, because templates are versioned artifacts.</li>
+      </ol>
+    </div>
+  </div>
+
+  <!-- 2 · Active session — squat, set 3 -->
+  <div class="flowunit">
+    <div class="phone">
+      <div class="statusbar"><span>10:26</span><span class="icons">▮▮▮ ⌁ ▰</span></div>
+      <div class="screen">
+        <div class="shead">
+          <div class="ttl">Lower A <small>exercise 1 of 6</small></div>
+          <div class="restring">
+            <span class="rbtn">−15 s</span>
+            <div class="rring" style="--p:52;"><span class="rtime">0:47</span></div>
+            <span class="rbtn">+15 s</span>
+          </div>
+        </div>
+        <div class="card" style="padding:12px 14px;">
+          <div style="display:flex; justify-content:space-between; align-items:baseline;">
+            <div style="font-size:20px; font-weight:650;">Squat</div>
+            <div class="receipt faint">last: 100 × 8·8·8·8 · RPE 8</div>
+          </div>
+        </div>
+        <div class="setrow warm">
+          <span class="sn">W</span>
+          <span class="grow">60.0 × 5</span>
+          <span class="receipt faint">ramp 60 %</span>
+          <span class="check on">✓</span>
+        </div>
+        <div class="setrow done">
+          <span class="sn">1</span>
+          <span class="grow">102.5 × 8<span class="prev">RPE 8</span></span>
+          <span class="check on">✓</span>
+        </div>
+        <div class="prband"><span class="chip accent">PR</span> e1RM 126.7 → 129.8 kg · <span class="prov-i">best set</span></div>
+        <div class="setrow done">
+          <span class="sn">2</span>
+          <span class="grow">102.5 × 8<span class="prev">RPE 8</span></span>
+          <span class="check on">✓</span>
+        </div>
+        <div class="setrow cur">
+          <span class="sn">3</span>
+          <span class="grow">102.5 kg × 8<span class="prev">prescribed · set 3 of 4</span></span>
+          <span class="loadbtn">102.5 ▾</span>
+        </div>
+        <a class="btn primary block" href="#" style="text-decoration:none; margin-top:2px;">Confirm set</a>
+        <div style="display:flex; justify-content:space-between; align-items:center; margin:10px 2px;">
+          <div class="rpechips"><span class="lbl">RPE · optional</span>
+            <span class="chip">6</span><span class="chip">7</span><span class="chip accent">8</span><span class="chip">9</span><span class="chip">10</span>
+          </div>
+        </div>
+        <div class="receipt faint" style="margin:0 2px 10px;">Confirm remaining as prescribed (1) · Duplicate last · Long-press exercise to swap</div>
+        <div class="queueline">
+          <span class="receipt dim">Up next · Romanian deadlift 3 × 10 · 70</span>
+          <a class="btn ghost small" href="#" style="text-decoration:none;">Finish</a>
+        </div>
+      </div>
+      <span class="pin" style="top:76px; right:24px;">4</span>
+      <span class="pin" style="top:206px; left:20px;">5</span>
+      <span class="pin" style="bottom:214px; right:104px;">6</span>
+    </div>
+    <div class="caption annotation">
+      <b>Live — one thumb, a running clock.</b>
+      <ol>
+        <li><span class="pin-ref">4</span>Rest auto-starts after each confirm; the ring drains, the last three seconds tick, and zero is a distinct triple-pulse + gentle chime — the only sanctioned sound in the app (gym context). ±15 s adjusts without restarting. Supersets would share this one clock and suppress it per-movement (not mocked).</li>
+        <li><span class="pin-ref">5</span>Warm-up rows log in the lighter dashed style; the ramp calculator (% ladder off the working weight) lives behind the row. Done sets dim and contract; failure/drop are one-tap row badges, AMRAP asks “reps achieved?” only when the answer differs from prescribed. The PR banner rode up from set 1: old → new e1RM — the number is the whole celebration, no confetti, and the ≥ 3-sets gate is already satisfied (Epley explainer behind the ⓘ).</li>
+        <li><span class="pin-ref">6</span>Confirm is the only primary button; RPE chips are optional and never block. “Confirm remaining as prescribed” is the couch-save for a rushed day. Nav is gone while live; Finish asks nothing — the summary (mock 5) follows directly, and a killed app reopens here via the notification resurrector.</li>
+      </ol>
+    </div>
+  </div>
+
+  <!-- 3 · Plate mismatch — honest fallback -->
+  <div class="flowunit">
+    <div class="phone">
+      <div class="statusbar"><span>10:31</span><span class="icons">▮▮▮ ⌁ ▰</span></div>
+      <div class="screen">
+        <div class="shead">
+          <div class="ttl">Lower A <small>exercise 1 of 6</small></div>
+          <div class="restring">
+            <span class="rbtn">−15 s</span>
+            <div class="rring" style="--p:78;"><span class="rtime">1:10</span></div>
+            <span class="rbtn">+15 s</span>
+          </div>
+        </div>
+        <div class="setrow done"><span class="sn">1</span><span class="grow">102.5 × 8<span class="prev">RPE 8</span></span><span class="check on">✓</span></div>
+        <div class="setrow done"><span class="sn">2</span><span class="grow">102.5 × 8<span class="prev">RPE 8</span></span><span class="check on">✓</span></div>
+        <div class="setrow cur" style="opacity:.6;"><span class="sn">3</span><span class="grow">102.5 kg × 8</span><span class="loadbtn">132.5 ▾</span></div>
+      </div>
+      <div class="sheet-wrap"></div>
+      <div class="sheet">
+        <div class="grab"></div>
+        <div style="display:flex; justify-content:space-between; align-items:baseline;">
+          <div style="font-size:16px; font-weight:650;">Set 3 · load</div>
+          <div class="stat-m">132.5 <span class="unit">kg</span></div>
+        </div>
+        <div class="barbell">
+          <div class="sleeve"></div><div class="bar"></div>
+          <div class="pl" style="height:40px;"></div><div class="pl" style="height:40px;"></div>
+          <div class="pl" style="height:32px;"></div><div class="pl" style="height:32px;"></div>
+          <div class="pl" style="height:20px;"></div><div class="pl" style="height:20px;"></div>
+          <div class="bar"></div><div class="sleeve"></div>
+        </div>
+        <div class="receipt faint" style="text-align:center;">bar 20 · 25 × 2 · 20 × 2 · 10 × 2 = 130.0 kg</div>
+        <div class="chip amber" style="display:block; margin-top:10px; white-space:normal; line-height:1.5; padding:8px 11px;">Closest possible: 130.0 kg — 132.5 needs 1.25 kg plates, none in your Gym profile</div>
+        <div class="btnrow" style="margin-top:14px;">
+          <a class="btn secondary" href="#" style="text-decoration:none;">Edit plates</a>
+          <a class="btn primary" href="#" style="text-decoration:none;">Lift 130.0</a>
+        </div>
+      </div>
+      <span class="pin" style="top:688px; right:16px;">7</span>
+      <span class="pin" style="top:742px; left:14px;">8</span>
+    </div>
+    <div class="caption annotation">
+      <b>Plate mismatch — the load you asked for vs. the load you can build.</b>
+      <ol>
+        <li><span class="pin-ref">7</span>Typing a load is itself the deviation (mock 2’s rule); once typed, the calculator shows the bar building heaviest-first and refuses to pretend: the amber chip names the gap — 132.5 needs 1.25 kg plates the Gym profile doesn’t have — and offers the honest neighbor. It never silently clamps to 130 while claiming 132.5.</li>
+        <li><span class="pin-ref">8</span>Plate inventory and bar types are per equipment profile (Home / Gym / Travel). Switching profiles re-derives every prescription so a hotel-gym session never asks for an unplate-able load — the substitution sheet (mock 4) handles the exercise half of the same promise.</li>
+      </ol>
+    </div>
+  </div>
+
+  <!-- 4 · Substitutions -->
+  <div class="flowunit">
+    <div class="phone">
+      <div class="statusbar"><span>10:38</span><span class="icons">▮▮▮ ⌁ ▰</span></div>
+      <div class="screen">
+        <div class="shead">
+          <div class="ttl">Lower A <small>exercise 2 of 6</small></div>
+          <div class="restring">
+            <span class="rbtn">−15 s</span>
+            <div class="rring" style="--p:100;"><span class="rtime">1:30</span></div>
+            <span class="rbtn">+15 s</span>
+          </div>
+        </div>
+        <div class="card" style="padding:12px 14px;">
+          <div style="display:flex; justify-content:space-between; align-items:baseline;">
+            <div style="font-size:20px; font-weight:650;">Leg curl</div>
+            <div class="receipt faint">last: 55 × 12·12·12</div>
+          </div>
+        </div>
+        <div class="setrow cur"><span class="sn">1</span><span class="grow">55 kg × 12<span class="prev">prescribed · set 1 of 3</span></span><span class="loadbtn">55 ▾</span></div>
+      </div>
+      <div class="sheet-wrap"></div>
+      <div class="sheet">
+        <div class="grab"></div>
+        <div style="display:flex; justify-content:space-between; align-items:baseline;">
+          <div style="font-size:16px; font-weight:650;">Swap · Leg curl</div>
+          <span class="chip">At: Gym ▾</span>
+        </div>
+        <div class="rows" style="margin-top:6px;">
+          <div class="row"><span class="grow">Lying leg curl<span class="sub">machine · primary: hamstrings</span></span><span class="chip accent">best match</span></div>
+          <div class="row"><span class="grow">Nordic curl<span class="sub">bodyweight · primary: hamstrings</span></span></div>
+          <div class="row"><span class="grow">Good morning<span class="sub">barbell · hamstrings, secondary: lower back</span></span></div>
+        </div>
+        <div class="receipt faint" style="margin-top:10px;">ranked by muscle overlap in your equipment profile — a swap keeps today’s stimulus; the prescription re-derives for the new tool</div>
+      </div>
+      <span class="pin" style="top:548px; right:120px;">9</span>
+      <span class="pin" style="top:735px; right:16px;">10</span>
+      <span class="pin" style="top:562px; right:16px;">11</span>
+    </div>
+    <div class="caption annotation">
+      <b>Exercise unavailable — same muscles, different tool.</b>
+      <ol>
+        <li><span class="pin-ref">9</span>Long-press the exercise header (or “swap” in the session menu); the sheet ranks candidates by target-muscle overlap ∩ the active equipment profile. The machine being taken, a broken bench, a hotel gym — one gesture, no replanning.</li>
+        <li><span class="pin-ref">10</span>Each option states its primary (and secondaries) — the two-level muscle schema (R-S2’s keystone) is what makes the ranking legible instead of magic. Toning is neutral by design: nothing was “missed,” the stimulus moves.</li>
+        <li><span class="pin-ref">11</span>“At: Gym ▾” flips the equipment profile; under Travel the same list re-ranks and every load re-derives against what that gym can build (mock 8’s promise, exercise-side). Sets already logged stay logged.</li>
+      </ol>
+    </div>
+  </div>
+
+  <!-- 5 · Session summary -->
+  <div class="flowunit">
+    <div class="phone">
+      <div class="statusbar"><span>11:14</span><span class="icons">▮▮▮ ⌁ ▰</span></div>
+      <div class="screen">
+        <div class="shead">
+          <div class="ttl">Lower A — saved</div>
+          <div class="actions"><span class="chip">Sep 12 · 10:26</span></div>
+        </div>
+        <div class="card">
+          <div class="receipt" style="font-size:15px;">6 exercises · 20 of 20 sets · 46 min</div>
+          <div class="stat-l" style="margin-top:4px;">12,580 <span class="unit">kg tonnage</span></div>
+        </div>
+        <div class="card accent-edge" style="padding:12px 14px;">
+          <div style="font-size:15px; font-weight:650; color:var(--accent);">PR · Squat</div>
+          <div class="receipt" style="margin-top:2px;">e1RM 126.7 → 129.8 kg · <span class="prov-i">Epley · best of ≥ 3 sets</span></div>
+        </div>
+        <div class="card" style="padding:12px 14px;">
+          <div class="card-title">Worked</div>
+          <div style="display:flex; gap:6px; flex-wrap:wrap;">
+            <span class="chip">quads</span><span class="chip">hamstrings</span><span class="chip">calves</span><span class="chip">core</span>
+          </div>
+        </div>
+        <div class="card" style="padding:12px 14px;">
+          <div class="stat-row" style="min-height:0;">
+            <span class="label">Expenditure</span>
+            <span class="value stat-m">est. 310 kcal · <span class="prov-i">±30 %</span></span>
+          </div>
+          <div class="receipt faint" style="margin-top:6px;">from volume + duration + bodyweight — context for your engine, never added to your food target</div>
+        </div>
+        <div class="btnrow">
+          <a class="btn secondary" href="#" style="text-decoration:none;">Share receipt</a>
+          <a class="btn primary" href="#" style="text-decoration:none;">Done</a>
+        </div>
+      </div>
+      <div class="navbar">
+        <div class="tab active"><span class="ic">◉</span>Hub</div>
+        <div class="tab"><span class="ic">▦</span>Plan</div>
+        <div class="tab"><span class="ic">✦</span>Insights</div>
+        <div class="tab"><span class="ic ic-arch"></span>Archive</div>
+        <div class="tab"><span class="ic">🌿</span>Digestion</div>
+      </div>
+      <span class="pin" style="top:150px; right:24px;">12</span>
+      <span class="pin" style="top:428px; right:20px;">13</span>
+      <span class="pin" style="top:505px; left:14px;">14</span>
+    </div>
+    <div class="caption annotation">
+      <b>Finish — a receipt, not a trophy.</b>
+      <ol>
+        <li><span class="pin-ref">12</span>Receipt style per the design system: dry stat lines, tonnage precise to the kilo, no exclamation marks. The PR restates the banner’s number with its formula gate inline — one celebration, twice contextualized, never decorated.</li>
+        <li><span class="pin-ref">13</span>Expenditure wears its uncertainty (±30 %) and its inputs on the surface, and the boundary line is data practice, not marketing: the engine consumes it as context; no write path can turn it into eating target. Done returns to the Hub, where the ring has not moved — the target is unchanged by training (F07’s math, deliberately out of reach here).</li>
+        <li><span class="pin-ref">14</span>Share receipt renders this card as an image — a user-initiated export, no feed, no leaderboard (F05 §9). Downstream: the session joins the check-in’s training-context row (flow 03) and the monthly recap’s raw data (F11 composes, F05 computes).</li>
+      </ol>
+    </div>
+  </div>
+
+</div>
+
+<!-- ============================= CARDIO — FIRST-CLASS ============================= -->
+<div class="stage-title">The other half — cardio, first-class <small>· owner ruling, round 9: a general sport tracker is non-negotiable (R-S11 as amended) · the same week, Tuesday–Friday</small></div>
+<div class="stage">
+
+  <!-- 6 · Cardio live — outdoor run -->
+  <div class="flowunit">
+    <div class="phone">
+      <div class="statusbar"><span>7:12</span><span class="icons">▮▮▮ ⌁ ▰</span></div>
+      <div class="screen">
+        <div class="shead">
+          <div class="ttl">Run · outdoors</div>
+          <span class="chip">auto-pause on</span>
+        </div>
+        <div class="card" style="text-align:center; padding:18px 14px 12px;">
+          <div class="hero" style="font-size:64px;">32:14</div>
+          <div class="receipt faint">elapsed</div>
+        </div>
+        <div style="display:flex; gap:8px; margin-bottom:8px;">
+          <div class="card" style="flex:1; margin-bottom:0; padding:12px;">
+            <div class="stat-m">5.02 <span class="unit">km</span></div>
+            <div class="receipt faint" style="margin-top:2px;"><span class="prov-i">GPS · on-device</span></div>
+          </div>
+          <div class="card" style="flex:1; margin-bottom:0; padding:12px;">
+            <div class="stat-m">6:24 <span class="unit">/km</span></div>
+            <div class="receipt faint" style="margin-top:2px;"><span class="prov-i">current km</span></div>
+          </div>
+          <div class="card" style="flex:1; margin-bottom:0; padding:12px;">
+            <div class="stat-m">152 <span class="unit">bpm</span></div>
+            <div class="receipt faint" style="margin-top:2px;">zone 3 · <span class="prov-i">%HRmax</span></div>
+          </div>
+        </div>
+        <div class="chartbg" style="height:180px; padding:10px; margin-bottom:12px;">
+          <svg width="100%" height="100%" viewBox="0 0 340 150" preserveAspectRatio="none">
+            <path d="M16,116 C60,66 96,126 140,90 S220,36 258,72 S306,50 324,58" fill="none" stroke="var(--text-tertiary)" stroke-width="2" stroke-dasharray="4 4" opacity=".55"/>
+            <path d="M258,72 S306,50 324,58" fill="none" stroke="var(--accent)" stroke-width="3" stroke-linecap="round"/>
+            <circle cx="16" cy="116" r="5" fill="none" stroke="var(--text-tertiary)" stroke-width="2"/>
+            <circle cx="324" cy="58" r="6" fill="var(--accent)"/>
+          </svg>
+        </div>
+        <div class="btnrow">
+          <a class="btn secondary" href="#" style="text-decoration:none;">Pause</a>
+          <a class="btn primary" href="#" style="text-decoration:none;">Finish</a>
+        </div>
+      </div>
+      <span class="pin" style="top:150px; right:24px;">15</span>
+      <span class="pin" style="top:306px; right:24px;">16</span>
+      <span class="pin" style="top:478px; left:20px;">17</span>
+    </div>
+    <div class="caption annotation">
+      <b>Live cardio — the screen does the work.</b>
+      <ol>
+        <li><span class="pin-ref">15</span>Started from the Hub card, rail, or widget; the run needs zero input outdoors — the display answers the only three questions a moving person has (how long · how far · how hard) at a 2-second glance. Auto-pause at lights; the phone rides pocket or armband, so everything is glance-sized. Erg and treadmill pieces take one distance field instead of GPS.</li>
+        <li><span class="pin-ref">16</span>Every number wears its formula inline, same rule as the strength loop: distance “GPS · on-device”, pace “current km” (split distance ÷ split time), zone 3 with “%HRmax” (bands against the user-set HRmax, shown in the explainer). Heart rate arrives via F13 — a connected strap or Health Connect.</li>
+        <li><span class="pin-ref">17</span>The route trace is the one location-sensitive object in the app: computed and stored on-device, never in notifications, and excluded from share receipts by default — the receipt carries stats; the map is a per-share choice. Finish hands the same receipt-style summary (mock 5) and the same context-only expenditure to the engine.</li>
+      </ol>
+    </div>
+  </div>
+
+  <!-- 7 · One timeline — manual entry + imports -->
+  <div class="flowunit">
+    <div class="phone">
+      <div class="statusbar"><span>9:02</span><span class="icons">▮▮▮ ⌁ ▰</span></div>
+      <div class="screen">
+        <div class="shead">
+          <div class="ttl">This week</div>
+          <div class="actions"><span class="chip">⋯</span></div>
+        </div>
+        <div class="receipt faint" style="margin:0 2px 10px;">3 strength · 2 cardio · 41,700 steps</div>
+        <div class="rows">
+          <div class="row"><span class="grow">Sat · Lower A<span class="sub">strength · 20 of 20 sets</span></span><span class="receipt">12,580 kg</span></div>
+          <div class="row"><span class="grow">Fri · Ride<span class="sub">via Health Connect <span class="prov-i"></span></span></span><span class="receipt">18.2 km · 47:12</span></div>
+          <div class="row"><span class="grow">Thu · Run<span class="sub">live-tracked</span></span><span class="receipt">5.02 km · 32:14</span></div>
+          <div class="row"><span class="grow">Wed · Walk<span class="sub">via Health Connect <span class="prov-i"></span></span></span><span class="receipt">6,340 steps</span></div>
+          <div class="row"><span class="grow">Tue · Lower A<span class="sub">strength — last time’s numbers feed today’s preview</span></span><span class="receipt">12,140 kg</span></div>
+        </div>
+      </div>
+      <div class="sheet-wrap"></div>
+      <div class="sheet">
+        <div class="grab"></div>
+        <div style="display:flex; justify-content:space-between; align-items:baseline;">
+          <div style="font-size:16px; font-weight:650;">Log activity</div>
+          <span class="receipt faint">the phone stayed home</span>
+        </div>
+        <div style="display:flex; gap:6px; flex-wrap:wrap; margin:10px 0 4px;">
+          <span class="chip">Walk</span><span class="chip">Run</span><span class="chip accent">Ride</span><span class="chip">Row</span><span class="chip">Other</span>
+        </div>
+        <div class="stat-row" style="min-height:0;">
+          <span class="label">Duration</span><span class="value receipt">47:12</span>
+        </div>
+        <div class="stat-row" style="min-height:0;">
+          <span class="label">Distance · optional</span><span class="value receipt">18.2 km</span>
+        </div>
+        <div class="stat-row" style="min-height:0;">
+          <span class="label">Effort</span><span class="value"><span class="chip">easy</span>&nbsp;<span class="chip accent">moderate</span>&nbsp;<span class="chip">hard</span></span>
+        </div>
+        <div class="btnrow" style="margin-top:12px;">
+          <a class="btn secondary" href="#" style="text-decoration:none;">Cancel</a>
+          <a class="btn primary" href="#" style="text-decoration:none;">Save</a>
+        </div>
+      </div>
+      <span class="pin" style="top:602px; left:14px;">18</span>
+      <span class="pin" style="top:300px; right:24px;">19</span>
+      <span class="pin" style="top:380px; right:24px;">20</span>
+    </div>
+    <div class="caption annotation">
+      <b>One timeline — three doors, co-equal status.</b>
+      <ol>
+        <li><span class="pin-ref">18</span>Manual entry is the fallback for the day the device stayed home: activity chips, duration, optional distance, a three-step effort read — the original ruling’s minimal set, kept honest. Indoor erg and treadmill pieces use the same sheet and take their distance from the machine in one field.</li>
+        <li><span class="pin-ref">19</span>Watch- and app-recorded sessions arrive by themselves through Health Connect and sit on the same week timeline as lifts, provenance-stamped; the ⓘ names the bridge and points at the per-datatype consent that governs it (vault settings, F13’s two-way sync).</li>
+        <li><span class="pin-ref">20</span>The week header counts both kinds without ranking them — 3 strength · 2 cardio — and steps never require logging at all: they flow to the step ring and the engine’s activity term straight from Health Connect. No entry is a gap, a missed workout, or a duty (R-U13’s spirit applied to movement).</li>
+      </ol>
+    </div>
+  </div>
+
+</div>
+
+<!-- ============================= SELF-REVIEW ============================= -->
+<div class="review">
+  <h2>Self-review — design bar &amp; spec checklist (flow 08)</h2>
+  <div class="cols">
+
+    <div class="col annotation">
+      <b>Design bar</b>
+      <ul style="margin:6px 0 0 16px;">
+        <li><b>Provenance inline (R-D12, amended):</b> the adjusted load wears “all sets reached 8 at RPE 8” + ⓘ; e1RM wears “Epley, ≥ 3 sets” + ⓘ; expenditure wears its inputs + ⓘ. Headers name things (“Today’s session”, “Lower A”) and carry no numbers’ provenance.</li>
+        <li><b>No self-congratulation (R-D15):</b> the PR is a number moving old → new; the summary is a receipt; nothing says fast, easy, or amazing. No confetti — per spec.</li>
+        <li><b>No verdicts:</b> a swap “keeps today’s stimulus”; nothing can be missed here. No “leg day” scolding, no streak pressure. Expenditure never becomes a target — stated once, as data practice.</li>
+        <li><b>Tokens:</b> dark theme, accent for state only, amber for the honest-mismatch chip; red does not exist. kg throughout (R-D10); tnum on every changing numeral.</li>
+        <li><b>Gym ergonomics:</b> 56 dp set rows, confirm in the thumb arc, rest controls at top-right where the phone props; nav dropped while live.</li>
+        <li><b>Location stays home:</b> the route trace is drawn from on-device coordinates; it never appears in notifications and is excluded from share receipts unless opted in per share.</li>
+      </ul>
+    </div>
+
+    <div class="col annotation">
+      <b>Spec coverage (F05 §4)</b>
+      <ul style="margin:6px 0 0 16px;">
+        <li><b>Happy path</b> — preview → prefilled sets → rest ring → finish → summary: mocks 1, 2, 5. No keyboard in the common case ✓ (mock 3 shows the only exception: deliberate load change).</li>
+        <li><b>Plate mismatch</b> — honest “Closest possible” chip, inventory per profile ✓ mock 3.</li>
+        <li><b>Substitutions</b> — long-press, muscle ∩ equipment ranking, travel re-derivation ✓ mock 4.</li>
+        <li><b>Set-type flows</b> — warm-up lighter style ✓ (ramp calculator cited); failure/drop badges and AMRAP prompt specified in pins, not drawn.</li>
+        <li><b>Data-quality gating</b> — e1RM’s ≥ 3-sets gate shown inline; expenditure hidden without bodyweight (persona has F06 data) is a caption note.</li>
+        <li><b>Explainability</b> — the preview’s adjustment sentence is the readable rule engine; cap ≤ 10 %/session in pin 1.</li>
+        <li><b>Cardio parity (R-S11 as amended)</b> — live GPS/HR session (mock 6): time · distance · pace · zone at a glance, zero mandatory input outdoors, one field on the erg; manual fallback and Health-Connect imports on one week timeline (mock 7); pace/zone/GPS formulas worn inline per the provenance rule.</li>
+      </ul>
+    </div>
+
+    <div class="col annotation">
+      <b>Not shown here (deliberate)</b>
+      <ul style="margin:6px 0 0 16px;">
+        <li>Supersets/circuits queue animation; template authoring/versioning UI (View template only); warm-up ramp calculator face; logbook table, e1RM/volume charts, PR timeline, muscle heatmap — stats surfaces belong with Insights’ flow when that is mocked; recovery body-map and plateau dialogue are [v1.x].</li>
+        <li>Structured cardio workouts (guided intervals) are [future]; per-split tables and pace-curve charts belong with the stats surfaces when those are mocked.</li>
+        <li>Widget start/pause and notification resurrector: cited in wireframe 1 / mock 2, not drawn.</li>
+      </ul>
+      <b style="display:block; margin-top:10px;">Cross-flow consistency</b>
+      <ul style="margin:6px 0 0 16px;">
+        <li>Flow 01’s screens were a rest day — the session card’s absence there is the training-day split (wireframe 1), not an omission; rail workout entry lands here.</li>
+        <li>Expenditure surfaces again only as the check-in’s “training context” row (flow 03) — same numbers, same “context only” framing.</li>
+        <li>“Update bodyweight” writes F06 exactly as flow 04’s weigh-in does — one bridge, explicit, user-tapped.</li>
+        <li>Cardio sessions hand F07 the same context-only expenditure as lifts; steps bypass logging entirely and reach the Hub’s step ring and the engine’s activity term straight from Health Connect.</li>
+      </ul>
+    </div>
+
+  </div>
+</div>
+
+</div>
+</body>
+</html>

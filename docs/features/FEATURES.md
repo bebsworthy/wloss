@@ -16,7 +16,7 @@ follow is [`TEMPLATE.md`](TEMPLATE.md). Companion docs:
 | F02 | Food Logging & AI Nutrient Estimation | [F02](F02-food-logging.md) | Any meal → trusted nutrient record in seconds, photo-first | consumes `food-photo`, `voice-input` |
 | F03 | Meal Planning & Recipes | [F03](F03-meal-planning.md) | Template → week plan → pre-logs; planned-vs-actual adherence | consumes `meal-planning` |
 | F04 | Shopping List & Pantry | [F04](F04-shopping-pantry.md) | Auto list from the plan; pantry ground truth; edit-proof checks | none in v1 (see R-C3) |
-| F05 | Exercise Planning & Tracking | [F05](F05-exercise.md) | Hevy-class logging loop; explainable adaptation; expenditure context | none (see R-C2) |
+| F05 | Exercise Planning & Tracking | [F05](F05-exercise.md) | Movement tracker: strength logging loop + first-class cardio (live GPS/HR sessions); explainable adaptation; expenditure context | none (see R-C2) |
 | F06 | Weight & Body Metrics | [F06](F06-weight-body-metrics.md) | The honest measurement layer: trend weight, provenance, EAV metrics | none — local math only |
 | F07 | Energy & Metabolism Engine | [F07](F07-energy-engine.md) | On-device adaptive TDEE, 3-band decelerating forecast, weekly check-in | none — the privacy flagship |
 | F08 | Silhouette Tracker | [F08](F08-silhouette.md) | Guided private body-photo ritual + on-device compare studio | owns `silhouette` (near-never) |
@@ -329,7 +329,12 @@ these are binding until amended *here* (feature docs must not re-litigate them).
   release. (Owner call, ticket WLO-0007.)
 - **R-S11 — F05 cardio scope in v1:** minimal native entries
   (type/duration/effort/distance) + Health Connect import via F13; native
-  pacing/zone charts are later work.
+  pacing/zone charts are later work. **Amended (owner ruling, round 9,
+  2026-09-12): a general sport tracker is non-negotiable — cardio is
+  first-class and co-equal with strength.** Native live sessions (timer,
+  GPS distance computed on-device, HR zones via F13) with pace/split/zone
+  summaries are v1; the minimal manual entry and Health Connect import
+  remain as fallback and complement.
 - **R-S12 — Model training-data policy:** every model in F12's zoo is
   trained on open-licensed (OSI/CC-class) datasets only, each named on its
   model card; no proprietary training data anywhere in the zoo.

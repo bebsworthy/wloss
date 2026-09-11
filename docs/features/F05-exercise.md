@@ -7,8 +7,8 @@
 | | |
 |---|---|
 | **Feature ID** | F05 — Exercise Planning & Tracking |
-| **Provides** | A friction-free strength/cardio logbook (Hevy-class logging loop) with deterministic, explainable workout adaptation — feeding energy expenditure to F07 as *context, never credit*. |
-| **User problems solved** | • Logging a set takes 3 taps instead of 30 keystrokes, even with sweaty hands mid-rest • "What do I do today?" is answered by a visible, verifiable rule — not a black box • Progress is legible: PRs, e1RM, volume, and a muscle heatmap that shows its own formula • Exercise finally connects to diet and weight — without the "eat back your burn" trap |
+| **Provides** | A general movement tracker: a Hevy-class strength logging loop **and** a first-class cardio session loop (live timer, GPS distance, heart-rate zones, pace/splits) — deterministic, explainable adaptation over both, feeding energy expenditure to F07 as *context, never credit*. |
+| **User problems solved** | • Logging a set takes 3 taps instead of 30 keystrokes, even with sweaty hands mid-rest • "What do I do today?" is answered by a visible, verifiable rule — not a black box • Progress is legible: PRs, e1RM, volume, and a muscle heatmap that shows its own formula • Exercise finally connects to diet and weight — without the "eat back your burn" trap • Walking, running, biking, rowing are first-class sessions — live-tracked (GPS/HR) or auto-imported — with pace, splits, and zones explained like every other derived number |
 | **AI consent category** | Owns none. Consumes none in v1 — the adaptation engine is deterministic rules over local data (explainability is the feature). [future]: may consume the `insights-chat` toggle for natural-language program discussion. |
 | **Primary evidence** | `docs/research/hevy.md` (logging loop, rest timer, plate calculator, PR banners), `docs/research/fitbod.md` (recovery model, equipment profiles, one-tap-confirm), `docs/research/macrofactor.md` (exercise-as-context, no eat-back), `docs/research/synthesis.md` §1.4, §2 Tier A #6 |
 
@@ -24,6 +24,7 @@ and an adaptation engine whose every suggestion can be read as a sentence.
 Core objectives:
 
 - **A working set is logged in ≤ 3 taps** (open set → confirm prefilled weight/reps → done), zero mandatory keyboard.
+- **Cardio is co-equal — a general sport tracker, not a gym log:** walking, running, biking, rowing get a live session loop (timer, GPS distance, HR zones) with the same input minimization and provenance as the strength loop; steps need no logging at all.
 - **Routine templates are first-class artifacts**: create, duplicate, version, export/import (via F13), and instantiate into sessions — never a marketing funnel.
 - **Every suggestion is explainable in one line** ("all sets hit top of 8–10 range → +2.5 kg next session"); the user can always trace suggestion → rule → inputs.
 - **Expenditure flows to F07 as context only.** WLO never adds "exercise calories" back to the eating target (Zolt and MacroFactor both reject this; it double-counts what the adaptive TDEE already absorbs).
@@ -32,12 +33,14 @@ Core objectives:
 ## 2. User Moments — when and how it is used
 
 - **Cadence:** 3–5 sessions/week, each 30–75 min, touched between every set (~every 90 s). Plus one planning moment/week (couch, Sunday) and micro-glances at PRs/heatmap after sessions.
-- **Physical/emotional context:** gym floor or living room — standing, gloves on, phone propped, rest clock running. The user is *mid-task*: every interaction must survive one thumb and 5 seconds of attention. Planning context is the opposite: relaxed, coffee, forward-looking.
+- **Physical/emotional context:** gym floor or living room — standing, gloves on, phone propped, rest clock running. Or the road, trail, and erg: a run starts from the Hub card or widget, the phone rides a pocket or armband, and every glance is a 2-second read of time · distance · zone. Either way the user is *mid-task*: every interaction must survive one thumb and 5 seconds of attention. Planning context is the opposite: relaxed, coffee, forward-looking.
 - **The single most common flow:**
   1. F10 Daily Hub card "Push A — 6 exercises, ~45 min" (or widget) → one tap starts the session, prebuilt from the routine template.
   2. Every set arrives prefilled with last session's weight × reps → one tap per set confirms.
   3. Rest timer auto-starts; a plate calculator sits above the keyboard when load changes; a PR banner fires mid-workout when a set beats a best.
   4. Finish → 5-second summary (tonnage count-up, PRs, muscles hit) → session saved locally and handed to F07 as expenditure context.
+
+   **The cardio twin:** (1) the Hub card says "Easy run · 5 km" (or the widget/rail starts it) → (2) the live screen does the work — elapsed time, GPS distance, current pace, HR zone — with auto-pause at lights → (3) stop → the same receipt-style summary: distance, pace, splits, zone minutes, expenditure context. Sessions recorded elsewhere (watch, treadmill app) arrive by themselves through Health Connect and sit on the same timeline, provenance-stamped.
 
 ## 3. How It Works — functional mechanics
 
@@ -54,12 +57,14 @@ Core objectives:
 - **Recovery model [v1.x]:** per-muscle freshness 0–100%. Each set deducts recovery ∝ volume load × muscle-engagement coefficient (primary 1.0, secondaries 0.3–0.5); recovery regenerates exponentially toward 100% over ~6 days. The decay curve is *drawn*, with its constants shown — explainable, not mystical.
 - **Muscle volume:** sets × reps × load weighted by engagement coefficients, aggregated per muscle per rolling window — the input to the heatmap.
 - **e1RM:** Epley formula, per exercise, from best recent sets.
-- **Expenditure estimate:** per session, from volume load, duration, body stats (F06), and HR data when present — labeled *estimated*, coarse by design, passed to F07 as context only.
+- **Expenditure estimate:** per session, from volume load, duration, body stats (F06), and HR data when present — labeled *estimated*, coarse by design, passed to F07 as context only. Cardio sessions estimate from duration + distance + HR + body stats under the same rule; the boundary is structural in both directions.
+- **Cardio session engine (all on-device):** live timer; GPS distance computed on-device (the route trace is stored in the local vault and never leaves the phone); auto-pause; heart rate via F13 (connected monitor or Health Connect). Splits, pace curve, and zone minutes derive by formulas shown on the surface: pace = split distance ÷ split time; zones = time within %HRmax bands, HRmax user-set and shown.
 
-**Cardio & steps (second-class by design, first-class enough)**
+**Cardio & steps (first-class — amended, owner ruling: a general sport tracker is non-negotiable)**
 
-- Native cardio entries are minimal: type, duration, perceived effort, optional distance — three taps from the session screen. Depth comes from **F13**: Health Connect workouts, steps, and HR streams import automatically and appear on the same timeline as lifting sessions. (v1 scope ruled — R-S11: this minimal set + HC import is the whole of v1 cardio; native pacing/zone charts are later work.)
-- Steps never require logging in F05; the F10 daily step ring and F07's Activity term consume them directly from F13. F05 renders them only as training context ("rest-day steps carried the week").
+- Native live sessions for Walk · Run · Ride · Row (plus an "other" catch-all): start from the Hub session card, the rail, or the widget; the live screen shows elapsed time, GPS distance, current pace, and the current HR zone; auto-pause handles traffic lights. Indoor pieces (treadmill, erg) take distance from the machine in one field.
+- Manual entry stays as the fallback for when the device didn't come along: type, duration, perceived effort, optional distance — three taps, unchanged from the original ruling.
+- **F13 imports remain the third door**: Health Connect workouts, steps, and HR streams land on the same timeline as lifting sessions, provenance-stamped ("via Health Connect"). Steps never require logging; the F10 step ring and F07's Activity term consume them directly. F05 renders them as training context ("rest-day steps carried the week").
 
 **Supersets & circuits**
 
@@ -78,7 +83,8 @@ Core objectives:
 
 **Primary flows**
 
-- *Happy path:* start prefilled session → tap-tap-tap sets → rest timer between → finish → summary. No keyboard unless the user deviates from last time.
+- *Happy path (strength):* start prefilled session → tap-tap-tap sets → rest timer between → finish → summary. No keyboard unless the user deviates from last time.
+- *Happy path (cardio):* start from the Hub card or widget → the live screen does the work (time · GPS distance · pace · HR zone, auto-pause) → stop → summary. Zero mandatory input outdoors; one distance field on the erg or treadmill.
 - *Exercise unavailable (gym busy / travel):* long-press → substitutions ranked by target-muscle overlap ∩ current equipment profile; hotel-gym rerouting keeps the prescription buildable ("never ask for an unplate-able load").
 - *Plate mismatch:* target load not buildable → calculator falls back with an honest chip: "Closest possible: 132.5 kg" — accept or adjust plates inventory.
 - *Set-type flows:* warm-up sets log with a lighter row style and an optional warm-up ramp calculator (% ladder off the working weight); failure and drop sets are one-tap row badges; AMRAP sets prompt "reps achieved?" only when it differs from prescribed.
@@ -107,8 +113,8 @@ Core objectives:
 - **After:** session summary; per-exercise history with e1RM and volume charts; PR history feed; sets-per-muscle-per-week (day/week/month/year granularity with preset ranges — all history, always, on device); volume-weighted muscle heatmap (7d / 30d / 90d).
 - **Artifacts:** shareable session receipts; a monthly training recap (sessions, tonnage, PRs, muscle distribution vs. prior month) whose data F05 computes and F11 composes — a recap neither Hevy (no food/weight) nor Fitbod (no nutrition) can build.
 - **Raw access:** the logbook is a browsable table (date, exercise, sets×reps×load, RPE) — geeks get the spreadsheet view, not just the pretty charts.
-- **Provenance rule:** e1RM ("Epley: w × (1 + reps/30)"), heatmap ("Σ sets×reps×load × engagement: primary 1.0, secondary 0.3–0.5 — 30-day window"), recovery ("−X% from Monday's squats, +Y/day regeneration, ~6-day horizon"), expenditure ("estimated from volume+duration+weight; ±30% honestly") — every derived number tappable to its formula and inputs.
-- **Visualizations owned by F05:** body-front/back heatmap (color intensity = volume, binary highlight is the fallback), recovery body-map with per-muscle decay curves [v1.x], per-exercise e1RM/volume lines, PR timeline.
+- **Provenance rule:** e1RM ("Epley: w × (1 + reps/30)"), heatmap ("Σ sets×reps×load × engagement: primary 1.0, secondary 0.3–0.5 — 30-day window"), recovery ("−X% from Monday's squats, +Y/day regeneration, ~6-day horizon"), expenditure ("estimated from volume+duration+weight; ±30% honestly"), pace ("split distance ÷ split time"), zone minutes ("time in %HRmax bands · HRmax 190, user-set"), GPS distance ("computed on-device; the route never leaves the phone") — every derived number tappable to its formula and inputs.
+- **Visualizations owned by F05:** body-front/back heatmap (color intensity = volume, binary highlight is the fallback), recovery body-map with per-muscle decay curves [v1.x], per-exercise e1RM/volume lines, PR timeline, per-activity pace curves and weekly distance/duration bars for walk · run · ride · row.
 
 ## 6. Motivation & Psychology
 
@@ -133,7 +139,8 @@ Core objectives:
 - **[v1.x] Plateau dialogue** — when an exercise stalls 3 sessions, surface options as cards: deload −10%, rep-range swap, substitution — with the reasoning shown. No fixed "back off a few percent" silence.
 - **[v1.x] Import bridge** — Hevy/Strong CSV import so the logger's built-up history moves in; a local-first app should honor training history that already exists.
 - **[future] Wear OS companion** — set confirm, rest ring, plate glance from the wrist; Fitbod's weak Wear OS app is an active churn driver WLO can exploit on Android-first ground.
-- **[future] HR-informed conditioning** — Bluetooth strap zones via F13; cardio sessions contribute zone-minutes to the heatmap's cardio ring.
+- **[v1.x] One weekly load picture** — cardio zone minutes and strength volume on a single chart, descriptive never prescriptive.
+- **[future] Structured cardio workouts** — guided intervals with audio cues, authored and instantiated like strength templates.
 - **[moonshot] On-device form check** — camera pose estimation (local model) flags depth/rom on squats; processed and discarded on-device, silhouette-grade privacy.
 - **[moonshot] Fatigue-budget autoregulation** — RPE trend × recovery state → automatic daily readiness suggestion ("top sets at RPE 8 today"), fully rule-based and explainable.
 
@@ -143,12 +150,13 @@ Core objectives:
 - **No social layer:** no feed, no leaderboards, no location check-ins (synthesis §4). Sharing is a user-rendered image, nothing more.
 - **Safety tone:** progression suggestions cap jumps (≤ 5–10%/session); deload suggestions appear after stalled/aching patterns; no medical claims; injury flags route to gentler substitutions, not lectures.
 - **Expenditure humility:** workout calories are always shown as rough estimates with provenance and are structurally incapable of increasing eating targets (enforced in the F07 write path, not just by convention).
+- **Location stays home:** GPS routes are location history. They are computed and stored on-device only, never appear in notifications, and are excluded from share receipts by default — the receipt carries stats; the map is an explicit per-share choice.
 - **Camera features** (form check [moonshot]) process frames in memory only; nothing persists without explicit opt-in; no cloud category exists for them.
 
 ## 10. Open Questions
 
 - **Exercise library licensing/attribution:** bundle an open exercise database vs. author a minimal WLO set with animated demos — needs a master-doc decision on content provenance rules. *(Resolved: R-S2 — authored minimal set (CC0) + community additions; no proprietary bundled database.)*
 - **Recovery-model calibration:** Fitbod's ~22%/exercise heuristic is community reverse-engineered; WLO needs its own default constants — published and tweakable, but which baseline?
-- **Cardio depth in v1:** minimal logging + Health Connect import only, or native pacing/zone charts from day one? *(Resolved: R-S11 — minimal + HC import.)*
+- **Cardio depth in v1:** minimal logging + Health Connect import only, or native pacing/zone charts from day one? *(Originally resolved: R-S11 minimal + HC import. Amended 2026-09-12, owner ruling: cardio is first-class — live GPS/HR sessions and pace/split/zone summaries are v1; see R-S11 as amended in FEATURES §3.)*
 - **Schema sharing with F13:** should the session/set schema be designed for open export first (Hevy-compatible CSV) to enable migration tooling?
 - **Who renders the muscle heatmap** — F05 owns computation and the chart, but F11 wants it inside weekly reports; propose F05 exposes a renderable component, F11 embeds it.
