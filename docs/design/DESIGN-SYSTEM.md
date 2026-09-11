@@ -346,7 +346,7 @@ items are treated [v1].)
 
 | Component | Owner | States / variants | Tag | Binding rules |
 |---|---|---|---|---|
-| Provenance chip | FEATURES §2.1, R-D11 | Anatomy: **user-word + ⓘ** — `measured` / `derived ⓘ` / `estimated ⓘ` / `DB-verified ⓘ (source on tap)` / `AI-estimated ⓘ` / `user-entered` / `unknown` / `provisional` / `adaptive ⓘ · check-in <date>`. Parameters (smoother + α, window, model version, source IDs, constants) live only in the ⓘ tap-through ("how we got here"), never in the chip label | [v1] | Mandatory on every derived number; tap → "how we got here" sheet; label-style pill |
+| Provenance chip | FEATURES §2.1, R-D11 | Anatomy: **user-word + ⓘ** — `measured` / `derived ⓘ` / `estimated ⓘ` / `DB-verified ⓘ (source on tap)` / `AI-estimated ⓘ` / `user-entered` / `unknown` / `provisional` / `updates weekly ⓘ · <last check-in date>` (engine word "adaptive" lives in the explainer, not the chip). Parameters (smoother + α, window, model version, source IDs, constants) live only in the ⓘ tap-through ("how we got here"), never in the chip label | [v1] | Mandatory on every derived number; tap → "how we got here" sheet; label-style pill |
 | "How we got here" sheet | each owner feature | formula + inputs + constants + exclusions + state | [v1] | First-class atom; formula version shown; receipts shortcut (F12) |
 | Data-quality status chip | F07 (pattern), generalized | `developing` / `updating` / `held` (+ reason) | [v1] | Amber + single 600 ms pulse when held; reason chip names the fix, one tap |
 | Day-status marker | F02 | `Logged` / `Skipped` / `Fasted` | [v1] | One tap in day header; inline fix offer on F07 adherence row; never a gap-shame |

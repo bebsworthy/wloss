@@ -2,40 +2,12 @@
 
 # Questions · WLO-0014
 
-## q-000023 · open
-
-What minSdk floor is acceptable? (No floor is stated anywhere in the docs; it gates haptics vocabulary at API 30/34, Health Connect, and ARCore coverage.)
-
-- [ ] Let research decide (device-share vs API needs)
-- [ ] API 26 (Android 8.0)
-- [ ] API 29 (Android 10)
-
-## q-000024 · open
-
-App-size budget: is a ~50–80 MB bundled model-zoo APK acceptable, or should heavy models (STT 45–85 MB, LLM) be download-on-first-use only?
-
-- [ ] Decide per model during research
-- [ ] Bundled zoo is fine
-- [ ] Download-on-first-use only
-
-## q-000025 · open
-
-Any iOS or Kotlin-Multiplatform ambition, even distant? (No iOS ambition appears anywhere in the docs; a KMP-ready core would flip the persistence/HTTP/DI choices.)
-
-- [ ] Android-only, pure-Android stack
-- [ ] KMP-ready core, Android UI
-- [ ] iOS someday — accept the cost
-
-## q-000026 · open
-
-Crash/feedback policy: docs ban telemetry with content (F13 §9). Which channel?
-
-- [ ] Local-only crash log + user-initiated export
-- [ ] Opt-in content-free ACRA reports
-- [ ] Nothing at all
-
 ## Resolved
 
 - q-000020
 - q-000021
 - q-000022
+- q-000023
+- q-000024
+- q-000025
+- q-000026

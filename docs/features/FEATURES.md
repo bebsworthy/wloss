@@ -298,6 +298,15 @@ these are binding until amended *here* (feature docs must not re-litigate them).
   requirement** (Play Store + GitHub APKs are; F-Droid may be added later via
   a clean-stack audit); the **"WLO Pure" no-INTERNET flavor is dropped**
   (F12 §3.8 amended accordingly).
+- **R-S14 — Model-zoo distribution: download-on-first-use only.** *(Owner
+  call 2026-09-11, ticket WLO-0014.)* The APK ships **no neural models**:
+  every F12 zoo model downloads on first use of its capability from
+  hash-pinned public URLs (F12 §3.2), with size shown before download and
+  one-tap reclaim. Airplane-mode parity applies once a model is present;
+  until then the capability degrades to its R-U15 manual path, disclosed in
+  onboarding. Supersedes the "bundled" wording in F02 §3 and F12 §3.2 for
+  zoo models; small vendor-SDK built-in models (e.g. inside ML Kit
+  libraries) are a tracked exception pending the tech phase's size audit.
 - **R-S2 — Exercise library:** authored minimal set (CC0) + community additions;
   no proprietary bundled database; the two-level muscle schema is the keystone.
 - **R-S3 — Seed recipes:** ~50 open-licensed starter recipes + import + AI
@@ -386,7 +395,7 @@ Ratified 2026-09-11.*
   (EWMA α, window sizes), or design-doc phrases ("offline is a non-state",
   "celebration is geometry"). Those live in the frame annotations and the
   ⓘ explainers only. Provenance chips surface a user-word + ⓘ
-  ("derived ⓘ", "AI-estimated ⓘ", "adaptive ⓘ"); the technical parameters
+  ("derived ⓘ", "AI-estimated ⓘ", "updates weekly ⓘ"); the technical parameters
   sit one tap away in the how-we-got-here explainer — the §2.1 provenance
   guarantee is preserved, its vocabulary is not. Each card carries at most
   one helper line, phrased as the next action, never as mechanism; nothing
@@ -403,6 +412,9 @@ Ratified 2026-09-11.*
   The trend card's sparkline renders in every Day-loop state (continuity
   over height economy), and on check-in day the check-in card carries the
   number once while the trend card carries the series only (R-D11 dedup).
+  Chip words name user facts, not mechanisms: the ring-target chip reads
+  "updates weekly · <last check-in date>"; the engine word "adaptive"
+  belongs to the explainer's first sentence (F07), never the chip.
 
 ---
 

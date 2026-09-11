@@ -51,7 +51,7 @@
     <div class="phone wf"><div class="screen">
       <div class="wf-box solid row">status bar</div>
       <div class="wf-box row">segmented: Plan · Recipes · List · Pantry (IA §1 — one tab owns the pipeline)</div>
-      <div class="wf-box row">Week header: Sep 7–13 ▾ · 1,900 kcal/day · targets prov “adaptive · check-in” → <b>03</b></div>
+      <div class="wf-box row">Week header: Sep 7–13 ▾ · 1,900 kcal/day · targets prov “updates weekly · Sep 6” → <b>03</b></div>
       <div class="wf-box tall">7 compact day sections (390 dp can’t fit columns): meal rows per slot + fit badge “kcal ✓ · P −6 g” per day</div>
       <div class="wf-note">past days collapse to one line · today expands · badges flip in split-flap after the 40 ms deal-in</div>
       <div class="wf-box row">skipped slot renders neutrally: “Friday’s plan met real life — replanned” — no guilt (F03 §6)</div>
@@ -139,7 +139,7 @@
           <div class="card-title">Week of Sep 7 <span class="right">Sep 7 – 13 ▾</span></div>
           <div style="display:flex; justify-content:space-between; align-items:center;">
             <div><span class="stat-m">1,900</span> <span class="receipt">kcal/day · P 165 g</span></div>
-            <span class="prov adaptive">adaptive · check-in Sep 6</span>
+            <span class="prov adaptive">updates weekly · Sep 6</span>
           </div>
           <div class="receipt" style="margin-top:8px;"><b style="color:var(--text-primary)">Why this plan</b> · 3 cook events · 4 leftovers · 9 shared ingredients ≈ <b style="color:var(--text-primary)">€4.10</b> under an unshared week</div>
           <div class="receipt faint" style="margin-top:3px;">hardest rules: no mushrooms (excluded) · fish 2×/wk (template) · pantry influence: off — not enough data yet · <span class="prov derived">on-device</span></div>
@@ -203,7 +203,7 @@
       <b>Friday 17:24 — the week, mid-flight.</b>
       <ol>
         <li><span class="pin-ref">1</span>Fit badges show the gap, never a verdict: “kcal ✓ · P −6 g”; ✓ means within <b>±5 % kcal (R-S7)</b>, aligned with F07’s proposal semantics so a fit plan never argues with a <span class="held-c">held</span> week. Saturday’s hand-placed lamb renders “kcal +12%” — the number is the information; no fail state exists. Badges flip in like split-flap after the 40 ms deal-in.</li>
-        <li><span class="pin-ref">2</span>Week targets carry provenance (“adaptive · check-in Sep 6”) — plans generate against <i>today’s</i> budget, not onboarding’s; Sunday’s Apply (→ flow 03) re-solves only the slots the new targets violate.</li>
+        <li><span class="pin-ref">2</span>Week targets carry provenance (“updates weekly · Sep 6”) — plans generate against <i>today’s</i> budget, not onboarding’s; Sunday’s Apply (→ flow 03) re-solves only the slots the new targets violate.</li>
         <li><span class="pin-ref">3</span>Skipped slot, zero guilt — the spec’s own copy, verbatim: <i>“Friday’s plan met real life — replanned.”</i> Skips feed adherence honestly; the state machine (planned → confirmed / swapped / skipped / replaced) is owned by F03 (R-B1 treaty: F02 owns nutrition of replacements).</li>
         <li><span class="pin-ref">4</span>Leftover connector: stitched tupperware line from Tue’s cook event to Wed’s lunch; ingredient weight is charged to the cook day only, so the list pays for cook events, not eating events; tap pans the calendar to the parent batch.</li>
         <li><span class="pin-ref">5</span>Adherence strip: zipper-extends per confirm; below 3 logged days it renders “not yet meaningful” — the metric answers “how good is my planning?”, never “how good are you?” (<i>“plans that survive contact with Tuesdays”</i>, F03 §6).</li>
@@ -297,7 +297,7 @@
           <div class="brand">WLO <small>Sunday, Sep 13 · shop day</small></div>
           <div class="actions"><span class="chip">Shopping ▾</span><span class="chip">To buy · 11</span></div>
         </div>
-        <div class="receipt faint" style="margin:0 4px 10px;">for the week of Sep 14 · works offline · targets <span class="prov adaptive">adaptive · check-in Sep 13</span></div>
+        <div class="receipt faint" style="margin:0 4px 10px;">for the week of Sep 14 · works offline · targets <span class="prov adaptive">updates weekly · Sep 13</span></div>
 
         <div class="card" style="padding-top:6px;">
           <div class="card-title">Shopping <span class="right receipt">Consolidate ✓ · raw lines</span></div>
@@ -585,7 +585,7 @@
     <div class="col"><div class="annotation">
       <b>Design bar</b>
       <ol>
-        <li><b>Provenance chips on every derived number</b> — week targets (adaptive · check-in), planned meals (planned), leftovers (leftover · Tue batch), confirmed days (measured / DB-verified), AI-estimated recipe nutrition rolling up as `AI-est` on the day (Sat brunch — mixed-provenance days never pass as verified), day deltas (Δ +4), run-out projection (derived · cadence 38 d), “why this plan” (on-device). The one-tap “how we got here” trail stands behind each. ✓</li>
+        <li><b>Provenance chips on every derived number</b> — week targets (updates weekly · Sep 6), planned meals (planned), leftovers (leftover · Tue batch), confirmed days (measured / DB-verified), AI-estimated recipe nutrition rolling up as `AI-est` on the day (Sat brunch — mixed-provenance days never pass as verified), day deltas (Δ +4), run-out projection (derived · cadence 38 d), “why this plan” (on-device). The one-tap “how we got here” trail stands behind each. ✓</li>
         <li><b>Tone — verdict-free, quoting the specs’ own copy:</b> “Friday’s plan met real life — replanned. Nothing owed.” (F03 §6) · banner verbatim (F04 §4) · “not yet meaningful” (F03 §4) · “≈ €4.10 under an unshared week” (F03 §5, forward-framed) · waste as “information with an exit ramp” (F04 §6). Banned list clean: no failed / missed / cheat / off-plan / over-as-verdict. ✓</li>
         <li><b>No red, no urgency theater</b> — Saturday’s +12 % renders the number in neutral hue; expiry uses one slow amber breathe in one band; no countdowns, no nag badges; nothing in-aisle demands attention (F04 §6). No alarm token exists to reach for. ✓</li>
         <li><b>R-U13 n/a</b> (no gut/silhouette surfaces in this flow) — but the <b>refusal family</b> is honored throughout: adherence &lt; 3 logged days → “not yet meaningful”; waste/cost &lt; 4 weeks and unit prices &lt; 3 purchases refused; run-out projections state their basis or don’t appear. ✓</li>

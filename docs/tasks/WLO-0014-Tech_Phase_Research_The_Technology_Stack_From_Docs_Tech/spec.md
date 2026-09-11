@@ -40,3 +40,16 @@ photo discipline · model cards with named open training data.
 - Hard line unchanged: no data leaves the device without explicit consent.
 - Proprietary SDKs now default candidates: ML Kit Barcode/Text (T-E8/T-E4);
   Gemini Nano/AICore joins the local-LLM tier (T-E6); iText/AGPL out of PDF (T-G1).
+
+
+## Owner decisions 2026-09-11 (Q3–Q6, approved suggestions)
+- **minSdk = API 29 (Android 10)** (q-000023). Haptics degrade gracefully below 30/34 per DESIGN-SYSTEM §5.
+- **Model zoo: download-on-first-use only; the APK ships no zoo models** (q-000024) → R-S14.
+  Airplane-mode parity holds once a model is present; capabilities degrade to R-U15 manual
+  paths until then. Vendor-SDK built-in models (ML Kit libs) are a tracked exception pending
+  the Phase-B size audit.
+- **KMP-ready core, Android UI** (q-000025): engines + data layer in common Kotlin
+  Multiplatform; UI stays Android-first Compose. Flips T-A2; persistence/HTTP/DI research
+  follows the KMP fork (ADR-001/003/004).
+- **Crash policy: opt-in content-free ACRA reports** (q-000026). Transmitting ⇒ consent
+  toggle + receipts + audit card; endpoint selection and content-freeing are Phase-D research.
