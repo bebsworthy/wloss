@@ -1,0 +1,6 @@
+root = true
+
+[*.{kt,kts}]
+# WLO is Compose-first: PascalCase @Composable functions are factory-style
+# components, not violations (ktlint function-naming exemption).
+ktlint_function_naming_ignore_when_annotated_with = Composable

@@ -1,0 +1,44 @@
+[
+  {
+    "name": "reference-70kg-175cm",
+    "weightKg": 70.0,
+    "heightCm": 175.0,
+    "expectedBmi": 22.857142857142858,
+    "expectedCategory": "HEALTHY"
+  },
+  {
+    "name": "boundary-under-healthy",
+    "weightKg": 50.0,
+    "heightCm": 165.0,
+    "expectedBmi": 18.36547291092746,
+    "expectedCategory": "UNDERWEIGHT"
+  },
+  {
+    "name": "boundary-exactly-25",
+    "weightKg": 100.0,
+    "heightCm": 200.0,
+    "expectedBmi": 25.0,
+    "expectedCategory": "OVERWEIGHT"
+  },
+  {
+    "name": "boundary-exactly-30",
+    "weightKg": 90.0,
+    "heightCm": 173.2050807568877,
+    "expectedBmi": 30.000000000000014,
+    "expectedCategory": "OBESE"
+  },
+  {
+    "name": "heavier-shorter",
+    "weightKg": 112.5,
+    "heightCm": 168.0,
+    "expectedBmi": 39.859693877551024,
+    "expectedCategory": "OBESE"
+  },
+  {
+    "name": "light-tall",
+    "weightKg": 55.3,
+    "heightCm": 183.4,
+    "expectedBmi": 16.440933345542632,
+    "expectedCategory": "UNDERWEIGHT"
+  }
+]

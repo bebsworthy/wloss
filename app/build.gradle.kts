@@ -1,0 +1,44 @@
+plugins {
+    id("wlo.application")
+}
+
+dependencies {
+    implementation(platform(libs.compose.bom))
+    implementation(libs.compose.material3)
+    implementation(libs.compose.foundation)
+    implementation(libs.compose.ui)
+    implementation(libs.androidx.activity.compose)
+    implementation(libs.androidx.navigation.compose)
+    implementation(libs.androidx.lifecycle.runtime.compose)
+
+    // Composition root (D1): Koin graph + the only module that binds impls.
+    implementation(libs.koin.core)
+    implementation(libs.koin.android)
+    implementation(libs.koin.androidx.compose)
+    implementation(libs.koin.annotations)
+    // The root binds the Room builder type itself (androidDatabaseBuilder).
+    implementation(libs.androidx.room3.runtime)
+    // ... and declares the DataStore type SettingsStore wraps.
+    implementation(libs.androidx.datastore.preferences)
+
+    implementation(libs.kotlinx.datetime)
+    implementation(libs.okio)
+
+    implementation(project(":core:designsystem"))
+    implementation(project(":core:model"))
+    implementation(project(":core:common"))
+    implementation(project(":core:datastore"))
+    implementation(project(":core:database"))
+
+    debugImplementation(libs.compose.ui.tooling)
+    debugImplementation(libs.compose.ui.test.manifest)
+
+    // JVM unit tests: the concrete kotlin-test binding (JUnit4-backed) — AGP's
+    // built-in Kotlin has no KGP to pick the KMP variant for us.
+    testImplementation(libs.kotlin.test.junit)
+    testImplementation(libs.koin.test)
+
+    androidTestImplementation(libs.androidx.test.runner)
+    androidTestImplementation(libs.androidx.test.ext.junit)
+    androidTestImplementation(libs.compose.ui.test.junit4)
+}

@@ -1,0 +1,126 @@
+# WLO version catalog — every pin verified 2026-09-12 against registry metadata
+# (dl.google.com/android/maven2 or repo1.maven.org maven-metadata.xml, per line).
+# House rule: bump verified versions together (ADR-001 "exact pins live in the
+# version catalog and are bumped together").
+
+[versions]
+# Kotlin 2.4.20 = <release> on repo1 kotlin-stdlib metadata (verified 2026-09-12)
+kotlin = "2.4.20"
+# KSP 2.3.12 = newest tag on repo1 symbol-processing-gradle-plugin metadata.
+# NOTE: new plain version scheme (old <kotlin>-<ksp> scheme ended at 2.2.21-2.0.5).
+# KSP 2.3.12 release notes (github.com/google/ksp/releases/tag/2.3.12, verified
+# 2026-09-12) confirm Kotlin 2.x lineage (stdlib 2.3.20) + min AGP 8.12 → AGP 9.4 OK.
+ksp = "2.3.12"
+# AGP 9.4.0 = latest stable on dl.google.com com.android.application plugin marker
+# (9.5.0 only alphas; verified 2026-09-12). Max compileSdk = 37; requires Gradle ≥ 9.6.
+agp = "9.4.0"
+# Gradle 9.7.1 — pinned by the wrapper (services.gradle.org); satisfies AGP 9.4 min.
+gradle = "9.7.1"
+# Room 3.0.3 = latest stable patch of the ADR-003-pinned 3.0.x line on
+# dl.google.com androidx.room3 group index (verified 2026-09-12; 3.1.0 only alpha).
+room3 = "3.0.3"
+# androidx.sqlite bundled driver, latest stable on dl.google.com (verified 2026-09-12)
+sqliteBundled = "2.7.1"
+# DataStore 1.2.1 stable (dl.google.com group index; 1.3.0-alpha11 in flight);
+# no dedicated testing artifact published (verified 2026-09-12) → tmp-dir test rule.
+datastore = "1.2.1"
+# Koin 4.2.2 + koin-annotations 4.2.2 — both <release> on repo1 (verified 2026-09-12)
+koin = "4.2.2"
+koinAnnotations = "4.2.2"
+# kotlinx-coroutines 1.11.0 = <release> on repo1 (verified 2026-09-12)
+coroutines = "1.11.0"
+# kotlinx-serialization-json 1.11.0 = latest STABLE (1.12.0-RC excluded per ADR-004;
+# verified 2026-09-12)
+serializationJson = "1.11.0"
+# kotlinx-datetime 0.8.0 stable (repo1; the "-0.6.x-compat" variant is legacy API;
+# verified 2026-09-12)
+datetime = "0.8.0"
+# Compose BOM 2026.09.00 — pins compose ui/foundation 1.12.1 + material3 1.4.0
+# (verified 2026-09-12 via BOM POM on dl.google.com). ui 1.12.x requires
+# compileSdk 37 + AGP ≥ 9.2 (compose-ui 1.12.0 release notes).
+composeBom = "2026.09.00"
+# ui-test is NOT managed by the BOM (verified: BOM POM has no ui-test entry);
+# pinned to the matching ui line.
+composeUiTest = "1.12.1"
+# activity-compose 1.13.0 = latest stable (dl.google.com metadata; verified 2026-09-12)
+activityCompose = "1.13.0"
+# lifecycle 2.11.0 = latest stable (dl.google.com lifecycle-viewmodel-compose metadata;
+# verified 2026-09-12)
+lifecycle = "2.11.0"
+# navigation-compose 2.10.1 = latest stable (dl.google.com metadata; verified 2026-09-12)
+navigationCompose = "2.10.1"
+# androidx.test 1.7.0 / ext-junit 1.3.0 (dl.google.com metadata; verified 2026-09-12)
+androidxTestRunner = "1.7.0"
+androidxTestExtJunit = "1.3.0"
+# okio 3.18.2 = <release> on repo1 (verified 2026-09-12); direct dep for datastore
+# path plumbing (datastore itself pulls okio transitively)
+okio = "3.18.2"
+# detekt 1.23.8 = <release> on repo1 io.gitlab.arturbosch.detekt (verified 2026-09-12)
+detekt = "1.23.8"
+# ktlint-gradle 14.2.0 (Mar 2026, actively maintained; GitHub releases + plugin
+# portal metadata, verified 2026-09-12). Chosen over a manual exec task: the v14
+# line is post-Gradle-9 with Isolated-Projects compatibility work.
+ktlintGradle = "14.2.0"
+
+[libraries]
+# --- Kotlinx ---
+kotlinx-coroutines-core = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version.ref = "coroutines" }
+kotlinx-coroutines-test = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-test", version.ref = "coroutines" }
+kotlinx-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "serializationJson" }
+kotlinx-datetime = { module = "org.jetbrains.kotlinx:kotlinx-datetime", version.ref = "datetime" }
+kotlin-test = { module = "org.jetbrains.kotlin:kotlin-test", version.ref = "kotlin" }
+kotlin-test-junit = { module = "org.jetbrains.kotlin:kotlin-test-junit", version.ref = "kotlin" }
+
+# --- DI (Koin; wired in :app by the app-shell milestone) ---
+koin-core = { module = "io.insert-koin:koin-core", version.ref = "koin" }
+koin-annotations = { module = "io.insert-koin:koin-annotations", version.ref = "koinAnnotations" }
+koin-android = { module = "io.insert-koin:koin-android", version.ref = "koin" }
+koin-androidx-compose = { module = "io.insert-koin:koin-androidx-compose", version.ref = "koin" }
+koin-test = { module = "io.insert-koin:koin-test", version.ref = "koin" }
+koin-test-junit4 = { module = "io.insert-koin:koin-test-junit4", version.ref = "koin" }
+
+# --- Persistence ---
+androidx-room3-runtime = { module = "androidx.room3:room3-runtime", version.ref = "room3" }
+androidx-room3-compiler = { module = "androidx.room3:room3-compiler", version.ref = "room3" }
+androidx-room3-testing = { module = "androidx.room3:room3-testing", version.ref = "room3" }
+androidx-sqlite-bundled = { module = "androidx.sqlite:sqlite-bundled", version.ref = "sqliteBundled" }
+androidx-datastore-preferences = { module = "androidx.datastore:datastore-preferences", version.ref = "datastore" }
+okio = { module = "com.squareup.okio:okio", version.ref = "okio" }
+
+# --- AndroidX / Compose (versions via BOM) ---
+compose-bom = { module = "androidx.compose:compose-bom", version.ref = "composeBom" }
+compose-ui = { module = "androidx.compose.ui:ui" }
+compose-ui-tooling = { module = "androidx.compose.ui:ui-tooling" }
+compose-ui-tooling-preview = { module = "androidx.compose.ui:ui-tooling-preview" }
+compose-ui-test-junit4 = { module = "androidx.compose.ui:ui-test-junit4", version.ref = "composeUiTest" }
+compose-ui-test-manifest = { module = "androidx.compose.ui:ui-test-manifest", version.ref = "composeUiTest" }
+compose-foundation = { module = "androidx.compose.foundation:foundation" }
+compose-material3 = { module = "androidx.compose.material3:material3" }
+androidx-activity-compose = { module = "androidx.activity:activity-compose", version.ref = "activityCompose" }
+androidx-lifecycle-runtime-compose = { module = "androidx.lifecycle:lifecycle-runtime-compose", version.ref = "lifecycle" }
+androidx-navigation-compose = { module = "androidx.navigation:navigation-compose", version.ref = "navigationCompose" }
+androidx-test-runner = { module = "androidx.test:runner", version.ref = "androidxTestRunner" }
+androidx-test-ext-junit = { module = "androidx.test.ext:junit", version.ref = "androidxTestExtJunit" }
+
+# --- Build-logic classpath (Gradle plugin artifacts; used by build-logic only) ---
+agp = { module = "com.android.tools.build:gradle", version.ref = "agp" }
+kgp = { module = "org.jetbrains.kotlin:kotlin-gradle-plugin", version.ref = "kotlin" }
+compose-compiler-gradle-plugin = { module = "org.jetbrains.kotlin:compose-compiler-gradle-plugin", version.ref = "kotlin" }
+ksp-gradle-plugin = { module = "com.google.devtools.ksp:symbol-processing-gradle-plugin", version.ref = "ksp" }
+room3-gradle-plugin = { module = "androidx.room3:room3-gradle-plugin", version.ref = "room3" }
+detekt-gradle-plugin = { module = "io.gitlab.arturbosch.detekt:detekt-gradle-plugin", version.ref = "detekt" }
+ktlint-gradle-plugin = { module = "org.jlleitschuh.gradle:ktlint-gradle", version.ref = "ktlintGradle" }
+
+[plugins]
+kotlin-multiplatform = { id = "org.jetbrains.kotlin.multiplatform", version.ref = "kotlin" }
+kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
+kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
+kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
+compose-compiler = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
+ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }
+android-application = { id = "com.android.application", version.ref = "agp" }
+android-library = { id = "com.android.library", version.ref = "agp" }
+android-kmp-library = { id = "com.android.kotlin.multiplatform.library", version.ref = "agp" }
+room3 = { id = "androidx.room3", version.ref = "room3" }
+detekt = { id = "io.gitlab.arturbosch.detekt", version.ref = "detekt" }
+ktlint = { id = "org.jlleitschuh.gradle.ktlint", version.ref = "ktlintGradle" }

@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- R-D1: dark-first. One canonical dark theme for day and night; the light
+     scheme is a future derived theme (see :core:designsystem WloTheme). -->
+<resources>
+    <style name="Theme.Wlo" parent="@android:style/Theme.Material.NoActionBar">
+        <item name="android:windowBackground">@color/wlo_background</item>
+        <item name="android:windowLayoutInDisplayCutoutMode">shortEdges</item>
+    </style>
+</resources>

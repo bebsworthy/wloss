@@ -1,0 +1,188 @@
+package app.wlo.buildlogic.arch
+
+import org.gradle.testkit.runner.BuildResult
+import org.gradle.testkit.runner.GradleRunner
+import org.gradle.testkit.runner.TaskOutcome
+import java.io.File
+import java.nio.file.Files
+import kotlin.test.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertTrue
+
+/**
+ * The check cannot rot: for every rule (ARCHITECTURE.md §2.3 / ADR-005) a
+ * fixture project applies `wlo.architecture-check`, introduces the violation,
+ * and must FAIL with a message naming the rule; plus one clean fixture that
+ * must PASS. Run via `./gradlew -p build-logic test` (also wired as CI job).
+ */
+class ArchitectureCheckSelfTest {
+
+    private val buildLogicDir: File =
+        File(System.getProperty("wlo.buildlogic.dir") ?: "build-logic").absoluteFile
+
+    private fun fixture(files: Map<String, String>): File {
+        val root = Files.createTempDirectory("wlo-arch-fixture").toFile()
+        files.forEach { (path, content) ->
+            val f = File(root, path)
+            f.parentFile.mkdirs()
+            f.writeText(content.replace("%BUILDLOGIC%", buildLogicDir.absolutePath))
+        }
+        return root
+    }
+
+    private fun settings(vararg includes: String): String = buildString {
+        appendLine("pluginManagement {")
+        appendLine("    includeBuild(\"%BUILDLOGIC%\")")
+        appendLine("    repositories {")
+        appendLine("        google()")
+
+        appendLine("        mavenCentral()")
+        appendLine("        gradlePluginPortal()")
+        appendLine("    }")
+        appendLine("}")
+        appendLine("rootProject.name = \"fixture\"")
+        includes.forEach { appendLine("include(\"$it\")") }
+    }
+
+    private val rootBuild = "build.gradle.kts" to "plugins { id(\"wlo.architecture-check\") }\n"
+
+    private fun run(dir: File): BuildResult =
+        GradleRunner.create()
+            .withProjectDir(dir)
+            .withArguments("checkArchitecture", "--stacktrace")
+            .build()
+
+    private fun runFailing(dir: File): BuildResult =
+        GradleRunner.create()
+            .withProjectDir(dir)
+            .withArguments("checkArchitecture", "--stacktrace")
+            .buildAndFail()
+
+    @Test
+    fun d1_featureCannotSeeRestrictedModule() {
+        val result = runFailing(
+            fixture(
+                mapOf(
+                    "settings.gradle.kts" to settings(":feature:f99-demo", ":core:network"),
+                    rootBuild.first to rootBuild.second,
+                    "feature/f99-demo/build.gradle.kts" to """
+                        plugins { `java` }
+                        dependencies { implementation(project(":core:network")) }
+                    """.trimIndent(),
+                    "core/network/build.gradle.kts" to "",
+                ),
+            ),
+        )
+        assertTrue("D1" in result.output, "output must name rule D1:\n${result.output}")
+    }
+
+    @Test
+    fun d2_featureToFeatureEdgeForbidden() {
+        val result = runFailing(
+            fixture(
+                mapOf(
+                    "settings.gradle.kts" to settings(":feature:f01-a", ":feature:f02-b"),
+                    rootBuild.first to rootBuild.second,
+                    "feature/f01-a/build.gradle.kts" to """
+                        plugins { `java` }
+                        dependencies { implementation(project(":feature:f02-b")) }
+                    """.trimIndent(),
+                    "feature/f02-b/build.gradle.kts" to "",
+                ),
+            ),
+        )
+        assertTrue("D2" in result.output, "output must name rule D2:\n${result.output}")
+    }
+
+    @Test
+    fun d3_commonMainCannotImportAndroid() {
+        val result = runFailing(
+            fixture(
+                mapOf(
+                    "settings.gradle.kts" to settings(":core:evil"),
+                    rootBuild.first to rootBuild.second,
+                    "core/evil/build.gradle.kts" to "",
+                    "core/evil/src/commonMain/kotlin/Bad.kt" to
+                        "package core.evil\n\nimport android.view.View\n\nclass Bad : View(null)\n",
+                ),
+            ),
+        )
+        assertTrue("D3" in result.output, "output must name rule D3:\n${result.output}")
+    }
+
+    @Test
+    fun d4_internetPermissionOutsideAppForbidden() {
+        val manifest = """
+            <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+                <uses-permission android:name="android.permission.INTERNET" />
+            </manifest>
+        """.trimIndent()
+        val result = runFailing(
+            fixture(
+                mapOf(
+                    "settings.gradle.kts" to settings(":core:leaky"),
+                    rootBuild.first to rootBuild.second,
+                    "core/leaky/build.gradle.kts" to "",
+                    "core/leaky/src/main/AndroidManifest.xml" to manifest,
+                ),
+            ),
+        )
+        assertTrue("D4" in result.output, "output must name rule D4:\n${result.output}")
+    }
+
+    @Test
+    fun d6_rawDerivedValueRenderFails() {
+        val result = runFailing(
+            fixture(
+                mapOf(
+                    "settings.gradle.kts" to settings(":feature:f07-ui"),
+                    rootBuild.first to rootBuild.second,
+                    "feature/f07-ui/build.gradle.kts" to "",
+                    "feature/f07-ui/src/main/kotlin/Raw.kt" to """
+                        package feature.raw
+                        fun render(trendValue: Double) = Unit
+                        fun broken() = Text(trendValue.value)
+                    """.trimIndent(),
+                ),
+            ),
+        )
+        assertTrue("D6" in result.output, "output must name rule D6:\n${result.output}")
+    }
+
+    @Test
+    fun d7_enginesMustNotReadTheClock() {
+        val result = runFailing(
+            fixture(
+                mapOf(
+                    "settings.gradle.kts" to settings(":core:engines"),
+                    rootBuild.first to rootBuild.second,
+                    "core/engines/build.gradle.kts" to "",
+                    "core/engines/src/commonMain/kotlin/Impure.kt" to """
+                        package engines
+                        fun nowish(): Long = Clock.System.now().toEpochMilliseconds()
+                    """.trimIndent(),
+                ),
+            ),
+        )
+        assertTrue("D7" in result.output, "output must name rule D7:\n${result.output}")
+    }
+
+    @Test
+    fun cleanFixturePasses() {
+        val result = run(
+            fixture(
+                mapOf(
+                    "settings.gradle.kts" to settings(":core:model"),
+                    rootBuild.first to rootBuild.second,
+                    "core/model/build.gradle.kts" to "",
+                    "core/model/src/commonMain/kotlin/Fine.kt" to "package fine\n\nval fine = 1\n",
+                ),
+            ),
+        )
+        assertEquals(
+            TaskOutcome.SUCCESS,
+            result.task(":checkArchitecture")?.outcome,
+            "clean fixture must pass:\n${result.output}",
+        )
+    }
+}

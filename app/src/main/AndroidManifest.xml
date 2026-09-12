@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <!--
+      D4: INTERNET is declared ONLY here (:app). M1 declares NO permission at
+      all — nothing networks yet (R-S14: no egress until consent exists).
+    -->
+    <application
+        android:name=".WloApplication"
+        android:label="WLO"
+        android:icon="@drawable/ic_launcher"
+        android:supportsRtl="true"
+        android:theme="@style/Theme.Wlo">
+
+        <!--
+          R-D1: the app is dark-first; Theme.Wlo (values/) is the dark canonical
+          theme for both day and night. Light is a future, derived theme.
+        -->
+        <activity
+            android:name=".MainActivity"
+            android:exported="true"
+            android:launchMode="singleTask"
+            android:windowSoftInputMode="adjustResize">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+            <!--
+              wlo:// deep links (IA.md §3 registry): scheme only, no host —
+              every surface routes through WloDeepLinks.
+            -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="wlo" />
+            </intent-filter>
+        </activity>
+    </application>
+</manifest>

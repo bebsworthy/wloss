@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- DESIGN-SYSTEM.md §1.1 bg token (#0E1116); used by Theme.Wlo so the
+         window never flashes light before Compose draws. -->
+    <color name="wlo_background">#0E1116</color>
+</resources>

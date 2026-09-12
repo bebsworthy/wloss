@@ -1,0 +1,43 @@
+# WLO detekt house ruleset (buildUponDefaultConfig = true).
+#
+# D8 (no exceptions across module boundaries) is enforced by review, not by a
+# custom rule in M1 — TODO(follow-up): custom detekt ruleset for D6/D7 once the
+# rule API settles; D7 is checked structurally by `checkArchitecture`.
+build:
+  maxIssues: 0
+
+complexity:
+  TooManyFunctions:
+    active: false
+  LongMethod:
+    active: false
+  LongParameterList:
+    active: false
+  CyclomaticComplexMethod:
+    active: false
+
+style:
+  MagicNumber:
+    # WLO's domain IS numbers (constants registry, golden fixtures); magic-number
+    # suppression belongs in code review, not the gate.
+    active: false
+  MaxLineLength:
+    maxLineLength: 120
+  ReturnCount:
+    active: false
+  UnusedPrivateMember:
+    # ktlint's no-unused-... chain and detekt overlap; keep detekt's on.
+    active: true
+
+exceptions:
+  TooGenericExceptionCaught:
+    active: false
+  SwallowedException:
+    active: false
+
+naming:
+  FunctionNaming:
+    # Compose functions are PascalCase by design.
+    functionPattern: '[a-zA-Z][a-zA-Z0-9]*'
+  TopLevelPropertyNaming:
+    constantPattern: '[A-Za-z][_A-Za-z0-9]*'
