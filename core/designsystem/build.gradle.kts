@@ -14,6 +14,8 @@ dependencies {
     implementation(libs.compose.material3)
     implementation(libs.compose.ui)
     implementation(libs.compose.foundation)
+    // Forecast-card date ticks render from epoch days (kotlinx-datetime).
+    implementation(libs.kotlinx.datetime)
 
     // D6: the provenance-chip components are the only sanctioned rendering
     // path for DerivedValue, so the domain type is part of this module's API.

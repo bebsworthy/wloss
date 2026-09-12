@@ -35,6 +35,11 @@ serializationJson = "1.11.0"
 # kotlinx-datetime 0.8.0 stable (repo1; the "-0.6.x-compat" variant is legacy API;
 # verified 2026-09-12)
 datetime = "0.8.0"
+# kotest-property 6.2.5 = <release> on repo1 io.kotest:kotest-property (verified
+# 2026-09-12: kotest-property-jvm jar present, pom pins kotlin-stdlib 2.2.21 —
+# readable by the 2.4.20 toolchain). Used as a LIBRARY (forAll/checkAll) inside
+# kotlin-test JUnit4 tests; the kotest test framework stays out of the build.
+kotestProperty = "6.2.5"
 # Compose BOM 2026.09.00 — pins compose ui/foundation 1.12.1 + material3 1.4.0
 # (verified 2026-09-12 via BOM POM on dl.google.com). ui 1.12.x requires
 # compileSdk 37 + AGP ≥ 9.2 (compose-ui 1.12.0 release notes).
@@ -52,6 +57,14 @@ navigationCompose = "2.10.1"
 # androidx.test 1.7.0 / ext-junit 1.3.0 (dl.google.com metadata; verified 2026-09-12)
 androidxTestRunner = "1.7.0"
 androidxTestExtJunit = "1.3.0"
+# UI Automator 2.3.0 (dl.google.com androidx.test.uiautomator group index; latest
+# stable — 2.3.0, 2024-07) for shell-level instrumented steps (am force-stop)
+# in the onboarding acceptance tests.
+uiautomator = "2.3.0"
+# Test Orchestrator 1.6.1 (dl.google.com androidx.test/orchestrator metadata,
+# latest/release, verified 2026-09-12): runs each test with cleared app data
+# (clearPackageData) so onboarding tests start from a cold install.
+orchestrator = "1.6.1"
 # okio 3.18.2 = <release> on repo1 (verified 2026-09-12); direct dep for datastore
 # path plumbing (datastore itself pulls okio transitively)
 okio = "3.18.2"
@@ -70,6 +83,7 @@ kotlinx-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serializa
 kotlinx-datetime = { module = "org.jetbrains.kotlinx:kotlinx-datetime", version.ref = "datetime" }
 kotlin-test = { module = "org.jetbrains.kotlin:kotlin-test", version.ref = "kotlin" }
 kotlin-test-junit = { module = "org.jetbrains.kotlin:kotlin-test-junit", version.ref = "kotlin" }
+kotest-property = { module = "io.kotest:kotest-property", version.ref = "kotestProperty" }
 
 # --- DI (Koin; wired in :app by the app-shell milestone) ---
 koin-core = { module = "io.insert-koin:koin-core", version.ref = "koin" }
@@ -101,6 +115,8 @@ androidx-lifecycle-runtime-compose = { module = "androidx.lifecycle:lifecycle-ru
 androidx-navigation-compose = { module = "androidx.navigation:navigation-compose", version.ref = "navigationCompose" }
 androidx-test-runner = { module = "androidx.test:runner", version.ref = "androidxTestRunner" }
 androidx-test-ext-junit = { module = "androidx.test.ext:junit", version.ref = "androidxTestExtJunit" }
+androidx-test-uiautomator = { module = "androidx.test.uiautomator:uiautomator", version.ref = "uiautomator" }
+androidx-test-orchestrator = { module = "androidx.test:orchestrator", version.ref = "orchestrator" }
 
 # --- Build-logic classpath (Gradle plugin artifacts; used by build-logic only) ---
 agp = { module = "com.android.tools.build:gradle", version.ref = "agp" }

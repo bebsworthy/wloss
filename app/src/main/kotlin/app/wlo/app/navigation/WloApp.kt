@@ -3,8 +3,10 @@ package app.wlo.app.navigation
 import android.content.Intent
 import android.os.Bundle
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.navigationBarsPadding
@@ -27,6 +29,7 @@ import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
 import androidx.navigation.NavDestination
 import androidx.navigation.NavGraph.Companion.findStartDestination
@@ -40,26 +43,34 @@ import app.wlo.app.ui.PlaceholderCopy
 import app.wlo.app.ui.PlaceholderScreen
 import app.wlo.app.ui.hub.HubScreen
 import app.wlo.app.ui.hub.HubViewModel
+import app.wlo.app.ui.shell.ShellState
+import app.wlo.app.ui.shell.ShellViewModel
 import app.wlo.core.designsystem.WloHaptic
 import app.wlo.core.designsystem.WloSpacing
 import app.wlo.core.designsystem.rememberWloHaptics
 import app.wlo.core.designsystem.wloExtendedColors
 import app.wlo.core.designsystem.wloType
+import app.wlo.feature.f01.onboarding.ui.OnboardingScreen
 import org.koin.androidx.compose.koinViewModel
 
 /**
  * The WLO shell: five-tab bottom navigation (R-D2) + NavHost, with `wlo://`
  * deep links registered per tab (IA.md §3). Dark is the base scheme (R-D1);
- * the activity forces `darkTheme = true`.
+ * the activity forces `darkTheme = true`. While the shell gate is FRESH the
+ * Hub route hosts the F01 wizard (first-run is a flow, not a modal gauntlet —
+ * IA §5) and the bottom bar stays hidden until a plan exists.
  */
 @Composable
 public fun WloApp(
     newIntent: Intent?,
     onDestinationChanged: (String?) -> Unit,
     modifier: Modifier = Modifier,
+    onSurfaceChanged: (String) -> Unit = {},
 ) {
     val navController: NavHostController = rememberNavController()
     val haptics = rememberWloHaptics()
+    val shell: ShellViewModel = koinViewModel<ShellViewModel>()
+    val shellState: ShellState by shell.state.collectAsStateWithLifecycle()
     val backStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = backStackEntry?.destination?.route
 
@@ -88,17 +99,19 @@ public fun WloApp(
         containerColor = MaterialTheme.colorScheme.background,
         contentColor = MaterialTheme.colorScheme.onBackground,
         bottomBar = {
-            WloBottomBar(
-                selectedRoute = currentRoute,
-                onSelect = { route ->
-                    haptics.perform(WloHaptic.SegmentTick)
-                    navController.navigate(route) {
-                        popUpTo(navController.graph.findStartDestination().id) { saveState = true }
-                        launchSingleTop = true
-                        restoreState = true
-                    }
-                },
-            )
+            if (shellState == ShellState.Onboarded) {
+                WloBottomBar(
+                    selectedRoute = currentRoute,
+                    onSelect = { route ->
+                        haptics.perform(WloHaptic.SegmentTick)
+                        navController.navigate(route) {
+                            popUpTo(navController.graph.findStartDestination().id) { saveState = true }
+                            launchSingleTop = true
+                            restoreState = true
+                        }
+                    },
+                )
+            }
         },
     ) { innerPadding ->
         NavHost(
@@ -115,7 +128,20 @@ public fun WloApp(
                         },
                 ) {
                     when (tab.route) {
-                        WloTabs.HUB -> HubScreen(viewModel = koinViewModel<HubViewModel>())
+                        WloTabs.HUB ->
+                            when (shellState) {
+                                ShellState.Loading -> Box(Modifier.fillMaxSize())
+                                // Fresh install: the wizard owns the surface —
+                                // wlo://hub resolves to onboarding until a plan exists.
+                                ShellState.Fresh -> {
+                                    onSurfaceChanged("onboarding")
+                                    OnboardingScreen(viewModel = koinViewModel())
+                                }
+                                ShellState.Onboarded -> {
+                                    onSurfaceChanged("hub")
+                                    HubScreen(viewModel = koinViewModel<HubViewModel>())
+                                }
+                            }
                         WloTabs.PLAN -> PlaceholderScreen(title = tab.label, body = PlaceholderCopy.PLAN)
                         WloTabs.INSIGHTS -> PlaceholderScreen(title = tab.label, body = PlaceholderCopy.INSIGHTS)
                         WloTabs.ARCHIVE -> PlaceholderScreen(title = tab.label, body = PlaceholderCopy.ARCHIVE)

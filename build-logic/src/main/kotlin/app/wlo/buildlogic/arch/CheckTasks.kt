@@ -38,6 +38,10 @@ public open class CheckArchitectureTask : DefaultTask() {
     @get:Input
     public val engineDirLines: MutableCollection<String> = mutableListOf()
 
+    /** Declared external dependencies, lines "project|group|name". */
+    @get:Input
+    public val externalDepLines: MutableCollection<String> = mutableListOf()
+
     @get:Input
     public var projectPathList: List<String> = emptyList()
 
@@ -47,6 +51,11 @@ public open class CheckArchitectureTask : DefaultTask() {
             val parts = line.split('|')
             ProjectEdge(parts[0], parts[1])
         }
+        val externalDeps =
+            externalDepLines.map { line ->
+                val parts = line.split('|')
+                app.wlo.buildlogic.arch.ExternalDependency(parts[0], parts[1], parts[2])
+            }
         val commonMainDirs = groupByProject(commonMainDirLines).mapValues { (_, v) -> v.map { Paths.get(it) } }
         val manifests = groupByProject(manifestLines).mapValues { (_, v) -> v.map { Paths.get(it) } }
         val uiFiles = groupByProject(uiSourceLines).mapValues { (_, v) -> v.map { Paths.get(it) } }
@@ -54,6 +63,7 @@ public open class CheckArchitectureTask : DefaultTask() {
 
         val violations = buildList {
             addAll(ArchRules.dependencyViolations(edges))
+            addAll(ArchRules.bannedArtifactViolations(externalDeps))
             addAll(ArchRules.commonMainViolations(commonMainDirs))
             addAll(ArchRules.manifestViolations(manifests))
             addAll(ArchRules.derivedRenderingViolations(uiFiles))
@@ -72,8 +82,8 @@ public open class CheckArchitectureTask : DefaultTask() {
             )
         }
         logger.lifecycle(
-            "checkArchitecture: OK — ${projectPathList.size} projects, D1–D7 clean " +
-                "(${edges.size} dependency edges scanned).",
+            "checkArchitecture: OK — ${projectPathList.size} projects, D1–D7 + D9 clean " +
+                "(${edges.size} dependency edges, ${externalDeps.size} external artifacts scanned).",
         )
     }
 

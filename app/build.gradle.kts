@@ -2,6 +2,21 @@ plugins {
     id("wlo.application")
 }
 
+android {
+    defaultConfig {
+        // AndroidX Test Orchestrator: every instrumented test starts from
+        // cleared app data + a fresh app process — the onboarding acceptance
+        // tests rely on that cold-install semantics.
+        testInstrumentationRunnerArguments["clearPackageData"] = "true"
+    }
+
+    testOptions {
+        // Route the run through AndroidTestOrchestrator (installed via
+        // androidTestUtil below); the default engine ignores clearPackageData.
+        execution = "ANDROIDX_TEST_ORCHESTRATOR"
+    }
+}
+
 dependencies {
     implementation(platform(libs.compose.bom))
     implementation(libs.compose.material3)
@@ -29,6 +44,16 @@ dependencies {
     implementation(project(":core:common"))
     implementation(project(":core:datastore"))
     implementation(project(":core:database"))
+    implementation(project(":core:data"))
+    implementation(project(":core:engines"))
+    implementation(project(":core:documents"))
+    implementation(project(":feature:f01-onboarding"))
+
+    // UiDevice shell commands (am force-stop) in instrumented tests.
+    androidTestImplementation(libs.androidx.test.uiautomator)
+    // Each instrumented test starts from cleared app data + a fresh app
+    // process (the orchestrator process survives; the app's does not).
+    androidTestUtil(libs.androidx.test.orchestrator)
 
     debugImplementation(libs.compose.ui.tooling)
     debugImplementation(libs.compose.ui.test.manifest)

@@ -1,0 +1,30 @@
+package app.wlo.feature.f01.onboarding.di
+
+import app.wlo.core.datastore.JsonDocumentStore
+import app.wlo.feature.f01.onboarding.domain.FinishOnboarding
+import app.wlo.feature.f01.onboarding.state.OnboardingViewModel
+import org.koin.androidx.viewmodel.dsl.viewModel
+import org.koin.core.module.Module
+import org.koin.dsl.module
+
+/**
+ * F01 onboarding graph (ARCHITECTURE §2.2 feature shape): the wizard state
+ * holder plus its interactors. Cross-module inputs arrive through spine doors
+ * ([ProfileRepository]/[MeasurementRepository] via `:core:data`,
+ * [JsonDocumentStore] via `:core:datastore`, the sealed writers via
+ * `TargetsWriters`) — the composition root binds their implementations; the
+ * shipped template library itself is bound in `:app` (it reads Android assets).
+ */
+public val f01OnboardingModule: Module =
+    module {
+        single {
+            FinishOnboarding(
+                profiles = get(),
+                measurements = get(),
+                writers = get(),
+                documents = get(),
+                clock = get(),
+            )
+        }
+        viewModel { OnboardingViewModel(library = get(), finisher = get(), documents = get(), clock = get()) }
+    }

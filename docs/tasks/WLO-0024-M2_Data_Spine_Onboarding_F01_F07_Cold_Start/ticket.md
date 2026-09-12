@@ -1,13 +1,13 @@
 ---
 id: WLO-0024
 title: 'M2 · Data spine + onboarding (F01, F07 cold-start)'
-status: todo
+status: done
 theme:
 release:
 created: 2026-09-12T10:00:53Z
-modified: 2026-09-12T10:00:55Z
-closed:
-revision: d2af75fa39177f7b
+modified: 2026-09-12T16:48:20Z
+closed: 2026-09-12T16:48:20Z
+revision: 40eb6c2d7965df83
 blocks: [WLO-0025]
 related: [WLO-0014]
 ---

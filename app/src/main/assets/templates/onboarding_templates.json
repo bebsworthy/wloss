@@ -1,0 +1,94 @@
+{
+  "comment": "F01 §3 shipped template library (v1 seed). Plain data — no template is privileged; all inspectable, editable, excludable. Personal fields (budget, floor, goal) are filled by the deterministic DietTemplateApplier, never stored here.",
+  "templates": [
+    {
+      "id": "balanced-deficit",
+      "name": "Balanced Deficit",
+      "summary": "30P/40C/30F, flat schedule, no exclusions.",
+      "isDefault": true,
+      "macroPreset": "balanced",
+      "macroSplit": { "proteinPct": 30, "carbPct": 40, "fatPct": 30 },
+      "cadence": "daily",
+      "surfaces": ["calorie-ring", "macro-bars"]
+    },
+    {
+      "id": "high-protein",
+      "name": "High-Protein",
+      "summary": "35–40% protein; protein-floor ring pinned in the diary.",
+      "macroPreset": "high-protein",
+      "macroSplit": { "proteinPct": 37, "carbPct": 33, "fatPct": 30 },
+      "proteinFloorG": 140,
+      "cadence": "daily",
+      "surfaces": ["calorie-ring", "macro-bars", "protein-floor-ring"]
+    },
+    {
+      "id": "keto",
+      "name": "Keto",
+      "summary": "At most 30 g carbs; carb-limit ring; ketosis education card.",
+      "macroPreset": "keto",
+      "macroSplit": { "proteinPct": 25, "carbPct": 5, "fatPct": 70 },
+      "carbCapG": 30,
+      "cadence": "daily",
+      "surfaces": ["calorie-ring", "carb-limit-ring"],
+      "hints": ["Fat-adaptation note arrives at day 10."]
+    },
+    {
+      "id": "mediterranean",
+      "name": "Mediterranean",
+      "summary": "20P/45C/35F; fish-twice-a-week soft hint; olive-oil-friendly budget.",
+      "macroPreset": "mediterranean",
+      "macroSplit": { "proteinPct": 20, "carbPct": 45, "fatPct": 35 },
+      "cadence": "daily",
+      "surfaces": ["calorie-ring", "macro-bars"],
+      "hints": ["Fish twice a week — a gentle hint, never a rule."]
+    },
+    {
+      "id": "low-carb",
+      "name": "Low-Carb",
+      "summary": "Moderate split with a carb ceiling — no ketosis claims.",
+      "macroPreset": "low-carb",
+      "macroSplit": { "proteinPct": 30, "carbPct": 30, "fatPct": 40 },
+      "carbCapG": 100,
+      "cadence": "daily",
+      "surfaces": ["calorie-ring", "carb-limit-ring"]
+    },
+    {
+      "id": "if-16-8",
+      "name": "Intermittent Fasting 16:8",
+      "summary": "Balanced split inside an 8-hour eating window; timer surface.",
+      "macroPreset": "balanced",
+      "macroSplit": { "proteinPct": 30, "carbPct": 40, "fatPct": 30 },
+      "cadence": "daily",
+      "surfaces": ["calorie-ring", "fasting-timer"],
+      "eatingWindow": { "pattern": "16:8", "startHour": 12, "endHour": 20 }
+    },
+    {
+      "id": "if-5-2",
+      "name": "Intermittent Fasting 5:2",
+      "summary": "Five normal days, two reduced days — weekly cadence with pinned total.",
+      "macroPreset": "balanced",
+      "macroSplit": { "proteinPct": 30, "carbPct": 40, "fatPct": 30 },
+      "cadence": "weekly",
+      "surfaces": ["calorie-ring", "fasting-timer", "week-bars"],
+      "eatingWindow": { "pattern": "5:2", "fastDays": [1, 4] }
+    },
+    {
+      "id": "if-6-1",
+      "name": "Intermittent Fasting 6:1",
+      "summary": "Six normal days, one reduced day — weekly cadence with pinned total.",
+      "macroPreset": "balanced",
+      "macroSplit": { "proteinPct": 30, "carbPct": 40, "fatPct": 30 },
+      "cadence": "weekly",
+      "surfaces": ["calorie-ring", "fasting-timer", "week-bars"],
+      "eatingWindow": { "pattern": "6:1", "fastDays": [7] }
+    },
+    {
+      "id": "custom",
+      "name": "Custom",
+      "summary": "Blank canvas — every field exposed in the Studio.",
+      "macroPreset": "custom",
+      "cadence": "daily",
+      "surfaces": ["calorie-ring", "macro-bars"]
+    }
+  ]
+}

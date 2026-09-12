@@ -95,6 +95,25 @@ class ArchitectureCheckSelfTest {
     }
 
     @Test
+    fun d2_selfEdgesAreExempt() {
+        // AGP's own library test configurations declare a module as its own
+        // project dependency; a self-edge is a tautology, not a coupling.
+        val result = run(
+            fixture(
+                mapOf(
+                    "settings.gradle.kts" to settings(":feature:f01-a"),
+                    rootBuild.first to rootBuild.second,
+                    "feature/f01-a/build.gradle.kts" to """
+                        plugins { `java` }
+                        dependencies { implementation(project(":feature:f01-a")) }
+                    """.trimIndent(),
+                ),
+            ),
+        )
+        assertTrue("D2" !in result.output, "self-edges must not trip D2:\n${result.output}")
+    }
+
+    @Test
     fun d3_commonMainCannotImportAndroid() {
         val result = runFailing(
             fixture(
@@ -165,6 +184,48 @@ class ArchitectureCheckSelfTest {
             ),
         )
         assertTrue("D7" in result.output, "output must name rule D7:\n${result.output}")
+    }
+
+    @Test
+    fun d9_networkingStacksAreBannedEverywhere() {
+        val result = runFailing(
+            fixture(
+                mapOf(
+                    // A bare :app would break the merged-manifest backstop wiring,
+                    // and the D9 rule is about ANY project declaring the stack.
+                    "settings.gradle.kts" to settings(":core:leaky"),
+                    rootBuild.first to rootBuild.second,
+                    "core/leaky/build.gradle.kts" to """
+                        plugins { `java` }
+                        repositories { mavenCentral() }
+                        dependencies { implementation("io.ktor:ktor-client-core:3.5.2") }
+                    """.trimIndent(),
+                ),
+            ),
+        )
+        assertTrue("D9" in result.output, "output must name rule D9:\n${result.output}")
+    }
+
+    @Test
+    fun d9_okioStaysLegal() {
+        val result = run(
+            fixture(
+                mapOf(
+                    "settings.gradle.kts" to settings(":core:datastore"),
+                    rootBuild.first to rootBuild.second,
+                    "core/datastore/build.gradle.kts" to """
+                        plugins { `java` }
+                        repositories { mavenCentral() }
+                        dependencies { implementation("com.squareup.okio:okio:3.18.2") }
+                    """.trimIndent(),
+                ),
+            ),
+        )
+        assertEquals(
+            TaskOutcome.SUCCESS,
+            result.task(":checkArchitecture")?.outcome,
+            "okio must remain legal (matched names are ktor/okhttp/retrofit):\n${result.output}",
+        )
     }
 
     @Test

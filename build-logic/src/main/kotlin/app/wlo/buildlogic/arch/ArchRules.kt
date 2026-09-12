@@ -52,10 +52,27 @@ public object ArchRules {
     public val D6_RAW_DERIVED_TEXT: Regex =
         Regex("Text\\(\\s*[A-Za-z_][A-Za-z0-9_]*(?:(?:Value|Dv)\\b|(?:Derived)[A-Za-z0-9_]*)\\.value")
 
-    /** D1 + D2: project-dependency edges that must not exist. */
+    /**
+     * D9 — zero-egress structural check (complements D4 at the dependency
+     * level): networking stacks may not be DECLARED by any project. All
+     * egress lives behind F12's single `NetworkDispatcher` in `:core:network`
+     * (which only `:app` sees, D1); F13 owns the architectural enforcement.
+     * Data-driven: extend these lists to ban more artifacts. `okio` stays
+     * legal (datastore path plumbing, M1); matching is on artifact NAME and
+     * GROUP, so `com.squareup.okio:okio` is never hit by the `okhttp` rule.
+     */
+    public val BANNED_ARTIFACT_NAMES: List<String> = listOf("ktor", "okhttp", "retrofit")
+    public val BANNED_ARTIFACT_GROUPS: List<String> =
+        listOf("io.ktor", "com.squareup.okhttp3", "com.squareup.retrofit2")
+
+    /** D1 + D2: project-dependency edges that must not exist. Self-edges
+     * (from == to) are exempt: AGP's own library test configurations declare
+     * the module as its own project dependency, and a module depending on
+     * itself is a tautology, never a cross-feature coupling. */
     public fun dependencyViolations(edges: List<ProjectEdge>): List<Violation> {
         val violations = mutableListOf<Violation>()
         for (edge in edges) {
+            if (edge.from == edge.to) continue
             if (edge.to in RESTRICTED_MODULES && edge.from !in RESTRICTED_VISIBLE_TO) {
                 violations += Violation(
                     rule = "D1",
@@ -130,7 +147,9 @@ public object ArchRules {
             }
         }
 
-    /** D6 heuristic: raw DerivedValue `.value` renders inside `Text(...)` in UI modules. */
+    /**
+     * D6 heuristic: raw DerivedValue `.value` renders inside `Text(...)` in UI modules.
+     */
     public fun derivedRenderingViolations(uiSourceFiles: Map<String, List<Path>>): List<Violation> =
         uiSourceFiles
             .flatMap { (projectPath, files) ->
@@ -144,6 +163,35 @@ public object ArchRules {
                         "Text(${hit.text}). Use provenance-chip components from :core:designsystem.",
                 )
             }
+
+    /**
+     * D9: banned external artifacts (networking stacks) declared on any
+     * configuration of any project. [declarations] carry "project|group|name".
+     */
+    public fun bannedArtifactViolations(declarations: List<ExternalDependency>): List<Violation> =
+        declarations.flatMap { dep ->
+            val nameHit = BANNED_ARTIFACT_NAMES.firstOrNull { dep.name.contains(it, ignoreCase = true) }
+            val groupHit = BANNED_ARTIFACT_GROUPS.firstOrNull { dep.group.contains(it, ignoreCase = true) }
+            buildList {
+                if (nameHit != null) {
+                    add(banViolation(dep, "artifact name '$nameHit'"))
+                }
+                if (groupHit != null) {
+                    add(banViolation(dep, "group '$groupHit'"))
+                }
+            }
+        }
+
+    private fun banViolation(
+        dep: ExternalDependency,
+        what: String,
+    ): Violation =
+        Violation(
+            "D9",
+            "${dep.project}: banned networking artifact ${dep.group}:${dep.name} (matched by $what). " +
+                "Zero egress: all traffic goes through F12's NetworkDispatcher in :core:network, " +
+                "visible only to :app (D1). Evidence: merged manifests contain no INTERNET outside :app (D4).",
+        )
 
     /**
      * All Kotlin sources under [dir] whose text matches [regex]; [keep] filters
@@ -173,6 +221,13 @@ public object ArchRules {
 public data class ProjectEdge(public val from: String, public val to: String) {
     override fun toString(): String = "$from -> $to"
 }
+
+/** One declared external dependency (group:name) on some project. */
+public data class ExternalDependency(
+    public val project: String,
+    public val group: String,
+    public val name: String,
+)
 
 /** A failed rule: machine-readable id + human message naming the rule. */
 public data class Violation(public val rule: String, public val message: String)

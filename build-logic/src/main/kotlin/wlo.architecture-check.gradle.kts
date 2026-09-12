@@ -8,8 +8,8 @@ import java.io.File
  * `gradle.projectsEvaluated` (all projects configured) as plain strings; the
  * task action is filesystem + string work only (configuration-cache safe).
  *
- * Rules D1–D7 live in [app.wlo.buildlogic.arch.ArchRules]; D8 is a documented
- * review convention for M1 (ADR-005).
+ * Rules D1–D7 + D9 live in [app.wlo.buildlogic.arch.ArchRules]; D8 is a
+ * documented review convention enforced via `WloResult` types (ARCHITECTURE §2.3).
  */
 val checkArchitecture = tasks.register("checkArchitecture", CheckArchitectureTask::class)
 
@@ -21,6 +21,7 @@ gradle.projectsEvaluated {
     val manifests = mutableListOf<String>()
     val uiSources = mutableListOf<String>()
     val engineDirs = mutableListOf<String>()
+    val externalDeps = mutableListOf<String>()
     val paths = mutableListOf<String>()
 
     root.allprojects.forEach { project ->
@@ -32,6 +33,12 @@ gradle.projectsEvaluated {
                 .withType(org.gradle.api.artifacts.ProjectDependency::class.java)
                 .forEach { dependency ->
                     edges += "${project.path}|${dependency.path}"
+                }
+            // D9 — declared external dependency coordinates (group|name).
+            configuration.dependencies
+                .withType(org.gradle.api.artifacts.ModuleDependency::class.java)
+                .forEach { dependency ->
+                    externalDeps += "${project.path}|${dependency.group}|${dependency.name}"
                 }
         }
 
@@ -67,6 +74,8 @@ gradle.projectsEvaluated {
     checkArchitecture.configure {
         edgeLines.clear()
         edgeLines.addAll(edges)
+        externalDepLines.clear()
+        externalDepLines.addAll(externalDeps)
         commonMainDirLines.clear()
         commonMainDirLines.addAll(commonMainDirs)
         manifestLines.clear()
@@ -78,9 +87,10 @@ gradle.projectsEvaluated {
         projectPathList = paths
 
         // D4 merged-manifest backstop — :app registers `checkMergedManifest`
-        // via `wlo.application`; only wire it when the project exists (the
-        // TestKit fixtures are plain builds).
-        if (root.findProject(":app") != null) {
+        // via `wlo.application`; only wire it when the task exists (a fixture
+        // or future project named ":app" need not apply that convention).
+        val appProject = root.findProject(":app")
+        if (appProject != null && appProject.tasks.names.contains("checkMergedManifest")) {
             dependsOn(":app:checkMergedManifest")
         }
     }

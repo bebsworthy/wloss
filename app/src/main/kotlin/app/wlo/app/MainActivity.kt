@@ -26,6 +26,14 @@ public class MainActivity : ComponentActivity() {
     public var currentDestinationForVerification: String? = null
         private set
 
+    /**
+     * Test hook: WHAT the hub route currently renders — "onboarding" while the
+     * shell gate is fresh, "hub" once a plan exists. Lets deep-link tests
+     * verify the cold-start rule without scraping the compose tree.
+     */
+    public var currentSurfaceForVerification: String? = null
+        private set
+
     private val deepLinkIntent = mutableStateOf<Intent?>(null)
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -40,6 +48,7 @@ public class MainActivity : ComponentActivity() {
                 WloApp(
                     newIntent = deepLinkIntent.value,
                     onDestinationChanged = { route -> currentDestinationForVerification = route },
+                    onSurfaceChanged = { surface -> currentSurfaceForVerification = surface },
                 )
             }
         }
