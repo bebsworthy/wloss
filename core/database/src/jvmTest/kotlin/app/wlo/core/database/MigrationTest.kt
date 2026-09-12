@@ -19,8 +19,9 @@ import kotlin.test.assertTrue
  * test proves (a) the drop, (b) every new table's exact shape — the helper
  * validates the migrated database against the exported `3.json` — and
  * (c) the structural guarantees the spine relies on (FK clause on the EAV
- * sidecar, unique (profileId, version) on targets_versions). v1 → v2 remains
- * from M1: users on schema v1 chain 1→2→3.
+ * sidecar, unique (profileId, version) on targets_versions). v3 → v4 lands
+ * the F02 diary + FTS5 search and proves the FTS backfill finds pre-existing
+ * catalog rows. v1 → v2 remains from M1: users on schema v1 chain 1→2→3→4.
  */
 class MigrationTest {
     private val schemasDir: java.nio.file.Path =
@@ -125,16 +126,74 @@ class MigrationTest {
         }
 
     @Test
-    fun v1DatabaseChainsThroughToV3() =
+    fun migrate3To4_realizesFoodDiaryAndBackfillsFts() =
         runTest {
-            helper.createDatabase(1).close()
-            helper.runMigrationsAndValidate(3, listOf(Migrations.MIGRATION_1_2, Migrations.MIGRATION_2_3)).use { connection ->
-                assertEquals(
-                    1L,
-                    queryLong(connection, "SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name='day_records'"),
-                    "the chained 1→2→3 migration reaches the spine",
+            helper.createDatabase(3).use { connection ->
+                // A v3-era catalog row (the M2 stub shape) must come through.
+                connection.exec(
+                    "INSERT INTO food_items " +
+                        "(id, profileId, name, brand, kcalPer100g, createdAtEpochMs) " +
+                        "VALUES ('f1', 'p1', 'Rye bread', 'Bakery', 250.0, 1000)",
+                )
+                // A v3 measurement event must gain (null) Fresh Start columns.
+                connection.exec(
+                    "INSERT INTO measurement_events " +
+                        "(id, profileId, dayEpochDay, kind, valueReal, unit, source, capturedAtEpochMs) " +
+                        "VALUES ('m1', 'p1', 20708, 'weight', 84.2, 'kg', 'scale', 1000)",
                 )
             }
+
+            val migrated = helper.runMigrationsAndValidate(4, listOf(Migrations.MIGRATION_3_4))
+            migrated.use { connection ->
+                // (a) The FTS index was backfilled: the pre-existing row is searchable.
+                val matches =
+                    queryLong(
+                        connection,
+                        "SELECT COUNT(*) FROM food_search WHERE food_search MATCH 'rye*'",
+                    )
+                assertEquals(1L, matches, "existing catalog rows must be searchable after migration")
+
+                // (b) The backfilled row carries the source DEFAULT from the ALTER.
+                val source = queryText(connection, "SELECT source FROM food_items WHERE id = 'f1'")
+                assertEquals("custom", source)
+
+                // (c) Fresh Start ledger columns exist and default to NULL (visible).
+                assertTrue(
+                    queryLong(connection, "SELECT COUNT(*) FROM measurement_events WHERE hiddenAtEpochMs IS NULL") == 1L,
+                    "pre-existing events must stay visible (NULL = visible, R-B7)",
+                )
+
+                // (d) The diary + audit tables exist with their indices.
+                listOf(
+                    "diary_entries",
+                    "diary_entry_revisions",
+                    "index_diary_entries_profileId_dayEpochDay",
+                    "index_diary_entry_revisions_entryId",
+                ).forEach { name ->
+                    assertEquals(
+                        1L,
+                        queryLong(connection, "SELECT COUNT(*) FROM sqlite_master WHERE name='$name'"),
+                        "$name must exist after migration",
+                    )
+                }
+            }
+        }
+
+    @Test
+    fun v1DatabaseChainsThroughToV4() =
+        runTest {
+            helper.createDatabase(1).close()
+            helper
+                .runMigrationsAndValidate(
+                    4,
+                    listOf(Migrations.MIGRATION_1_2, Migrations.MIGRATION_2_3, Migrations.MIGRATION_3_4),
+                ).use { connection ->
+                    assertEquals(
+                        1L,
+                        queryLong(connection, "SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name='diary_entries'"),
+                        "the chained 1→2→3→4 migration reaches the M3 diary schema",
+                    )
+                }
         }
 
     private fun queryLong(

@@ -1,80 +1,103 @@
 package app.wlo.app.navigation
 
 /**
- * The `wlo://` deep-link registry (IA.md §3), as a pure function URI -> tab
- * route. Tab roots are `wlo://<tab>`; every card/notification/widget target in
- * the IA registry maps onto its owning tab for M1 (the finer surfaces do not
- * exist yet). Discretion-gated targets (Archive, gut photo context) still land
- * on their tab surface — the lock gate ships with F08 itself.
+ * The `wlo://` deep-link registry (IA.md §3), as a pure, unit-pinned function
+ * URI → nav route. Every registry row resolves to a real screen (the Hub, the
+ * F02 diary/ladder, the F06 weigh-in surfaces) or a documented stub screen —
+ * an explicit "lands in a later milestone" placeholder that still navigates.
+ * Discretion-gated targets (Archive, gut photo context) land on their stub or
+ * tab surface until the owning feature ships its lock gate.
+ *
+ * Registry rows added beyond IA.md §3's literal list: `wlo://diary` (the F02
+ * day view) and `wlo://log/search` (the ladder) — the two surfaces PART B
+ * makes real (flagged in the M3 report for the IA doc owner).
  */
 public object WloDeepLinks {
     public const val SCHEME: String = "wlo"
 
-    /** The five tabs, in navigation order (R-D2). */
+    /** The five tab roots, in navigation order (R-D2). */
     public val TAB_ROUTES: List<String> =
         listOf(WloTabs.HUB, WloTabs.PLAN, WloTabs.INSIGHTS, WloTabs.ARCHIVE, WloTabs.DIGESTION)
 
-    /** IA.md §3 registry targets and the tab that owns them in M1. */
-    private val ALIASES: Map<String, String> =
-        mapOf(
-            // Hub-owned surfaces (F10 hub cards, F02 capture, F06 numbers, F07
-            // check-in, F01 studio, F13 vault, algorithms).
-            "weight" to WloTabs.HUB,
-            "weight/log" to WloTabs.HUB,
-            "energy" to WloTabs.HUB,
-            "log/capture" to WloTabs.HUB,
-            "log/quick-kcal" to WloTabs.HUB,
-            "log/planned" to WloTabs.HUB,
-            "log/correct" to WloTabs.HUB,
-            "checkin" to WloTabs.HUB,
-            "studio" to WloTabs.HUB,
-            "vault" to WloTabs.HUB,
-            "algorithms" to WloTabs.HUB,
-            "ai/receipts" to WloTabs.HUB,
-            "exercise/start" to WloTabs.HUB,
-            // Plan-owned (F03/F04 pipeline).
-            "plan/tomorrow" to WloTabs.PLAN,
-            // Insights-owned (F11).
-            "insights/report" to WloTabs.INSIGHTS,
-            "insights/streaks" to WloTabs.INSIGHTS,
-            // Archive-owned (F08) — lands behind the lock gate when it ships.
-            "archive/compare" to WloTabs.ARCHIVE,
-            "archive/capture" to WloTabs.ARCHIVE,
-            // Digestion-owned (F09).
-            "gut/log" to WloTabs.DIGESTION,
+    /** The IA.md §3 registry: source · deep link · target. */
+    public val REGISTRY: List<DeepLinkEntry> =
+        listOf(
+            // --- tabs (IA §1) ---
+            entry("wlo://hub", WloTabs.HUB),
+            entry("wlo://plan", WloTabs.PLAN),
+            entry("wlo://insights", WloTabs.INSIGHTS),
+            entry("wlo://archive", WloTabs.ARCHIVE),
+            entry("wlo://digestion", WloTabs.DIGESTION),
+            // --- real screens (M3) ---
+            entry("wlo://weight", "f06/weight"),
+            entry("wlo://weight/log", "f06/log"),
+            entry("wlo://log/capture", "f02/log"),
+            entry("wlo://log/search", "f02/log"),
+            entry("wlo://log/quick-kcal", "f02/quick-kcal"),
+            entry("wlo://diary", "f02/diary?entry={entry}"),
+            entry("wlo://log/correct?entry={entry}", "f02/diary?entry={entry}"),
+            // --- documented stubs (land in a later milestone, still navigating) ---
+            stub("wlo://energy", "stub/energy", "Energy"),
+            stub("wlo://checkin", "stub/checkin", "Check-in"),
+            stub("wlo://studio?proposal={proposal}", "stub/studio", "Plan Studio"),
+            stub("wlo://vault", "stub/vault", "Data Vault"),
+            stub("wlo://algorithms", "stub/algorithms", "Algorithms"),
+            stub("wlo://ai/receipts", "stub/ai-receipts", "AI receipts"),
+            stub("wlo://plan/tomorrow", "stub/plan-tomorrow", "Plan tomorrow"),
+            stub("wlo://log/planned?slot={slot}", "stub/log-planned", "Planned meals"),
+            stub("wlo://gut/log", "stub/gut", "Digestion log"),
+            stub("wlo://exercise/start", "stub/exercise", "Workout"),
+            stub("wlo://insights/report", "stub/insights-report", "Report card"),
+            stub("wlo://insights/streaks", "stub/insights-streaks", "Streaks"),
+            stub("wlo://archive/compare", "stub/archive-compare", "Compare"),
+            stub("wlo://archive/capture", "stub/archive-capture", "Capture"),
         )
 
-    /** `wlo://` patterns that should open the given tab (tab root first). */
+    /** `wlo://` nav patterns grouped by the route that hosts them. */
     public val patternsByRoute: Map<String, List<String>> =
-        buildMap {
-            for (route in TAB_ROUTES) {
-                put(
-                    route,
-                    listOf(patternForRoute(route)) +
-                        ALIASES.filterValues { it == route }.keys.map { target -> "$SCHEME://$target" },
-                )
-            }
-        }
+        REGISTRY.groupBy(DeepLinkEntry::route, DeepLinkEntry::uriPattern)
 
-    /** All registered `wlo://` URI patterns (tabs + registry aliases). */
+    /** All registered `wlo://` URI patterns. */
     public val allPatterns: List<String> =
-        patternsByRoute.values.flatten()
+        REGISTRY.map(DeepLinkEntry::uriPattern)
 
     /**
-     * Resolve a `wlo://` URI to a tab route; null when the URI is not a WLO
-     * link or names no known target. Query strings and trailing slashes are
-     * ignored (`wlo://gut/log?context=meal:123` -> `digestion`).
+     * Resolve a concrete `wlo://` URI to its nav route; null when the URI is
+     * not a WLO link or names no known target. Query strings and trailing
+     * slashes are ignored (`wlo://gut/log?context=meal:123` → `stub/gut`).
      */
     public fun routeFor(uri: String): String? {
         val prefix = "$SCHEME://"
         if (!uri.startsWith(prefix)) return null
-        val target = uri.removePrefix(prefix).substringBefore('?').trimEnd('/')
-        return when {
-            target in TAB_ROUTES -> target
-            else -> ALIASES[target]
-        }
+        val path = uri.removePrefix(prefix).substringBefore('?').trimEnd('/')
+        return REGISTRY.firstOrNull { registryPath(it.uriPattern) == path }?.route
     }
 
-    /** The canonical `wlo://` pattern for a tab route. */
-    public fun patternForRoute(route: String): String = "$SCHEME://$route"
+    /** The canonical `wlo://` pattern for a nav route (first registration wins). */
+    public fun patternForRoute(route: String): String? = patternsByRoute[route]?.firstOrNull()
+
+    private fun registryPath(uriPattern: String): String = uriPattern.removePrefix("$SCHEME://").substringBefore('?')
+
+    private fun entry(
+        uriPattern: String,
+        route: String,
+    ): DeepLinkEntry = DeepLinkEntry(uriPattern, route, owner = "", stub = false)
+
+    private fun stub(
+        uriPattern: String,
+        route: String,
+        owner: String,
+    ): DeepLinkEntry = DeepLinkEntry(uriPattern, route, owner = owner, stub = true)
 }
+
+/** One registry row: the URI pattern, the nav route it opens, and its status. */
+public data class DeepLinkEntry(
+    /** Pattern with `{arg}` placeholders, e.g. `wlo://log/correct?entry={entry}`. */
+    public val uriPattern: String,
+    /** The nav route (same placeholder names), e.g. `f02/diary?entry={entry}`. */
+    public val route: String,
+    /** The stub's user-facing title (empty for real screens). */
+    public val owner: String,
+    /** True = documented stub screen: it navigates, the surface lands later. */
+    public val stub: Boolean,
+)

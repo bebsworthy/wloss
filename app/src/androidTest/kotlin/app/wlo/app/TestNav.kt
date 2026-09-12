@@ -1,0 +1,121 @@
+package app.wlo.app
+
+import android.content.Intent
+import android.net.Uri
+import android.os.SystemClock
+import androidx.compose.ui.test.junit4.AndroidComposeTestRule
+import androidx.compose.ui.test.junit4.ComposeTestRule
+import androidx.compose.ui.test.onAllNodesWithTag
+import androidx.compose.ui.test.onAllNodesWithText
+import androidx.test.core.app.ActivityScenario
+import androidx.test.ext.junit.rules.ActivityScenarioRule
+import org.junit.Assert.assertEquals
+
+/** Polls + URI helpers shared by the M3 instrumented tests. */
+public object TestNav {
+    /** Concrete URI for a registry pattern ({arg} placeholders become dummies). */
+    public fun concreteUri(uriPattern: String): String =
+        uriPattern
+            .replace("{entry}", "test-entry")
+            .replace("{slot}", "lunch")
+            .replace("{proposal}", "p1")
+
+    /** Delivers a wlo:// link to the running activity (singleTask re-delivery). */
+    public fun deliver(
+        scenario: ActivityScenario<MainActivity>,
+        uri: String,
+    ) {
+        scenario.onActivity { activity ->
+            activity.deliverNewIntentForVerification(
+                Intent(activity, MainActivity::class.java).setData(Uri.parse(uri)),
+            )
+        }
+    }
+
+    /** Polls the activity's destination hook until the expected nav route shows. */
+    public fun awaitRoute(
+        scenario: ActivityScenario<MainActivity>,
+        expected: String,
+    ) {
+        val deadline = SystemClock.elapsedRealtime() + TIMEOUT_MS
+        var actual: String? = null
+        while (SystemClock.elapsedRealtime() < deadline) {
+            scenario.onActivity { activity -> actual = activity.currentDestinationForVerification }
+            if (actual == expected) return
+            SystemClock.sleep(POLL_MS)
+        }
+        assertEquals(expected, actual)
+    }
+
+    /** Polls WHAT the hub route renders ("onboarding" while fresh, "hub" after). */
+    public fun awaitSurface(
+        scenario: ActivityScenario<MainActivity>,
+        expected: String,
+    ) {
+        val deadline = SystemClock.elapsedRealtime() + TIMEOUT_MS
+        var actual: String? = null
+        while (SystemClock.elapsedRealtime() < deadline) {
+            scenario.onActivity { activity -> actual = activity.currentSurfaceForVerification }
+            if (actual == expected) return
+            SystemClock.sleep(POLL_MS)
+        }
+        assertEquals(expected, actual)
+    }
+
+    /** Polls until a compose node with [tag] exists (async flows settle live). */
+    public fun awaitTag(
+        rule: ComposeTestRule,
+        tag: String,
+    ) {
+        val deadline = SystemClock.elapsedRealtime() + TIMEOUT_MS
+        while (SystemClock.elapsedRealtime() < deadline) {
+            if (rule.onAllNodesWithTag(tag, useUnmergedTree = true).fetchSemanticsNodes().isNotEmpty()) return
+            Thread.sleep(POLL_MS)
+        }
+        val route = currentRoute(rule)
+        val texts =
+            OnboardingRobot
+                .device()
+                .findObjects(
+                    androidx.test.uiautomator.By
+                        .textContains(" "),
+                ).mapNotNull { it.text }
+                .filter { it.length in 3..40 }
+                .distinct()
+                .take(12)
+        error("node \"$tag\" never appeared; route=$route; screen texts: $texts")
+    }
+
+    /** Polls until a text exists; on timeout dumps the visible texts. */
+    public fun awaitText(
+        rule: ComposeTestRule,
+        text: String,
+    ) {
+        val deadline = SystemClock.elapsedRealtime() + TIMEOUT_MS
+        while (SystemClock.elapsedRealtime() < deadline) {
+            if (rule.onAllNodesWithText(text, substring = true).fetchSemanticsNodes().isNotEmpty()) return
+            Thread.sleep(POLL_MS)
+        }
+        val texts =
+            OnboardingRobot
+                .device()
+                .findObjects(
+                    androidx.test.uiautomator.By
+                        .textContains(" "),
+                ).mapNotNull { it.text }
+                .filter { it.length in 3..60 }
+                .distinct()
+                .take(25)
+        error("text \"$text\" never appeared; screen texts: $texts")
+    }
+
+    private fun currentRoute(rule: ComposeTestRule): String? {
+        val android = rule as? AndroidComposeTestRule<ActivityScenarioRule<MainActivity>, MainActivity>
+        var route: String? = null
+        android?.activityRule?.scenario?.onActivity { activity -> route = activity.currentDestinationForVerification }
+        return route
+    }
+
+    private const val TIMEOUT_MS: Long = 20_000
+    private const val POLL_MS: Long = 150
+}

@@ -57,7 +57,8 @@ public interface ProfileRepository {
     ): WloResult<Unit>
 }
 
-/** Append input (R-B8: events are append-only; unit derives from [kind]). */
+/** Append input (R-B8: events are append-only). Unit derives from [kind]
+ * unless [unitOverride] names a per-metric unit (F06 §3 custom metrics). */
 @Serializable
 public data class NewMeasurement(
     public val profileId: String,
@@ -67,6 +68,8 @@ public data class NewMeasurement(
     public val source: String,
     public val capturedAt: Instant,
     public val note: String? = null,
+    /** Per-metric unit (custom metrics, F06 §3 EAV); null = kind's default. */
+    public val unitOverride: String? = null,
 )
 
 public interface MeasurementRepository {

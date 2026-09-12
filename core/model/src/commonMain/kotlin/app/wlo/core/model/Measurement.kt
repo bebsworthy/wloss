@@ -30,6 +30,23 @@ public enum class MeasurementKind(
     /** Daily burn/expenditure context (F05/F13). Unit kcal. */
     @SerialName("burn")
     BURN("burn", "kcal"),
+
+    /**
+     * A body-fat % event (F06 §3 method registry: one series per method — the
+     * method rides the EAV sidecar as `method=<wire>`). Unit %.
+     */
+    @SerialName("body-fat")
+    BODY_FAT("body-fat", "%"),
+
+    /**
+     * An arbitrary user-defined metric (F06 §3 EAV store: "weight and the
+     * built-ins are just pre-registered types"). The metric name rides the
+     * EAV sidecar as `metric=<name>`; the unit is per-metric and is ALWAYS
+     * supplied via the append call's unit override — [unit] is the empty
+     * default, meaning "no unit declared".
+     */
+    @SerialName("custom")
+    CUSTOM("custom", ""),
     ;
 
     public companion object {

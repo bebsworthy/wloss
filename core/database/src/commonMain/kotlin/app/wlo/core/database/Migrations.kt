@@ -122,10 +122,91 @@ public object Migrations {
             }
         }
 
-    public val ALL: Array<Migration> = arrayOf(MIGRATION_1_2, MIGRATION_2_3)
+    /**
+     * v3 → v4: F02 manual logging lands on the spine (WLO-0025).
+     *
+     *  1. R-B7 Fresh Start ledger columns on the event stores — hide-not-delete
+     *     is demanded by F06 §4 ("hide-not-delete everything before a chosen
+     *     date; reversible") for measurements and by the diary's archive rule
+     *     for entries; the columns land NOW so no later migration is needed.
+     *     NULL = visible; nothing existing changes meaning.
+     *  2. `food_items` is realized per F02 §3/§5: aliases, serving presets
+     *     (JSON), source wire, label-verified flags, updated-at. NOT NULL new
+     *     columns carry DEFAULTs matching the exported `4.json` createSql.
+     *  3. `diary_entries` + append-only `diary_entry_revisions` (correction
+     *     audit, R-B8) are created.
+     *  4. The FTS5 `food_search` index (ADR-003 `@Fts5`; contentful standalone
+     *     pattern — `food_items`' TEXT PK cannot join an external-content
+     *     index) is created and BACKFILLED from existing catalog rows, so
+     *     search works immediately after the migration.
+     */
+    public val MIGRATION_3_4: Migration =
+        object : Migration(3, 4) {
+            override suspend fun migrate(connection: SQLiteConnection) {
+                // 1. Fresh Start ledger columns (R-B7).
+                connection.alterAddColumn("ALTER TABLE measurement_events ADD COLUMN hiddenAtEpochMs INTEGER")
+                connection.alterAddColumn("ALTER TABLE measurement_events ADD COLUMN hiddenReason TEXT")
+
+                // 2. food_items realization (DDL mirrors schemas/4.json).
+                connection.alterAddColumn("ALTER TABLE food_items ADD COLUMN aliases TEXT")
+                connection.alterAddColumn("ALTER TABLE food_items ADD COLUMN servingPresetsJson TEXT")
+                connection.alterAddColumn("ALTER TABLE food_items ADD COLUMN source TEXT NOT NULL DEFAULT 'custom'")
+                connection.alterAddColumn("ALTER TABLE food_items ADD COLUMN macrosVerified INTEGER NOT NULL DEFAULT false")
+                connection.alterAddColumn("ALTER TABLE food_items ADD COLUMN verifiedAtEpochMs INTEGER")
+                connection.alterAddColumn("ALTER TABLE food_items ADD COLUMN updatedAtEpochMs INTEGER")
+
+                // 3. Diary + correction audit.
+                connection.exec(
+                    "CREATE TABLE IF NOT EXISTS `diary_entries` (" +
+                        "`id` TEXT NOT NULL, `profileId` TEXT NOT NULL, `dayEpochDay` INTEGER NOT NULL, " +
+                        "`mealSlot` TEXT NOT NULL, `foodItemId` TEXT, `textHint` TEXT, `quantity` REAL NOT NULL, " +
+                        "`unit` TEXT NOT NULL, `computedKcal` REAL NOT NULL, `computedProteinG` REAL, " +
+                        "`computedCarbG` REAL, `computedFatG` REAL, `computedFiberG` REAL, " +
+                        "`enteredVia` TEXT NOT NULL, `provenanceScalar` TEXT NOT NULL, `revision` INTEGER NOT NULL, " +
+                        "`createdAtEpochMs` INTEGER NOT NULL, `editedAtEpochMs` INTEGER, `archivedAtEpochMs` INTEGER, " +
+                        "`hiddenAtEpochMs` INTEGER, `hiddenReason` TEXT, PRIMARY KEY(`id`))",
+                )
+                connection.exec(
+                    "CREATE INDEX IF NOT EXISTS `index_diary_entries_profileId_dayEpochDay` " +
+                        "ON `diary_entries` (`profileId`, `dayEpochDay`)",
+                )
+                connection.exec(
+                    "CREATE INDEX IF NOT EXISTS `index_diary_entries_foodItemId` ON `diary_entries` (`foodItemId`)",
+                )
+                connection.exec(
+                    "CREATE TABLE IF NOT EXISTS `diary_entry_revisions` (" +
+                        "`id` TEXT NOT NULL, `entryId` TEXT NOT NULL, `revision` INTEGER NOT NULL, " +
+                        "`mealSlot` TEXT NOT NULL, `foodItemId` TEXT, `textHint` TEXT, `quantity` REAL NOT NULL, " +
+                        "`unit` TEXT NOT NULL, `computedKcal` REAL NOT NULL, `computedProteinG` REAL, " +
+                        "`computedCarbG` REAL, `computedFatG` REAL, `computedFiberG` REAL, " +
+                        "`enteredVia` TEXT NOT NULL, `editedAtEpochMs` INTEGER NOT NULL, PRIMARY KEY(`id`))",
+                )
+                connection.exec(
+                    "CREATE INDEX IF NOT EXISTS `index_diary_entry_revisions_entryId` " +
+                        "ON `diary_entry_revisions` (`entryId`)",
+                )
+
+                // 4. FTS5 search index + backfill (exact createSql from 4.json).
+                connection.exec(
+                    "CREATE VIRTUAL TABLE IF NOT EXISTS `food_search` " +
+                        "USING FTS5(`name`, `brand`, `aliases`, `foodId`, tokenize=`unicode61`)",
+                )
+                connection.exec(
+                    "INSERT INTO `food_search`(`name`, `brand`, `aliases`, `foodId`) " +
+                        "SELECT `name`, `brand`, `aliases`, `id` FROM `food_items`",
+                )
+            }
+        }
+
+    public val ALL: Array<Migration> = arrayOf(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4)
 }
 
 /** Small extension mirroring the statement-prepare/step pattern used above. */
 private fun SQLiteConnection.exec(sql: String) {
     prepare(sql).use { statement: SQLiteStatement -> statement.step() }
+}
+
+/** ALTER TABLE ADD COLUMN helper (DOLL statements share the prepare/step shape). */
+private fun SQLiteConnection.alterAddColumn(sql: String) {
+    exec(sql)
 }

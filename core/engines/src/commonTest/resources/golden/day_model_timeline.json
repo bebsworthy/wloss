@@ -1,0 +1,164 @@
+[
+  {
+    "name": "early morning before the weigh-in — weigh card leads",
+    "minutesOfDay": 390,
+    "weighInLogged": false,
+    "trendAvailable": true,
+    "expectedPhase": "morning",
+    "expectedHero": "weigh_in",
+    "expectedCards": ["weigh_in", "trend", "calorie_ring"],
+    "expectedQuickActions": ["weigh_in", "photo_log", "poop_log"]
+  },
+  {
+    "name": "morning after the weigh-in — ring leads, trend chip shows",
+    "minutesOfDay": 420,
+    "weighInLogged": true,
+    "trendAvailable": true,
+    "expectedPhase": "morning",
+    "expectedHero": "calorie_ring",
+    "expectedCards": ["trend", "calorie_ring"],
+    "expectedQuickActions": ["photo_log", "poop_log", "weigh_in"]
+  },
+  {
+    "name": "morning with no trend history — no trend chip (gating)",
+    "minutesOfDay": 430,
+    "weighInLogged": true,
+    "trendAvailable": false,
+    "expectedPhase": "morning",
+    "expectedHero": "calorie_ring",
+    "expectedCards": ["calorie_ring"],
+    "expectedQuickActions": ["photo_log", "poop_log", "weigh_in"]
+  },
+  {
+    "name": "late morning boundary 10:29 is still morning",
+    "minutesOfDay": 629,
+    "weighInLogged": false,
+    "expectedPhase": "morning",
+    "expectedHero": "weigh_in",
+    "expectedCards": ["weigh_in", "calorie_ring"],
+    "expectedQuickActions": ["weigh_in", "photo_log", "poop_log"]
+  },
+  {
+    "name": "10:30 sharp flips to midday",
+    "minutesOfDay": 630,
+    "weighInLogged": false,
+    "expectedPhase": "midday",
+    "expectedHero": "calorie_ring",
+    "expectedCards": ["calorie_ring"],
+    "expectedQuickActions": ["photo_log", "poop_log", "weigh_in"]
+  },
+  {
+    "name": "midday with an open planned meal — meals card leads",
+    "minutesOfDay": 750,
+    "weighInLogged": true,
+    "trendAvailable": true,
+    "hasOpenPlannedMeal": true,
+    "expectedPhase": "midday",
+    "expectedHero": "calorie_ring",
+    "expectedCards": ["meals_today", "calorie_ring", "trend"],
+    "expectedQuickActions": ["photo_log", "poop_log", "weigh_in"]
+  },
+  {
+    "name": "midday with workout due — workout card and rail boost",
+    "minutesOfDay": 1020,
+    "weighInLogged": true,
+    "workoutDueToday": true,
+    "workoutDone": false,
+    "expectedPhase": "midday",
+    "expectedHero": "calorie_ring",
+    "expectedCards": ["calorie_ring", "workout"],
+    "expectedQuickActions": ["photo_log", "workout_start", "poop_log", "weigh_in"]
+  },
+  {
+    "name": "workout already done — no workout card",
+    "minutesOfDay": 1020,
+    "weighInLogged": true,
+    "workoutDueToday": true,
+    "workoutDone": true,
+    "expectedPhase": "midday",
+    "expectedHero": "calorie_ring",
+    "expectedCards": ["calorie_ring"],
+    "expectedQuickActions": ["photo_log", "poop_log", "weigh_in"]
+  },
+  {
+    "name": "18:59 is still midday",
+    "minutesOfDay": 1139,
+    "weighInLogged": true,
+    "expectedPhase": "midday",
+    "expectedHero": "calorie_ring",
+    "expectedCards": ["calorie_ring"],
+    "expectedQuickActions": ["photo_log", "poop_log", "weigh_in"]
+  },
+  {
+    "name": "19:00 evening — close the day leads",
+    "minutesOfDay": 1140,
+    "weighInLogged": true,
+    "trendAvailable": true,
+    "expectedPhase": "evening",
+    "expectedHero": "calorie_ring",
+    "expectedCards": ["close_day", "calorie_ring", "trend"],
+    "expectedQuickActions": ["photo_log", "poop_log", "weigh_in"]
+  },
+  {
+    "name": "evening planner with pending tomorrow plan gets the surface (R-D14)",
+    "minutesOfDay": 1200,
+    "weighInLogged": true,
+    "isPlanner": true,
+    "planTomorrowPending": true,
+    "expectedPhase": "evening",
+    "expectedHero": "calorie_ring",
+    "expectedCards": ["close_day", "calorie_ring", "plan_tomorrow"],
+    "expectedQuickActions": ["photo_log", "poop_log", "weigh_in"]
+  },
+  {
+    "name": "non-planner never sees plan tomorrow (R-D14)",
+    "minutesOfDay": 1200,
+    "weighInLogged": true,
+    "isPlanner": false,
+    "planTomorrowPending": true,
+    "expectedPhase": "evening",
+    "expectedHero": "calorie_ring",
+    "expectedCards": ["close_day", "calorie_ring"],
+    "expectedQuickActions": ["photo_log", "poop_log", "weigh_in"]
+  },
+  {
+    "name": "muted weigh-in renders muted-by-choice, never a gap",
+    "minutesOfDay": 400,
+    "weighInLogged": false,
+    "weighInReminderMuted": true,
+    "expectedPhase": "morning",
+    "expectedHero": "weigh_in",
+    "expectedCards": ["weigh_in", "calorie_ring"],
+    "expectedQuickActions": ["weigh_in", "photo_log", "poop_log"]
+  },
+  {
+    "name": "check-in day promotes check-in into the hero slot (R-U17)",
+    "minutesOfDay": 600,
+    "weighInLogged": false,
+    "checkInDueToday": true,
+    "expectedPhase": "morning",
+    "expectedHero": "check_in",
+    "expectedCards": ["weigh_in", "calorie_ring"],
+    "expectedQuickActions": ["weigh_in", "photo_log", "poop_log"]
+  },
+  {
+    "name": "22:00 night — minimal recap layout",
+    "minutesOfDay": 1320,
+    "weighInLogged": true,
+    "trendAvailable": true,
+    "hasOpenPlannedMeal": true,
+    "expectedPhase": "night",
+    "expectedHero": "calorie_ring",
+    "expectedCards": ["recap", "calorie_ring"],
+    "expectedQuickActions": ["photo_log", "poop_log"]
+  },
+  {
+    "name": "23:59 is still night",
+    "minutesOfDay": 1439,
+    "weighInLogged": true,
+    "expectedPhase": "night",
+    "expectedHero": "calorie_ring",
+    "expectedCards": ["recap", "calorie_ring"],
+    "expectedQuickActions": ["photo_log", "poop_log"]
+  }
+]

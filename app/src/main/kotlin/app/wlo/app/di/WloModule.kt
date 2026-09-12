@@ -2,19 +2,24 @@ package app.wlo.app.di
 
 import android.content.Context
 import androidx.room3.RoomDatabase
-import app.wlo.app.ui.hub.HubViewModel
 import app.wlo.app.ui.shell.ShellViewModel
 import app.wlo.core.common.ClockPort
 import app.wlo.core.data.DayProjectionRepository
 import app.wlo.core.data.DayProjector
+import app.wlo.core.data.DiaryRepository
+import app.wlo.core.data.FoodRepository
 import app.wlo.core.data.MeasurementRepository
 import app.wlo.core.data.ProfileRepository
 import app.wlo.core.data.RoomDayProjectionRepository
+import app.wlo.core.data.RoomDiaryRepository
+import app.wlo.core.data.RoomFoodRepository
 import app.wlo.core.data.RoomMeasurementRepository
 import app.wlo.core.data.RoomProfileRepository
 import app.wlo.core.data.RoomTargetsRepository
+import app.wlo.core.data.RoomWeighInRepository
 import app.wlo.core.data.TargetsRepository
 import app.wlo.core.data.TargetsWriters
+import app.wlo.core.data.WeighInRepository
 import app.wlo.core.database.WloDatabase
 import app.wlo.core.database.androidDatabaseBuilder
 import app.wlo.core.datastore.JsonDocumentStore
@@ -22,6 +27,9 @@ import app.wlo.core.datastore.SettingsStoreFactory
 import app.wlo.core.documents.OnboardingTemplates
 import app.wlo.feature.f01.onboarding.di.f01OnboardingModule
 import app.wlo.feature.f01.onboarding.domain.TemplateLibrary
+import app.wlo.feature.f02.food.di.f02FoodModule
+import app.wlo.feature.f06.weight.di.f06WeightModule
+import app.wlo.feature.f10.hub.di.f10HubModule
 import okio.Path
 import okio.Path.Companion.toPath
 import org.koin.core.module.Module
@@ -37,16 +45,15 @@ private fun settingsPath(context: Context): Path = File(context.filesDir, SETTIN
 private fun documentsPath(context: Context): Path = File(context.filesDir, DOCUMENTS_FILE).absolutePath.toPath()
 
 /**
- * State holders + ports: the MVI-lite shell/hub, the F01 wizard, and the
- * frozen demo clock. Pure definitions — `verify()` exercises this graph in
- * unit tests.
+ * State holders + ports: the MVI-lite shell, the F01 wizard, and the frozen
+ * demo clock; the feature graphs (F01/F02/F06/F10) are included. Pure
+ * definitions — `verify()` exercises this graph in unit tests.
  */
 public val appModule: Module =
     module {
         single<ClockPort> { FixedClock(FixedClock.DEMO_NOW) }
-        factory { HubViewModel(clock = get(), profiles = get(), dayProjection = get(), targets = get()) }
         factory { ShellViewModel(profiles = get(), targets = get(), documents = get()) }
-        includes(f01OnboardingModule)
+        includes(f01OnboardingModule, f02FoodModule, f06WeightModule, f10HubModule)
     }
 
 /**
@@ -67,10 +74,19 @@ public val platformModule: Module =
             get<RoomDatabase.Builder<WloDatabase>>(qualifier = qualifier("wlo-db-builder")).build()
         }
 
-        // Data spine (M2): repositories + projections + the two writers.
+        // Data spine (M2/M3): repositories + projections + the two writers.
         single<ProfileRepository> { RoomProfileRepository(db = get<WloDatabase>(), settings = get()) }
         single<DayProjector> { DayProjector(db = get<WloDatabase>(), clock = get<ClockPort>()) }
         single<MeasurementRepository> { RoomMeasurementRepository(db = get<WloDatabase>(), projector = get()) }
+        single<FoodRepository> { RoomFoodRepository(db = get<WloDatabase>()) }
+        single<DiaryRepository> {
+            RoomDiaryRepository(
+                db = get<WloDatabase>(),
+                projector = get(),
+                foodRepository = get<FoodRepository>(),
+            )
+        }
+        single<WeighInRepository> { RoomWeighInRepository(measurements = get<MeasurementRepository>()) }
         single<TargetsRepository> { RoomTargetsRepository(db = get<WloDatabase>()) }
         single<DayProjectionRepository> {
             RoomDayProjectionRepository(

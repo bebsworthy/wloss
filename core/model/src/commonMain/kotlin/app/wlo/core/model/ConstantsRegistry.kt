@@ -10,10 +10,14 @@ package app.wlo.core.model
  * R-A6, F07 §3). Values the specs name explicitly are marked with the ruling;
  * values the specs leave open carry a `DEFAULTED:` note in their KDoc — chosen
  * spec-sane, published here, and cheap to amend in one place.
+ *
+ * v3 (M3, WLO-0025): adds the F06 smoothing/outlier/body-fat formula versions
+ * (R-A2, F06 §3), the F02 diary portion math, and the F10 Day Model fixed
+ * rules (F10 §3).
  */
 public object ConstantsRegistry {
     /** Registry schema/content version (R-A1). */
-    public const val VERSION: Int = 2
+    public const val VERSION: Int = 3
 
     // --- Energy equivalence (R-A1) ---
 
@@ -98,6 +102,67 @@ public object ConstantsRegistry {
 
     /** Forecast integration step (days). */
     public const val FORECAST_STEP_DAYS: Int = 7
+
+    // --- F06 smoothing + outlier guard (R-A2, F06 §3) ---
+
+    /** Trailing-EWMA trend smoother (R-A2 default α; the tuner overrides it). */
+    public const val EWMA_FORMULA_VERSION: String = "trend/ewma-v1"
+
+    /** Zero-phase (forward-backward) EWMA — F06 §3 option 2; recent values revise. */
+    public const val EWMA_ZERO_PHASE_FORMULA_VERSION: String = "trend/ewma-zero-phase-v1"
+
+    /** Plain 7-day moving average — F06 §3 option 3. */
+    public const val MA7_FORMULA_VERSION: String = "trend/ma7-v1"
+
+    /** Window length of [MOVING_AVERAGE_7D] (days). */
+    public const val MA7_WINDOW_DAYS: Int = 7
+
+    /**
+     * Weigh-in outlier guard width (F06 §4: "an entry ±3σ off recent
+     * residual triggers a one-line confirm"). Flagged → held-adjacent
+     * confirm, never dropped (R-B8: events stay verbatim).
+     */
+    public const val OUTLIER_SIGMA_WEIGHT: Double = 3.0
+
+    /** Minimum trailing points before the σ estimate is trusted. */
+    public const val OUTLIER_MIN_RECENT_POINTS: Int = 3
+
+    /** Outlier-guard formula version (stamped into the confirm + attr payload). */
+    public const val OUTLIER_FORMULA_VERSION: String = "weighin/outlier-3sigma-v1"
+
+    // --- F06 body-fat method registry (F06 §3) ---
+
+    /** US Navy tape method (Hodgdon & Beckett 1984 circumference equations). */
+    public const val BODY_FAT_NAVY_FORMULA_VERSION: String = "bodyfat/navy-hodgdon-beckett-v1"
+
+    /** RFM (Woolcott & Bergman 2012, PLoS One) — height/waist only. */
+    public const val BODY_FAT_RFM_FORMULA_VERSION: String = "bodyfat/rfm-woolcott-bergman-v1"
+
+    // --- F02 diary portion math (R-A4 v1 nutrient scope) ---
+
+    /** Entry kcal/macros = per-100g × quantity/100 (portion-scale). */
+    public const val DIARY_PORTION_FORMULA_VERSION: String = "diary/portion-scale-v1"
+
+    /** Sanity rail (F02 §3/§8): per-100g energy density can never exceed pure fat. */
+    public const val MAX_KCAL_PER_100G: Double = 9.0 * 100.0
+
+    // --- F10 Adaptive Day Model, fixed rules v1 (F10 §3) ---
+
+    /** Day Model rule-pack version (stamped into cards' provenance + tests). */
+    public const val DAY_MODEL_VERSION: String = "daymodel/rules-v1"
+
+    /** Morning ends (user-set later; v1 default) — F10 §3 "until user-set, default 10:30". */
+    public const val DAY_MODEL_MORNING_END_MINUTES: Int = 10 * 60 + 30
+
+    /** Evening starts — F10 §3 "from ~19:00". */
+    public const val DAY_MODEL_EVENING_START_MINUTES: Int = 19 * 60
+
+    /**
+     * Night starts (F10 §3 "Night: minimal layout, recap only" names no hour).
+     * DEFAULTED (not fixed by spec): 22:00 — after the quiet-hours ramp begins
+     * (21:30 per R-U1) the Hub assumes wind-down.
+     */
+    public const val DAY_MODEL_NIGHT_START_MINUTES: Int = 22 * 60
 
     // --- Formula versions (stamped into Provenance.Derived + the decision ledger) ---
 

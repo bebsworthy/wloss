@@ -8,7 +8,6 @@ import app.wlo.core.common.WloResult
 import app.wlo.core.common.getOrNull
 import app.wlo.core.database.ConsentLedgerEntity
 import app.wlo.core.database.DayRecordEntity
-import app.wlo.core.database.FoodItemEntity
 import app.wlo.core.database.MeasurementEventAttrEntity
 import app.wlo.core.database.MeasurementEventEntity
 import app.wlo.core.database.ProfileEntity
@@ -168,7 +167,7 @@ public class RoomMeasurementRepository public constructor(
                     dayEpochDay = event.dayEpochDay,
                     kind = event.kind.wireName,
                     valueReal = event.valueReal,
-                    unit = event.kind.unit,
+                    unit = event.unitOverride ?: event.kind.unit,
                     source = event.source,
                     capturedAtEpochMs = event.capturedAt.toEpochMilliseconds(),
                     note = event.note,
@@ -237,13 +236,23 @@ public class DayProjector public constructor(
     ) {
         val events = db.measurementEvents().range(profileId, fromDay, toDay)
         val byDay = events.groupBy { it.dayEpochDay }
+        // Diary entries are the R-B1 intake events (R-B8 rows); the kcal-only
+        // quick-add path and F05-style burns still ride measurement_events.
+        val diaryByDay =
+            db
+                .diaryEntries()
+                .range(profileId, fromDay, toDay)
+                .groupBy { it.dayEpochDay }
         val now = clock.now().toEpochMilliseconds()
         db.withWriteTransaction {
-            byDay.forEach { (day, dayEvents) ->
+            (byDay.keys + diaryByDay.keys).sorted().forEach { day ->
+                val dayEvents = byDay[day].orEmpty()
                 val intakeEvents = dayEvents.filter { it.kind == MeasurementKind.INTAKE.wireName }
                 val burnEvents = dayEvents.filter { it.kind == MeasurementKind.BURN.wireName }
                 val trendEvent = dayEvents.lastOrNull { it.kind == MeasurementKind.TREND.wireName }
-                val intake = intakeEvents.sumOf { it.valueReal }
+                val diaryKcal = diaryByDay[day]?.sumOf { it.computedKcal } ?: 0.0
+                val hasIntake = intakeEvents.isNotEmpty() || diaryByDay[day] != null
+                val intake = intakeEvents.sumOf { it.valueReal } + diaryKcal
                 val burn = burnEvents.sumOf { it.valueReal }
 
                 db.dayRecords().upsert(
@@ -251,13 +260,20 @@ public class DayProjector public constructor(
                         profileId = profileId,
                         dayEpochDay = day,
                         trendWeightKg = trendEvent?.valueReal,
-                        intakeKcal = intakeEvents.takeIf { it.isNotEmpty() }?.sumOf { e -> e.valueReal },
+                        intakeKcal = if (hasIntake) intake else null,
                         burnKcal = burnEvents.takeIf { it.isNotEmpty() }?.sumOf { e -> e.valueReal },
                         computedAtEpochMs = now,
                     ),
                 )
-                if (intakeEvents.isNotEmpty()) {
-                    writeProvenance(profileId, day, "intakeKcal", "sum-of-events", intake, dayEvents.size)
+                if (hasIntake) {
+                    writeProvenance(
+                        profileId,
+                        day,
+                        "intakeKcal",
+                        "sum-of-events",
+                        intake,
+                        dayEvents.size + (diaryByDay[day]?.size ?: 0),
+                    )
                 }
                 if (burnEvents.isNotEmpty()) {
                     writeProvenance(profileId, day, "burnKcal", "sum-of-events", burn, dayEvents.size)
@@ -581,24 +597,4 @@ public class RoomConsentLedgerStore public constructor(
         storageGuard("consent.append") { db.consentLedger().append(entry) }
 
     public suspend fun all(): WloResult<List<ConsentLedgerEntity>> = storageGuard("consent.all") { db.consentLedger().all() }
-}
-
-/** Catalog stub door (F13 archive-don't-delete): upsert/archive/search only. */
-public class RoomFoodItemStore public constructor(
-    private val db: WloDatabase,
-) {
-    public suspend fun upsert(item: FoodItemEntity): WloResult<Unit> = storageGuard("food.upsert") { db.foodItems().upsert(item) }
-
-    public suspend fun byId(id: String): WloResult<FoodItemEntity?> = storageGuard("food.byId") { db.foodItems().byId(id) }
-
-    public suspend fun searchActive(query: String): WloResult<List<FoodItemEntity>> =
-        storageGuard("food.search") { db.foodItems().searchActive(query) }
-
-    public suspend fun archive(
-        id: String,
-        at: Instant,
-    ): WloResult<Unit> = storageGuard("food.archive") { db.foodItems().archive(id, at.toEpochMilliseconds()) }
-
-    // Deliberately NO delete — archive-don't-delete (F13 §3); the DAO carries
-    // no delete method either, so a deletion path cannot exist in code.
 }

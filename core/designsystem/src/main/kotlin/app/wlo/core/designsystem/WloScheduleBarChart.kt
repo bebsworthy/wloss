@@ -161,8 +161,14 @@ private fun DrawScope.drawSchedule(
     val n = schedule.size.coerceAtLeast(1)
     val left = 4f
     val right = size.width - 4f
-    val top = 18f
-    val bottom = size.height - 20f
+    // Label lanes are dp-scaled so the chrome never clips: the top lane holds
+    // the bar numerals, the bottom lane the weekday glyphs (both used to be
+    // fixed px lanes and clipped on dense screens).
+    val top = 34.dp.toPx()
+    val axisLane = 22.dp.toPx()
+    val bottom = size.height - axisLane
+    val numeralLane = 22.dp.toPx()
+    val dayLabelGap = 5.dp.toPx()
     val slot = (right - left) / n
     val barWidth = (slot * 0.62f).coerceAtMost(34.dp.toPx())
 
@@ -204,14 +210,14 @@ private fun DrawScope.drawSchedule(
             textMeasurer = textMeasurer,
             text = formatKcal(kcal),
             style = labelStyle,
-            topLeft = Offset(cx - 46f, barTop(kcal) - 34f),
+            topLeft = Offset(cx - 23.dp.toPx(), barTop(kcal) - numeralLane),
         )
-        // Day letter.
+        // Day letter — sits fully inside the bottom lane, never clipped.
         drawText(
             textMeasurer = textMeasurer,
             text = DAYS[index],
             style = axisStyle,
-            topLeft = Offset(cx - 6f, bottom + 8f),
+            topLeft = Offset(cx - 6f, bottom + dayLabelGap),
         )
     }
 }

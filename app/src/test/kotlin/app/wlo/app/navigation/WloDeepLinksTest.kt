@@ -5,7 +5,11 @@ import kotlin.test.assertEquals
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
-/** The `wlo://` registry is a pure function — these pin its contract. */
+/**
+ * The `wlo://` registry is a pure function — these pin its contract: every
+ * IA.md §3 URI resolves to a real screen's route or a documented stub, tab
+ * roots are owned by themselves, and queries never change the target.
+ */
 public class WloDeepLinksTest {
     @Test
     public fun tabRootsResolveToTheirRoute() {
@@ -17,20 +21,36 @@ public class WloDeepLinksTest {
     }
 
     @Test
-    public fun registryAliasesMapToOwningTab() {
-        assertEquals("hub", WloDeepLinks.routeFor("wlo://weight/log"))
-        assertEquals("hub", WloDeepLinks.routeFor("wlo://checkin"))
-        assertEquals("hub", WloDeepLinks.routeFor("wlo://log/capture"))
-        assertEquals("plan", WloDeepLinks.routeFor("wlo://plan/tomorrow"))
-        assertEquals("insights", WloDeepLinks.routeFor("wlo://insights/report"))
-        assertEquals("archive", WloDeepLinks.routeFor("wlo://archive/capture"))
-        assertEquals("digestion", WloDeepLinks.routeFor("wlo://gut/log"))
+    public fun realScreensResolveToTheirFeatureRoutes() {
+        assertEquals("f06/weight", WloDeepLinks.routeFor("wlo://weight"))
+        assertEquals("f06/log", WloDeepLinks.routeFor("wlo://weight/log"))
+        assertEquals("f02/log", WloDeepLinks.routeFor("wlo://log/capture"))
+        assertEquals("f02/log", WloDeepLinks.routeFor("wlo://log/search"))
+        assertEquals("f02/quick-kcal", WloDeepLinks.routeFor("wlo://log/quick-kcal"))
+        assertEquals("f02/diary?entry={entry}", WloDeepLinks.routeFor("wlo://diary"))
+    }
+
+    @Test
+    public fun futureSurfacesResolveToDocumentedStubs() {
+        val stubRoutes =
+            WloDeepLinks.REGISTRY.filter(DeepLinkEntry::stub).map(DeepLinkEntry::route)
+        assertTrue(stubRoutes.isNotEmpty(), "the registry must carry stubs for later-milestone surfaces")
+        for (route in stubRoutes) {
+            assertTrue(route.startsWith("stub/"), "stub routes are namespaced: $route")
+        }
+        assertEquals("stub/energy", WloDeepLinks.routeFor("wlo://energy"))
+        assertEquals("stub/checkin", WloDeepLinks.routeFor("wlo://checkin"))
+        assertEquals("stub/vault", WloDeepLinks.routeFor("wlo://vault"))
+        assertEquals("stub/gut", WloDeepLinks.routeFor("wlo://gut/log"))
+        assertEquals("stub/algorithms", WloDeepLinks.routeFor("wlo://algorithms"))
+        assertEquals("stub/ai-receipts", WloDeepLinks.routeFor("wlo://ai/receipts"))
     }
 
     @Test
     public fun queryStringsAndTrailingSlashesAreIgnored() {
-        assertEquals("digestion", WloDeepLinks.routeFor("wlo://gut/log?context=meal:123"))
+        assertEquals("stub/gut", WloDeepLinks.routeFor("wlo://gut/log?context=meal:123"))
         assertEquals("hub", WloDeepLinks.routeFor("wlo://hub/"))
+        assertEquals("f02/diary?entry={entry}", WloDeepLinks.routeFor("wlo://log/correct?entry=abc123"))
     }
 
     @Test
@@ -42,11 +62,45 @@ public class WloDeepLinksTest {
     }
 
     @Test
-    public fun everyTabHasACanonicalPatternAndItRoundTrips() {
-        for (route in WloDeepLinks.TAB_ROUTES) {
-            val patterns = WloDeepLinks.patternsByRoute[route].orEmpty()
-            assertTrue(patterns.contains("wlo://$route"), "tab $route must own wlo://$route")
-            assertEquals(route, WloDeepLinks.routeFor(patterns.first()))
+    public fun everyRegistryRowRoundTrips() {
+        for (registryRow in WloDeepLinks.REGISTRY) {
+            val uri = registryRow.uriPattern.substringBefore('?')
+            assertEquals(registryRow.route, WloDeepLinks.routeFor("$uri?x=1"), "row ${registryRow.uriPattern}")
+            assertTrue(
+                WloDeepLinks.patternsByRoute[registryRow.route].orEmpty().contains(registryRow.uriPattern),
+                "patternsByRoute carries ${registryRow.uriPattern}",
+            )
+        }
+    }
+
+    @Test
+    public fun iaRegistryIsFullyCovered() {
+        // IA.md §3's literal list (arg'd URIs pattern-matched by path).
+        val iaUris =
+            listOf(
+                "weight",
+                "weight/log",
+                "energy",
+                "log/capture",
+                "log/quick-kcal",
+                "log/planned",
+                "gut/log",
+                "exercise/start",
+                "plan/tomorrow",
+                "checkin",
+                "studio",
+                "insights/report",
+                "insights/streaks",
+                "vault",
+                "log/correct",
+                "archive/compare",
+                "archive/capture",
+                "algorithms",
+                "ai/receipts",
+            )
+        for (target in iaUris) {
+            val resolved = WloDeepLinks.routeFor("wlo://$target")
+            assertTrue(resolved != null, "IA.md §3 target must resolve: wlo://$target")
         }
     }
 }

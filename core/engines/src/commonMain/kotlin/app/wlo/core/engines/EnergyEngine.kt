@@ -26,21 +26,14 @@ public object EnergyEngine {
      * [ConstantsRegistry.EWMA_ALPHA_DEFAULT]): `s_t = α·x_t + (1−α)·s_{t−1}`,
      * seeded `s_0 = x_0`. Zero-phase caveat: the first values lean on the seed
      * and recent values revise — published on the Algorithms page (F06 §4).
+     *
+     * Delegation only — the math lives in [SmoothingEngine.ewma] (one
+     * implementation; smoothing has exactly one owner, F06).
      */
     public fun ewma(
         values: List<Double>,
         alpha: Double = ConstantsRegistry.EWMA_ALPHA_DEFAULT,
-    ): List<Double> {
-        require(alpha in 0.0..1.0) { "alpha must be within [0, 1]" }
-        if (values.isEmpty()) return emptyList()
-        val out = ArrayList<Double>(values.size)
-        var s = values.first()
-        values.forEach { x ->
-            s = alpha * x + (1.0 - alpha) * s
-            out += s
-        }
-        return out
-    }
+    ): List<Double> = SmoothingEngine.ewma(values, alpha)
 
     /**
      * Weekly pace (kg/week) between the first and last trend points of a

@@ -196,10 +196,15 @@ public fun WloForecastChart(
                 .height(150.dp)
                 .semantics { contentDescription = description },
     ) {
-        val left = 8f
-        val right = size.width - 8f
-        val top = 14f
-        val bottom = size.height - 26f
+        // Axis/label lanes are dp-scaled so the chrome never clips (the
+        // bottom lane holds the "today" annotation at any density/font
+        // scale — the pre-M3 px lanes clipped it on dense screens).
+        val axisLane = 22.dp.toPx()
+        val labelGap = 6.dp.toPx()
+        val left = 8.dp.toPx()
+        val right = size.width - 8.dp.toPx()
+        val top = 14.dp.toPx()
+        val bottom = size.height - axisLane
 
         // Series prep: each path starts at (start, startWeight).
         fun series(values: List<Double>): List<Pair<Float, Float>> {
@@ -307,18 +312,23 @@ public fun WloForecastChart(
         tick(bands.pessimisticFinishEpochDay)
         tick(bands.expectedFinishEpochDay)
 
-        // Chrome: "today" and goal annotations (tabular figures).
+        // Chrome: "today" and goal annotations (tabular figures). The goal
+        // label is clamped inside the canvas so it never clips at the top.
         drawText(
             textMeasurer = textMeasurer,
             text = "today · ${formatWeight(bands.startWeightKg)}",
             style = axisStyle,
-            topLeft = Offset(left, bottom + 6f),
+            topLeft = Offset(left, bottom + labelGap),
         )
         drawText(
             textMeasurer = textMeasurer,
             text = formatWeight(bands.goalWeightKg),
             style = axisStyle,
-            topLeft = Offset((right - 110f).coerceAtLeast(left), goalY - 16f),
+            topLeft =
+                Offset(
+                    (right - 96.dp.toPx()).coerceAtLeast(left),
+                    (goalY - 16.dp.toPx()).coerceAtLeast(2.dp.toPx()),
+                ),
         )
     }
 }

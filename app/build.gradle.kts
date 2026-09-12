@@ -48,6 +48,13 @@ dependencies {
     implementation(project(":core:engines"))
     implementation(project(":core:documents"))
     implementation(project(":feature:f01-onboarding"))
+    implementation(project(":feature:f02-food"))
+    implementation(project(":feature:f06-weight"))
+    implementation(project(":feature:f10-daily-hub"))
+
+    // M3 perf harness: the instrumented FoodSearchPerfTest seeds through
+    // DiarySeeder (:core:testing is otherwise test-only per ARCHITECTURE §2.2).
+    androidTestImplementation(project(":core:testing"))
 
     // UiDevice shell commands (am force-stop) in instrumented tests.
     androidTestImplementation(libs.androidx.test.uiautomator)
