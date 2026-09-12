@@ -64,3 +64,26 @@ photo discipline · model cards with named open training data.
   provenance type, DRY single-owner anchors, testing architecture; (§3) open items.
 - §2 to be ratified as **ADR-005 (module graph & dependency rules)** at implementation
   kickoff. Placeholder app id: `app.wlo` (confirm before release).
+
+
+## Research model revised — 2026-09-12 (owner call: just-in-time)
+Up-front Phases B/C/D are dropped. Research is pulled into the feature epic that needs
+it ("spike → ADR → build"); DECISION-SPACE §6 stays the checklist, ADRs stay the
+ratification path. Feature order drives research order (suggested: skeleton → F01 → F02).
+Three exceptions must land before the first on-device model ships (likely with F02):
+T-E1 inference runtime (one shared decision), R-S14 zoo delivery plumbing (shared infra,
+built once), and procuring the min-spec Android 10 test device. For AI-as-the-promise
+features (F02, F08), the spike runs before their detailed UI locks — still JIT, sequenced
+inside the epic.
+
+
+## Testing constraint — 2026-09-12 (owner): emulator-only for now
+All development and testing happens on the Android emulator (min-spec AVD: API 29 + one
+current-image AVD). Consequences recorded in DECISION-SPACE §6/T-K6:
+- Emulator covers functional/UI/screenshot/instrumented tests (Roborazzi is JVM anyway).
+- ML/LLM spike numbers on emulator are FUNCTIONAL verification only — no NPU/DSP
+  delegates, host-class CPU/GPU. Absolute budgets (<2 s silhouette, tokens/s, 60 fps)
+  become tracked guardrails with a "validate on first real device" gate before release.
+- Untestable by nature until hardware exists: Bluetooth scales/HR straps, ARCore depth
+  (→ the no-depth fallback tier gets built early), Gemini Nano tier (llama.cpp path is
+  the verifiable one).

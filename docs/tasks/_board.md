@@ -7,6 +7,12 @@
 ## backlog
 
 ## todo
+- WLO-0024
+- WLO-0025
+- WLO-0026
+- WLO-0027
+- WLO-0028
 
 ## doing
 - WLO-0014
+- WLO-0023

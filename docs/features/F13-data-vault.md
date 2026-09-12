@@ -26,7 +26,8 @@ Core objectives (verifiable):
 - Exports are importable by any future version after schema migration, and
   parseable by third-party tooling (documented format).
 - A packet analyzer sees only F12 BYOK calls the user explicitly triggered and
-  opt-in food-database lookups — zero telemetry, zero analytics, ever.
+  opt-in food-database lookups — no telemetry, no analytics; data leaves the
+  device only through an explicitly consented capability.
 - Every capture (photo, poop, silhouette record) lands in app-private storage,
   invisible to the gallery and OS cloud-photo backup, by default — and for
   silhouette, what lands is a vector record, never an image (R-U16).
@@ -118,10 +119,12 @@ in v1 the sole profile owns the connection (R-B9). WLO-authored records win on W
 surfaces; multi-source weight deduplicates with the min-of-day import rule
 (Happy Scale's semantics) so smoothing stays deterministic.
 
-**Bluetooth scales.** A driver layer for BIA scales. Where drivers derive from
-openScale's ~68-driver GPL codebase, WLO **credits openScale prominently in
-About → Scale support, links upstream, and contributes fixes back** — "standing
-on the FOSS giants," not silent forking. Values carry provenance
+**Bluetooth scales.** A driver layer for BIA scales. *(Owner amendment
+2026-09-11, R-S1/R-S13: WLO is Apache-2.0, so openScale's GPLv3 driver code
+cannot be reused directly; drivers are clean-room implementations of popular
+scale protocols instead.)* WLO still **credits openScale prominently in
+About → Scale support and links upstream** — the protocol knowledge exists
+because openScale reverse-engineered it. Values carry provenance
 (vendor-decoded vs. formula-estimated, cited — openScale computes this but
 never shows it; WLO surfaces it).
 
@@ -250,13 +253,16 @@ with F01 owning the ritual and F13 the data mechanics.
 - Deletion is real deletion: in-app undo window, then purge; backups offer
   "purge from backups too" explicitly. Fresh Start hides rather than deletes.
 - Hard invariants: free forever, no account, no SaaS, no WLO backend; open
-  documented formats forever; secrets never exported; no telemetry SDK — ever.
+  documented formats forever; secrets never exported; no non-consented
+  telemetry/analytics SDK — every egress requires an explicit consent grant
+  (R-S13).
 
 ## 10. Open Questions
 
 - **WLO's license:** openScale's scale drivers are GPLv3; reuse requires a
   GPL-compatible license decision (GPLv3 adoption vs. clean-room drivers).
-  *(Resolved: R-S1 — GPLv3.)*
+  *(Re-resolved 2026-09-11, owner via WLO-0014: Apache-2.0 per amended
+  R-S1 — scale drivers are clean-room reimplementations; see R-S13.)*
 - Food-database (OFF/USDA) network consent: inside the F12 matrix as a seventh
   capability, or a separate F13 "integrations" toggle? Master doc should
   resolve; either way it is off-capable, cached, and audited.

@@ -11,6 +11,15 @@ compatibility.
 
 - **Open source and completely free, forever.** No paywall, no ads, no
   subscription, no "pro" tier — no feature is ever gated behind payment.
+- **License: Apache-2.0** *(owner decision 2026-09-11, amending the original
+  GPLv3 plan; see FEATURES.md R-S1/R-S13)*. Open-source code, permissive
+  license: the app may bundle free proprietary **on-device** SDKs where they
+  are materially better than the open alternative (e.g. ML Kit barcode/OCR).
+- **Data leaves the device only with explicit consent — the one hard line.**
+  On-device processing (proprietary or not) transmits nothing and needs no
+  consent; anything that transmits (BYOK AI, food-DB lookups, any opt-in
+  cloud service) goes through F12's consent gate and receipt ledger. Default:
+  nothing is shared.
 - **No SaaS, by design.** The project is unpaid, so it cannot fund servers:
   there is no WLO backend. Everything runs on device; any cloud AI is accessed
   **BYOK** (bring your own key), directly from the app to the provider the

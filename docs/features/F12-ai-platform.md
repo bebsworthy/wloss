@@ -74,11 +74,18 @@ category is a master-doc decision, not a feature-level new toggle.
 
 | Model | Serves | Size | Distribution |
 |---|---|---|---|
-| Food recognizer (detector + class head) | F02 | 20–40 MB | bundled |
-| Portion/depth helper (ARCore) + label OCR | F02 | 15–25 MB | bundled |
-| Speech-to-text (streaming) + intent parser | F02 + voice quick-logs | 45–85 MB | optional download |
-| Poop classifier (Bristol 1–7) | F09 | 8–12 MB | bundled |
-| Pose guidance (silhouette alignment) | F08 | 8 MB | bundled |
+| Food recognizer (detector + class head) | F02 | 20–40 MB | download on first use (R-S14) |
+| Portion/depth helper (ARCore) + label OCR | F02 | 15–25 MB | download on first use (R-S14) |
+| Speech-to-text (streaming) + intent parser | F02 + voice quick-logs | 45–85 MB | download on first use (R-S14) |
+| Poop classifier (Bristol 1–7) | F09 | 8–12 MB | download on first use (R-S14) |
+| Pose guidance (silhouette alignment) | F08 | 8 MB | download on first use (R-S14) |
+
+*(Distribution column amended 2026-09-11 by R-S14 — owner call, ticket WLO-0014: the APK
+ships no zoo models; every model downloads on first use of its capability from the
+hash-pinned URLs below. Airplane-mode parity holds once a model is present; until then the
+capability degrades to its R-U15 manual path, disclosed in onboarding. Vendor-SDK built-in
+models, e.g. inside ML Kit libraries, are a tracked exception pending the Phase-B size
+audit.)*
 
 Every model has a tappable **model card**: purpose, published benchmark +
 methodology, license, version, hash, and training data (open-licensed
@@ -156,10 +163,11 @@ architectural, not a promise. WLO needs network (BYOK, OFF/USDA), so it copies
 the structure, not the letter: **all** egress funnels through one audited
 `NetworkDispatcher` that refuses any call without an active consent grant or a
 DB-lookup allowance; no telemetry/analytics code exists in the tree; a debug
-build renders a live egress monitor; and a separate F-Droid **"WLO Pure"
-flavor** ships with the INTERNET permission stripped (BYOK and online DB off,
-all else identical). Provable-ness = open code + single choke point + receipt
-ledger + optional no-network build.
+build renders a live egress monitor. *(Owner amendment 2026-09-11, R-S13: the
+separate F-Droid "WLO Pure" flavor is dropped; proprietary on-device SDKs are
+permitted under the R-S13 data-flow-audit + consent conditions.)*
+Provable-ness = open code + single choke point + consent gate + receipt
+ledger + per-SDK data-flow audit cards.
 
 ## 4. User Interaction Model
 
@@ -232,19 +240,24 @@ the system) a "Ghost Protocol" recognition for fully-local weeks and
   left your phone in 34 days" on the home screen; signed third-party model
   cards (regional food recognizers, better poop classifiers) from pinned URLs
   with published evals — an ecosystem without a WLO backend.
-- **[moonshot] Verifiable local-only attestation.** Reproducible builds + the
-  Pure flavor + a public canary script proving a WLO install makes no
-  unexpected connections — openScale's guarantee, proven continuously and socially.
+- **[moonshot] Verifiable local-only attestation.** Reproducible builds +
+  a public canary script proving a WLO install makes no unexpected
+  connections — openScale's guarantee, proven continuously and socially.
+  *(Pure-flavor attestation path dropped with R-S13; the canary runs against
+  the consent-gated dispatcher instead.)*
 
 ## 9. Guardrails, Privacy & Sensitivity
 
-F12 is the enforcement point for the app's hardest promises. Never: telemetry,
-analytics, or any code path contacting a WLO-owned server (none exist); never
+F12 is the enforcement point for the app's hardest promises. Never — without
+an explicit, informed consent grant: telemetry, analytics, or any code path
+contacting a WLO-owned server (none exist); never
 pre-checked consents, consent bundling ("enable all"), guilt copy, nag loops,
 or settings-only consent. Keys: Keystore-encrypted, never logged, never
 exported, wipeable in one action. Receipts: summaries only, never raw
 payloads; the log is local data under F13's vault rules. "Delete receipts" and
-"wipe keys" are separate, explicit, undo-protected actions.
+"wipe keys" are separate, explicit, undo-protected actions. Every third-party
+SDK ships with an in-repo data-flow audit card (R-S13): what it collects, if
+anything, and proof on-device-only SDKs transmit nothing.
 
 ## 10. Open Questions
 
