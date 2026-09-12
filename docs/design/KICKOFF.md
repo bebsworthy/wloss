@@ -136,8 +136,8 @@ Priority order (each maps to a signature moment in FEATURES §2.4):
 3. **The Sunday check-in** (F07, frozen anatomy) → Apply commit → F01
    plan-diff view. The Week loop's anchor.
 4. **Weigh-in + trend moment** (F06): confirmation card, progress ribbon,
-   outlier guard; then F08 capture ritual behind the lock gate (vector
-   outlines only).
+   outlier guard, trend history. (The F08 capture ritual that followed here
+   moved to its own flow 09 in round 10.)
 5. **Plan → shop** (F03/F04): week grid with fit badges, swap deltas,
    aisle-ordered in-store list, sweep-to-pantry.
 6. **Report card + Bristol sheet** (F11/F09): grade stamps with held
@@ -149,6 +149,10 @@ Priority order (each maps to a signature moment in FEATURES §2.4):
    amended): strength preview with visible progression rules → prefilled
    set logging + rest ring → live cardio (GPS distance, HR zones, route
    trace) → honest plate fallback → substitutions → receipt summary.
+9. **The Archive** (F08, split from flow 04 and promoted first-class in
+   round 10): lock gate → pose-gated capture ritual → delta card →
+   timeline → compare studio → width profiles + trust chart — vector
+   outlines only (R-U16).
 
 ## Working rules
 

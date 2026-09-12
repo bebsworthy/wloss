@@ -1,0 +1,571 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>WLO · Flow 09 — The Archive: silhouette capture &amp; compare (F08)</title>
+<link rel="stylesheet" href="_wlo.css">
+<style>
+  /* flow-09 layout only — no new colors or values */
+  .vfbars { position: absolute; top: 12px; left: 26px; right: 26px; display: flex; justify-content: space-between; font-size: 13px; font-weight: 600; color: var(--text-primary); }
+  .vfchips { position: absolute; top: 46px; left: 16px; right: 16px; display: flex; gap: 6px; justify-content: center; flex-wrap: wrap; }
+  .coach {
+    position: absolute; left: 20px; right: 20px; bottom: 158px; z-index: 36;
+    display: flex; justify-content: center;
+  }
+  .coach .chip { padding: 6px 12px; font-size: 12.5px; }
+  .bloom { box-shadow: 0 0 0 12px var(--ideal-halo); }
+  .duo { display: flex; align-items: flex-start; justify-content: center; gap: 18px; }
+  .duo .fig { text-align: center; }
+  .duo .fig .lbl { font-size: 11px; color: var(--text-tertiary); margin-top: 4px; font-variant-numeric: var(--tnum); }
+  .dchips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+  .tgrid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+  .th {
+    border-radius: 12px; border: 1px solid var(--outline); background: var(--surface-sunken);
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: 3px; padding: 8px 2px 5px; position: relative; min-height: 74px;
+  }
+  .th span { font-size: 9px; color: var(--text-tertiary); font-variant-numeric: var(--tnum); }
+  .th .mk { position: absolute; top: 5px; right: 6px; width: 7px; height: 7px; border-radius: 50%; }
+  .th.ref { border-color: var(--accent); }
+  .th.flagged { border-style: dashed; }
+  .gapcell { border-radius: 12px; display: flex; align-items: center; justify-content: center; gap: 4px; min-height: 74px; }
+  .gapcell i { width: 4px; height: 4px; border-radius: 50%; background: var(--text-tertiary); opacity: .5; }
+  .prow { display: flex; align-items: center; gap: 10px; min-height: 44px; }
+  .prow + .prow { border-top: 1px solid var(--outline); }
+  .prow .plabel { font-size: 13px; color: var(--text-secondary); flex: 1; }
+</style>
+</head>
+<body>
+<div class="page">
+
+<header>
+  <h1>Flow 09 — The Archive: silhouette capture &amp; compare</h1>
+  <div class="meta">
+    Specs: <a href="../../features/F08-silhouette.md">F08 Silhouette</a> · gate: <a href="../../features/F13-data-vault.md">F13 Data Vault</a> ·
+    IA: <a href="../IA.md">IA.md §2, §4</a> · Rulings: FEATURES §3 (R-U16 · R-U7 · R-D9 · R-U13 · R-U6) ·
+    Signature moment: the quiet-scale payoff (F08) · 2026-09-12 · prototype, not implementation<br>
+    Mocks 1–4 and wireframes 1–4 moved verbatim from flow 04 in the round-10 split (pins renumbered); mocks 5–7 promote the Archive to first-class coverage ·
+    Companion flows: <a href="04-weigh-in-trend-f06-f08.html">04 weigh-in &amp; trend</a> · <a href="06-reportcard-bristol-f11-f09.html">06 report card (quiet-scale pairing)</a> · <a href="01-day-loop-f10.html">01 day loop (capture-due slot)</a> · <a href="index.html">index</a>
+  </div>
+</header>
+
+<!-- ============================= WIREFRAMES ============================= -->
+<div class="stage-title">Wireframes <small>· structure before skin — gate → ritual → payoff → timeline, plus the reminder that never nags</small></div>
+<div class="stage">
+
+  <div class="flowunit">
+    <div class="phone wf"><div class="screen">
+      <div class="wf-box solid row">status bar</div>
+      <div class="wf-box tall" style="height:420px">LOCK GATE — Archive · biometric prompt · PIN fallback · nothing of the content exists on this screen</div>
+      <div class="wf-note">FLAG_SECURE · auto-relock on backgrounding · deep links land here, never on content</div>
+    </div></div>
+    <div class="caption annotation"><b>Archive lock gate.</b> Every entry, every time; the unlock resolves thumbnails with the darkroom “develop” stagger. Generic notification copy points here, never at content.</div>
+  </div>
+
+  <div class="flowunit">
+    <div class="phone wf"><div class="screen">
+      <div class="wf-box solid row">status bar</div>
+      <div class="wf-box row">checklist chips: even light · plain wall · arm’s length (static)</div>
+      <div class="wf-box tall" style="height:360px">VIEWFINDER: gradient frame + 12-segment skeleton (green/amber mix) · failing segment labeled with its fix</div>
+      <div class="wf-note">all-green → double-pulse + shutter blooms · shutter silent, always</div>
+      <div class="wf-box row">shutter (bloomed state) · countdown rings 400 ms ×3 in timer mode</div>
+    </div></div>
+    <div class="caption annotation"><b>Capture ritual.</b> Pose-gated shutter; every rejection names cause + fix; no text input anywhere; front → side mandatory, back optional (R-U6).</div>
+  </div>
+
+  <div class="flowunit">
+    <div class="phone wf"><div class="screen">
+      <div class="wf-box solid row">status bar</div>
+      <div class="wf-box hero">DELTA CARD (5-second): outline vs reference side by side (vector only) + width-profile chips</div>
+      <div class="wf-note">↑ chips count up 400 ms · “within noise” stays grey · frame discarded at save (R-U16)</div>
+      <div class="wf-box row">quiet-scale card: “−2.3 cm in 6 weeks” · slow radial pulse</div>
+      <div class="wf-box row">“how we got here” · share = faceless strip only</div>
+    </div></div>
+    <div class="caption annotation"><b>Delta card.</b> The payoff seconds after save — shape change the scale hides, derived from width profiles, never a photograph.</div>
+  </div>
+
+  <div class="flowunit">
+    <div class="phone wf"><div class="screen">
+      <div class="wf-box solid row">status bar</div>
+      <div class="wf-box row">Archive header · relock · coverage stat “11 of last 12 weeks”</div>
+      <div class="wf-box grid" style="grid-template-columns:1fr 1fr 1fr 1fr;"><div>thumb</div><div>thumb</div><div>gap dots</div><div>thumb · partial</div></div>
+      <div class="wf-box grid" style="grid-template-columns:1fr 1fr 1fr 1fr;"><div>thumb · flagged</div><div>thumb</div><div>thumb</div><div>thumb · ★ reference</div></div>
+      <div class="wf-note">long-press = set as reference · gaps = faint dots, never mentioned again (R-U13)</div>
+      <div class="wf-box row">compare teaser: wipe divider + synchronized scrub</div>
+      <div class="wf-box row">“Collecting” state (&lt;3 captures / &lt;14 days) — never a conclusion</div>
+      <div class="wf-box row">nav: Archive tab active (R-U7 naming)</div>
+    </div></div>
+    <div class="caption annotation"><b>Timeline + compare teaser.</b> Vector-outline thumbs only; a coverage streak, not a duty streak; “Collecting” gates conclusions, never capture.</div>
+  </div>
+
+  <div class="flowunit">
+    <div class="phone wf"><div class="screen">
+      <div class="wf-box solid row">status bar</div>
+      <div class="wf-box row">Hub capture-due card: “Weekly check-in is ready · ~30 s”</div>
+      <div class="wf-note">generic copy + app icon only in notifications; the deep link lands on the gate (wireframe 1), never on content</div>
+      <div class="wf-box grid" style="grid-template-columns:1fr 1fr;"><div>Capture now</div><div>Not this week</div></div>
+      <div class="wf-note">“Not this week” reschedules silently — no counter, no copy about it; rides the F10 nudge budget, baseline-relative</div>
+    </div></div>
+    <div class="caption annotation"><b>Reminder.</b> An invitation with an exit: one tap declines and leaves no trace — no counter, no streak talk, no make-up nudge.</div>
+  </div>
+</div>
+
+<!-- ============================= MOCKS ============================= -->
+<div class="stage-title">Annotated mocks <small>· dark canonical theme · pins explained under each phone</small></div>
+<div class="stage">
+
+  <!-- 5 · Archive lock gate -->
+  <div class="flowunit">
+    <div class="phone">
+      <div class="lockgate">
+        <div class="vfbars"><span>14:02</span><span>▮▮▮ ⌁ ▰</span></div>
+        <div class="lockic"><svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="var(--text-secondary)" stroke-width="1.8" stroke-linecap="round"><rect x="5" y="10.5" width="14" height="9.5" rx="2.5"/><path d="M8 10.5 V7.5 a4 4 0 0 1 8 0 V10.5"/><circle cx="12" cy="15.2" r="1.4" fill="var(--text-secondary)" stroke="none"/></svg></div>
+        <div>
+          <div style="font-size:17px; font-weight:700;">Archive</div>
+          <div class="receipt faint" style="margin-top:3px;">biometric required · every entry, every time</div>
+        </div>
+        <a class="btn primary" href="#" style="text-decoration:none;">Unlock with biometrics</a>
+        <a class="btn ghost small" href="#" style="text-decoration:none;">Use PIN</a>
+        <div class="receipt faint" style="max-width:260px; line-height:1.6;">FLAG_SECURE on · app-switcher thumbnails and recordings show nothing<br>auto-relock on backgrounding · deep links land here, never on content</div>
+      </div>
+      <span class="pin" style="top:300px; right:34px;">1</span>
+      <span class="pin" style="bottom:250px; left:20px;">2</span>
+    </div>
+    <div class="caption annotation">
+      <b>Archive lock gate (F13 gate, F08 content).</b>
+      <ol>
+        <li><span class="pin-ref">1</span>Gate rules: every entry to the section requires biometric unlock (PIN fallback, 200 ms fade — no splash theater); auto-relock fires on backgrounding; any deep link — notification, correlation card, widget — lands on the gate, never on content.</li>
+        <li><span class="pin-ref">2</span>On unlock, thumbnails “develop” blurred→sharp with a 250 ms left-to-right stagger — the darkroom metaphor is the tone. Reminder copy stays generic (“Weekly check-in is ready · ~30 s”, app icon only); FLAG_SECURE covers every screen behind the gate. Naming per R-U7: “Archive”; icon per R-D9 — the abstract stacked-outline glyph in the nav, never a camera or body glyph.</li>
+      </ol>
+    </div>
+  </div>
+
+  <!-- 6 · Capture ritual -->
+  <div class="flowunit">
+    <div class="phone">
+      <div class="viewfinder">
+        <div class="vfbars"><span>8:31</span><span>▮▮▮ ⌁ ▰</span></div>
+        <div class="vfchips">
+          <span class="chip accent">even light ✓</span>
+          <span class="chip accent">plain wall ✓</span>
+          <span class="chip accent">arm’s length ✓</span>
+          <span class="chip">front ✓ → side</span>
+        </div>
+        <div class="frame">
+          <div class="mask"></div>
+          <svg width="100%" height="100%" viewBox="0 0 200 320" preserveAspectRatio="xMidYMid meet" style="position:absolute; inset:0;">
+            <circle cx="100" cy="42" r="19" fill="none" stroke="var(--text-tertiary)" stroke-width="3" stroke-dasharray="4 4"/>
+            <line x1="100" y1="61" x2="100" y2="78"  stroke="var(--accent)" stroke-width="5" stroke-linecap="round"/>
+            <line x1="62"  y1="92" x2="138" y2="92"  stroke="var(--accent)" stroke-width="5" stroke-linecap="round"/>
+            <line x1="100" y1="78" x2="100" y2="185" stroke="var(--accent)" stroke-width="5" stroke-linecap="round"/>
+            <line x1="62"  y1="92" x2="46"  y2="148" stroke="var(--accent)" stroke-width="5" stroke-linecap="round"/>
+            <line x1="46"  y1="148" x2="54" y2="200" stroke="var(--held)"   stroke-width="5" stroke-linecap="round"/>
+            <line x1="138" y1="92" x2="154" y2="148" stroke="var(--accent)" stroke-width="5" stroke-linecap="round"/>
+            <line x1="154" y1="148" x2="146" y2="200" stroke="var(--accent)" stroke-width="5" stroke-linecap="round"/>
+            <line x1="74"  y1="185" x2="126" y2="185" stroke="var(--accent)" stroke-width="5" stroke-linecap="round"/>
+            <line x1="74"  y1="185" x2="66"  y2="248" stroke="var(--accent)" stroke-width="5" stroke-linecap="round"/>
+            <line x1="66"  y1="248" x2="60"  y2="306" stroke="var(--held)"   stroke-width="5" stroke-linecap="round"/>
+            <line x1="126" y1="185" x2="134" y2="248" stroke="var(--accent)" stroke-width="5" stroke-linecap="round"/>
+            <line x1="134" y1="248" x2="140" y2="306" stroke="var(--accent)" stroke-width="5" stroke-linecap="round"/>
+            <circle cx="60" cy="312" r="6" fill="none" stroke="var(--held)" stroke-width="2" stroke-dasharray="3 3"/>
+          </svg>
+        </div>
+        <div class="coach"><span class="chip amber">left ankle out of frame — step back 30 cm</span></div>
+        <div class="shutterbtn bloom" style="opacity:.85;"></div>
+      </div>
+      <span class="pin" style="top:34px; left:10px;">3</span>
+      <span class="pin" style="bottom:252px; left:30px;">4</span>
+      <span class="pin" style="bottom:120px; right:60px;">5</span>
+    </div>
+    <div class="caption annotation">
+      <b>Capture ritual — pose-gated, zero text.</b>
+      <ol>
+        <li><span class="pin-ref">3</span>Checklist renders as static chips (lighting, plain wall, distance; clothing/hair notes the same way) — pre-cleared from last session’s coach memory [v1.x]; never a form, never a modal.</li>
+        <li><span class="pin-ref">4</span>Skeleton: 12 segments tint grey → amber → green with a 180 ms spring each; a soft tick per green snap; all-green = double-pulse “ready” haptic. The failing segment names its fix in place (“left ankle out of frame — step back 30 cm”). Note the mapping: the spec’s red→amber→green renders as <b>amber</b> here — red does not exist in WLO’s theme; the named fix, not alarm hue, carries the urgency. Failing angles never discard captured ones (“Skip this angle” saves as marked partial).</li>
+        <li><span class="pin-ref">5</span>Shutter bloom ring shown in its all-green state; the shutter is silent — always — and the countdown (timer mode, phone propped) draws 3·2·1 expanding rings, 400 ms each, with the preview flash suppressed outside the gate so a glance never catches content. Frames live in memory only; front → side mandatory, back optional (R-U6).</li>
+      </ol>
+    </div>
+  </div>
+
+  <!-- 7 · Delta card -->
+  <div class="flowunit">
+    <div class="phone">
+      <div class="statusbar"><span>8:33</span><span class="icons">▮▮▮ ⌁ ▰</span></div>
+      <div class="screen">
+        <div class="apphead">
+          <div class="brand">Capture <small>saved · front + side ✓</small></div>
+          <div class="actions"><span class="chip accent">2 angles</span></div>
+        </div>
+
+        <div class="card raised">
+          <div class="card-title">Delta · vs reference <span class="prov derived">derived · width profile</span></div>
+          <div class="duo">
+            <div class="fig">
+              <svg width="128" height="166" viewBox="0 0 100 130">
+                <line x1="22" y1="45" x2="78" y2="45" stroke="var(--outline)" stroke-width="1" stroke-dasharray="3 3"/>
+                <line x1="22" y1="72" x2="78" y2="72" stroke="var(--outline)" stroke-width="1" stroke-dasharray="3 3"/>
+                <line x1="22" y1="88" x2="78" y2="88" stroke="var(--outline)" stroke-width="1" stroke-dasharray="3 3"/>
+                <path d="M50 8 C56 8 60 13 60 18.5 C60 23 58 26 56.5 29 C66 33 72 41 73 51 C74 60 70.5 68 68.5 77 C67.2 84 67.5 92 67 102 L56.5 102 C56.5 93 55 87 50 81 C45 87 43.5 93 43.5 102 L33 102 C32.5 92 32.8 84 31.5 77 C29.5 68 26 60 27 51 C28 41 34 33 43.5 29 C42 26 40 23 40 18.5 C40 13 44 8 50 8 Z"
+                  fill="none" stroke="var(--text-secondary)" stroke-width="2"/>
+              </svg>
+              <div class="lbl">reference · Jun 14</div>
+            </div>
+            <div class="fig">
+              <svg width="128" height="166" viewBox="0 0 100 130">
+                <line x1="22" y1="45" x2="78" y2="45" stroke="var(--outline)" stroke-width="1" stroke-dasharray="3 3"/>
+                <line x1="22" y1="72" x2="78" y2="72" stroke="var(--outline)" stroke-width="1" stroke-dasharray="3 3"/>
+                <line x1="22" y1="88" x2="78" y2="88" stroke="var(--outline)" stroke-width="1" stroke-dasharray="3 3"/>
+                <path d="M50 8 C56 8 60 13 60 18.5 C60 23 58 26 56.5 29 C65.5 33 71 41 72 51 C72.8 60 69 68 67 77 C65.8 84 66.3 92 66 102 L56 102 C56 93 54.6 87 50 81.5 C45.4 87 44 93 44 102 L34 102 C33.7 92 34.2 84 33 77 C31 68 27.2 60 28 51 C29 41 34.5 33 43.5 29 C42 26 40 23 40 18.5 C40 13 44 8 50 8 Z"
+                  fill="none" stroke="var(--accent)" stroke-width="2"/>
+              </svg>
+              <div class="lbl">today · Sep 11</div>
+            </div>
+          </div>
+          <div class="dchips">
+            <span class="chip accent">waist −0.8 cm</span>
+            <span class="chip accent">hips −0.4 cm</span>
+            <span class="chip">shoulders +0.2 · within noise</span>
+            <span class="chip accent">thighs −0.3 cm</span>
+          </div>
+          <div class="receipt faint" style="margin-top:8px;">deltas inside the noise band stay grey — no fake number · the outlines differ by less than the eye expects; the profile carries the signal</div>
+        </div>
+
+        <div class="card">
+          <div style="display:flex; align-items:center; gap:14px;">
+            <svg width="56" height="56" viewBox="0 0 56 56" style="flex:none;">
+              <circle cx="28" cy="28" r="24" fill="none" stroke="var(--accent)" stroke-width="1.5" opacity=".15"/>
+              <circle cx="28" cy="28" r="16" fill="none" stroke="var(--accent)" stroke-width="1.5" opacity=".3"/>
+              <circle cx="28" cy="28" r="8" fill="none" stroke="var(--accent)" stroke-width="2" opacity=".55"/>
+            </svg>
+            <div style="flex:1;">
+              <div class="stat-l">−2.3 cm <span class="receipt faint">in 6 weeks</span></div>
+              <div class="receipt faint">waist width falling while trend weight flat 16 d — calm, not carnival</div>
+            </div>
+          </div>
+          <div class="receipt faint" style="margin-top:6px;">quiet-scale payoff · pairs with the weekly report card → <a href="06-reportcard-bristol-f11-f09.html" style="color:var(--info); text-decoration:none;">flow 06</a></div>
+        </div>
+
+        <div class="receipt faint" style="margin:0 4px;">no photo exists — outlines only, nothing to leak</div>
+      </div>
+      <span class="pin" style="top:150px; left:24px;">6</span>
+      <span class="pin" style="top:356px; right:32px;">7</span>
+      <span class="pin" style="top:492px; left:28px;">8</span>
+    </div>
+    <div class="caption annotation">
+      <b>Delta card — the 5-second payoff.</b>
+      <ol>
+        <li><span class="pin-ref">6</span>Two vector outlines, side by side, faceless by construction — abstract Bézier contours, not bodies. Width-profile deltas count up 400 ms ease-out; “within noise” renders as a grey chip instead of a fake number.</li>
+        <li><span class="pin-ref">7</span>R-U16, the owner ruling: no photograph exists anywhere — the frame was discarded at save, unrecoverable by architecture, not a setting. The outline IS the artifact; there is nothing to leak from a lost phone, a hostile import, or a cloud backup. Every mock in this flow obeys it (checked twice — no img element, no gallery idiom, no photo placeholder in any state, including empty ones).</li>
+        <li><span class="pin-ref">8</span>Quiet-scale card: when F06’s trend stalls while waist width falls, this surfaces with a slow radial pulse — the calm payoff, cross-linked to the report-card flow. Language stays photographic: capture, reference, develop, compare — never judgmental, never “trouble spots”.</li>
+      </ol>
+    </div>
+  </div>
+
+  <!-- 8 · Timeline + compare teaser -->
+  <div class="flowunit">
+    <div class="phone">
+      <div class="statusbar"><span>21:40</span><span class="icons">▮▮▮ ⌁ ▰</span></div>
+      <div class="screen">
+        <div class="apphead">
+          <div class="brand">Archive <small>couch context</small></div>
+          <div class="actions">
+            <span class="chip">▣ relock</span>
+            <span class="chip">12 captures</span>
+          </div>
+        </div>
+
+        <div class="receipt faint" style="margin:0 4px 8px;">11 of the last 12 weeks</div>
+
+        <div class="tgrid">
+          <div class="th ref"><svg width="34" height="40" viewBox="0 0 40 46"><path d="M20 3.2 C22.4 3.2 24 5.2 24 7.4 C24 9.2 23.2 10.4 22.6 11.6 C26.4 13.2 28.8 16.4 29.2 20.4 C29.6 24 28.2 27.2 27.4 30.8 C26.9 33.6 27 37 26.8 40.8 L22.6 40.8 C22.6 37.2 22 34.8 20 32.4 C18 34.8 17.4 37.2 17.4 40.8 L13.2 40.8 C13 37 13.1 33.6 12.6 30.8 C11.8 27.2 10.4 24 10.8 20.4 C11.2 16.4 13.6 13.2 17.4 11.6 C16.8 10.4 16 9.2 16 7.4 C16 5.2 17.6 3.2 20 3.2 Z" fill="none" stroke="var(--accent)" stroke-width="1.6"/></svg><span>Jun 14 · ★</span></div>
+          <div class="th"><svg width="34" height="40" viewBox="0 0 40 46"><path d="M20 3.2 C22.4 3.2 24 5.2 24 7.4 C24 9.2 23.2 10.4 22.6 11.6 C26.4 13.2 28.8 16.4 29.2 20.4 C29.6 24 28.2 27.2 27.4 30.8 C26.9 33.6 27 37 26.8 40.8 L22.6 40.8 C22.6 37.2 22 34.8 20 32.4 C18 34.8 17.4 37.2 17.4 40.8 L13.2 40.8 C13 37 13.1 33.6 12.6 30.8 C11.8 27.2 10.4 24 10.8 20.4 C11.2 16.4 13.6 13.2 17.4 11.6 C16.8 10.4 16 9.2 16 7.4 C16 5.2 17.6 3.2 20 3.2 Z" fill="none" stroke="var(--text-tertiary)" stroke-width="1.6"/></svg><span>Jun 21</span></div>
+          <div class="gapcell"><i></i><i></i><i></i></div>
+          <div class="th"><svg width="34" height="40" viewBox="0 0 40 46"><path d="M20 3.2 C22.4 3.2 24 5.2 24 7.4 C24 9.2 23.2 10.4 22.6 11.6 C26.4 13.2 28.8 16.4 29.2 20.4 C29.6 24 28.2 27.2 27.4 30.8 C26.9 33.6 27 37 26.8 40.8 L22.6 40.8 C22.6 37.2 22 34.8 20 32.4 C18 34.8 17.4 37.2 17.4 40.8 L13.2 40.8 C13 37 13.1 33.6 12.6 30.8 C11.8 27.2 10.4 24 10.8 20.4 C11.2 16.4 13.6 13.2 17.4 11.6 C16.8 10.4 16 9.2 16 7.4 C16 5.2 17.6 3.2 20 3.2 Z" fill="none" stroke="var(--text-tertiary)" stroke-width="1.6"/></svg><span>Jul 5 · front</span></div>
+          <div class="th flagged"><span class="mk" style="background:var(--held);"></span><svg width="34" height="40" viewBox="0 0 40 46"><path d="M20 3.2 C22.4 3.2 24 5.2 24 7.4 C24 9.2 23.2 10.4 22.6 11.6 C26.4 13.2 28.8 16.4 29.2 20.4 C29.6 24 28.2 27.2 27.4 30.8 C26.9 33.6 27 37 26.8 40.8 L22.6 40.8 C22.6 37.2 22 34.8 20 32.4 C18 34.8 17.4 37.2 17.4 40.8 L13.2 40.8 C13 37 13.1 33.6 12.6 30.8 C11.8 27.2 10.4 24 10.8 20.4 C11.2 16.4 13.6 13.2 17.4 11.6 C16.8 10.4 16 9.2 16 7.4 C16 5.2 17.6 3.2 20 3.2 Z" fill="none" stroke="var(--text-tertiary)" stroke-width="1.6"/></svg><span>Jul 12</span></div>
+          <div class="th"><svg width="34" height="40" viewBox="0 0 40 46"><path d="M20 3.2 C22.4 3.2 24 5.2 24 7.4 C24 9.2 23.2 10.4 22.6 11.6 C26.4 13.2 28.8 16.4 29.2 20.4 C29.6 24 28.2 27.2 27.4 30.8 C26.9 33.6 27 37 26.8 40.8 L22.6 40.8 C22.6 37.2 22 34.8 20 32.4 C18 34.8 17.4 37.2 17.4 40.8 L13.2 40.8 C13 37 13.1 33.6 12.6 30.8 C11.8 27.2 10.4 24 10.8 20.4 C11.2 16.4 13.6 13.2 17.4 11.6 C16.8 10.4 16 9.2 16 7.4 C16 5.2 17.6 3.2 20 3.2 Z" fill="none" stroke="var(--text-tertiary)" stroke-width="1.6"/></svg><span>Jul 19</span></div>
+          <div class="th"><svg width="34" height="40" viewBox="0 0 40 46"><path d="M20 3.2 C22.4 3.2 24 5.2 24 7.4 C24 9.2 23.2 10.4 22.6 11.6 C26.4 13.2 28.8 16.4 29.2 20.4 C29.6 24 28.2 27.2 27.4 30.8 C26.9 33.6 27 37 26.8 40.8 L22.6 40.8 C22.6 37.2 22 34.8 20 32.4 C18 34.8 17.4 37.2 17.4 40.8 L13.2 40.8 C13 37 13.1 33.6 12.6 30.8 C11.8 27.2 10.4 24 10.8 20.4 C11.2 16.4 13.6 13.2 17.4 11.6 C16.8 10.4 16 9.2 16 7.4 C16 5.2 17.6 3.2 20 3.2 Z" fill="none" stroke="var(--text-tertiary)" stroke-width="1.6"/></svg><span>Aug 2</span></div>
+          <div class="th"><svg width="34" height="40" viewBox="0 0 40 46"><path d="M20 3.2 C22.4 3.2 24 5.2 24 7.4 C24 9.2 23.2 10.4 22.6 11.6 C26.4 13.2 28.8 16.4 29.2 20.4 C29.6 24 28.2 27.2 27.4 30.8 C26.9 33.6 27 37 26.8 40.8 L22.6 40.8 C22.6 37.2 22 34.8 20 32.4 C18 34.8 17.4 37.2 17.4 40.8 L13.2 40.8 C13 37 13.1 33.6 12.6 30.8 C11.8 27.2 10.4 24 10.8 20.4 C11.2 16.4 13.6 13.2 17.4 11.6 C16.8 10.4 16 9.2 16 7.4 C16 5.2 17.6 3.2 20 3.2 Z" fill="none" stroke="var(--text-secondary)" stroke-width="1.6"/></svg><span>Aug 9</span></div>
+        </div>
+        <div class="receipt faint" style="margin:6px 4px 0;">★ reference · dashed = flagged (excluded from delta claims) · dot = newest · faint dots = gaps, never mentioned</div>
+
+        <div class="card" style="margin-top:12px;">
+          <div class="card-title">Compare <span class="right receipt">vs reference · Jun 14</span></div>
+          <div style="display:flex; align-items:center; justify-content:center; gap:0;">
+            <svg width="64" height="76" viewBox="0 0 40 46"><path d="M20 3.2 C22.4 3.2 24 5.2 24 7.4 C24 9.2 23.2 10.4 22.6 11.6 C26.4 13.2 28.8 16.4 29.2 20.4 C29.6 24 28.2 27.2 27.4 30.8 C26.9 33.6 27 37 26.8 40.8 L22.6 40.8 C22.6 37.2 22 34.8 20 32.4 C18 34.8 17.4 37.2 17.4 40.8 L13.2 40.8 C13 37 13.1 33.6 12.6 30.8 C11.8 27.2 10.4 24 10.8 20.4 C11.2 16.4 13.6 13.2 17.4 11.6 C16.8 10.4 16 9.2 16 7.4 C16 5.2 17.6 3.2 20 3.2 Z" fill="none" stroke="var(--text-secondary)" stroke-width="1.6"/></svg>
+            <div style="width:2px; height:70px; background:var(--accent); border-radius:1px; margin:0 18px;"></div>
+            <svg width="64" height="76" viewBox="0 0 40 46"><path d="M20 3.2 C22.4 3.2 24 5.2 24 7.4 C24 9.2 23.2 10.4 22.6 11.6 C26.4 13.2 28.8 16.4 29.2 20.4 C29.6 24 28.2 27.2 27.4 30.8 C26.9 33.6 27 37 26.8 40.8 L22.6 40.8 C22.6 37.2 22 34.8 20 32.4 C18 34.8 17.4 37.2 17.4 40.8 L13.2 40.8 C13 37 13.1 33.6 12.6 30.8 C11.8 27.2 10.4 24 10.8 20.4 C11.2 16.4 13.6 13.2 17.4 11.6 C16.8 10.4 16 9.2 16 7.4 C16 5.2 17.6 3.2 20 3.2 Z" fill="none" stroke="var(--accent)" stroke-width="1.6"/></svg>
+          </div>
+          <div class="receipt faint" style="margin-top:6px; text-align:center;">drag the wipe divider · snaps to the centerline · synchronized scrub</div>
+        </div>
+
+        <div class="card sunken">
+          <div class="card-title">Collecting <span class="chip blue">not enough to conclude</span></div>
+          <div class="receipt">2 captures · 9 days — comparisons need 3 captures across 14 days. Until then: capture, never conclude.</div>
+        </div>
+
+        <div class="receipt faint" style="margin:2px 4px;">long-press to set a reference</div>
+
+        <div class="navbar">
+          <div class="tab"><span class="ic">◉</span>Hub</div>
+          <div class="tab"><span class="ic">▦</span>Plan</div>
+          <div class="tab"><span class="ic">✦</span>Insights</div>
+          <div class="tab active"><span class="ic ic-arch"></span>Archive</div>
+          <div class="tab"><span class="ic">🌿</span>Digestion</div>
+        </div>
+      </div>
+      <span class="pin" style="top:186px; left:196px;">9</span>
+      <span class="pin" style="top:244px; right:12px;">10</span>
+      <span class="pin" style="top:598px; right:12px;">11</span>
+      <span class="pin" style="top:432px; left:28px;">12</span>
+    </div>
+    <div class="caption annotation">
+      <b>Timeline grid + compare entry.</b>
+      <ol>
+        <li><span class="pin-ref">9</span>Every thumbnail is a vector-outline record (R-U16) — the grid could be printed on a poster and remain harmless. Week/month grouping; unlock re-runs the 250 ms “develop” stagger.</li>
+        <li><span class="pin-ref">10</span>Markers, not verdicts: flagged (quality — excluded from delta claims, named reason on tap) and partial (one angle — excluded from angle-complete comparisons) get small neutral markers. Gaps render as faint dots (R-U13) — a coverage streak, not a duty streak; the phrase “you missed” is banned.</li>
+        <li><span class="pin-ref">11</span>“Collecting” state: below 3 captures / 14 days the section says so and stops — never a conclusion, never a nudge to perform. Capture reminders are cadence-relative (R-U13) and “Not this week” reschedules silently.</li>
+        <li><span class="pin-ref">12</span>Compare teaser: the wipe divider (magnetic centerline snap) and synchronized scrubbing — one haptic detent per capture pair — lead into the full studio. Reference is user-set by long-press; nothing here is app-chosen.</li>
+      </ol>
+    </div>
+  </div>
+
+  <!-- 5 · Compare studio -->
+  <div class="flowunit">
+    <div class="phone">
+      <div class="statusbar"><span>21:44</span><span class="icons">▮▮▮ ⌁ ▰</span></div>
+      <div class="screen">
+        <div class="apphead">
+          <div class="brand">Compare <small>vs reference</small></div>
+          <div class="actions"><span class="chip accent">front</span><span class="chip">side</span></div>
+        </div>
+
+        <div class="card raised" style="padding:16px 10px 12px;">
+          <div class="card-title">Front · wipe <span class="right receipt">drag the divider</span></div>
+          <div class="duo" style="align-items:center;">
+            <div class="fig">
+              <svg width="140" height="182" viewBox="0 0 100 130">
+                <path d="M50 8 C56 8 60 13 60 18.5 C60 23 58 26 56.5 29 C66 33 72 41 73 51 C74 60 70.5 68 68.5 77 C67.2 84 67.5 92 67 102 L56.5 102 C56.5 93 55 87 50 81 C45 87 43.5 93 43.5 102 L33 102 C32.5 92 32.8 84 31.5 77 C29.5 68 26 60 27 51 C28 41 34 33 43.5 29 C42 26 40 23 40 18.5 C40 13 44 8 50 8 Z"
+                  fill="none" stroke="var(--text-secondary)" stroke-width="2"/>
+              </svg>
+              <div class="lbl">reference · Jun 14</div>
+            </div>
+            <div style="width:2px; height:158px; background:var(--accent); border-radius:1px; position:relative; flex:none;">
+              <div style="position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); width:24px; height:24px; border-radius:50%; background:var(--accent); box-shadow:0 0 0 5px var(--ideal-halo);"></div>
+            </div>
+            <div class="fig">
+              <svg width="140" height="182" viewBox="0 0 100 130">
+                <path d="M50 8 C56 8 60 13 60 18.5 C60 23 58 26 56.5 29 C65.5 33 71 41 72 51 C72.8 60 69 68 67 77 C65.8 84 66.3 92 66 102 L56 102 C56 93 54.6 87 50 81.5 C45.4 87 44 93 44 102 L34 102 C33.7 92 34.2 84 33 77 C31 68 27.2 60 28 51 C29 41 34.5 33 43.5 29 C42 26 40 23 40 18.5 C40 13 44 8 50 8 Z"
+                  fill="none" stroke="var(--accent)" stroke-width="2"/>
+              </svg>
+              <div class="lbl">today · Sep 11</div>
+            </div>
+          </div>
+          <div style="display:flex; justify-content:center; gap:6px; margin-top:10px; flex-wrap:wrap;">
+            <span class="chip">onion-skin · off</span>
+            <span class="chip accent">comparable · distance within 10 %</span>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">Synchronized scrub <span class="right receipt">12 captures</span></div>
+          <svg width="100%" height="30" viewBox="0 0 330 30">
+            <line x1="12" y1="15" x2="318" y2="15" stroke="var(--outline)" stroke-width="1.5"/>
+            <circle cx="40" cy="15" r="3" fill="var(--text-tertiary)"/><circle cx="68" cy="15" r="3" fill="var(--text-tertiary)"/>
+            <circle cx="96" cy="15" r="3" fill="var(--text-tertiary)"/><circle cx="124" cy="15" r="3" fill="var(--text-tertiary)"/>
+            <circle cx="152" cy="15" r="3" fill="var(--text-tertiary)"/><circle cx="180" cy="15" r="3" fill="var(--text-tertiary)"/>
+            <circle cx="208" cy="15" r="3" fill="var(--text-tertiary)"/><circle cx="236" cy="15" r="3" fill="var(--text-tertiary)"/>
+            <circle cx="264" cy="15" r="3" fill="var(--text-tertiary)"/><circle cx="292" cy="15" r="3" fill="var(--text-tertiary)"/>
+            <circle cx="12" cy="15" r="5" fill="var(--text-secondary)"/>
+            <circle cx="318" cy="15" r="5" fill="var(--accent)"/>
+          </svg>
+          <div style="display:flex; justify-content:space-between;" class="receipt faint">
+            <span>Jun 14</span><span>drag either pane — both move in lockstep</span><span>Sep 11</span>
+          </div>
+        </div>
+
+        <div class="receipt faint" style="margin:2px 4px;">a tick per capture pair · the wipe snaps to the centerline · every frame a vector — nothing here was ever a photograph</div>
+      </div>
+      <span class="pin" style="top:190px; right:24px;">13</span>
+      <span class="pin" style="top:500px; right:24px;">14</span>
+      <span class="pin" style="top:330px; left:20px;">15</span>
+    </div>
+    <div class="caption annotation">
+      <b>Compare studio — the teaser, grown up.</b>
+      <ol>
+        <li><span class="pin-ref">13</span>The wipe divider drags between the two outlines and magnetically snaps to the body centerline; angle tabs switch front ↔ side (both mandatory angles annotate which are present). Onion-skin overlays the two outlines in place when the difference is too small to see side-by-side.</li>
+        <li><span class="pin-ref">14</span>Synchronized scrubbing: drag time on either pane and both advance in lockstep, one detent per capture pair — the grid’s weeks become a filmstrip of yourself, scrubbed like a chart.</li>
+        <li><span class="pin-ref">15</span>The comparability chip is the honest gate: capture-quality metadata (subject pixel height within 10 %, blur pass) decides whether a diff is fair. When two captures aren’t comparable, the chip says why in one geek-readable line instead of showing a lying delta.</li>
+      </ol>
+    </div>
+  </div>
+
+  <!-- 6 · Width profiles + the trust chart -->
+  <div class="flowunit">
+    <div class="phone">
+      <div class="statusbar"><span>21:47</span><span class="icons">▮▮▮ ⌁ ▰</span></div>
+      <div class="screen">
+        <div class="apphead">
+          <div class="brand">Width profiles</div>
+          <div class="actions"><span class="prov derived">derived</span></div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">Per-band deltas <span class="right receipt">12 weeks · vs reference</span></div>
+          <div class="prow">
+            <span class="plabel">shoulders</span>
+            <svg width="96" height="22" viewBox="0 0 96 22"><polyline class="spark-dim" points="2,11 18,11 34,12 50,11 66,11 82,12 94,11"/></svg>
+            <span class="chip">within noise</span>
+          </div>
+          <div class="prow">
+            <span class="plabel">waist</span>
+            <svg width="96" height="22" viewBox="0 0 96 22"><polyline class="spark" points="2,5 18,7 34,9 50,10 66,13 82,15 94,17"/></svg>
+            <span class="chip accent">−1.6 cm</span>
+          </div>
+          <div class="prow">
+            <span class="plabel">hips</span>
+            <svg width="96" height="22" viewBox="0 0 96 22"><polyline class="spark" points="2,8 18,9 34,9 50,11 66,12 82,13 94,14"/></svg>
+            <span class="chip accent">−0.9 cm</span>
+          </div>
+          <div class="prow">
+            <span class="plabel">thighs</span>
+            <svg width="96" height="22" viewBox="0 0 96 22"><polyline class="spark" points="2,9 18,10 34,10 50,11 66,12 82,12 94,13"/></svg>
+            <span class="chip accent">−0.6 cm</span>
+          </div>
+          <div class="receipt faint" style="margin-top:8px;">64 normalized widths per angle → per-band series · flat-inside-the-noise stays grey, no fake number</div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">Waist width · weekly <span class="right receipt">noise band</span></div>
+          <div class="chartbg" style="padding:8px 6px;">
+            <svg width="100%" height="88" viewBox="0 0 330 88">
+              <path class="band" d="M0,26 L330,44 L330,66 L0,52 Z"/>
+              <polyline class="spark" points="0,34 33,38 66,37 99,44 132,46 165,52 198,54 231,60 264,62 297,66 330,68"/>
+              <circle cx="330" cy="68" r="3.5" fill="var(--accent)"/>
+            </svg>
+          </div>
+          <div class="receipt faint" style="margin-top:6px;">the falling line leaves the band — that is the whole claim, and it is the profile’s, not the eye’s</div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">The outlines agree with the tape <span class="right receipt">two independent signals</span></div>
+          <div class="chartbg" style="padding:8px 6px;">
+            <svg width="100%" height="88" viewBox="0 0 330 88">
+              <polyline class="spark" points="10,30 46,34 82,33 118,40 154,42 190,48 226,50 262,56 298,58 322,60"/>
+              <circle cx="28" cy="36" r="3" fill="var(--text-primary)"/><circle cx="100" cy="41" r="3" fill="var(--text-primary)"/>
+              <circle cx="172" cy="50" r="3" fill="var(--text-primary)"/><circle cx="244" cy="57" r="3" fill="var(--text-primary)"/>
+              <circle cx="316" cy="62" r="3" fill="var(--text-primary)"/>
+            </svg>
+          </div>
+          <div style="display:flex; gap:6px; margin-top:8px; flex-wrap:wrap;">
+            <span class="chip">○ tape · measured</span>
+            <span class="chip accent">— outline · derived</span>
+          </div>
+        </div>
+
+        <div class="receipt faint" style="margin:2px 4px;">estimated circumferences, if they ever ship, join as a third series with its own badge — never merged with either</div>
+      </div>
+      <span class="pin" style="top:96px; right:24px;">16</span>
+      <span class="pin" style="top:300px; right:24px;">17</span>
+      <span class="pin" style="top:520px; left:20px;">18</span>
+    </div>
+    <div class="caption annotation">
+      <b>Shape numbers — the profile carries the signal.</b>
+      <ol>
+        <li><span class="pin-ref">16</span>Each band (shoulders / waist / hips / thighs) is a weekly series from the width profiles; deltas inside the noise band render grey with “within noise” instead of a decimal pretending to be signal.</li>
+        <li><span class="pin-ref">17</span>The paired view plots silhouette waist width against tape measurements — two instruments that share no code path agreeing on direction. It is the trust chart: when the scale stalls, this is where “it’s working” gets evidence.</li>
+        <li><span class="pin-ref">18</span>Provenance trio enforced across the screen: tape = <b>measured</b>, outline = <b>derived</b> (method sheet a tap away), estimated series (a [future] item) would arrive badged and banded — the three never merge into one line.</li>
+      </ol>
+    </div>
+  </div>
+
+  <!-- 7 · Capture detail — flags, reference, delete -->
+  <div class="flowunit">
+    <div class="phone">
+      <div class="statusbar"><span>21:52</span><span class="icons">▮▮▮ ⌁ ▰</span></div>
+      <div class="screen">
+        <div class="apphead">
+          <div class="brand">Archive</div>
+          <div class="actions"><span class="chip">12 captures</span></div>
+        </div>
+        <div class="tgrid" style="opacity:.5;">
+          <div class="th"><svg width="34" height="40" viewBox="0 0 40 46"><path d="M20 3.2 C22.4 3.2 24 5.2 24 7.4 C24 9.2 23.2 10.4 22.6 11.6 C26.4 13.2 28.8 16.4 29.2 20.4 C29.6 24 28.2 27.2 27.4 30.8 C26.9 33.6 27 37 26.8 40.8 L22.6 40.8 C22.6 37.2 22 34.8 20 32.4 C18 34.8 17.4 37.2 17.4 40.8 L13.2 40.8 C13 37 13.1 33.6 12.6 30.8 C11.8 27.2 10.4 24 10.8 20.4 C11.2 16.4 13.6 13.2 17.4 11.6 C16.8 10.4 16 9.2 16 7.4 C16 5.2 17.6 3.2 20 3.2 Z" fill="none" stroke="var(--text-tertiary)" stroke-width="1.6"/></svg><span>Jul 5</span></div>
+          <div class="th flagged"><span class="mk" style="background:var(--held);"></span><svg width="34" height="40" viewBox="0 0 40 46"><path d="M20 3.2 C22.4 3.2 24 5.2 24 7.4 C24 9.2 23.2 10.4 22.6 11.6 C26.4 13.2 28.8 16.4 29.2 20.4 C29.6 24 28.2 27.2 27.4 30.8 C26.9 33.6 27 37 26.8 40.8 L22.6 40.8 C22.6 37.2 22 34.8 20 32.4 C18 34.8 17.4 37.2 17.4 40.8 L13.2 40.8 C13 37 13.1 33.6 12.6 30.8 C11.8 27.2 10.4 24 10.8 20.4 C11.2 16.4 13.6 13.2 17.4 11.6 C16.8 10.4 16 9.2 16 7.4 C16 5.2 17.6 3.2 20 3.2 Z" fill="none" stroke="var(--text-tertiary)" stroke-width="1.6"/></svg><span>Jul 12</span></div>
+          <div class="th"></div>
+          <div class="th"></div>
+        </div>
+      </div>
+      <div class="sheet-wrap"></div>
+      <div class="sheet">
+        <div class="grab"></div>
+        <div style="display:flex; justify-content:space-between; align-items:center;">
+          <div style="font-size:16px; font-weight:650;">Jul 12 · front + side</div>
+          <span class="chip amber">flagged</span>
+        </div>
+        <div style="display:flex; gap:14px; align-items:center; margin:12px 0 4px;">
+          <svg width="64" height="76" viewBox="0 0 40 46" style="flex:none;">
+            <path d="M20 3.2 C22.4 3.2 24 5.2 24 7.4 C24 9.2 23.2 10.4 22.6 11.6 C26.4 13.2 28.8 16.4 29.2 20.4 C29.6 24 28.2 27.2 27.4 30.8 C26.9 33.6 27 37 26.8 40.8 L22.6 40.8 C22.6 37.2 22 34.8 20 32.4 C18 34.8 17.4 37.2 17.4 40.8 L13.2 40.8 C13 37 13.1 33.6 12.6 30.8 C11.8 27.2 10.4 24 10.8 20.4 C11.2 16.4 13.6 13.2 17.4 11.6 C16.8 10.4 16 9.2 16 7.4 C16 5.2 17.6 3.2 20 3.2 Z" fill="none" stroke="var(--text-secondary)" stroke-width="1.6"/>
+          </svg>
+          <div class="receipt" style="flex:1;">blur score over threshold at capture — kept for the timeline, excluded from delta claims</div>
+        </div>
+        <div class="receipt faint" style="margin-top:4px;">quality facts: distance proxy within 6 % · exposure pass · 2 of 2 angles valid</div>
+        <div class="btnrow" style="margin-top:14px;">
+          <a class="btn secondary" href="#" style="text-decoration:none;">Set as reference ★</a>
+          <a class="btn ghost" href="#" style="text-decoration:none;">Delete</a>
+        </div>
+        <div class="receipt faint" style="margin-top:10px;">deleting shreds the outline, width profile, and derived rows — irreversible · there is no photo to delete</div>
+      </div>
+      <span class="pin" style="top:568px; right:20px;">19</span>
+      <span class="pin" style="bottom:110px; left:20px;">20</span>
+      <span class="pin" style="top:688px; left:14px;">21</span>
+    </div>
+    <div class="caption annotation">
+      <b>Capture detail — flags are facts, deletion is final.</b>
+      <ol>
+        <li><span class="pin-ref">19</span>The flag names its reason and its consequence in one line (“excluded from delta claims”) — a data-quality fact, never a grade. Partial captures (one angle) read the same way and are excluded only from angle-complete comparisons.</li>
+        <li><span class="pin-ref">20</span>Delete is a shred: outline, width profile, and derived rows destroyed irreversibly. Because of R-U16 there is no photograph to delete — the most sensitive artifact in the app is the one that cannot exist. History is never gated, blurred, or capped while it exists (anti-paywall).</li>
+        <li><span class="pin-ref">21</span>“Set as reference” is the only way a reference changes — user-tapped here or by long-press in the grid; the app never picks one. Everything downstream (delta card, compare studio, per-band deltas) re-anchors to the user’s choice.</li>
+      </ol>
+    </div>
+  </div>
+
+</div>
+
+<!-- ============================= SELF-REVIEW ============================= -->
+<div class="review">
+  <h2>Self-review — design bar &amp; spec checklist (flow 09)</h2>
+  <div class="cols">
+    <div class="col"><div class="annotation">
+      <b>Design bar</b>
+      <ol>
+        <li><b>R-U16 — checked again, now across seven mocks.</b> No img element, no photograph placeholder, no gallery idiom in any state: the viewfinder shows gradient + skeleton; thumbnails, delta card, compare studio, and profile charts are stroke-path vectors and derived series; empty and “Collecting” states use dots. The outline is the artifact; nothing to leak. ✓</li>
+        <li><b>Provenance trio</b> — tape values <b>measured</b>, outline deltas <b>derived</b> (width profile), any future circumferences <b>estimated</b> with bands — badged separately, never merged (mock 6). ✓</li>
+        <li><b>Tone</b> — photographic verbs only (capture / reference / develop / compare); “trouble spots”, “missed”, “over” absent; flags are named data, never grades (mock 7). ✓</li>
+        <li><b>No red</b> — the failing skeleton segment renders <span class="held-c">held</span>-amber with its named fix; grid markers are neutral. ✓</li>
+        <li><b>R-U7 + R-D9</b> — the section says “Archive” with the abstract stacked-outline glyph; nothing in nav, notifications, or exports says body/photo/silhouette. ✓</li>
+        <li><b>R-U13</b> — gaps render as faint dots and are never mentioned again; coverage (“11 of the last 12 weeks”), not duty; “Not this week” reschedules silently (wireframe 5). ✓</li>
+        <li><b>Discretion ladder</b> — biometric gate on every entry, auto-relock, FLAG_SECURE, silent shutter always, generic reminder copy, deep links land on the gate; the F06-side ladder (discreet eye, lock-screen dots) lives in flows 04 and 01. ✓</li>
+        <li><b>Local-first</b> — no network state anywhere in the flow; exports can contain no photographs because none exist. ✓</li>
+      </ol>
+    </div></div>
+    <div class="col"><div class="annotation">
+      <b>Spec coverage (F08 §4–§5)</b>
+      <ol>
+        <li><b>Happy path</b> — unlock → checklist → poses → save → delta card: mocks 1–3; ≤ 60 s, zero text input. ✓</li>
+        <li><b>Fallback 1 (pose won’t align)</b> — the failing segment names cause + fix; “Skip this angle” saves marked partial; captured angles are never lost (mock 2). ✓</li>
+        <li><b>Fallback 2 (quality)</b> — blur/exposure flagged pre-save with a named reason; flagged captures excluded from delta claims, small neutral marker in the grid, full detail in mock 7. ✓</li>
+        <li><b>Compare studio</b> — wipe divider with centerline snap, synchronized scrubbing with per-pair detents, onion-skin toggle, angle tabs, comparability chip (mock 5). ✓</li>
+        <li><b>Numbers</b> — per-band width-profile deltas, weekly line with noise band, the “outlines agree with the tape” paired view (mock 6). ✓</li>
+        <li><b>Quiet-scale payoff</b> — on the delta card (mock 3): trend flat 16 days while waist width falls; calm, not carnival. ✓</li>
+        <li><b>Data-quality gates</b> — “Collecting” below 3 captures / 14 days says so and stops (mock 4); comparability metadata backs every diff (mock 5). ✓</li>
+        <li><b>Housekeeping</b> — reference set by long-press only; delete shreds irreversibly; history never gated or capped (mock 7). ✓</li>
+        <li><b>Reminder</b> — generic copy, deep link to the gate, guilt-free “Not this week”, inside the F10 nudge budget and baseline-relative (wireframe 5). ✓</li>
+      </ol>
+      <b>Open items surfaced:</b> capture-time derivation budget (&lt; 2 s/angle) and contour-simplification tolerance (F08 §10) · comparability normalization is [v1.x] — today the app can say *why* two captures aren’t comparable, not fix them · multi-profile archives land with R-B9 [v1.x] · estimated circumferences are [future] and would join mock 6 as a third, separately-badged series.
+    </div></div>
+  </div>
+</div>
+
+</div>
+</body>
+</html>
