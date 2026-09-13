@@ -7,10 +7,12 @@ import androidx.room3.Fts5
 import androidx.room3.Index
 import androidx.room3.PrimaryKey
 
-// Schema v4 (M3, WLO-0025): F02 manual logging (realized food catalog + FTS5
-// search + diary with a correction audit) on top of the M2 spine, plus the
-// R-B7 Fresh Start ledger columns (hide-not-delete) on the event stores.
-// Layout per F02/F13 §3, FEATURES.md rulings R-B1/R-B7/R-B8/R-B9.
+// Schema v5 (M4, WLO-0026 PART A): the F12 egress receipt ledger
+// (`network_receipts`) — the append-only, hash-chained record of every packet
+// that left (or tried to leave) the device through the NetworkDispatcher.
+// on top of schema v4, plus the R-B7 Fresh Start ledger columns (hide-not-delete)
+// on the event stores.
+// Layout per F12 §3.6/§3.8, F13 §9, FEATURES.md rulings R-C4/R-S13/R-S14.
 //
 // House rule (ADR-003): every schema change lands with a migration +
 // exported-schema test in the same PR — see [Migrations] and `MigrationTest`.
@@ -145,6 +147,34 @@ public data class ConsentLedgerEntity(
     public val capability: String,
     /** "grant" | "revoke". */
     public val decision: String,
+    public val atEpochMs: Long,
+    public val prevHashHex: String,
+    public val hashHex: String,
+)
+
+/**
+ * One egress receipt (F12 §3.6/§3.8; F13 §9): every NetworkDispatcher dispatch
+ * — success OR failure OR denial — appends exactly one row. APPEND-ONLY by
+ * discipline: no DAO exposes UPDATE or DELETE, and the prevHash/hash columns
+ * chain rows so tampering is detectable (chain engine: :core:consent HashChain).
+ * `seq` starts at 1 (Room AUTOINCREMENT); the first row links to the all-zero
+ * genesis hash. Purpose/outcome are wire strings (:core:network owns the enums).
+ */
+@Entity(
+    tableName = "network_receipts",
+    indices = [Index("purpose"), Index("atEpochMs")],
+)
+public data class NetworkReceiptEntity(
+    @PrimaryKey(autoGenerate = true)
+    public val seq: Long = 0,
+    /** Wire name of [app.wlo.core.ports.EgressPurpose]. */
+    public val purpose: String,
+    public val host: String,
+    public val operation: String,
+    /** Bytes that left the device (0 for denials and cache hits). */
+    public val bytes: Long,
+    /** Wire name of the outcome: ok | denied | failed | cache-hit. */
+    public val outcome: String,
     public val atEpochMs: Long,
     public val prevHashHex: String,
     public val hashHex: String,

@@ -83,6 +83,12 @@ public data class NewCustomFood(
     public val servingPresets: List<ServingPreset> = emptyList(),
     /** User confirmed the values against the physical label (F02 §5). */
     public val macrosVerified: Boolean = false,
+    /**
+     * Where the row comes from (F02 §3 ladder): CUSTOM for the manual form,
+     * OFF for a scanned product saved to the catalog. Additive field (M4) —
+     * the default keeps every existing caller on the manual path.
+     */
+    public val source: FoodSource = FoodSource.CUSTOM,
 )
 
 /** One search hit: the item plus whether it matched exactly (the promotion flag). */
@@ -170,7 +176,7 @@ public class RoomFoodRepository public constructor(
                     fatGPer100g = food.fatGPer100g,
                     fiberGPer100g = food.fiberGPer100g,
                     servingPresetsJson = encodePresets(food.servingPresets),
-                    source = FoodSource.CUSTOM.wireName,
+                    source = food.source.wireName,
                     macrosVerified = food.macrosVerified,
                     verifiedAtEpochMs = food.macrosVerified.takeIf { it }?.let { at.toEpochMilliseconds() },
                     createdAtEpochMs = at.toEpochMilliseconds(),

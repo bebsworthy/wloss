@@ -62,14 +62,26 @@ public object TestNav {
         assertEquals(expected, actual)
     }
 
-    /** Polls until a compose node with [tag] exists (async flows settle live). */
+    /** Polls until a compose node with [tag] (or [alternativeTag]) exists. */
     public fun awaitTag(
         rule: ComposeTestRule,
         tag: String,
+        alternativeTag: String? = null,
     ) {
         val deadline = SystemClock.elapsedRealtime() + TIMEOUT_MS
         while (SystemClock.elapsedRealtime() < deadline) {
-            if (rule.onAllNodesWithTag(tag, useUnmergedTree = true).fetchSemanticsNodes().isNotEmpty()) return
+            // The activity may still be composing when the first poll lands
+            // (the test starts before the first frame on slow processes) —
+            // "no compose hierarchies" is retryable within the window.
+            val found =
+                runCatching {
+                    rule.onAllNodesWithTag(tag, useUnmergedTree = true).fetchSemanticsNodes().isNotEmpty() ||
+                        (
+                            alternativeTag != null &&
+                                rule.onAllNodesWithTag(alternativeTag, useUnmergedTree = true).fetchSemanticsNodes().isNotEmpty()
+                        )
+                }.getOrDefault(false)
+            if (found) return
             Thread.sleep(POLL_MS)
         }
         val route = currentRoute(rule)

@@ -6,7 +6,7 @@
  * src/main/res/font/inter_*.ttf (R-D3).
  */
 plugins {
-    id("wlo.android.library")
+    id("wlo.android.library.compose")
 }
 
 dependencies {

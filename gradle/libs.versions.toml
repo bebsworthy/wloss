@@ -54,9 +54,11 @@ activityCompose = "1.13.0"
 lifecycle = "2.11.0"
 # navigation-compose 2.10.1 = latest stable (dl.google.com metadata; verified 2026-09-12)
 navigationCompose = "2.10.1"
-# androidx.test 1.7.0 / ext-junit 1.3.0 (dl.google.com metadata; verified 2026-09-12)
+# androidx.test 1.7.0 / ext-junit 1.3.0 / rules 1.7.0 (dl.google.com metadata;
+# verified 2026-09-12 — same androidx.test line)
 androidxTestRunner = "1.7.0"
 androidxTestExtJunit = "1.3.0"
+androidxTestRules = "1.7.0"
 # UI Automator 2.3.0 (dl.google.com androidx.test.uiautomator group index; latest
 # stable — 2.3.0, 2024-07) for shell-level instrumented steps (am force-stop)
 # in the onboarding acceptance tests.
@@ -68,6 +70,33 @@ orchestrator = "1.6.1"
 # okio 3.18.2 = <release> on repo1 (verified 2026-09-12); direct dep for datastore
 # path plumbing (datastore itself pulls okio transitively)
 okio = "3.18.2"
+# Ktor 3.5.2 = <release> on repo1 io.ktor metadata (verified 2026-09-12: client-core,
+# client-okhttp, client-content-negotiation, serialization-kotlinx-json all carry 3.5.2,
+# lastUpdated 2026-07-31). ADR-004 pin (3.5.x line). Declared ONLY in :core:network
+# (D9 allowlist — the single egress choke point).
+ktor = "3.5.2"
+# OkHttp 5.5.0 = <release> on repo1 com.squareup.okhttp3 (verified 2026-09-12).
+# Backs Ktor's OkHttp engine (ADR-004: Android engine lacks HTTP/2) and
+# mockwebserver3 5.5.0 (same line, same repo1 check) for JVM tests. Declared only
+# in :core:network (D9); mockwebserver3 is additionally name-exempt (localhost test
+# server, not an egress client).
+okhttp = "5.5.0"
+# ONNX Runtime Mobile 1.29.0 (com.microsoft.onnxruntime, MIT) — ADR-006 pin.
+# <release> on repo1 onnxruntime-android metadata (verified 2026-09-12; 1.29.1/1.30.0
+# AARs not on Central — see docs/tech/audit/onnxruntime.md). Consumed by :core:ai
+# from PART B (PhotoAnalyzer actuals); catalog entry records the verified pin.
+onnxruntime = "1.29.0"
+# CameraX 1.6.2 = latest STABLE on dl.google.com androidx.camera group index
+# (verified 2026-09-12; 1.7.0 only alphas). :core:media capture stack (F02 §3).
+camerax = "1.6.2"
+# ML Kit bundled barcode-scanning 17.3.0 / text-recognition 16.0.1 — audit-carded
+# pins (docs/tech/audit/mlkit-barcode.md, mlkit-text-recognition.md; verified
+# 2026-09-12). Declared ONLY in :core:ai (D1: restricted impl).
+mlkitBarcode = "17.3.0"
+mlkitText = "16.0.1"
+# ZXing android-embedded 4.3.0 = <release> on repo1 com.journeyapps
+# (verified 2026-09-12) — the Apache-2.0 BarcodeScanner fallback engine.
+zxingEmbedded = "4.3.0"
 # detekt 1.23.8 = <release> on repo1 io.gitlab.arturbosch.detekt (verified 2026-09-12)
 detekt = "1.23.8"
 # ktlint-gradle 14.2.0 (Mar 2026, actively maintained; GitHub releases + plugin
@@ -101,6 +130,25 @@ androidx-sqlite-bundled = { module = "androidx.sqlite:sqlite-bundled", version.r
 androidx-datastore-preferences = { module = "androidx.datastore:datastore-preferences", version.ref = "datastore" }
 okio = { module = "com.squareup.okio:okio", version.ref = "okio" }
 
+# --- Networking (D9: :core:network ONLY — the single egress choke point) ---
+ktor-client-core = { module = "io.ktor:ktor-client-core", version.ref = "ktor" }
+ktor-client-okhttp = { module = "io.ktor:ktor-client-okhttp", version.ref = "ktor" }
+ktor-client-content-negotiation = { module = "io.ktor:ktor-client-content-negotiation", version.ref = "ktor" }
+ktor-serialization-kotlinx-json = { module = "io.ktor:ktor-serialization-kotlinx-json", version.ref = "ktor" }
+okhttp-mockwebserver3 = { module = "com.squareup.okhttp3:mockwebserver3", version.ref = "okhttp" }
+
+# --- On-device inference (ADR-006; consumed from PART B) ---
+onnxruntime-android = { module = "com.microsoft.onnxruntime:onnxruntime-android", version.ref = "onnxruntime" }
+
+# --- Capture stack (F02 §3; :core:media + :core:ai only — D1 restricted impls) ---
+androidx-camera-core = { module = "androidx.camera:camera-core", version.ref = "camerax" }
+androidx-camera-camera2 = { module = "androidx.camera:camera-camera2", version.ref = "camerax" }
+androidx-camera-lifecycle = { module = "androidx.camera:camera-lifecycle", version.ref = "camerax" }
+androidx-camera-view = { module = "androidx.camera:camera-view", version.ref = "camerax" }
+mlkit-barcode-scanning = { module = "com.google.mlkit:barcode-scanning", version.ref = "mlkitBarcode" }
+mlkit-text-recognition = { module = "com.google.mlkit:text-recognition", version.ref = "mlkitText" }
+zxing-android-embedded = { module = "com.journeyapps:zxing-android-embedded", version.ref = "zxingEmbedded" }
+
 # --- AndroidX / Compose (versions via BOM) ---
 compose-bom = { module = "androidx.compose:compose-bom", version.ref = "composeBom" }
 compose-ui = { module = "androidx.compose.ui:ui" }
@@ -114,6 +162,7 @@ androidx-activity-compose = { module = "androidx.activity:activity-compose", ver
 androidx-lifecycle-runtime-compose = { module = "androidx.lifecycle:lifecycle-runtime-compose", version.ref = "lifecycle" }
 androidx-navigation-compose = { module = "androidx.navigation:navigation-compose", version.ref = "navigationCompose" }
 androidx-test-runner = { module = "androidx.test:runner", version.ref = "androidxTestRunner" }
+androidx-test-rules = { module = "androidx.test:rules", version.ref = "androidxTestRules" }
 androidx-test-ext-junit = { module = "androidx.test.ext:junit", version.ref = "androidxTestExtJunit" }
 androidx-test-uiautomator = { module = "androidx.test.uiautomator:uiautomator", version.ref = "uiautomator" }
 androidx-test-orchestrator = { module = "androidx.test:orchestrator", version.ref = "orchestrator" }

@@ -1,15 +1,14 @@
 import org.gradle.api.JavaVersion
 
 /**
- * `wlo.android.library` — Android-only library module with Compose
- * (`:core:designsystem` today, `:feature:*` and restricted impls later).
- * AGP 9 provides built-in Kotlin support (org.jetbrains.kotlin.android is
- * obsolete); the compose-compiler Gradle plugin is applied here so every
- * Compose-compiling module gets it automatically.
+ * `wlo.android.library` — Android-only library module base (AGP 9 built-in
+ * Kotlin support; org.jetbrains.kotlin.android is obsolete). NO Compose:
+ * compose-compiling modules apply `wlo.android.library.compose` instead, so
+ * non-UI restricted impls (`:core:network`) never drag the Compose compiler +
+ * runtime requirement into their compilations. Enforces D5 (`explicitApi()`).
  */
 plugins {
     id("com.android.library")
-    id("org.jetbrains.kotlin.plugin.compose")
     id("wlo.quality")
 }
 
@@ -24,10 +23,6 @@ android {
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
-    }
-
-    buildFeatures {
-        compose = true
     }
 
     lint {

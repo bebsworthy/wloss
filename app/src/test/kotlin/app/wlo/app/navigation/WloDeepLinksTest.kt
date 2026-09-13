@@ -24,10 +24,11 @@ public class WloDeepLinksTest {
     public fun realScreensResolveToTheirFeatureRoutes() {
         assertEquals("f06/weight", WloDeepLinks.routeFor("wlo://weight"))
         assertEquals("f06/log", WloDeepLinks.routeFor("wlo://weight/log"))
-        assertEquals("f02/log", WloDeepLinks.routeFor("wlo://log/capture"))
+        assertEquals("f02/capture", WloDeepLinks.routeFor("wlo://log/capture"))
         assertEquals("f02/log", WloDeepLinks.routeFor("wlo://log/search"))
         assertEquals("f02/quick-kcal", WloDeepLinks.routeFor("wlo://log/quick-kcal"))
         assertEquals("f02/diary?entry={entry}", WloDeepLinks.routeFor("wlo://diary"))
+        assertEquals("ai/models", WloDeepLinks.routeFor("wlo://ai/models"))
     }
 
     @Test

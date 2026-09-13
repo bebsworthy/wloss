@@ -2,9 +2,14 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
     <!--
-      D4: INTERNET is declared ONLY here (:app). M1 declares NO permission at
-      all — nothing networks yet (R-S14: no egress until consent exists).
+      D4 / R-S13: INTERNET is declared ONLY here (:app) — no library module may
+      declare it (checkArchitecture bans it in every module manifest and asserts
+      its presence in :app's merged manifest). Every packet flows through
+      :core:network's NetworkDispatcher: consent-gated (or the R-C4 allowance),
+      hash-chained-receipted, visible in the wlo://debug/egress monitor.
     -->
+    <uses-permission android:name="android.permission.INTERNET" />
+
     <application
         android:name=".WloApplication"
         android:label="WLO"

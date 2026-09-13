@@ -31,11 +31,21 @@ public object WloDeepLinks {
             // --- real screens (M3) ---
             entry("wlo://weight", "f06/weight"),
             entry("wlo://weight/log", "f06/log"),
-            entry("wlo://log/capture", "f02/log"),
+            // M4 PART B: the F02 capture flow (photo/barcode/label + the
+            // correction loop) is real; the manual ladder keeps log/search.
+            entry("wlo://log/capture", "f02/capture"),
             entry("wlo://log/search", "f02/log"),
             entry("wlo://log/quick-kcal", "f02/quick-kcal"),
             entry("wlo://diary", "f02/diary?entry={entry}"),
             entry("wlo://log/correct?entry={entry}", "f02/diary?entry={entry}"),
+            // --- debug diagnostics (M4): the egress monitor renders the
+            // persisted receipt ledger — F12 §3.8's "debug build renders a
+            // live egress monitor". Debug builds only; release lands on a stub.
+            entry("wlo://debug/egress", "debug/egress"),
+            // M4 PART B: the F12 model-manager surface (F12 §3.2) — a real
+            // screen beyond IA.md §3's literal list (flagged for the IA owner,
+            // same precedent as wlo://diary).
+            entry("wlo://ai/models", "ai/models"),
             // --- documented stubs (land in a later milestone, still navigating) ---
             stub("wlo://energy", "stub/energy", "Energy"),
             stub("wlo://checkin", "stub/checkin", "Check-in"),

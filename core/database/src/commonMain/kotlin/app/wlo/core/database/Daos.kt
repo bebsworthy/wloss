@@ -334,6 +334,39 @@ public interface DiaryEntryRevisionDao {
     public suspend fun forEntry(entryId: String): List<DiaryEntryRevisionEntity>
 }
 
+/** Projection POJO for [NetworkReceiptDao.countByPurpose]. */
+public data class PurposeCount(
+    public val purpose: String,
+    public val count: Long,
+)
+
+/**
+ * Egress receipt ledger (F12 §3.6, M4): append + read only — there is no
+ * update or delete path; the hash chain is the tamper evidence. Writes go
+ * through `:core:network`'s RoomEgressLedger, which assigns seq + chain hashes
+ * under a mutex; the debug egress monitor reads through the same ledger API.
+ */
+@Dao
+public interface NetworkReceiptDao {
+    @Insert
+    public suspend fun append(receipt: NetworkReceiptEntity)
+
+    @Query("SELECT * FROM network_receipts ORDER BY seq ASC LIMIT :limit")
+    public suspend fun recent(limit: Long): List<NetworkReceiptEntity>
+
+    @Query("SELECT * FROM network_receipts ORDER BY seq ASC")
+    public fun observeAll(): Flow<List<NetworkReceiptEntity>>
+
+    @Query("SELECT purpose, COUNT(*) AS count FROM network_receipts GROUP BY purpose")
+    public suspend fun countByPurpose(): List<PurposeCount>
+
+    @Query("SELECT COALESCE(SUM(bytes), 0) FROM network_receipts")
+    public suspend fun totalBytes(): Long
+
+    @Query("SELECT * FROM network_receipts ORDER BY seq DESC LIMIT 1")
+    public suspend fun last(): NetworkReceiptEntity?
+}
+
 @Dao
 public interface TargetsVersionDao {
     @Insert

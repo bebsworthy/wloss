@@ -95,10 +95,13 @@ public open class CheckArchitectureTask : DefaultTask() {
 }
 
 /**
- * D4 backstop: inspects :app's merged manifest output (debug variant) after
- * `processDebugMainManifest`. :app is entitled to INTERNET, so this task
- * verifies the merge ran and reports what the merged manifest contains; the
- * hard D4 ban lives in the module-manifest scan.
+ * D4 — the INTERNET gate, both directions. The module-manifest scan
+ * ([ArchRules.manifestViolations]) bans INTERNET everywhere except :app; THIS
+ * task is the positive assertion: since M4 the dispatcher ships, :app's merged
+ * manifest MUST declare INTERNET (R-S13 dropped the no-INTERNET "WLO Pure"
+ * flavor — the architecture copies openScale's structure, not the letter, per
+ * F12 §3.8). Fails when the merge produced no manifest or when INTERNET is
+ * missing — a silent regression to a socket-less app build must not pass.
  */
 public open class CheckMergedManifestTask : DefaultTask() {
 
@@ -108,11 +111,24 @@ public open class CheckMergedManifestTask : DefaultTask() {
 
     @TaskAction
     public fun check() {
-        val scanned = mergedManifests.files.filter { it.isFile }
+        val scanned = mergedManifests.files.filter { it.isFile && it.name.endsWith(".xml") }
+        if (scanned.isEmpty()) {
+            throw GradleException(
+                "D4: no merged manifest found among ${mergedManifests.files.size} output(s) — " +
+                    "the manifest merge must run before this check.",
+            )
+        }
         val withInternet = scanned.filter { it.readText().contains("android.permission.INTERNET") }
+        if (withInternet.isEmpty()) {
+            throw GradleException(
+                "D4/R-S13: :app's merged manifest does not declare android.permission.INTERNET. " +
+                    "All egress flows through :core:network's NetworkDispatcher (receipted, consent-gated) " +
+                    "and needs the permission in :app — and ONLY :app (module manifests are banned).",
+            )
+        }
         logger.lifecycle(
-            "checkMergedManifest: scanned ${scanned.size} merged manifest(s); " +
-                "${withInternet.size} contain INTERNET (:app is the only allowed origin).",
+            "checkMergedManifest: ${scanned.size} merged manifest(s) scanned; INTERNET present in :app " +
+                "(and only :app — the module-manifest scan bans it elsewhere).",
         )
     }
 }

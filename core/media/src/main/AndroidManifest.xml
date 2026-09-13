@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <!--
+      CAMERA (the capture stack, F02 §3): only INTERNET is arch-restricted to
+      :app (D4); CAMERA declares here where the camera code lives
+      (:core:media). Frames stay MEMORY-ONLY — see MemoryOnlyFramePipeline
+      (R-U14; R-U16 is the zero-persistence precedent).
+    -->
+    <uses-permission android:name="android.permission.CAMERA" />
+
+    <uses-feature android:name="android.hardware.camera.any" android:required="false" />
+
+</manifest>

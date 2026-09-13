@@ -34,25 +34,24 @@ public interface ConsentGate {
 
 /**
  * Hash-chain verifier for consent/receipt entries — used after backup/restore
- * and in the F12 receipt-log UI ("nothing was edited after the fact").
+ * and in the F12 receipt-log UI ("nothing was edited after the fact"). Delegates
+ * to [HashChain], the chain engine shared with the egress receipt ledger.
  */
 public object ConsentChain {
     /** True when every entry links to its predecessor with a valid hash. */
-    public fun verify(entries: List<ConsentEntry>): Boolean {
-        var expectedPrev = ConsentEntry.GENESIS_PREV_HASH
-        entries.forEachIndexed { index, entry ->
-            if (entry.seq != index.toLong()) return false
-            if (entry.prevHashHex != expectedPrev) return false
-            if (entry.hashHex != hashOf(entry)) return false
-            expectedPrev = entry.hashHex
-        }
-        return true
-    }
+    public fun verify(entries: List<ConsentEntry>): Boolean =
+        HashChain.verify(
+            entries = entries,
+            seqBase = 0L,
+            seqOf = ConsentEntry::seq,
+            prevHashOf = ConsentEntry::prevHashHex,
+            canonicalOf = ::canonicalOf,
+            hashOf = ConsentEntry::hashHex,
+        )
 
-    public fun hashOf(entry: ConsentEntry): String {
-        val canonical =
-            "${entry.seq}|${entry.atEpochMs}|${entry.capability.wireName}|" +
-                "${entry.decision.name}|${entry.prevHashHex}"
-        return Sha256.hex(Sha256.digest(canonical.encodeToByteArray()))
-    }
+    public fun hashOf(entry: ConsentEntry): String = HashChain.sha256Hex(canonicalOf(entry))
+
+    private fun canonicalOf(entry: ConsentEntry): String =
+        "${entry.seq}|${entry.atEpochMs}|${entry.capability.wireName}|" +
+            "${entry.decision.name}|${entry.prevHashHex}"
 }

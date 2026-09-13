@@ -1,5 +1,5 @@
 plugins {
-    id("wlo.android.library")
+    id("wlo.android.library.compose")
 }
 
 dependencies {

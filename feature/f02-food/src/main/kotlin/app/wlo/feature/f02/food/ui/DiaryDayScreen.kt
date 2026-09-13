@@ -97,9 +97,11 @@ public fun DiaryDayScreen(
         }
 
         state.notice?.let {
-            NoticeLine(it.text, rail = it.state == NoticeState.RAIL) {
-                viewModel.onEvent(DiaryEvent.DismissNotice)
-            }
+            NoticeLine(
+                it.text,
+                rail = it.state == NoticeState.RAIL,
+                onDismiss = { viewModel.onEvent(DiaryEvent.DismissNotice) },
+            )
         }
     }
 

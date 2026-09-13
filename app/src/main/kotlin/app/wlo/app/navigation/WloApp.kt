@@ -22,6 +22,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
@@ -46,14 +47,21 @@ import app.wlo.app.ui.PlaceholderCopy
 import app.wlo.app.ui.PlaceholderScreen
 import app.wlo.app.ui.STUB_TITLES
 import app.wlo.app.ui.StubScreen
+import app.wlo.app.ui.debug.EgressMonitorScreen
 import app.wlo.app.ui.shell.ShellState
 import app.wlo.app.ui.shell.ShellViewModel
+import app.wlo.app.ui.zoo.ZooScreen
 import app.wlo.core.designsystem.WloHaptic
 import app.wlo.core.designsystem.WloSpacing
 import app.wlo.core.designsystem.rememberWloHaptics
 import app.wlo.core.designsystem.wloExtendedColors
 import app.wlo.core.designsystem.wloType
+import app.wlo.core.media.WloCaptureMode
+import app.wlo.core.media.WloShutterBridge
+import app.wlo.core.media.WloViewfinder
 import app.wlo.feature.f01.onboarding.ui.OnboardingScreen
+import app.wlo.feature.f02.food.state.CaptureLensMode
+import app.wlo.feature.f02.food.ui.CaptureScreen
 import app.wlo.feature.f02.food.ui.DiaryDayScreen
 import app.wlo.feature.f02.food.ui.FoodLogScreen
 import app.wlo.feature.f06.weight.F06Routes
@@ -204,7 +212,7 @@ private fun RouteSurface(
                                 // scaffold; navigate as a URI so the pattern
                                 // matcher applies its default.
                                 onOpenDiary = { navController.navigate(Uri.parse("wlo://diary")) },
-                                onOpenCapture = { navController.navigate("f02/log") },
+                                onOpenCapture = { navController.navigate("f02/capture") },
                                 onQuickAddKcal = { navController.navigate("f02/quick-kcal") },
                                 onLogWeight = { navController.navigate("f06/log") },
                                 onOpenWeight = { navController.navigate("f06/weight") },
@@ -226,6 +234,39 @@ private fun RouteSurface(
                 viewModel = koinViewModel(parameters = { parametersOf(null, entryArg?.takeIf { it.isNotEmpty() }) }),
             )
 
+        // The F02 capture flow (M4 PART B): the camera stack (:core:media)
+        // composes into the flow's viewfinder slot here — the ONLY place the
+        // restricted module meets the feature (D1).
+        "f02/capture" -> {
+            onSurfaceChanged("f02/capture")
+            CaptureScreen(
+                viewModel = koinViewModel(),
+                viewfinder = { viewfinderModifier, lensMode, shutter, onPreview, isActive ->
+                    val bridge = remember { WloShutterBridge() }
+                    val mediaMode =
+                        when (lensMode) {
+                            CaptureLensMode.PHOTO -> WloCaptureMode.PHOTO
+                            CaptureLensMode.BARCODE -> WloCaptureMode.BARCODE
+                            CaptureLensMode.LABEL -> WloCaptureMode.LABEL
+                        }
+                    WloViewfinder(
+                        modifier = viewfinderModifier,
+                        mode = mediaMode,
+                        shutter = bridge,
+                        onPreviewFrame = onPreview,
+                        isActive = isActive,
+                    )
+                    LaunchedEffect(bridge) { shutter.bind { onFrame -> bridge.takeStill(onFrame) } }
+                },
+                onOpenManualLadder = { navController.navigate("f02/log") },
+                onOpenModelManager = { navController.navigate(Uri.parse("wlo://ai/models")) },
+                onDone = { navController.popBackStack() },
+            )
+        }
+
+        // The F12 model manager (R-S14): zoo catalog, download/reclaim.
+        "ai/models" -> ZooScreen()
+
         "f02/log" -> FoodLogScreen(viewModel = koinViewModel(parameters = { parametersOf(false) }))
 
         "f02/quick-kcal" -> FoodLogScreen(viewModel = koinViewModel(parameters = { parametersOf(true) }))
@@ -246,6 +287,10 @@ private fun RouteSurface(
 
         F06Routes.MATH -> MathDocsScreen()
         F06Routes.BODY_FAT -> BodyFatScreen(viewModel = koinViewModel())
+
+        // Debug diagnostics (M4): the egress monitor — debug builds render the
+        // persisted receipt ledger; release builds get an honest note instead.
+        "debug/egress" -> EgressMonitorScreen()
 
         else -> StubScreen(title = STUB_TITLES[route] ?: "Coming later")
     }

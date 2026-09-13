@@ -198,7 +198,35 @@ public object Migrations {
             }
         }
 
-    public val ALL: Array<Migration> = arrayOf(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4)
+    /**
+     * v4 → v5: the F12 egress receipt ledger (WLO-0026 PART A, F12 §3.6/§3.8).
+     * `network_receipts` is append-only and hash-chained (prevHash/hash columns,
+     * chain engine in :core:consent) — the Room shape mirrors the exported
+     * `5.json` createSql exactly.
+     */
+    public val MIGRATION_4_5: Migration =
+        object : Migration(4, 5) {
+            override suspend fun migrate(connection: SQLiteConnection) {
+                connection.exec(
+                    "CREATE TABLE IF NOT EXISTS `network_receipts` (" +
+                        "`seq` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `purpose` TEXT NOT NULL, " +
+                        "`host` TEXT NOT NULL, `operation` TEXT NOT NULL, `bytes` INTEGER NOT NULL, " +
+                        "`outcome` TEXT NOT NULL, `atEpochMs` INTEGER NOT NULL, " +
+                        "`prevHashHex` TEXT NOT NULL, `hashHex` TEXT NOT NULL)",
+                )
+                connection.exec(
+                    "CREATE INDEX IF NOT EXISTS `index_network_receipts_purpose` " +
+                        "ON `network_receipts` (`purpose`)",
+                )
+                connection.exec(
+                    "CREATE INDEX IF NOT EXISTS `index_network_receipts_atEpochMs` " +
+                        "ON `network_receipts` (`atEpochMs`)",
+                )
+            }
+        }
+
+    public val ALL: Array<Migration> =
+        arrayOf(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5)
 }
 
 /** Small extension mirroring the statement-prepare/step pattern used above. */

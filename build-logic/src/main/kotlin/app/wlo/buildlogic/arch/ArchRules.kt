@@ -53,17 +53,28 @@ public object ArchRules {
         Regex("Text\\(\\s*[A-Za-z_][A-Za-z0-9_]*(?:(?:Value|Dv)\\b|(?:Derived)[A-Za-z0-9_]*)\\.value")
 
     /**
-     * D9 — zero-egress structural check (complements D4 at the dependency
-     * level): networking stacks may not be DECLARED by any project. All
-     * egress lives behind F12's single `NetworkDispatcher` in `:core:network`
-     * (which only `:app` sees, D1); F13 owns the architectural enforcement.
-     * Data-driven: extend these lists to ban more artifacts. `okio` stays
-     * legal (datastore path plumbing, M1); matching is on artifact NAME and
-     * GROUP, so `com.squareup.okio:okio` is never hit by the `okhttp` rule.
+     * D9 — zero-implicit-egress structural check (complements D4 at the
+     * dependency level): networking stacks may not be DECLARED by any project
+     * EXCEPT the choke point itself — `:core:network` (the F12 §3.8
+     * `NetworkDispatcher`, the only code allowed to open a socket; D1 keeps it
+     * visible to `:app` alone). Matching is on artifact NAME and GROUP, so
+     * `com.squareup.okio:okio` is never hit by the `okhttp` rule. One further
+     * name exemption: `mockwebserver` artifacts BIND a localhost server for
+     * tests — they cannot egress — so they are legal as test dependencies
+     * anywhere.
      */
     public val BANNED_ARTIFACT_NAMES: List<String> = listOf("ktor", "okhttp", "retrofit")
     public val BANNED_ARTIFACT_GROUPS: List<String> =
         listOf("io.ktor", "com.squareup.okhttp3", "com.squareup.retrofit2")
+
+    /** D9 — the ONLY project allowed to declare the networking stacks. */
+    public val D9_EGRESS_MODULE: String = ":core:network"
+
+    /** D9 — groups the choke point itself may declare (its own stack). */
+    public val D9_EGRESS_GROUPS: Set<String> = setOf("io.ktor", "com.squareup.okhttp3")
+
+    /** D9 — localhost test servers are exempt everywhere (they never egress). */
+    public val D9_TEST_SERVER_NAMES: List<String> = listOf("mockwebserver")
 
     /** D1 + D2: project-dependency edges that must not exist. Self-edges
      * (from == to) are exempt: AGP's own library test configurations declare
@@ -166,19 +177,31 @@ public object ArchRules {
 
     /**
      * D9: banned external artifacts (networking stacks) declared on any
-     * configuration of any project. [declarations] carry "project|group|name".
+     * configuration of any project — except the choke point (:core:network)
+     * and name-exempt localhost test servers. [declarations] carry
+     * "project|group|name".
      */
     public fun bannedArtifactViolations(declarations: List<ExternalDependency>): List<Violation> =
         declarations.flatMap { dep ->
             val nameHit = BANNED_ARTIFACT_NAMES.firstOrNull { dep.name.contains(it, ignoreCase = true) }
             val groupHit = BANNED_ARTIFACT_GROUPS.firstOrNull { dep.group.contains(it, ignoreCase = true) }
-            buildList {
-                if (nameHit != null) {
-                    add(banViolation(dep, "artifact name '$nameHit'"))
-                }
-                if (groupHit != null) {
-                    add(banViolation(dep, "group '$groupHit'"))
-                }
+            when {
+                // The choke point's own stack (ktor/okhttp) is its business.
+                dep.project == D9_EGRESS_MODULE && (groupHit == null || groupHit in D9_EGRESS_GROUPS) ->
+                    emptyList()
+
+                // MockWebServer binds localhost for tests — it cannot egress.
+                D9_TEST_SERVER_NAMES.any { dep.name.contains(it, ignoreCase = true) } -> emptyList()
+
+                else ->
+                    buildList {
+                        if (nameHit != null) {
+                            add(banViolation(dep, "artifact name '$nameHit'"))
+                        }
+                        if (groupHit != null) {
+                            add(banViolation(dep, "group '$groupHit'"))
+                        }
+                    }
             }
         }
 
@@ -189,8 +212,11 @@ public object ArchRules {
         Violation(
             "D9",
             "${dep.project}: banned networking artifact ${dep.group}:${dep.name} (matched by $what). " +
-                "Zero egress: all traffic goes through F12's NetworkDispatcher in :core:network, " +
-                "visible only to :app (D1). Evidence: merged manifests contain no INTERNET outside :app (D4).",
+                "Zero implicit egress: all traffic goes through F12's NetworkDispatcher — the stack " +
+                "itself may only be declared by $D9_EGRESS_MODULE " +
+                "(allowlisted groups: ${D9_EGRESS_GROUPS.joinToString()}) — and mockwebserver test " +
+                "servers are the only other exemption. " +
+                "Evidence: merged manifests contain INTERNET in :app only (D4).",
         )
 
     /**

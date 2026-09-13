@@ -78,6 +78,28 @@ public data class NewDiaryEntry(
     /** F02 §4 kcal-only quick-add path — bypasses portion math when set. */
     public val kcalOnly: Double? = null,
     public val enteredVia: EntryVia = EntryVia.MANUAL_SEARCH,
+    /**
+     * AI-estimate metadata for the provenance row (F02 §5: "AI-estimated
+     * (on-device, v1.4)"): set ONLY by capture-flow saves. When present, the
+     * entry's `provenance` row carries the model id as the formula version
+     * and the model/confidence/consent state as inputs — the "how we got
+     * here" sheet can name the model, the confidence and the consent state.
+     * Additive field (M4): null for every pre-existing save path.
+     */
+    public val estimate: EstimateProvenance? = null,
+)
+
+/** Model + consent paperwork for one AI-assisted save (no schema change — rides the provenance row). */
+@Serializable
+public data class EstimateProvenance(
+    /** Zoo model id, e.g. `food-classifier/1`. */
+    public val modelId: String,
+    /** Top-1 (or per-item) confidence at save time. */
+    public val confidence: Double? = null,
+    /** Consent state at save time — on-device inference needs none (false = none used). */
+    public val consentGranted: Boolean = false,
+    /** True when the analyzer held this estimate (low confidence); the UI says so. */
+    public val held: Boolean = false,
 )
 
 /** Edit input; every accepted edit bumps the entry's revision chain. */
@@ -212,7 +234,7 @@ public class RoomDiaryRepository public constructor(
                     createdAtEpochMs = at.toEpochMilliseconds(),
                 )
             dao.insert(entity)
-            writeProvenance(entry.profileId, entry.dayEpochDay, scalar, computed, at)
+            writeProvenance(entry.profileId, entry.dayEpochDay, scalar, computed, at, entry.estimate)
             projector.refresh(entry.profileId, entry.dayEpochDay, entry.dayEpochDay)
             entity.toDomain()
         }
@@ -417,15 +439,36 @@ public class RoomDiaryRepository public constructor(
         scalar: String,
         computed: ComputedEntry,
         at: Instant,
+        estimate: EstimateProvenance? = null,
     ) {
+        // AI-assisted saves override the method/version line so the provenance
+        // row names the model + consent state (F02 §5's "AI-estimated
+        // (on-device, <model>)"). The portion math itself is unchanged.
+        val method =
+            estimate
+                ?.let { PROVENANCE_METHOD_AI_ESTIMATE }
+                ?: computed.method
+        val formulaVersion = estimate?.modelId ?: computed.formulaVersion
+        val inputs =
+            estimate
+                ?.let {
+                    computed.inputs +
+                        listOf(
+                            "model=${it.modelId}",
+                            "confidence=${it.confidence ?: "none"}",
+                            "consent=${it.consentGranted}",
+                            "held=${it.held}",
+                        )
+                }
+                ?: computed.inputs
         db.provenance().upsert(
             ProvenanceEntity(
                 profileId = profileId,
                 dayEpochDay = day,
                 scalar = scalar,
-                method = computed.method,
-                formulaVersion = computed.formulaVersion,
-                inputsHash = InputsHash.fnv1a64(computed.inputs.joinToString(";")),
+                method = method,
+                formulaVersion = formulaVersion,
+                inputsHash = InputsHash.fnv1a64(inputs.joinToString(";")),
                 computedAtEpochMs = at.toEpochMilliseconds(),
             ),
         )
@@ -446,6 +489,7 @@ public class RoomDiaryRepository public constructor(
     public companion object {
         /** Provenance method labels (the "how we got here" sheet reads these). */
         public const val PROVENANCE_METHOD_FOOD_ITEM: String = "food-item-portion"
+        public const val PROVENANCE_METHOD_AI_ESTIMATE: String = "ai-estimate"
         public const val PROVENANCE_METHOD_QUICK_ADD: String = "quick-add"
         public const val PROVENANCE_METHOD_TEXT_HINT: String = "text-hint"
 

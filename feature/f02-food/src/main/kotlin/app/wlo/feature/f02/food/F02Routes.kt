@@ -15,6 +15,13 @@ public object F02Routes {
     /** The kcal-only quick-add sheet, opened over the ladder. */
     public const val QUICK_KCAL: String = "f02/quick-kcal"
 
+    /**
+     * The full-screen capture flow (F02 §3 rungs 1-3): photo -> scan ->
+     * correct -> save, with the barcode/label assists and their R-U15 manual
+     * twins in the same surface. IA.md §3 rows this as `wlo://log/capture`.
+     */
+    public const val CAPTURE: String = "f02/capture"
+
     /** Optional arg of [DIARY]: the epoch day to render (defaults to today). */
     public const val ARG_DAY: String = "day"
 

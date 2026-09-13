@@ -1,0 +1,16 @@
+{
+  "schemaVersion": 1,
+  "revision": "zoo-manifest/2026-09-12",
+  "models": [
+    {
+      "id": "food-classifier/1",
+      "purpose": "food-photo",
+      "url": "https://huggingface.co/AlexKoff88/mobilenet_v2_food101/resolve/main/mobilenet_v2_food101.onnx",
+      "sha256Hex": "af237923fd4636f5c6156059e372871a2b63e4a851f377f1b92ae8c71d018890",
+      "sizeBytes": 9835830,
+      "license": "Apache-2.0",
+      "provenance": "Food-101 + ImageNet-init MobileNetV2, top-1 76.3%",
+      "format": "onnx"
+    }
+  ]
+}

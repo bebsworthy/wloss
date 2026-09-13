@@ -11,6 +11,7 @@ import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performTextClearance
 import androidx.compose.ui.test.performTextInput
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import androidx.test.rule.GrantPermissionRule
 import androidx.test.uiautomator.UiDevice
 import app.wlo.app.di.FixedClock
 import app.wlo.core.common.ClockPort
@@ -30,7 +31,12 @@ import org.koin.dsl.module
  */
 @RunWith(AndroidJUnit4::class)
 public class M3ScreensTest {
-    @get:Rule
+    // The hub camera tile opens the REAL capture flow (M4 PART B) — grant the
+    // camera before launch so no system dialog blocks the composition.
+    @get:Rule(order = 1)
+    public val cameraPermission: GrantPermissionRule = GrantPermissionRule.grant(android.Manifest.permission.CAMERA)
+
+    @get:Rule(order = 2)
     public val rule = createAndroidComposeRule<MainActivity>()
 
     @Test
@@ -56,8 +62,12 @@ public class M3ScreensTest {
         shot("m3-provenance-revisions")
         backTo(ui, "hub-quick-actions") // IME → sheet → diary pops
 
-        // Ladder: search results → portion sheet (rail quick action, no intents).
+        // Ladder: the hub camera tile now opens the REAL capture flow (M4
+        // PART B); the manual ladder is its R-U15 twin, one tap away — which
+        // this also exercises.
         rule.onAllNodesWithText("log food").onFirst().performClick()
+        TestNav.awaitTag(rule, "f02-capture-viewfinder")
+        rule.onNodeWithTag("f02-capture-manual", useUnmergedTree = true).performClick()
         TestNav.awaitTag(rule, "f02-search-field")
         rule.onNodeWithTag("f02-search-field").performTextInput("oats")
         TestNav.awaitTag(rule, "f02-search-results")

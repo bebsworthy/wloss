@@ -150,6 +150,31 @@ class ArchitectureCheckSelfTest {
     }
 
     @Test
+    fun d4_moduleManifestWithoutInternet_stillPasses() {
+        // The positive half of D4 (INTERNET present in :app's MERGED manifest)
+        // runs against the real AGP merge in `checkMergedManifest`; here we pin
+        // the negative half's complement: plain library manifests are clean.
+        val manifest = """
+            <manifest xmlns:android="http://schemas.android.com/apk/res/android" />
+        """.trimIndent()
+        val result = run(
+            fixture(
+                mapOf(
+                    "settings.gradle.kts" to settings(":core:silent"),
+                    rootBuild.first to rootBuild.second,
+                    "core/silent/build.gradle.kts" to "",
+                    "core/silent/src/main/AndroidManifest.xml" to manifest,
+                ),
+            ),
+        )
+        assertEquals(
+            TaskOutcome.SUCCESS,
+            result.task(":checkArchitecture")?.outcome,
+            "a permission-free module manifest is D4-clean:\n${result.output}",
+        )
+    }
+
+    @Test
     fun d6_rawDerivedValueRenderFails() {
         val result = runFailing(
             fixture(
@@ -187,7 +212,7 @@ class ArchitectureCheckSelfTest {
     }
 
     @Test
-    fun d9_networkingStacksAreBannedEverywhere() {
+    fun d9_ktorOutsideTheChokePointFails() {
         val result = runFailing(
             fixture(
                 mapOf(
@@ -204,6 +229,73 @@ class ArchitectureCheckSelfTest {
             ),
         )
         assertTrue("D9" in result.output, "output must name rule D9:\n${result.output}")
+    }
+
+    @Test
+    fun d9_ktorAndOkhttpInsideCoreNetwork_areTheAllowedChokePoint() {
+        val result = run(
+            fixture(
+                mapOf(
+                    "settings.gradle.kts" to settings(":core:network"),
+                    rootBuild.first to rootBuild.second,
+                    "core/network/build.gradle.kts" to """
+                        plugins { `java` }
+                        repositories { mavenCentral() }
+                        dependencies {
+                            implementation("io.ktor:ktor-client-core:3.5.2")
+                            implementation("io.ktor:ktor-client-okhttp:3.5.2")
+                            implementation("com.squareup.okhttp3:okhttp:5.5.0")
+                            testImplementation("com.squareup.okhttp3:mockwebserver3:5.5.0")
+                        }
+                    """.trimIndent(),
+                ),
+            ),
+        )
+        assertEquals(
+            TaskOutcome.SUCCESS,
+            result.task(":checkArchitecture")?.outcome,
+            ":core:network is the single F12 §3.8 choke point — its stack must be legal:\n${result.output}",
+        )
+    }
+
+    @Test
+    fun d9_theAllowlistDoesNotExtendPastCoreNetwork() {
+        val result = runFailing(
+            fixture(
+                mapOf(
+                    "settings.gradle.kts" to settings(":feature:f99-ui"),
+                    rootBuild.first to rootBuild.second,
+                    "feature/f99-ui/build.gradle.kts" to """
+                        plugins { `java` }
+                        repositories { mavenCentral() }
+                        dependencies { implementation("com.squareup.okhttp3:okhttp:5.5.0") }
+                    """.trimIndent(),
+                ),
+            ),
+        )
+        assertTrue("D9" in result.output, "okhttp outside :core:network must still fail:\n${result.output}")
+    }
+
+    @Test
+    fun d9_mockwebserverTestServersAreExempt() {
+        val result = run(
+            fixture(
+                mapOf(
+                    "settings.gradle.kts" to settings(":core:zoo"),
+                    rootBuild.first to rootBuild.second,
+                    "core/zoo/build.gradle.kts" to """
+                        plugins { `java` }
+                        repositories { mavenCentral() }
+                        dependencies { testImplementation("com.squareup.okhttp3:mockwebserver3:5.5.0") }
+                    """.trimIndent(),
+                ),
+            ),
+        )
+        assertEquals(
+            TaskOutcome.SUCCESS,
+            result.task(":checkArchitecture")?.outcome,
+            "mockwebserver binds localhost for tests — it cannot egress:\n${result.output}",
+        )
     }
 
     @Test

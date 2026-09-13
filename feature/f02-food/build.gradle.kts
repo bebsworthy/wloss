@@ -1,5 +1,5 @@
 plugins {
-    id("wlo.android.library")
+    id("wlo.android.library.compose")
 }
 
 dependencies {
@@ -19,11 +19,14 @@ dependencies {
     // D6: numbers render only via designsystem provenance components.
     implementation(project(":core:designsystem"))
 
-    // Feature spine doors (ARCHITECTURE §2.2): model/engines/data only.
+    // Feature spine doors (ARCHITECTURE §2.2): model/engines/data/ports only.
     implementation(project(":core:model"))
     implementation(project(":core:common"))
     implementation(project(":core:engines"))
     implementation(project(":core:data"))
+    // Capture ports (PhotoAnalyzer, BarcodeScanner, OcrReader, OffRepository,
+    // CapturedFrame) — implementations stay invisible (D1); :app binds them.
+    implementation(project(":core:ports"))
 
     testImplementation(libs.kotlin.test.junit)
 }

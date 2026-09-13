@@ -154,9 +154,11 @@ public fun FoodLogScreen(
         }
 
         state.notice?.let {
-            NoticeLine(it.text, rail = it.state == NoticeState.RAIL) {
-                viewModel.onEvent(FoodLogEvent.DismissNotice)
-            }
+            NoticeLine(
+                it.text,
+                rail = it.state == NoticeState.RAIL,
+                onDismiss = { viewModel.onEvent(FoodLogEvent.DismissNotice) },
+            )
         }
     }
 
@@ -295,12 +297,13 @@ internal fun NoticeLine(
     text: String,
     rail: Boolean,
     onDismiss: () -> Unit,
+    modifier: Modifier = Modifier,
 ) {
     val tint =
         if (rail) wloExtendedColors.held else MaterialTheme.colorScheme.primary
     return Surface(
         onClick = onDismiss,
-        modifier = Modifier.fillMaxWidth(),
+        modifier = modifier.fillMaxWidth(),
         shape = WloShape.Chip,
         color = tint.copy(alpha = 0.12f),
         contentColor = tint,

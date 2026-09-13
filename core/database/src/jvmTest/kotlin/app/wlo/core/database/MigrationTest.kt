@@ -21,7 +21,8 @@ import kotlin.test.assertTrue
  * (c) the structural guarantees the spine relies on (FK clause on the EAV
  * sidecar, unique (profileId, version) on targets_versions). v3 → v4 lands
  * the F02 diary + FTS5 search and proves the FTS backfill finds pre-existing
- * catalog rows. v1 → v2 remains from M1: users on schema v1 chain 1→2→3→4.
+ * catalog rows. v4 → v5 lands the F12 egress receipt ledger. v1 → v2 remains
+ * from M1: users on schema v1 chain 1→2→3→4→5.
  */
 class MigrationTest {
     private val schemasDir: java.nio.file.Path =
@@ -180,18 +181,78 @@ class MigrationTest {
         }
 
     @Test
-    fun v1DatabaseChainsThroughToV4() =
+    fun migrate4To5_createsTheEgressReceiptLedger() =
+        runTest {
+            helper.createDatabase(4).use { connection ->
+                // A v4-era diary row must come through untouched.
+                connection.exec(
+                    "INSERT INTO diary_entries " +
+                        "(id, profileId, dayEpochDay, mealSlot, quantity, unit, computedKcal, " +
+                        "enteredVia, provenanceScalar, revision, createdAtEpochMs) " +
+                        "VALUES ('e1', 'p1', 20708, 'breakfast', 60.0, 'g', 220.0, 'manual', " +
+                        "'diary/kcal/e1', 0, 1000)",
+                )
+            }
+
+            val migrated = helper.runMigrationsAndValidate(5, listOf(Migrations.MIGRATION_4_5))
+            migrated.use { connection ->
+                // (a) The receipt table exists with its indices (the helper has
+                // already validated the exact shape against schemas/5.json).
+                listOf(
+                    "network_receipts",
+                    "index_network_receipts_purpose",
+                    "index_network_receipts_atEpochMs",
+                ).forEach { name ->
+                    assertEquals(
+                        1L,
+                        queryLong(connection, "SELECT COUNT(*) FROM sqlite_master WHERE name='$name'"),
+                        "$name must exist after migration",
+                    )
+                }
+
+                // (b) The chain columns are usable: the AUTOINCREMENT seq
+                // begins at 1 and the prev/hash pair is writable.
+                connection.exec(
+                    "INSERT INTO network_receipts " +
+                        "(purpose, host, operation, bytes, outcome, atEpochMs, prevHashHex, hashHex) " +
+                        "VALUES ('zoo-download', 'huggingface.co', 'food-classifier/1', 9835830, " +
+                        "'ok', 1000, '" + "0".repeat(64) + "', 'abc')",
+                )
+                val seq = queryLong(connection, "SELECT MIN(seq) FROM network_receipts")
+                assertEquals(1L, seq, "AUTOINCREMENT receipt seq starts at 1 (chain base)")
+
+                // (c) The v4 diary row survived.
+                assertEquals(
+                    1L,
+                    queryLong(connection, "SELECT COUNT(*) FROM diary_entries WHERE id='e1'"),
+                    "pre-existing diary rows must survive the migration",
+                )
+            }
+        }
+
+    @Test
+    fun v1DatabaseChainsThroughToV5() =
         runTest {
             helper.createDatabase(1).close()
             helper
                 .runMigrationsAndValidate(
-                    4,
-                    listOf(Migrations.MIGRATION_1_2, Migrations.MIGRATION_2_3, Migrations.MIGRATION_3_4),
+                    5,
+                    listOf(
+                        Migrations.MIGRATION_1_2,
+                        Migrations.MIGRATION_2_3,
+                        Migrations.MIGRATION_3_4,
+                        Migrations.MIGRATION_4_5,
+                    ),
                 ).use { connection ->
                     assertEquals(
                         1L,
                         queryLong(connection, "SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name='diary_entries'"),
-                        "the chained 1→2→3→4 migration reaches the M3 diary schema",
+                        "the chained 1→2→3→4→5 migration reaches the M3 diary schema",
+                    )
+                    assertEquals(
+                        1L,
+                        queryLong(connection, "SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name='network_receipts'"),
+                        "the chained 1→2→3→4→5 migration reaches the M4 egress receipt ledger",
                     )
                 }
         }

@@ -7,7 +7,6 @@
 ## backlog
 
 ## todo
-- WLO-0026
 - WLO-0027
 - WLO-0028
 
