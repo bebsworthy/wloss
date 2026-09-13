@@ -2,6 +2,7 @@ package app.wlo.core.database
 
 import androidx.room3.Dao
 import androidx.room3.Insert
+import androidx.room3.OnConflictStrategy
 import androidx.room3.Query
 import androidx.room3.Update
 import androidx.room3.Upsert
@@ -18,6 +19,14 @@ import kotlinx.coroutines.flow.Flow
 public interface ProfileDao {
     @Upsert
     public suspend fun upsert(profile: ProfileEntity)
+
+    /** F13 backup snapshot (M6): full-table dump for the vault pipeline. */
+    @Query("SELECT * FROM profiles ORDER BY createdAtEpochMs ASC")
+    public suspend fun all(): List<ProfileEntity>
+
+    /** F13 staged restore (M6): keep-local on conflict. */
+    @Insert(onConflict = OnConflictStrategy.IGNORE)
+    public suspend fun insertAllIgnoring(profiles: List<ProfileEntity>)
 
     @Query("SELECT * FROM profiles WHERE id = :id")
     public suspend fun byId(id: String): ProfileEntity?
@@ -95,6 +104,17 @@ public interface MeasurementEventDao {
 
     @Query("SELECT COUNT(*) FROM measurement_events WHERE profileId = :profileId")
     public suspend fun count(profileId: String): Int
+
+    /** F13 backup snapshot (M6). */
+    @Query("SELECT * FROM measurement_events ORDER BY capturedAtEpochMs ASC")
+    public suspend fun all(): List<MeasurementEventEntity>
+
+    @Query("SELECT * FROM measurement_events WHERE id = :id")
+    public suspend fun byId(id: String): MeasurementEventEntity?
+
+    /** F13 staged restore (M6): append/reconcile — existing rows stay LOCAL. */
+    @Insert(onConflict = OnConflictStrategy.IGNORE)
+    public suspend fun insertAllIgnoring(events: List<MeasurementEventEntity>)
 }
 
 @Dao
@@ -104,6 +124,14 @@ public interface MeasurementEventAttrDao {
 
     @Query("SELECT * FROM measurement_event_attrs WHERE eventId = :eventId")
     public suspend fun forEvent(eventId: String): List<MeasurementEventAttrEntity>
+
+    /** F13 backup snapshot (M6). */
+    @Query("SELECT * FROM measurement_event_attrs")
+    public suspend fun all(): List<MeasurementEventAttrEntity>
+
+    /** F13 staged restore (M6): keep-local on conflict. */
+    @Insert(onConflict = OnConflictStrategy.IGNORE)
+    public suspend fun insertAllIgnoring(attrs: List<MeasurementEventAttrEntity>)
 }
 
 /**
@@ -170,6 +198,14 @@ public interface ProvenanceDao {
         fromDay: Long,
         toDay: Long,
     ): Flow<List<ProvenanceEntity>>
+
+    /** F13 backup snapshot (M6). */
+    @Query("SELECT * FROM provenance")
+    public suspend fun all(): List<ProvenanceEntity>
+
+    /** F13 staged restore (M6): keep-local on conflict. */
+    @Insert(onConflict = OnConflictStrategy.IGNORE)
+    public suspend fun insertAllIgnoring(rows: List<ProvenanceEntity>)
 }
 
 /**
@@ -186,6 +222,14 @@ public interface ConsentLedgerDao {
 
     @Query("SELECT * FROM consent_ledger ORDER BY seq ASC")
     public fun observeAll(): Flow<List<ConsentLedgerEntity>>
+
+    /** F13 staged restore (M6): explicit-seq rows from a verified chain. */
+    @Insert(onConflict = OnConflictStrategy.IGNORE)
+    public suspend fun appendAllIgnoring(entries: List<ConsentLedgerEntity>)
+
+    /** F13 restore reconciliation: the local chain head (null = empty ledger). */
+    @Query("SELECT * FROM consent_ledger ORDER BY seq DESC LIMIT 1")
+    public suspend fun last(): ConsentLedgerEntity?
 }
 
 /**
@@ -224,6 +268,14 @@ public interface FoodItemDao {
         id: String,
         atEpochMs: Long,
     )
+
+    /** F13 backup snapshot (M6): includes archived rows (archive-don't-delete). */
+    @Query("SELECT * FROM food_items ORDER BY name COLLATE NOCASE ASC")
+    public suspend fun all(): List<FoodItemEntity>
+
+    /** F13 staged restore (M6): keep-local on conflict. */
+    @Insert(onConflict = OnConflictStrategy.IGNORE)
+    public suspend fun insertAllIgnoring(items: List<FoodItemEntity>)
 }
 
 /**
@@ -241,6 +293,10 @@ public interface FoodSearchDao {
 
     @Query("DELETE FROM food_search WHERE foodId = :foodId")
     public suspend fun deleteForFood(foodId: String)
+
+    /** F13 staged restore (M6): rebuild the FTS mirror for restored catalog rows. */
+    @Insert(onConflict = OnConflictStrategy.IGNORE)
+    public suspend fun insertAll(rows: List<FoodSearchEntity>)
 
     @Query(
         "SELECT food_items.* FROM food_items " +
@@ -317,6 +373,14 @@ public interface DiaryEntryDao {
     @Query("SELECT COUNT(*) FROM diary_entries WHERE profileId = :profileId")
     public suspend fun count(profileId: String): Int
 
+    /** F13 backup snapshot (M6): includes archived + hidden rows (R-B7 ledger). */
+    @Query("SELECT * FROM diary_entries ORDER BY createdAtEpochMs ASC")
+    public suspend fun all(): List<DiaryEntryEntity>
+
+    /** F13 staged restore (M6): keep-local on conflict. */
+    @Insert(onConflict = OnConflictStrategy.IGNORE)
+    public suspend fun insertAllIgnoring(entries: List<DiaryEntryEntity>)
+
     @Query("UPDATE diary_entries SET archivedAtEpochMs = :atEpochMs WHERE id = :id")
     public suspend fun archive(
         id: String,
@@ -332,6 +396,14 @@ public interface DiaryEntryRevisionDao {
 
     @Query("SELECT * FROM diary_entry_revisions WHERE entryId = :entryId ORDER BY revision ASC")
     public suspend fun forEntry(entryId: String): List<DiaryEntryRevisionEntity>
+
+    /** F13 backup snapshot (M6). */
+    @Query("SELECT * FROM diary_entry_revisions ORDER BY entryId, revision ASC")
+    public suspend fun all(): List<DiaryEntryRevisionEntity>
+
+    /** F13 staged restore (M6): keep-local on conflict. */
+    @Insert(onConflict = OnConflictStrategy.IGNORE)
+    public suspend fun insertAllIgnoring(revisions: List<DiaryEntryRevisionEntity>)
 }
 
 /** Projection POJO for [NetworkReceiptDao.countByPurpose]. */
@@ -399,6 +471,14 @@ public interface TargetsVersionDao {
         version: Int,
         atEpochMs: Long,
     )
+
+    /** F13 backup snapshot (M6): full version history. */
+    @Query("SELECT * FROM targets_versions ORDER BY profileId, version ASC")
+    public suspend fun all(): List<TargetsVersionEntity>
+
+    /** F13 staged restore (M6): keep-local on conflict (both id and (profile, version)). */
+    @Insert(onConflict = OnConflictStrategy.IGNORE)
+    public suspend fun insertAllIgnoring(versions: List<TargetsVersionEntity>)
 }
 
 // --- v6: F03 planner + F04 list/pantry ---------------------------------------
@@ -456,6 +536,14 @@ public interface RecipeDao {
         recipeId: String,
         atEpochMs: Long,
     )
+
+    /** F13 backup snapshot (M6): every version of every recipe, archived included. */
+    @Query("SELECT * FROM recipes ORDER BY recipeId, version ASC")
+    public suspend fun all(): List<RecipeEntity>
+
+    /** F13 staged restore (M6): keep-local on conflict (immutable versions). */
+    @Insert(onConflict = OnConflictStrategy.IGNORE)
+    public suspend fun insertAllIgnoring(recipes: List<RecipeEntity>)
 }
 
 /** Canonical grocery catalog (F04): archive-don't-delete, like the food catalog. */
@@ -505,6 +593,14 @@ public interface GroceryItemDao {
 
     @Query("SELECT COUNT(*) FROM grocery_items WHERE profileId = :profileId")
     public suspend fun count(profileId: String): Int
+
+    /** F13 backup snapshot (M6). */
+    @Query("SELECT * FROM grocery_items ORDER BY name COLLATE NOCASE ASC")
+    public suspend fun all(): List<GroceryItemEntity>
+
+    /** F13 staged restore (M6): keep-local on conflict. */
+    @Insert(onConflict = OnConflictStrategy.IGNORE)
+    public suspend fun insertAllIgnoring(items: List<GroceryItemEntity>)
 }
 
 /** Plan generations: one active plan per profile (supersede on new write). */
@@ -542,6 +638,14 @@ public interface PlanVersionDao {
 
     @Query("SELECT COUNT(*) FROM plan_versions WHERE profileId = :profileId")
     public suspend fun count(profileId: String): Int
+
+    /** F13 backup snapshot (M6): superseded generations included (they are history). */
+    @Query("SELECT * FROM plan_versions ORDER BY profileId, version ASC")
+    public suspend fun all(): List<PlanVersionEntity>
+
+    /** F13 staged restore (M6): keep-local on conflict. */
+    @Insert(onConflict = OnConflictStrategy.IGNORE)
+    public suspend fun insertAllIgnoring(plans: List<PlanVersionEntity>)
 }
 
 /**
@@ -557,6 +661,14 @@ public interface PlanSlotDao {
 
     @Insert
     public suspend fun insert(slot: PlanSlotEntity)
+
+    /** F13 backup snapshot (M6). */
+    @Query("SELECT * FROM plan_slots ORDER BY dayEpochDay ASC, createdAtEpochMs ASC")
+    public suspend fun all(): List<PlanSlotEntity>
+
+    /** F13 staged restore (M6): keep-local on conflict. */
+    @Insert(onConflict = OnConflictStrategy.IGNORE)
+    public suspend fun insertAllIgnoring(slots: List<PlanSlotEntity>)
 
     @Query("SELECT * FROM plan_slots WHERE id = :id")
     public suspend fun byId(id: String): PlanSlotEntity?
@@ -702,6 +814,14 @@ public interface ListItemDao {
 
     @Query("SELECT COUNT(*) FROM list_items WHERE profileId = :profileId")
     public suspend fun count(profileId: String): Int
+
+    /** F13 backup snapshot (M6): struck-through rows included (recoverable history). */
+    @Query("SELECT * FROM list_items ORDER BY createdAtEpochMs ASC")
+    public suspend fun all(): List<ListItemEntity>
+
+    /** F13 staged restore (M6): keep-local on conflict. */
+    @Insert(onConflict = OnConflictStrategy.IGNORE)
+    public suspend fun insertAllIgnoring(items: List<ListItemEntity>)
 }
 
 /** Pantry stock (F04 §3): upsert semantics; archive = consumed/removed, reversible. */
@@ -748,6 +868,14 @@ public interface PantryItemDao {
 
     @Query("SELECT COUNT(*) FROM pantry_items WHERE profileId = :profileId")
     public suspend fun count(profileId: String): Int
+
+    /** F13 backup snapshot (M6). */
+    @Query("SELECT * FROM pantry_items ORDER BY addedAtEpochMs ASC")
+    public suspend fun all(): List<PantryItemEntity>
+
+    /** F13 staged restore (M6): keep-local on conflict. */
+    @Insert(onConflict = OnConflictStrategy.IGNORE)
+    public suspend fun insertAllIgnoring(items: List<PantryItemEntity>)
 }
 
 /** Learned aisle overrides (F04 "teach-the-system loop"): one row per (profile, item). */
@@ -761,4 +889,12 @@ public interface AisleCorrectionDao {
 
     @Query("SELECT * FROM aisle_corrections WHERE profileId = :profileId")
     public fun observeForProfile(profileId: String): Flow<List<AisleCorrectionEntity>>
+
+    /** F13 backup snapshot (M6). */
+    @Query("SELECT * FROM aisle_corrections")
+    public suspend fun all(): List<AisleCorrectionEntity>
+
+    /** F13 staged restore (M6): keep-local on conflict. */
+    @Insert(onConflict = OnConflictStrategy.IGNORE)
+    public suspend fun insertAllIgnoring(corrections: List<AisleCorrectionEntity>)
 }

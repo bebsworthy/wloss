@@ -9,6 +9,9 @@ kotlin {
             // Sink/paths in the EgressPort signatures (dispatcher pumps bytes
             // into caller-provided sinks; zoo manager owns storage).
             api(libs.okio)
+            // Flows in the read-side ports (receipt audit, staged-restore
+            // pending flag) — the F12/F13 UI observes through these.
+            implementation(libs.kotlinx.coroutines.core)
         }
     }
 }

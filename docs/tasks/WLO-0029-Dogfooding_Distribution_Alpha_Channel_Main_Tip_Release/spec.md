@@ -1,0 +1,65 @@
+# Dogfooding distribution — alpha + release channels
+
+Goal: install WLO on the owner's phone for daily dogfooding, with (a) an
+**alpha channel** = latest green `main`, and (b) a **release channel** =
+tagged stable builds. Updates as transparent as possible.
+
+## Current state (surveyed 2026-09-13)
+
+- `.github/workflows/ci.yml` exists (build+checkArchitecture, arch self-test,
+  connected API-29 instrumented) **but the repo has no git remote** — CI has
+  never actually run; nothing is published anywhere.
+- `versionCode = 1` / `versionName = "0.1.0"` hardcoded in
+  `wlo.application.gradle.kts` → Android will refuse same-version reinstalls;
+  every published build needs a monotonically increasing CI-injected code.
+- Release build type is stock: unsigned, no R8 decision; the existing
+  `benchmark` type shows the pattern for a signed release-like build.
+- **R-S13 already sanctions Play Store + GitHub APKs** as the two distribution
+  channels (F-Droid optional later). This plan stays inside that ruling.
+- Data-safety base is good: Room schemas 1–6 exported, JVM `MigrationTest`
+  exists; F13 vault backup/restore (M6) is built. Alpha-channel dogfood data
+  is irreplaceable — migrations must stay tested, channels must never force
+  uninstall (uninstall wipes data; mismatched signing keys force uninstall).
+
+## Requirements (channel-agnostic)
+
+1. **Hosting**: push to GitHub (public preferred — FOSS project, and both
+   Obtainium and an in-app updater work cleanly against public Releases;
+   private Releases need auth tokens on the phone).
+2. **Versioning**: CI injects `versionCode` (recommended: `git rev-list
+   --count HEAD` — monotonic along main, shared by both channels so a stable
+   tag cut from a main tip is always installable over older alphas, and
+   never over newer ones); `versionName` per channel (tag → `x.y.z`; main →
+   `x.y.z-alpha.N+<shortsha>`).
+3. **Signing**: one dedicated keystore, base64 in GitHub Actions secrets,
+   used for **both** channels and never committed; debug and channel builds
+   must never mix signing identities (signature change ⇒ forced uninstall ⇒
+   data loss). Same `applicationId` for both channels (no `.alpha` suffix)
+   so the alpha rides ahead and stable replaces it in place — dogfood data
+   continuity.
+4. **Publish workflow** (extends ci.yml or a sibling `release.yml`):
+   on green push to `main` → assemble release-signed APK → GitHub Release
+   (rolling `alpha` tag or per-build tag) with auto-generated notes from the
+   disciplined commit subjects (`build: M6 … (WLO-00XX)`); on `v*` tag →
+   same, marked stable.
+5. **Transparency of content**: release notes = what changed + ticket refs;
+   long-term an in-app "update explainer" fits the product ethos.
+
+## Update-mechanism alternatives (phone side)
+
+| Mechanism | Update UX | Infra/code | Notes |
+| --- | --- | --- | --- |
+| adb / shared APK | manual | none | baseline, zero transparency |
+| GitHub Releases, manual download | manual, changelog visible | trivial | |
+| **GitHub Releases + Obtainium** | auto-check → notification → 1-tap, notes shown | none in-app | recommended to start |
+| In-app self-updater (PackageInstaller + GitHub API through NetworkDispatcher) | fully silent possible, in-app explainer/changelog | a real feature (consent + egress receipts required; needs `REQUEST_INSTALL_PACKAGES`) | the WLO-souled endgame |
+| Play Console internal testing / app sharing | fully silent (Play-managed) | $25 once, AAB, Play App Signing, policy overhead | sanctioned by R-S13; better when Play launch prep starts |
+| Firebase App Distribution | notification → manual install | Firebase project | manual installs + Google-service dependency; clashes with no-SaaS ethos — skip |
+| F-Droid / IzzyOnDroid | store-managed | metadata + reproducible builds | slow queues; public-release channel later, not alpha |
+
+## Recommendation
+
+Start: GitHub repo + `release.yml` (alpha-on-main, stable-on-tag) +
+Obtainium on the phone. Next: decide whether/when to build the in-app
+self-updater as a proper consent-gated platform feature. Play internal
+testing when Play work begins in earnest.

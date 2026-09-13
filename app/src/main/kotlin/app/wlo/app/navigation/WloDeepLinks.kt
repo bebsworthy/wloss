@@ -55,12 +55,21 @@ public object WloDeepLinks {
             // screen beyond IA.md §3's literal list (flagged for the IA owner,
             // same precedent as wlo://diary).
             entry("wlo://ai/models", "ai/models"),
+            // --- M6 PART B real surfaces -------------------------------------
+            // Settings → AI (IA §1): the AI Studio + the receipt log (the
+            // receipts row IS in IA.md §3 — "F12 receipts shortcut").
+            entry("wlo://ai/studio", "f12/studio"),
+            entry("wlo://ai/receipts", "f12/receipts"),
+            // Settings (IA §1: gear on the Hub header — beyond IA.md §3's
+            // literal registry; flagged for the IA doc owner, wlo://diary
+            // precedent) and the Data Vault (IA §3: the backup-health dot's
+            // target wlo://vault, now the real F13 dashboard).
+            entry("wlo://settings", "app/settings"),
+            entry("wlo://vault", "f13/vault"),
             // --- documented stubs (land in a later milestone, still navigating) ---
             stub("wlo://energy", "stub/energy", "Energy"),
             stub("wlo://checkin", "stub/checkin", "Check-in"),
-            stub("wlo://vault", "stub/vault", "Data Vault"),
             stub("wlo://algorithms", "stub/algorithms", "Algorithms"),
-            stub("wlo://ai/receipts", "stub/ai-receipts", "AI receipts"),
             stub("wlo://gut/log", "stub/gut", "Digestion log"),
             stub("wlo://exercise/start", "stub/exercise", "Workout"),
             stub("wlo://insights/report", "stub/insights-report", "Report card"),

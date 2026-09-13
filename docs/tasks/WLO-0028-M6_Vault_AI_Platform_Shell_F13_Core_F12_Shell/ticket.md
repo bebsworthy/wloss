@@ -1,13 +1,13 @@
 ---
 id: WLO-0028
 title: 'M6 · Vault + AI platform shell (F13 core, F12 shell)'
-status: todo
+status: done
 theme:
 release:
 created: 2026-09-12T10:02:49Z
-modified: 2026-09-12T10:02:51Z
-closed:
-revision: 7a2477ac746d8df9
+modified: 2026-09-13T17:44:46Z
+closed: 2026-09-13T17:44:46Z
+revision: 29fb5ae1f8d45620
 blocks: []
 related: [WLO-0014]
 ---

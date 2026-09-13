@@ -17,14 +17,42 @@ public object OnboardingRobot {
     /** The target package (the app under test), not the test package. */
     public fun targetPackage(): String = InstrumentationRegistry.getInstrumentation().targetContext.packageName
 
-    /** Runs a shell command as shell; closes the returned fd. */
+    /**
+     * Runs a shell command as shell and WAITS for it to finish (drains the
+     * output stream before closing). Closing the ParcelFileDescriptor
+     * without draining can cancel the in-flight command — fast ones (`am
+     * start`) still land, but redirect writes (`… > /sdcard/Download/x`)
+     * silently never complete.
+     */
     public fun shell(command: String) {
         InstrumentationRegistry
             .getInstrumentation()
             .uiAutomation
             .executeShellCommand(command)
-            .close()
+            .let { fd ->
+                java.io.FileInputStream(fd.fileDescriptor).use { input -> input.readBytes() }
+                fd.close()
+            }
     }
+
+    /**
+     * Runs a shell command and returns its stdout (bounded — for short
+     * outputs like `ls`). The returned ParcelFileDescriptor must be fully
+     * drained before close, hence the blocking read here.
+     */
+    public fun shellWithOutput(command: String): String =
+        InstrumentationRegistry
+            .getInstrumentation()
+            .uiAutomation
+            .executeShellCommand(command)
+            .let { fd ->
+                val bytes =
+                    fd.fileDescriptor.let {
+                        java.io.FileInputStream(it).use { input -> input.readBytes() }
+                    }
+                fd.close()
+                bytes.toString(Charsets.UTF_8)
+            }
 
     /** Kills all app state AND the app process — the next launch is a cold start. */
     public fun clearAppState() {

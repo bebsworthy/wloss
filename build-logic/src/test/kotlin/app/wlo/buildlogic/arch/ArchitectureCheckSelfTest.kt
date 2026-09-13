@@ -321,6 +321,32 @@ class ArchitectureCheckSelfTest {
     }
 
     @Test
+    fun d1_restrictedModuleSet_includesTheM6Vault() {
+        // M6 (WLO-0028 PART A): :core:vault joined the D1 restricted set —
+        // the data-driven rule must know it, so features cannot see the
+        // vault impl even though it is a KMP core module.
+        org.junit.Assert.assertTrue(
+            "RESTRICTED_MODULES must contain :core:vault",
+            app.wlo.buildlogic.arch.ArchRules.RESTRICTED_MODULES.contains(":core:vault"),
+        )
+        // ... and the machine rule still fires for it (not just :core:network).
+        val result = runFailing(
+            fixture(
+                mapOf(
+                    "settings.gradle.kts" to settings(":feature:f99-demo", ":core:vault"),
+                    rootBuild.first to rootBuild.second,
+                    "feature/f99-demo/build.gradle.kts" to """
+                        plugins { `java` }
+                        dependencies { implementation(project(":core:vault")) }
+                    """.trimIndent(),
+                    "core/vault/build.gradle.kts" to "",
+                ),
+            ),
+        )
+        assertTrue("D1" in result.output, "output must name rule D1:\n${result.output}")
+    }
+
+    @Test
     fun cleanFixturePasses() {
         val result = run(
             fixture(

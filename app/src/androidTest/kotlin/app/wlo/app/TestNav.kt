@@ -32,6 +32,51 @@ public object TestNav {
         }
     }
 
+    /**
+     * Delivers a wlo:// link under a COMPOSE RULE and polls for the route
+     * while PUMPING the test frame clock. The compose test rule parks the
+     * activity's MonotonicFrameClock between test actions, so the intent's
+     * `LaunchedEffect(newIntent) → handleDeepLink` recomposition never runs
+     * on its own — under `am start`/in-process re-delivery the route would
+     * stay on the start destination forever (the app is correct: rule-free
+     * tests and production frames deliver instantly). Advancing the test
+     * clock lets the pending recomposition run, exactly like the compose
+     * APIs do for click-driven navigation.
+     */
+    public fun deliverPumpingClock(
+        rule: AndroidComposeTestRule<ActivityScenarioRule<MainActivity>, MainActivity>,
+        uri: String,
+        expected: String,
+    ) {
+        deliver(rule.activityRule.scenario, uri)
+        awaitRoutePumpingClock(rule, expected)
+    }
+
+    /** [awaitRoute], pumping the compose test frame clock while polling. */
+    public fun awaitRoutePumpingClock(
+        rule: AndroidComposeTestRule<ActivityScenarioRule<MainActivity>, MainActivity>,
+        expected: String,
+    ) {
+        val scenario = rule.activityRule.scenario
+        val clock = rule.mainClock
+        val wasAutoAdvance = clock.autoAdvance
+        clock.autoAdvance = false
+        try {
+            val deadline = SystemClock.elapsedRealtime() + TIMEOUT_MS
+            var actual: String? = null
+            while (SystemClock.elapsedRealtime() < deadline) {
+                clock.advanceTimeBy(POLL_MS)
+                scenario.onActivity { activity -> actual = activity.currentDestinationForVerification }
+                if (actual == expected) return
+                SystemClock.sleep(POLL_MS / 2)
+            }
+            assertEquals(expected, actual)
+            return
+        } finally {
+            clock.autoAdvance = wasAutoAdvance
+        }
+    }
+
     /** Polls the activity's destination hook until the expected nav route shows. */
     public fun awaitRoute(
         scenario: ActivityScenario<MainActivity>,

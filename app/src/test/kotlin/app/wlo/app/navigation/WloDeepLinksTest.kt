@@ -47,10 +47,23 @@ public class WloDeepLinksTest {
         }
         assertEquals("stub/energy", WloDeepLinks.routeFor("wlo://energy"))
         assertEquals("stub/checkin", WloDeepLinks.routeFor("wlo://checkin"))
-        assertEquals("stub/vault", WloDeepLinks.routeFor("wlo://vault"))
         assertEquals("stub/gut", WloDeepLinks.routeFor("wlo://gut/log"))
         assertEquals("stub/algorithms", WloDeepLinks.routeFor("wlo://algorithms"))
-        assertEquals("stub/ai-receipts", WloDeepLinks.routeFor("wlo://ai/receipts"))
+    }
+
+    @Test
+    public fun m6SurfacesAreReal_noLongerStubs() {
+        // M6 PART B: the vault, the receipt log, the AI Studio, and Settings
+        // are real screens; the stub rows are gone.
+        assertEquals("f13/vault", WloDeepLinks.routeFor("wlo://vault"))
+        assertEquals("f12/receipts", WloDeepLinks.routeFor("wlo://ai/receipts"))
+        assertEquals("f12/studio", WloDeepLinks.routeFor("wlo://ai/studio"))
+        assertEquals("app/settings", WloDeepLinks.routeFor("wlo://settings"))
+        for (row in WloDeepLinks.REGISTRY) {
+            if (row.route == "stub/vault" || row.route == "stub/ai-receipts") {
+                error("stub row resurrected: ${row.uriPattern}")
+            }
+        }
     }
 
     @Test

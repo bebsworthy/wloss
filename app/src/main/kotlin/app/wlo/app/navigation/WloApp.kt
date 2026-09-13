@@ -49,6 +49,7 @@ import app.wlo.app.ui.PlaceholderScreen
 import app.wlo.app.ui.STUB_TITLES
 import app.wlo.app.ui.StubScreen
 import app.wlo.app.ui.debug.EgressMonitorScreen
+import app.wlo.app.ui.settings.SettingsScreen
 import app.wlo.app.ui.shell.ShellState
 import app.wlo.app.ui.shell.ShellViewModel
 import app.wlo.app.ui.zoo.ZooScreen
@@ -78,6 +79,16 @@ import app.wlo.feature.f06.weight.ui.MathDocsScreen
 import app.wlo.feature.f06.weight.ui.WeightScreen
 import app.wlo.feature.f10.hub.ui.HubActions
 import app.wlo.feature.f10.hub.ui.HubScreen
+import app.wlo.feature.f12.consent.F12Routes
+import app.wlo.feature.f12.consent.ui.AiStudioScreen
+import app.wlo.feature.f12.consent.ui.ConsentSheetDemoScreen
+import app.wlo.feature.f12.consent.ui.ReceiptsScreen
+import app.wlo.feature.f13.vault.F13Routes
+import app.wlo.feature.f13.vault.ui.BackupControlsScreen
+import app.wlo.feature.f13.vault.ui.ExportScreen
+import app.wlo.feature.f13.vault.ui.ImportScreen
+import app.wlo.feature.f13.vault.ui.RestoreWizardScreen
+import app.wlo.feature.f13.vault.ui.VaultDashboardScreen
 import org.koin.androidx.compose.koinViewModel
 import org.koin.core.parameter.parametersOf
 
@@ -171,6 +182,59 @@ public fun WloApp(
             // Internal surfaces without registry URIs (reached from their owners).
             composable(route = F06Routes.MATH) { MathDocsScreen() }
             composable(route = F06Routes.BODY_FAT) { BodyFatScreen(viewModel = koinViewModel()) }
+            // M6 internal surfaces: Settings' children (the F12 consent demo)
+            // and the F13 vault wizards have no wlo:// URIs of their own — they
+            // are visited deliberately from their parent surfaces (IA §6). The
+            // studio/receipts/settings/vault routes themselves are NOT listed
+            // here: they carry registry deep links (wlo://ai/studio,
+            // wlo://ai/receipts, wlo://settings, wlo://vault) via the loop
+            // above, and a duplicate composable would overwrite those
+            // pattern-carrying destinations.
+            composable(route = F12Routes.CONSENT_SHEET_DEMO) {
+                RouteSurface(
+                    route = F12Routes.CONSENT_SHEET_DEMO,
+                    arguments = null,
+                    shellState = shellState,
+                    onSurfaceChanged = onSurfaceChanged,
+                    navController = navController,
+                )
+            }
+            composable(route = F13Routes.BACKUP) {
+                RouteSurface(
+                    route = F13Routes.BACKUP,
+                    arguments = null,
+                    shellState = shellState,
+                    onSurfaceChanged = onSurfaceChanged,
+                    navController = navController,
+                )
+            }
+            composable(route = F13Routes.RESTORE) {
+                RouteSurface(
+                    route = F13Routes.RESTORE,
+                    arguments = null,
+                    shellState = shellState,
+                    onSurfaceChanged = onSurfaceChanged,
+                    navController = navController,
+                )
+            }
+            composable(route = F13Routes.EXPORT) {
+                RouteSurface(
+                    route = F13Routes.EXPORT,
+                    arguments = null,
+                    shellState = shellState,
+                    onSurfaceChanged = onSurfaceChanged,
+                    navController = navController,
+                )
+            }
+            composable(route = F13Routes.IMPORT) {
+                RouteSurface(
+                    route = F13Routes.IMPORT,
+                    arguments = null,
+                    shellState = shellState,
+                    onSurfaceChanged = onSurfaceChanged,
+                    navController = navController,
+                )
+            }
             composable(
                 route = F03Routes.RECIPE_EDIT,
                 arguments = routeArguments(F03Routes.RECIPE_EDIT),
@@ -276,6 +340,7 @@ private fun RouteSurface(
                                 onWorkout = { navController.navigate("stub/exercise") },
                                 onOpenPlan = { navController.navigate(WloTabs.PLAN) },
                                 onPlanTomorrow = { navController.navigate(F03Routes.TOMORROW) },
+                                onOpenSettings = { navController.navigate("app/settings") },
                             ),
                     )
                 }
@@ -348,6 +413,54 @@ private fun RouteSurface(
 
         // The F12 model manager (R-S14): zoo catalog, download/reclaim.
         "ai/models" -> ZooScreen()
+
+        // --- M6 PART B: the F12 consent shell + the F13 vault surfaces ------
+        "app/settings" ->
+            SettingsScreen(
+                onOpenAiStudio = { navController.navigate(F12Routes.STUDIO) },
+                onOpenVault = { navController.navigate(Uri.parse("wlo://vault")) },
+            )
+
+        F12Routes.STUDIO ->
+            AiStudioScreen(
+                viewModel = koinViewModel(),
+                onOpenReceipts = { navController.navigate(F12Routes.RECEIPTS) },
+                onOpenModelManager = { navController.navigate(Uri.parse("wlo://ai/models")) },
+                onOpenConsentDemo = { navController.navigate(F12Routes.CONSENT_SHEET_DEMO) },
+            )
+
+        F12Routes.RECEIPTS -> ReceiptsScreen(viewModel = koinViewModel())
+
+        F12Routes.CONSENT_SHEET_DEMO -> ConsentSheetDemoScreen()
+
+        F13Routes.VAULT ->
+            VaultDashboardScreen(
+                viewModel = koinViewModel(),
+                onOpenBackup = { navController.navigate(F13Routes.BACKUP) },
+                onOpenRestore = { navController.navigate(F13Routes.RESTORE) },
+                onOpenExport = { navController.navigate(F13Routes.EXPORT) },
+                onOpenImport = { navController.navigate(F13Routes.IMPORT) },
+            )
+
+        F13Routes.BACKUP -> BackupControlsScreen(viewModel = koinViewModel())
+
+        F13Routes.RESTORE ->
+            RestoreWizardScreen(
+                viewModel = koinViewModel(),
+                onDone = { navController.popBackStack() },
+            )
+
+        F13Routes.EXPORT ->
+            ExportScreen(
+                viewModel = koinViewModel(),
+                onDone = { navController.popBackStack() },
+            )
+
+        F13Routes.IMPORT ->
+            ImportScreen(
+                viewModel = koinViewModel(),
+                onDone = { navController.popBackStack() },
+            )
 
         "f02/log" -> FoodLogScreen(viewModel = koinViewModel(parameters = { parametersOf(false) }))
 

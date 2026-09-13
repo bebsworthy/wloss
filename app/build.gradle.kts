@@ -62,6 +62,7 @@ dependencies {
     implementation(project(":core:network"))
     implementation(project(":core:ai"))
     implementation(project(":core:media"))
+    implementation(project(":core:vault"))
     implementation(project(":core:ports"))
     implementation(project(":core:consent"))
     implementation(project(":feature:f01-onboarding"))
@@ -70,6 +71,8 @@ dependencies {
     implementation(project(":feature:f04-shopping"))
     implementation(project(":feature:f06-weight"))
     implementation(project(":feature:f10-daily-hub"))
+    implementation(project(":feature:f12-consent"))
+    implementation(project(":feature:f13-vault"))
 
     // M3 perf harness: the instrumented FoodSearchPerfTest seeds through
     // DiarySeeder (:core:testing is otherwise test-only per ARCHITECTURE §2.2).

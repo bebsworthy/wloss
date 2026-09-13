@@ -25,6 +25,11 @@ public class CapturedFrame(
  *  - [OFF_LOOKUP] — R-C4, verbatim: "F13 integration toggle (not an F12 AI
  *    category), default on, cached, per-lookup audit trail". Served cache-first
  *    while the integration toggle is on; every lookup gets a receipt row.
+ *  - [DIAGNOSTICS] — T-K4 (q-000026): opt-in, CONTENT-FREE crash reports.
+ *    NOT an F12 AI category (the taxonomy is frozen at six, R-C1) — an
+ *    explicit settings toggle backed by [DiagnosticsPolicy], default OFF.
+ *    Every report is scrubbed to a field whitelist before dispatch (see
+ *    :core:network AcraReportSender) and rides the dispatcher with receipts.
  *  - [FUTURE_*] — every other packet class fails CLOSED unless the mapped
  *    [ConsentCapability] currently holds a grant (F12 §3.1 matrix).
  */
@@ -35,6 +40,7 @@ public enum class EgressPurpose(
 ) {
     ZOO_DOWNLOAD("zoo-download", requiresCapability = null),
     OFF_LOOKUP("off-lookup", requiresCapability = null),
+    DIAGNOSTICS("diagnostics", requiresCapability = null),
     FUTURE_CLOUD_VISION("future-cloud-vision", ConsentCapability.FOOD_PHOTO),
     FUTURE_CLOUD_STT("future-cloud-stt", ConsentCapability.VOICE_INPUT),
     FUTURE_CLOUD_MEAL_PLAN("future-cloud-meal-plan", ConsentCapability.MEAL_PLANNING),
@@ -107,4 +113,14 @@ public interface EgressPort {
  */
 public fun interface OffLookupPolicy {
     public suspend fun isFoodDbLookupAllowed(): Boolean
+}
+
+/**
+ * The T-K4 diagnostics toggle (q-000026): opt-in, content-free crash reports —
+ * deliberately NOT a [ConsentCapability] (that taxonomy is frozen at six AI
+ * categories, R-C1; ACRA is not an AI feature). Default implementation is
+ * deny-by-default; production wiring reads the explicit settings toggle.
+ */
+public fun interface DiagnosticsPolicy {
+    public suspend fun isDiagnosticsEgressAllowed(): Boolean
 }

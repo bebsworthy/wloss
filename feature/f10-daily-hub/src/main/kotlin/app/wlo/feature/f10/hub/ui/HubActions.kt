@@ -15,4 +15,6 @@ public data class HubActions(
     // F03 (M5): today's plan card and the evening "plan tomorrow" card.
     val onOpenPlan: () -> Unit = {},
     val onPlanTomorrow: () -> Unit = {},
+    // Settings (IA §1: top-right on the Hub header; M6 PART B wires it).
+    val onOpenSettings: () -> Unit = {},
 )

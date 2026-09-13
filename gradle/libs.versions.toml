@@ -102,6 +102,27 @@ zxingEmbedded = "4.3.0"
 # M5: :benchmarks module (WLO-0027 PART A) — the F03 re-deal perf baseline.
 benchmark = "1.5.0"
 # androidx.test 1.7.0 / ext-junit 1.3.0 / rules 1.7.0 (dl.google.com metadata;
+# BouncyCastle bcprov-jdk18on 1.86 = <release> on repo1 org.bouncycastle
+# (verified 2026-09-12 via maven-metadata.xml, lastUpdated 2026-09-11; jar
+# inspected: org.bouncycastle.crypto.generators.Argon2BytesGenerator +
+# crypto.params.Argon2Parameters ship in the LIGHTWEIGHT API — no JCA provider
+# registration needed). T-F2/T-F4: the backup KDF (Argon2id) is the one thing
+# javax.crypto lacks; Tink (T-F4 alternative) was rejected — ~2 MB of facade
+# for 2 primitives we already use directly (Keystore AES-GCM + Argon2).
+bouncycastle = "1.86"
+# WorkManager 2.11.2 = latest STABLE on dl.google.com androidx.work
+# (work-runtime-ktx metadata verified 2026-09-12; 2.12.0 only rc01 — stable
+# line held, house rule: no RC pins). Backs the BackupScheduler port impl.
+work = "2.11.2"
+# androidx.core 1.19.0 = <release> on dl.google.com core-ktx (verified
+# 2026-09-12). Explicit pin for :core:vault's failure notification
+# (NotificationCompat); keeps the vault's compile classpath honest.
+core = "1.19.0"
+# androidx.fragment 1.9.0 = <release> on dl.google.com fragment-ktx (verified
+# 2026-09-12). :core:vault's PromptBiometricGate binds the PLATFORM
+# BiometricPrompt, whose public constructor takes androidx FragmentActivity
+# (no androidx.biometric dependency — see AppLock.kt FLAG note).
+fragment = "1.9.0"
 detekt = "1.23.8"
 # ktlint-gradle 14.2.0 (Mar 2026, actively maintained; GitHub releases + plugin
 # portal metadata, verified 2026-09-12). Chosen over a manual exec task: the v14
@@ -133,6 +154,17 @@ androidx-room3-testing = { module = "androidx.room3:room3-testing", version.ref 
 androidx-sqlite-bundled = { module = "androidx.sqlite:sqlite-bundled", version.ref = "sqliteBundled" }
 androidx-datastore-preferences = { module = "androidx.datastore:datastore-preferences", version.ref = "datastore" }
 okio = { module = "com.squareup.okio:okio", version.ref = "okio" }
+
+# --- Vault / backup crypto (T-C3/T-F1/T-F2: :core:vault ONLY — D1 restricted) ---
+# Argon2id lives ONLY in BouncyCastle's lightweight API (javax.crypto has no
+# KDFs); AES-GCM itself stays on javax.crypto + AndroidKeyStore. Declared only
+# by :core:vault (the F13 backup/vault impl module).
+bouncycastle-bcprov = { module = "org.bouncycastle:bcprov-jdk18on", version.ref = "bouncycastle" }
+# Backup scheduling (BackupScheduler port impl — ARCHITECTURE §2.4 "background
+# work is Android glue"): :core:vault only.
+androidx-work-runtime = { module = "androidx.work:work-runtime-ktx", version.ref = "work" }
+androidx-core-ktx = { module = "androidx.core:core-ktx", version.ref = "core" }
+androidx-fragment-ktx = { module = "androidx.fragment:fragment-ktx", version.ref = "fragment" }
 
 # --- Networking (D9: :core:network ONLY — the single egress choke point) ---
 ktor-client-core = { module = "io.ktor:ktor-client-core", version.ref = "ktor" }

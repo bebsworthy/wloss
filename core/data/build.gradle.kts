@@ -12,6 +12,9 @@ kotlin {
             implementation(project(":core:database"))
             implementation(project(":core:datastore"))
             implementation(project(":core:engines"))
+            // The append-only consent ledger door (F12/F13): RoomConsentLedger
+            // implements :core:consent's ConsentLedger over the DAO.
+            implementation(project(":core:consent"))
             // WloDatabase's supertype (RoomDatabase) must be on the compile
             // classpath — :core:database keeps it `implementation`-scoped.
             implementation(libs.androidx.room3.runtime)

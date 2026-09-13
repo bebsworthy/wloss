@@ -82,7 +82,10 @@ public fun HubScreen(
                         .padding(horizontal = WloSpacing.SCREEN),
                 verticalArrangement = Arrangement.spacedBy(WloSpacing.SCREEN),
             ) {
-                HubHeader(current.todayLabel)
+                HubHeader(
+                    todayLabel = current.todayLabel,
+                    onOpenSettings = actions.onOpenSettings,
+                )
 
                 QuickActionRail(current.dayModel.quickActions, actions)
 
@@ -163,7 +166,10 @@ public fun HubScreen(
 }
 
 @Composable
-private fun HubHeader(todayLabel: String): Unit =
+private fun HubHeader(
+    todayLabel: String,
+    onOpenSettings: () -> Unit,
+): Unit =
     Row(
         modifier =
             Modifier
@@ -173,11 +179,26 @@ private fun HubHeader(todayLabel: String): Unit =
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Text(text = "WLO", style = wloType.title.copy(fontSize = wloType.title.fontSize * 1.06f))
-        Text(
-            text = todayLabel,
-            style = wloType.label,
-            color = wloExtendedColors.textTertiary,
-        )
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(WloSpacing.TIGHT),
+        ) {
+            Text(
+                text = todayLabel,
+                style = wloType.label,
+                color = wloExtendedColors.textTertiary,
+            )
+            Text(
+                text = "Settings",
+                style = wloType.label,
+                color = MaterialTheme.colorScheme.primary,
+                modifier =
+                    Modifier
+                        .clickable(onClick = onOpenSettings)
+                        .padding(horizontal = WloSpacing.TIGHT, vertical = WloSpacing.TIGHT)
+                        .testTag("hub-settings"),
+            )
+        }
     }
 
 /** The rail (F10 §5): engine-ordered; long-press the camera = kcal-only quick-add. */

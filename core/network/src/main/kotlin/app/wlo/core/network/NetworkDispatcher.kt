@@ -2,6 +2,7 @@ package app.wlo.core.network
 
 import app.wlo.core.consent.ConsentGate
 import app.wlo.core.consent.ConsentTimeSource
+import app.wlo.core.ports.DiagnosticsPolicy
 import app.wlo.core.ports.EgressDeniedException
 import app.wlo.core.ports.EgressDownload
 import app.wlo.core.ports.EgressPort
@@ -37,6 +38,9 @@ import java.net.URI
  *       (not an F12 AI category), default on, cached, per-lookup audit trail"
  *       → served cache-first while [OffLookupPolicy] allows, one receipt row
  *       per lookup;
+ *     - [EgressPurpose.DIAGNOSTICS] — T-K4 (q-000026): opt-in content-free
+ *       crash reports; served only while [DiagnosticsPolicy] allows (the
+ *       settings toggle, default OFF — never an F12 consent capability);
  *     - every `FUTURE_*` purpose — served only while its
  *       [app.wlo.core.model.ConsentCapability] holds an active grant, consumed
  *       through the injected :core:consent [ConsentGate] (dependency inversion:
@@ -63,6 +67,8 @@ public class NetworkDispatcher(
     private val offLookupPolicy: OffLookupPolicy,
     private val ledger: EgressLedger,
     private val timeSource: ConsentTimeSource,
+    /** T-K4 diagnostics toggle; deny-by-default (opt-in crash reports only). */
+    private val diagnosticsPolicy: DiagnosticsPolicy = DiagnosticsPolicy { false },
     /** Injectable for tests; production wiring uses [defaultEgressClient]. */
     private val httpClient: HttpClient? = null,
     cacheMaxEntries: Int = DEFAULT_CACHE_ENTRIES,
@@ -171,6 +177,7 @@ public class NetworkDispatcher(
         when (purpose) {
             EgressPurpose.ZOO_DOWNLOAD -> denialForZoo(userInitiated)
             EgressPurpose.OFF_LOOKUP -> denialForOffLookup()
+            EgressPurpose.DIAGNOSTICS -> denialForDiagnostics(host)
             else -> denialForConsented(purpose, host)
         }
 
@@ -186,6 +193,14 @@ public class NetworkDispatcher(
             null
         } else {
             "R-C4 food-database integration toggle is off"
+        }
+
+    /** T-K4: content-free crash reports ride the explicit settings toggle, default OFF. */
+    private suspend fun denialForDiagnostics(host: String): String? =
+        when {
+            !diagnosticsPolicy.isDiagnosticsEgressAllowed() -> "T-K4 diagnostics toggle is off"
+            host.isBlank() -> "blank host (configure the crash-report endpoint first)"
+            else -> null
         }
 
     /** FUTURE_* purposes: fail closed without an active capability grant. */

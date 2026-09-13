@@ -9,6 +9,8 @@
       hash-chained-receipted, visible in the wlo://debug/egress monitor.
     -->
     <uses-permission android:name="android.permission.INTERNET" />
+    <!-- BiometricPrompt gate (F13 app lock): required for BiometricManager.canAuthenticate. -->
+    <uses-permission android:name="android.permission.USE_BIOMETRIC" />
 
     <application
         android:name=".WloApplication"

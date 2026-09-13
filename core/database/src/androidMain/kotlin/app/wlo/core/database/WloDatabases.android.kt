@@ -18,3 +18,4 @@ public fun androidDatabaseBuilder(
         .databaseBuilder<WloDatabase>(context = context, name = path)
         .setDriver(BundledSQLiteDriver())
         .addMigrations(*Migrations.ALL)
+        .enforceForeignKeys()

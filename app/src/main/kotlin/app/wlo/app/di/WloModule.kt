@@ -15,7 +15,6 @@ import app.wlo.core.common.ClockPort
 import app.wlo.core.consent.ConsentGate
 import app.wlo.core.consent.ConsentLedger
 import app.wlo.core.consent.ConsentTimeSource
-import app.wlo.core.consent.InMemoryConsentLedger
 import app.wlo.core.consent.ReplayConsentGate
 import app.wlo.core.data.CorrectionCacheStore
 import app.wlo.core.data.DayProjectionRepository
@@ -67,8 +66,12 @@ import app.wlo.feature.f03.planning.di.f03PlanningModule
 import app.wlo.feature.f04.shopping.di.f04ShoppingModule
 import app.wlo.feature.f06.weight.di.f06WeightModule
 import app.wlo.feature.f10.hub.di.f10HubModule
+import app.wlo.feature.f12.consent.di.f12ConsentModule
+import app.wlo.feature.f13.vault.di.f13VaultModule
+import kotlinx.coroutines.flow.first
 import okio.Path
 import okio.Path.Companion.toPath
+import org.koin.androidx.viewmodel.dsl.viewModel
 import org.koin.core.module.Module
 import org.koin.core.qualifier.qualifier
 import org.koin.dsl.module
@@ -92,6 +95,11 @@ public val appModule: Module =
     module {
         single<ClockPort> { FixedClock(FixedClock.DEMO_NOW) }
         factory { ShellViewModel(profiles = get(), targets = get(), documents = get()) }
+        // The Settings surface's app-lock state (M6 PART B).
+        viewModel {
+            app.wlo.app.ui.settings
+                .SettingsViewModel(settings = get(), appLock = get())
+        }
         // Debug egress monitor (F12 §3.8): reads the persisted receipt ledger.
         factory { EgressMonitorViewModel(ledger = get(), zoo = get()) }
         // The F12 model manager (R-S14): the wlo://ai/models surface's state.
@@ -103,6 +111,8 @@ public val appModule: Module =
             f04ShoppingModule,
             f06WeightModule,
             f10HubModule,
+            f12ConsentModule,
+            f13VaultModule,
         )
     }
 
@@ -186,15 +196,39 @@ public val platformModule: Module =
         // Real wall-clock for receipts (the demo [FixedClock] governs the data
         // spine only; egress paperwork must show true time).
         single<ConsentTimeSource> { ConsentTimeSource { System.currentTimeMillis() } }
-        // Consent: the M2 in-memory ledger + replay gate (M6 swaps in the Room
-        // ledger + UI). Empty grants = every FUTURE_* purpose fails closed —
-        // the v1 default posture.
-        single<ConsentLedger> { InMemoryConsentLedger(timeSource = get()) }
-        single<ConsentGate> { ReplayConsentGate(ledger = get()) }
+        // M6 PART B: the PERSISTENT consent ledger (Room `consent_ledger`,
+        // hash-chained) — grants survive restarts and ride every backup. The
+        // kill-switch wrapper refuses new GRANTS while Cloud: OFF (F12 §3.4).
+        single<ConsentLedger> {
+            app.wlo.app.di.KillSwitchConsentLedger(
+                delegate =
+                    app.wlo.core.data
+                        .RoomConsentLedger(db = get(), timeSource = get()),
+                settings = get(),
+            )
+        }
+        // The dispatcher's gate: replay of the ledger, overridden by the kill
+        // switch — a stale grant can never send a byte while it is on.
+        single<ConsentGate> {
+            app.wlo.app.di.KillSwitchConsentGate(
+                delegate = ReplayConsentGate(ledger = get()),
+                settings = get(),
+            )
+        }
         // R-C4, verbatim: "F13 integration toggle (not an F12 AI category),
-        // default on, cached, per-lookup audit trail" — default-ON until F13
-        // ships the settings surface (M6 binds the real toggle here).
-        single<OffLookupPolicy> { OffLookupPolicy { true } }
+        // default on, cached, per-lookup audit trail" — the REAL settings
+        // toggle now that M6 ships the Data Vault settings keys.
+        single<OffLookupPolicy> {
+            val settings = get<app.wlo.core.datastore.SettingsStore>()
+            OffLookupPolicy { settings.foodDbLookupsEnabled.first() }
+        }
+        // T-K4 diagnostics: the opt-in crash-report toggle + endpoint,
+        // default OFF / empty (the dispatcher denies itself until both exist).
+        single<app.wlo.core.ports.DiagnosticsPolicy> {
+            val settings = get<app.wlo.core.datastore.SettingsStore>()
+            app.wlo.core.ports
+                .DiagnosticsPolicy { settings.diagnosticsCrashReports.first() }
+        }
         // The receipt ledger over schema-v5 `network_receipts` (append-only).
         single<EgressLedger> { RoomEgressLedger(db = get()) }
         // THE single socket door (D1: only :app sees the implementation).
@@ -237,4 +271,95 @@ public val platformModule: Module =
         single<OffRepository> { OpenFoodFactsClient(egress = get()) }
         // R-B6 correction cache (document-backed; schema v6 may formalize).
         single { CorrectionCacheStore(documents = get<JsonDocumentStore>()) }
+
+        // --- F13 Data Vault (M6 PART A, WLO-0028) --------------------------
+        // Storage accounting + attachment partitions (the M4 photo pipeline's
+        // persistence tenant; R-U14/R-U18 posture enforced in VaultFileStore).
+        single {
+            app.wlo.core.vault
+                .VaultFileStore(context = get<Context>())
+        }
+        // Backup assembly + restore machinery over the real spine.
+        single {
+            app.wlo.core.vault.SnapshotAssembler(
+                db = get<WloDatabase>(),
+                settings = get<app.wlo.core.datastore.SettingsStore>(),
+                documents = get<JsonDocumentStore>(),
+            )
+        }
+        single<app.wlo.core.vault.AutoBackupKeyProvider> {
+            get<app.wlo.core.vault.AutoBackupKeyVault>()
+        }
+        single<app.wlo.core.vault.BackupStoreFactory> {
+            val context = get<Context>()
+            app.wlo.core.vault.BackupStoreFactory { destination ->
+                app.wlo.core.vault
+                    .SafBackupStore(context, destination)
+            }
+        }
+        single<app.wlo.core.vault.EpochClock> {
+            app.wlo.core.vault
+                .EpochClock { System.currentTimeMillis() }
+        }
+        single<app.wlo.core.vault.BackupManager> {
+            app.wlo.core.vault.BackupManager(
+                assembler = get(),
+                storeFactory = get(),
+                autoKeys = get(),
+                clock = get(),
+            )
+        }
+        single<app.wlo.core.vault.StagedRestorer> {
+            app.wlo.core.vault
+                .StagedRestorer(db = get<WloDatabase>())
+        }
+        single<app.wlo.core.vault.RestoreCommitter> {
+            app.wlo.core.vault.RestoreCommitter(
+                db = get<WloDatabase>(),
+                settings = get<app.wlo.core.datastore.SettingsStore>(),
+                documents = get<JsonDocumentStore>(),
+                projector = get<app.wlo.core.data.DayProjector>(),
+            )
+        }
+        // BackupScheduler port impl: WorkManager daily once a folder is chosen.
+        single<app.wlo.core.ports.BackupScheduler> {
+            app.wlo.core.vault
+                .WorkManagerBackupScheduler(context = get<Context>())
+        }
+        // App-lock state holder (PART B renders the lock surface + gate flow).
+        single {
+            app.wlo.core.vault
+                .AppLockController()
+        }
+
+        // --- M6 PART B: the F12 receipt viewer + F13 vault-surface ports -----
+        // The receipt ledger's READ side (D1 port over the Room ledger).
+        single<app.wlo.core.ports.ReceiptAuditLog> {
+            app.wlo.app.di
+                .RoomReceiptAudit(ledger = get())
+        }
+        // The concrete auto-key vault (the AutoBackupKeyProvider binding below
+        // wraps it; the VaultPortAdapter needs the storing half too).
+        single<app.wlo.core.vault.AutoBackupKeyVault> {
+            app.wlo.core.vault
+                .AutoBackupKeyVault(context = get<Context>())
+        }
+        single<app.wlo.core.ports.DataVaultPort> {
+            app.wlo.app.di.VaultPortAdapter(
+                manager = get(),
+                assembler = get(),
+                restorer = get(),
+                committer = get(),
+                vaultFiles = get(),
+                autoKeys = get(),
+                storeFactory = get(),
+                settings = get(),
+                documents = get(),
+                db = get(),
+                measurements = get(),
+                diaries = get(),
+                profiles = get(),
+                clock = get(),
+            )
+        }
     }

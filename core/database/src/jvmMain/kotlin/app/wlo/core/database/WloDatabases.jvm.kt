@@ -14,3 +14,4 @@ public fun jvmDatabaseBuilder(path: String): RoomDatabase.Builder<WloDatabase> =
         .databaseBuilder<WloDatabase>(name = path)
         .setDriver(BundledSQLiteDriver())
         .addMigrations(*Migrations.ALL)
+        .enforceForeignKeys()
