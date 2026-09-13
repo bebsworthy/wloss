@@ -12,4 +12,7 @@ public data class HubActions(
     val onOpenWeight: () -> Unit = {},
     val onGutLog: () -> Unit = {},
     val onWorkout: () -> Unit = {},
+    // F03 (M5): today's plan card and the evening "plan tomorrow" card.
+    val onOpenPlan: () -> Unit = {},
+    val onPlanTomorrow: () -> Unit = {},
 )

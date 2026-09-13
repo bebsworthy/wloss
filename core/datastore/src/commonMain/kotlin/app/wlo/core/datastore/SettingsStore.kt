@@ -36,6 +36,22 @@ public class SettingsStore(
             prefs[KEY_CONSENT_INTRO_SEEN] ?: false
         }
 
+    /**
+     * Pantry partial-stock deduction (R-S5): OFF by default globally; the
+     * first generation prompts once and this remembers the choice. When ON,
+     * staples are deducted from generated lists with partial-stock math.
+     */
+    public val pantryDeductionEnabled: Flow<Boolean> =
+        dataStore.data.map { prefs ->
+            prefs[KEY_PANTRY_DEDUCTION_ENABLED] ?: false
+        }
+
+    /** Whether the one-time R-S5 prompt has been answered/shown. */
+    public val pantryDeductionPromptSeen: Flow<Boolean> =
+        dataStore.data.map { prefs ->
+            prefs[KEY_PANTRY_DEDUCTION_PROMPT_SEEN] ?: false
+        }
+
     public suspend fun massUnitOnce(): MassUnit = massUnit.first()
 
     public suspend fun setMassUnit(unit: MassUnit) {
@@ -46,9 +62,22 @@ public class SettingsStore(
         dataStore.edit { it[KEY_CONSENT_INTRO_SEEN] = seen }
     }
 
+    public suspend fun setPantryDeductionEnabled(enabled: Boolean) {
+        dataStore.edit {
+            it[KEY_PANTRY_DEDUCTION_ENABLED] = enabled
+            it[KEY_PANTRY_DEDUCTION_PROMPT_SEEN] = true
+        }
+    }
+
+    public suspend fun setPantryDeductionPromptSeen(seen: Boolean) {
+        dataStore.edit { it[KEY_PANTRY_DEDUCTION_PROMPT_SEEN] = seen }
+    }
+
     private companion object {
         val KEY_UNIT_SYSTEM = stringPreferencesKey("unit_system")
         val KEY_CONSENT_INTRO_SEEN = booleanPreferencesKey("consent_intro_seen")
+        val KEY_PANTRY_DEDUCTION_ENABLED = booleanPreferencesKey("pantry_deduction_enabled")
+        val KEY_PANTRY_DEDUCTION_PROMPT_SEEN = booleanPreferencesKey("pantry_deduction_prompt_seen")
     }
 }
 

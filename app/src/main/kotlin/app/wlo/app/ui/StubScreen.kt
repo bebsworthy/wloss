@@ -55,12 +55,9 @@ public val STUB_TITLES: Map<String, String> =
     mapOf(
         "stub/energy" to "Energy",
         "stub/checkin" to "Check-in",
-        "stub/studio" to "Plan Studio",
         "stub/vault" to "Data Vault",
         "stub/algorithms" to "Algorithms",
         "stub/ai-receipts" to "AI receipts",
-        "stub/plan-tomorrow" to "Plan tomorrow",
-        "stub/log-planned" to "Planned meals",
         "stub/gut" to "Digestion log",
         "stub/exercise" to "Workout",
         "stub/insights-report" to "Report card",

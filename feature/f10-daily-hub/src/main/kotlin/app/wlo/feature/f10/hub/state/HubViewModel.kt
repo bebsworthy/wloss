@@ -9,6 +9,7 @@ import app.wlo.core.common.getOrNull
 import app.wlo.core.data.DayProjectionRepository
 import app.wlo.core.data.DayView
 import app.wlo.core.data.DiaryRepository
+import app.wlo.core.data.PlannerRepository
 import app.wlo.core.data.ProfileRepository
 import app.wlo.core.data.TargetsRepository
 import app.wlo.core.data.WeighInRepository
@@ -71,6 +72,8 @@ public sealed interface HubUiState {
         public val heatmap: HeatmapUi?,
         public val forecast: HubForecast?,
         public val explainer: ExplainerUi? = null,
+        /** F03 (M5): open planned meals for today; null while no plan exists. */
+        public val plannedMealsOpen: Int? = null,
     ) : HubUiState
 }
 
@@ -151,6 +154,7 @@ public class HubViewModel(
     private val targets: TargetsRepository,
     private val weighIns: WeighInRepository,
     private val diary: DiaryRepository,
+    private val planner: PlannerRepository,
 ) : ViewModel() {
     private val zone: TimeZone = TimeZone.currentSystemDefault()
     private val today: Long = DayBoundary.epochDay(clock.now(), zone)
@@ -217,19 +221,21 @@ public class HubViewModel(
         val delta = trendDelta7(profile.id)
 
         // The Day Model rules (F10 §3). Completeness inputs the features own:
-        // the weigh-in flag and the F10 §4 trend gate; plan/workout/check-in
-        // flags arrive with F03/F05/F07 — content-rendered, absence is silent.
+        // the weigh-in flag, the F10 §4 trend gate, and (since M5) the F03
+        // plan flags — content-rendered, absence is silent (R-D14).
         val localTime = now.toLocalDateTime(zone).time
+        val planFlags = planFlags(profile.id)
         val dayModel =
             DayModelEngine.resolve(
                 DayModelInput(
                     minutesOfDay = localTime.hour * 60 + localTime.minute,
                     weighInLogged = dayWeighInCount(profile.id) > 0,
                     trendAvailable = delta != null,
-                    hasOpenPlannedMeal = false,
+                    hasOpenPlannedMeal = (planFlags.openToday ?: 0) > 0,
                     workoutDueToday = false,
                     checkInDueToday = false,
-                    isPlanner = false,
+                    isPlanner = planFlags.isPlanner,
+                    planTomorrowPending = planFlags.tomorrowPending,
                 ),
             )
 
@@ -245,8 +251,32 @@ public class HubViewModel(
             diarySlice = diarySlice,
             heatmap = heatmap,
             forecast = forecast,
+            plannedMealsOpen = planFlags.openToday,
         )
     }
+
+    /** The F03 completeness flags (R-B1/R-D14): planner-hood and the open slots. */
+    private suspend fun planFlags(profileId: String): PlanFlags {
+        val plan = planner.currentPlan(profileId).getOrNull()
+        if (plan == null) return PlanFlags(isPlanner = false, openToday = null, tomorrowPending = false)
+        val todaySlots = planner.slots(profileId, today, today).getOrNull().orEmpty()
+        val tomorrowSlots = planner.slots(profileId, today + 1, today + 1).getOrNull().orEmpty()
+        val openToday =
+            todaySlots.count { it.state == app.wlo.core.model.PlannedSlotState.PLANNED && it.recipeId != null }
+        val tomorrowCovered =
+            tomorrowSlots.any { it.state == app.wlo.core.model.PlannedSlotState.PLANNED && it.recipeId != null }
+        return PlanFlags(
+            isPlanner = true,
+            openToday = openToday,
+            tomorrowPending = !tomorrowCovered,
+        )
+    }
+
+    private data class PlanFlags(
+        val isPlanner: Boolean,
+        val openToday: Int?,
+        val tomorrowPending: Boolean,
+    )
 
     // --- diary slice + heatmap (R-D4) ---
 

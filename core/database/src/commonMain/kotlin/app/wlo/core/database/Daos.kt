@@ -400,3 +400,365 @@ public interface TargetsVersionDao {
         atEpochMs: Long,
     )
 }
+
+// --- v6: F03 planner + F04 list/pantry ---------------------------------------
+
+/**
+ * Recipe versions (F03 §3): immutable (recipeId, version) rows; edits write
+ * vN+1. Archive-don't-delete — no delete method exists.
+ */
+@Dao
+public interface RecipeDao {
+    @Upsert
+    public suspend fun upsertAll(recipes: List<RecipeEntity>)
+
+    @Query(
+        "SELECT * FROM recipes WHERE recipeId = :recipeId " +
+            "ORDER BY version DESC LIMIT 1",
+    )
+    public suspend fun latest(recipeId: String): RecipeEntity?
+
+    @Query(
+        "SELECT * FROM recipes AS r WHERE r.profileId = :profileId AND r.archivedAtEpochMs IS NULL " +
+            "AND r.version = (SELECT MAX(r2.version) FROM recipes AS r2 " +
+            "WHERE r2.recipeId = r.recipeId AND r2.archivedAtEpochMs IS NULL) " +
+            "ORDER BY r.name COLLATE NOCASE ASC",
+    )
+    public suspend fun activeLatest(profileId: String): List<RecipeEntity>
+
+    @Query(
+        "SELECT * FROM recipes WHERE profileId = :profileId AND archivedAtEpochMs IS NULL " +
+            "AND LOWER(name) LIKE '%' || LOWER(:query) || '%' " +
+            "ORDER BY name COLLATE NOCASE ASC LIMIT :limit",
+    )
+    public suspend fun searchByName(
+        profileId: String,
+        query: String,
+        limit: Int,
+    ): List<RecipeEntity>
+
+    @Query(
+        "SELECT * FROM recipes AS r WHERE r.profileId = :profileId AND r.archivedAtEpochMs IS NULL " +
+            "AND r.version = (SELECT MAX(r2.version) FROM recipes AS r2 " +
+            "WHERE r2.recipeId = r.recipeId AND r2.archivedAtEpochMs IS NULL) " +
+            "ORDER BY r.name COLLATE NOCASE ASC",
+    )
+    public fun observeActiveLatest(profileId: String): Flow<List<RecipeEntity>>
+
+    @Query("SELECT COUNT(*) FROM recipes WHERE profileId = :profileId")
+    public suspend fun count(profileId: String): Int
+
+    @Query(
+        "UPDATE recipes SET archivedAtEpochMs = :atEpochMs WHERE recipeId = :recipeId " +
+            "AND archivedAtEpochMs IS NULL",
+    )
+    public suspend fun archive(
+        recipeId: String,
+        atEpochMs: Long,
+    )
+}
+
+/** Canonical grocery catalog (F04): archive-don't-delete, like the food catalog. */
+@Dao
+public interface GroceryItemDao {
+    @Upsert
+    public suspend fun upsertAll(items: List<GroceryItemEntity>)
+
+    @Upsert
+    public suspend fun upsert(item: GroceryItemEntity)
+
+    @Query("SELECT * FROM grocery_items WHERE id = :id")
+    public suspend fun byId(id: String): GroceryItemEntity?
+
+    @Query(
+        "SELECT * FROM grocery_items WHERE profileId = :profileId AND archivedAtEpochMs IS NULL " +
+            "ORDER BY name COLLATE NOCASE ASC",
+    )
+    public suspend fun active(profileId: String): List<GroceryItemEntity>
+
+    @Query(
+        "SELECT * FROM grocery_items WHERE profileId = :profileId AND archivedAtEpochMs IS NULL " +
+            "ORDER BY name COLLATE NOCASE ASC",
+    )
+    public fun observeActive(profileId: String): Flow<List<GroceryItemEntity>>
+
+    @Query(
+        "SELECT * FROM grocery_items WHERE profileId = :profileId AND archivedAtEpochMs IS NULL " +
+            "AND (LOWER(name) LIKE '%' || LOWER(:query) || '%' " +
+            "OR LOWER(COALESCE(aliasesJson, '')) LIKE '%' || LOWER(:query) || '%') " +
+            "ORDER BY name COLLATE NOCASE ASC LIMIT :limit",
+    )
+    public suspend fun search(
+        profileId: String,
+        query: String,
+        limit: Int,
+    ): List<GroceryItemEntity>
+
+    @Query(
+        "SELECT * FROM grocery_items WHERE profileId = :profileId AND archivedAtEpochMs IS NULL " +
+            "AND LOWER(name) = LOWER(:name) LIMIT 1",
+    )
+    public suspend fun byExactName(
+        profileId: String,
+        name: String,
+    ): GroceryItemEntity?
+
+    @Query("SELECT COUNT(*) FROM grocery_items WHERE profileId = :profileId")
+    public suspend fun count(profileId: String): Int
+}
+
+/** Plan generations: one active plan per profile (supersede on new write). */
+@Dao
+public interface PlanVersionDao {
+    @Insert
+    public suspend fun insert(plan: PlanVersionEntity)
+
+    @Query(
+        "SELECT * FROM plan_versions WHERE profileId = :profileId AND supersededAtEpochMs IS NULL " +
+            "ORDER BY version DESC LIMIT 1",
+    )
+    public suspend fun current(profileId: String): PlanVersionEntity?
+
+    @Query(
+        "SELECT * FROM plan_versions WHERE profileId = :profileId AND supersededAtEpochMs IS NULL " +
+            "ORDER BY version DESC LIMIT 1",
+    )
+    public fun observeCurrent(profileId: String): Flow<PlanVersionEntity?>
+
+    @Query("SELECT * FROM plan_versions WHERE id = :planId")
+    public suspend fun byId(planId: String): PlanVersionEntity?
+
+    @Query("SELECT MAX(version) FROM plan_versions WHERE profileId = :profileId")
+    public suspend fun maxVersion(profileId: String): Int?
+
+    @Query(
+        "UPDATE plan_versions SET supersededAtEpochMs = :atEpochMs " +
+            "WHERE profileId = :profileId AND supersededAtEpochMs IS NULL",
+    )
+    public suspend fun supersedeActive(
+        profileId: String,
+        atEpochMs: Long,
+    )
+
+    @Query("SELECT COUNT(*) FROM plan_versions WHERE profileId = :profileId")
+    public suspend fun count(profileId: String): Int
+}
+
+/**
+ * Planned slots (R-B1): append-only records — swap/skip/confirm/replace UPDATE
+ * only the state columns (never a delete); a swap inserts a fresh planned
+ * successor. No delete method exists (Fresh Start may hide plans later; v1
+ * supersedes whole plan versions instead).
+ */
+@Dao
+public interface PlanSlotDao {
+    @Insert
+    public suspend fun insertAll(slots: List<PlanSlotEntity>)
+
+    @Insert
+    public suspend fun insert(slot: PlanSlotEntity)
+
+    @Query("SELECT * FROM plan_slots WHERE id = :id")
+    public suspend fun byId(id: String): PlanSlotEntity?
+
+    @Query("SELECT * FROM plan_slots WHERE planId = :planId ORDER BY dayEpochDay ASC, createdAtEpochMs ASC")
+    public suspend fun forPlan(planId: String): List<PlanSlotEntity>
+
+    @Query("SELECT * FROM plan_slots WHERE planId = :planId ORDER BY dayEpochDay ASC, createdAtEpochMs ASC")
+    public fun observeForPlan(planId: String): Flow<List<PlanSlotEntity>>
+
+    @Query(
+        "SELECT * FROM plan_slots WHERE profileId = :profileId AND dayEpochDay BETWEEN :fromDay AND :toDay " +
+            "ORDER BY dayEpochDay ASC, createdAtEpochMs ASC",
+    )
+    public suspend fun range(
+        profileId: String,
+        fromDay: Long,
+        toDay: Long,
+    ): List<PlanSlotEntity>
+
+    @Query(
+        "SELECT * FROM plan_slots WHERE profileId = :profileId AND dayEpochDay BETWEEN :fromDay AND :toDay " +
+            "ORDER BY dayEpochDay ASC, createdAtEpochMs ASC",
+    )
+    public fun observeRange(
+        profileId: String,
+        fromDay: Long,
+        toDay: Long,
+    ): Flow<List<PlanSlotEntity>>
+
+    @Query(
+        "UPDATE plan_slots SET state = :state, updatedAtEpochMs = :atEpochMs WHERE id = :id",
+    )
+    public suspend fun setState(
+        id: String,
+        state: String,
+        atEpochMs: Long,
+    )
+
+    @Query(
+        "UPDATE plan_slots SET state = :state, replacedByEntryId = :entryId, updatedAtEpochMs = :atEpochMs " +
+            "WHERE id = :id",
+    )
+    public suspend fun setReplaced(
+        id: String,
+        state: String,
+        entryId: String,
+        atEpochMs: Long,
+    )
+
+    @Query(
+        "UPDATE plan_slots SET successorSlotId = :successorId, updatedAtEpochMs = :atEpochMs WHERE id = :id",
+    )
+    public suspend fun setSuccessor(
+        id: String,
+        successorId: String,
+        atEpochMs: Long,
+    )
+
+    /** The servings dial (F03 §6: company tonight) — quantities re-derive downstream. */
+    @Query(
+        "UPDATE plan_slots SET servings = :servings, updatedAtEpochMs = :atEpochMs WHERE id = :id",
+    )
+    public suspend fun setServings(
+        id: String,
+        servings: Double,
+        atEpochMs: Long,
+    )
+}
+
+/** Shopping-list rows: delta reconciliation updates in place; archive = strike-through. */
+@Dao
+public interface ListItemDao {
+    @Upsert
+    public suspend fun upsertAll(items: List<ListItemEntity>)
+
+    @Upsert
+    public suspend fun upsert(item: ListItemEntity)
+
+    @Query("SELECT * FROM list_items WHERE id = :id")
+    public suspend fun byId(id: String): ListItemEntity?
+
+    @Query(
+        "SELECT * FROM list_items WHERE profileId = :profileId AND listId = :listId AND archivedAtEpochMs IS NULL " +
+            "ORDER BY createdAtEpochMs ASC",
+    )
+    public suspend fun active(
+        profileId: String,
+        listId: String,
+    ): List<ListItemEntity>
+
+    @Query(
+        "SELECT * FROM list_items WHERE profileId = :profileId AND listId = :listId AND archivedAtEpochMs IS NULL " +
+            "ORDER BY createdAtEpochMs ASC",
+    )
+    public fun observeActive(
+        profileId: String,
+        listId: String,
+    ): Flow<List<ListItemEntity>>
+
+    @Query(
+        "SELECT * FROM list_items WHERE profileId = :profileId AND listId = :listId " +
+            "AND archivedAtEpochMs IS NOT NULL ORDER BY updatedAtEpochMs DESC",
+    )
+    public suspend fun struckThrough(
+        profileId: String,
+        listId: String,
+    ): List<ListItemEntity>
+
+    @Query(
+        "SELECT * FROM list_items WHERE profileId = :profileId AND listId = :listId " +
+            "AND groceryItemId = :groceryItemId AND archivedAtEpochMs IS NULL",
+    )
+    public suspend fun byGroceryItem(
+        profileId: String,
+        listId: String,
+        groceryItemId: String,
+    ): List<ListItemEntity>
+
+    @Query(
+        "UPDATE list_items SET state = :state, checkedAtEpochMs = :checkedAtEpochMs, updatedAtEpochMs = :atEpochMs " +
+            "WHERE id = :id",
+    )
+    public suspend fun setChecked(
+        id: String,
+        state: String,
+        checkedAtEpochMs: Long?,
+        atEpochMs: Long,
+    )
+
+    /** The delta chip is consumed once rendered (or superseded by the next reconciliation). */
+    @Query("UPDATE list_items SET deltaQty = NULL WHERE id = :id")
+    public suspend fun clearDelta(id: String)
+
+    /** Struck-through removal (F04 §3): recoverable, never a hard delete. */
+    @Query(
+        "UPDATE list_items SET archivedAtEpochMs = :atEpochMs, updatedAtEpochMs = :atEpochMs WHERE id = :id",
+    )
+    public suspend fun archive(
+        id: String,
+        atEpochMs: Long,
+    )
+
+    @Query("SELECT COUNT(*) FROM list_items WHERE profileId = :profileId")
+    public suspend fun count(profileId: String): Int
+}
+
+/** Pantry stock (F04 §3): upsert semantics; archive = consumed/removed, reversible. */
+@Dao
+public interface PantryItemDao {
+    @Upsert
+    public suspend fun upsertAll(items: List<PantryItemEntity>)
+
+    @Upsert
+    public suspend fun upsert(item: PantryItemEntity)
+
+    @Query("SELECT * FROM pantry_items WHERE id = :id")
+    public suspend fun byId(id: String): PantryItemEntity?
+
+    @Query(
+        "SELECT * FROM pantry_items WHERE profileId = :profileId AND archivedAtEpochMs IS NULL " +
+            "ORDER BY name COLLATE NOCASE ASC",
+    )
+    public suspend fun active(profileId: String): List<PantryItemEntity>
+
+    @Query(
+        "SELECT * FROM pantry_items WHERE profileId = :profileId AND archivedAtEpochMs IS NULL " +
+            "ORDER BY name COLLATE NOCASE ASC",
+    )
+    public fun observeActive(profileId: String): Flow<List<PantryItemEntity>>
+
+    @Query(
+        "SELECT * FROM pantry_items WHERE profileId = :profileId AND groceryItemId = :groceryItemId " +
+            "AND archivedAtEpochMs IS NULL LIMIT 1",
+    )
+    public suspend fun byGroceryItem(
+        profileId: String,
+        groceryItemId: String,
+    ): PantryItemEntity?
+
+    @Query(
+        "SELECT * FROM pantry_items WHERE profileId = :profileId AND archivedAtEpochMs IS NULL " +
+            "AND expiryEpochDay IS NOT NULL AND expiryEpochDay <= :byDay ORDER BY expiryEpochDay ASC",
+    )
+    public suspend fun expiringBefore(
+        profileId: String,
+        byDay: Long,
+    ): List<PantryItemEntity>
+
+    @Query("SELECT COUNT(*) FROM pantry_items WHERE profileId = :profileId")
+    public suspend fun count(profileId: String): Int
+}
+
+/** Learned aisle overrides (F04 "teach-the-system loop"): one row per (profile, item). */
+@Dao
+public interface AisleCorrectionDao {
+    @Upsert
+    public suspend fun upsert(correction: AisleCorrectionEntity)
+
+    @Query("SELECT * FROM aisle_corrections WHERE profileId = :profileId")
+    public suspend fun forProfile(profileId: String): List<AisleCorrectionEntity>
+
+    @Query("SELECT * FROM aisle_corrections WHERE profileId = :profileId")
+    public fun observeForProfile(profileId: String): Flow<List<AisleCorrectionEntity>>
+}

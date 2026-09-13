@@ -38,6 +38,15 @@ public object WloDeepLinks {
             entry("wlo://log/quick-kcal", "f02/quick-kcal"),
             entry("wlo://diary", "f02/diary?entry={entry}"),
             entry("wlo://log/correct?entry={entry}", "f02/diary?entry={entry}"),
+            // M5 PART B: the Plan tab is real (F03 week grid + recipes) and the
+            // F04 list/pantry pipeline ships beside it — the list/pantry rows
+            // follow the wlo://diary precedent (beyond IA.md §3's literal list;
+            // flagged for the IA owner in the M5 report).
+            entry("wlo://list", "f04/list"),
+            entry("wlo://pantry", "f04/pantry"),
+            entry("wlo://plan/tomorrow", "f03/plan/tomorrow"),
+            entry("wlo://log/planned?slot={slot}", "f03/plan/focus?day={day}&slot={slot}"),
+            entry("wlo://studio?proposal={proposal}", "f03/studio?proposal={proposal}"),
             // --- debug diagnostics (M4): the egress monitor renders the
             // persisted receipt ledger — F12 §3.8's "debug build renders a
             // live egress monitor". Debug builds only; release lands on a stub.
@@ -49,12 +58,9 @@ public object WloDeepLinks {
             // --- documented stubs (land in a later milestone, still navigating) ---
             stub("wlo://energy", "stub/energy", "Energy"),
             stub("wlo://checkin", "stub/checkin", "Check-in"),
-            stub("wlo://studio?proposal={proposal}", "stub/studio", "Plan Studio"),
             stub("wlo://vault", "stub/vault", "Data Vault"),
             stub("wlo://algorithms", "stub/algorithms", "Algorithms"),
             stub("wlo://ai/receipts", "stub/ai-receipts", "AI receipts"),
-            stub("wlo://plan/tomorrow", "stub/plan-tomorrow", "Plan tomorrow"),
-            stub("wlo://log/planned?slot={slot}", "stub/log-planned", "Planned meals"),
             stub("wlo://gut/log", "stub/gut", "Digestion log"),
             stub("wlo://exercise/start", "stub/exercise", "Workout"),
             stub("wlo://insights/report", "stub/insights-report", "Report card"),

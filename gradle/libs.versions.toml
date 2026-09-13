@@ -97,7 +97,11 @@ mlkitText = "16.0.1"
 # ZXing android-embedded 4.3.0 = <release> on repo1 com.journeyapps
 # (verified 2026-09-12) — the Apache-2.0 BarcodeScanner fallback engine.
 zxingEmbedded = "4.3.0"
-# detekt 1.23.8 = <release> on repo1 io.gitlab.arturbosch.detekt (verified 2026-09-12)
+# androidx.benchmark 1.5.0 = <release> on dl.google.com androidx.benchmark group
+# (benchmark-macro-junit4 + benchmark-junit4, verified 2026-09-12 maven-metadata).
+# M5: :benchmarks module (WLO-0027 PART A) — the F03 re-deal perf baseline.
+benchmark = "1.5.0"
+# androidx.test 1.7.0 / ext-junit 1.3.0 / rules 1.7.0 (dl.google.com metadata;
 detekt = "1.23.8"
 # ktlint-gradle 14.2.0 (Mar 2026, actively maintained; GitHub releases + plugin
 # portal metadata, verified 2026-09-12). Chosen over a manual exec task: the v14
@@ -165,6 +169,12 @@ androidx-test-runner = { module = "androidx.test:runner", version.ref = "android
 androidx-test-rules = { module = "androidx.test:rules", version.ref = "androidxTestRules" }
 androidx-test-ext-junit = { module = "androidx.test.ext:junit", version.ref = "androidxTestExtJunit" }
 androidx-test-uiautomator = { module = "androidx.test.uiautomator:uiautomator", version.ref = "uiautomator" }
+# M5 perf baseline (:benchmarks, WLO-0027): the microbenchmark rule measures the
+# planner in-process (a pure function has no app-process surface for
+# macrobenchmark metrics); see the :benchmarks build file for the full note.
+androidx-benchmark-junit4 = { module = "androidx.benchmark:benchmark-junit4", version.ref = "benchmark" }
+androidx-benchmark-macro-junit4 = { module = "androidx.benchmark:benchmark-macro-junit4", version.ref = "benchmark" }
+androidx-benchmark-gradle-plugin = { module = "androidx.benchmark:benchmark-gradle-plugin", version.ref = "benchmark" }
 androidx-test-orchestrator = { module = "androidx.test:orchestrator", version.ref = "orchestrator" }
 
 # --- Build-logic classpath (Gradle plugin artifacts; used by build-logic only) ---
@@ -189,3 +199,4 @@ android-kmp-library = { id = "com.android.kotlin.multiplatform.library", version
 room3 = { id = "androidx.room3", version.ref = "room3" }
 detekt = { id = "io.gitlab.arturbosch.detekt", version.ref = "detekt" }
 ktlint = { id = "org.jlleitschuh.gradle.ktlint", version.ref = "ktlintGradle" }
+androidx-benchmark = { id = "androidx.benchmark", version.ref = "benchmark" }

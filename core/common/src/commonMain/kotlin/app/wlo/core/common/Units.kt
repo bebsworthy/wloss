@@ -1,5 +1,6 @@
 package app.wlo.core.common
 
+import app.wlo.core.model.MeasureUnit
 import kotlin.math.roundToLong
 
 /**
@@ -50,3 +51,30 @@ public enum class LengthUnit(
         public val DEFAULT: LengthUnit = CENTIMETER
     }
 }
+
+// --- Kitchen measures (F03↔F04 canonical item space; units live in :core:model,
+//     conversion math lives here — the R-D10 converter is the single owner). ---
+
+/** Converts a quantity into its dimension's canonical amount (g / ml / pieces). */
+public fun MeasureUnit.toCanonical(value: Double): Double = value * canonicalFactor
+
+/** Reads a canonical amount (g / ml / pieces) back into this unit. */
+public fun MeasureUnit.fromCanonical(canonical: Double): Double = canonical / canonicalFactor
+
+/**
+ * Same-dimension unit conversion ("1 cup" → "240 ml"). Cross-dimension
+ * requests return null BY CONTRACT (F04 §3: incompatible units never fake a
+ * conversion — callers group per-source amounts instead of converting).
+ * Grocery density hints may bridge mass/volume where the item allows it, but
+ * that decision belongs to the caller, never to this function.
+ */
+public fun convertMeasure(
+    value: Double,
+    from: MeasureUnit,
+    to: MeasureUnit,
+): Double? =
+    if (from.kind != to.kind) {
+        null
+    } else {
+        from.fromCanonical(from.toCanonical(value))
+    }

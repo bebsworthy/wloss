@@ -29,6 +29,12 @@ public class WloDeepLinksTest {
         assertEquals("f02/quick-kcal", WloDeepLinks.routeFor("wlo://log/quick-kcal"))
         assertEquals("f02/diary?entry={entry}", WloDeepLinks.routeFor("wlo://diary"))
         assertEquals("ai/models", WloDeepLinks.routeFor("wlo://ai/models"))
+        // M5 PART B: the plan→shop pipeline is real (F03 + F04).
+        assertEquals("f03/plan/tomorrow", WloDeepLinks.routeFor("wlo://plan/tomorrow"))
+        assertEquals("f03/plan/focus?day={day}&slot={slot}", WloDeepLinks.routeFor("wlo://log/planned"))
+        assertEquals("f03/studio?proposal={proposal}", WloDeepLinks.routeFor("wlo://studio"))
+        assertEquals("f04/list", WloDeepLinks.routeFor("wlo://list"))
+        assertEquals("f04/pantry", WloDeepLinks.routeFor("wlo://pantry"))
     }
 
     @Test

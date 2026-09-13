@@ -300,11 +300,52 @@ private fun HubCardView(
                 )
             }
 
-        // Content-rendered surfaces that arrive with F03/F05/F07 (R-D14):
-        // absence is silent — no empty state, no upsell.
-        HubCard.MEALS_TODAY, HubCard.WORKOUT, HubCard.PLAN_TOMORROW, HubCard.CHECK_IN -> Unit
+        // F03's content-rendered cards (R-D14): they exist only while the
+        // plan gives them content — no empty state, no upsell.
+        HubCard.MEALS_TODAY -> MealsTodayCard(state, onOpenPlan = actions.onOpenPlan)
+
+        HubCard.PLAN_TOMORROW ->
+            WloCard(modifier = Modifier.testTag("hub-plan-tomorrow-card").clickable(onClick = actions.onPlanTomorrow)) {
+                Text(
+                    text = "tomorrow",
+                    style = wloType.label,
+                    color = wloExtendedColors.textTertiary,
+                )
+                Text(text = "Plan tomorrow", style = wloType.title)
+                Text(
+                    text = "deal or check the week before the morning decides for you",
+                    style = wloType.body.copy(fontSize = wloType.receipt.fontSize),
+                    color = wloExtendedColors.textTertiary,
+                )
+            }
+
+        HubCard.WORKOUT, HubCard.CHECK_IN -> Unit
     }
 }
+
+/** "Meals · today" (F10 §5): the open planned slots, tapping into the planner. */
+@Composable
+private fun MealsTodayCard(
+    state: HubUiState.Ready,
+    onOpenPlan: () -> Unit,
+): Unit =
+    WloCard(modifier = Modifier.testTag("hub-meals-card").clickable(onClick = onOpenPlan)) {
+        Text(
+            text = "meals · today",
+            style = wloType.label,
+            color = wloExtendedColors.textTertiary,
+        )
+        val open = state.plannedMealsOpen ?: 0
+        Text(
+            text = if (open == 1) "1 planned meal open" else "$open planned meals open",
+            style = wloType.title,
+        )
+        Text(
+            text = "tap to eat, swap, or skip — nothing owed either way",
+            style = wloType.body.copy(fontSize = wloType.receipt.fontSize),
+            color = wloExtendedColors.textTertiary,
+        )
+    }
 
 @Composable
 private fun TrendCard(

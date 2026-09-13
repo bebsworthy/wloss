@@ -225,8 +225,142 @@ public object Migrations {
             }
         }
 
+    /**
+     * v5 → v6: the F03/F04 planning surface (WLO-0027 PART A; F03 §3, F04 §3,
+     * rulings R-B1/R-B9/R-S3/R-S8) — seven new tables, all profile-scoped:
+     *
+     *  1. `recipes` — versioned (recipeId, version PK), per-serving macros,
+     *     JSON columns for slots/tags/FODMAP(R-S8)/ingredients/steps, source +
+     *     license per R-S3. Archive-don't-delete.
+     *  2. `grocery_items` — the canonical item space's catalog half (names,
+     *     shipped aisle tag, default unit, density hint).
+     *  3. `plan_versions` — one active plan per profile (supersede-on-write).
+     *  4. `plan_slots` — the R-B1 slot state machine rows (append-only
+     *     records: swap/skip/confirm/replace touch state columns only).
+     *  5. `list_items` — delta-reconciled list rows (checks ride the row).
+     *  6. `pantry_items` — stock levels, expiry, staples, out-of-stock flags.
+     *  7. `aisle_corrections` — the learned per-item aisle loop.
+     *
+     * DDL mirrors the exported `6.json` createSql statements exactly.
+     */
+    public val MIGRATION_5_6: Migration =
+        object : Migration(5, 6) {
+            override suspend fun migrate(connection: SQLiteConnection) {
+                connection.exec(
+                    "CREATE TABLE IF NOT EXISTS `recipes` (" +
+                        "`recipeId` TEXT NOT NULL, `version` INTEGER NOT NULL, `profileId` TEXT NOT NULL, " +
+                        "`name` TEXT NOT NULL, `servingsBase` REAL NOT NULL, `cuisine` TEXT, " +
+                        "`slotsJson` TEXT NOT NULL, `tagsJson` TEXT NOT NULL, `fodmapTagsJson` TEXT NOT NULL, " +
+                        "`ingredientsJson` TEXT NOT NULL, `stepsJson` TEXT NOT NULL, " +
+                        "`kcalPerServing` REAL NOT NULL, `proteinGPerServing` REAL NOT NULL, " +
+                        "`carbGPerServing` REAL NOT NULL, `fatGPerServing` REAL NOT NULL, " +
+                        "`fiberGPerServing` REAL NOT NULL, `nutritionBasis` TEXT NOT NULL, " +
+                        "`source` TEXT NOT NULL, `license` TEXT, `rating` INTEGER, " +
+                        "`lastPlannedAtEpochMs` INTEGER, `createdAtEpochMs` INTEGER NOT NULL, " +
+                        "`updatedAtEpochMs` INTEGER, `archivedAtEpochMs` INTEGER, " +
+                        "PRIMARY KEY(`recipeId`, `version`))",
+                )
+                connection.exec(
+                    "CREATE INDEX IF NOT EXISTS `index_recipes_recipeId` ON `recipes` (`recipeId`)",
+                )
+                connection.exec(
+                    "CREATE INDEX IF NOT EXISTS `index_recipes_profileId_archivedAtEpochMs` " +
+                        "ON `recipes` (`profileId`, `archivedAtEpochMs`)",
+                )
+
+                connection.exec(
+                    "CREATE TABLE IF NOT EXISTS `grocery_items` (" +
+                        "`id` TEXT NOT NULL, `profileId` TEXT NOT NULL, `name` TEXT NOT NULL, " +
+                        "`aisle` TEXT NOT NULL, `defaultUnit` TEXT NOT NULL, `densityGPerMl` REAL, " +
+                        "`gramsPerPiece` REAL, `aliasesJson` TEXT, `createdAtEpochMs` INTEGER NOT NULL, " +
+                        "`archivedAtEpochMs` INTEGER, PRIMARY KEY(`id`))",
+                )
+                connection.exec(
+                    "CREATE INDEX IF NOT EXISTS `index_grocery_items_profileId` " +
+                        "ON `grocery_items` (`profileId`)",
+                )
+
+                connection.exec(
+                    "CREATE TABLE IF NOT EXISTS `plan_versions` (" +
+                        "`id` TEXT NOT NULL, `profileId` TEXT NOT NULL, `version` INTEGER NOT NULL, " +
+                        "`startDayEpochDay` INTEGER NOT NULL, `endDayEpochDay` INTEGER NOT NULL, " +
+                        "`seed` INTEGER NOT NULL, `settingsJson` TEXT NOT NULL, `reportJson` TEXT NOT NULL, " +
+                        "`createdAtEpochMs` INTEGER NOT NULL, `supersededAtEpochMs` INTEGER, " +
+                        "PRIMARY KEY(`id`))",
+                )
+                connection.exec(
+                    "CREATE UNIQUE INDEX IF NOT EXISTS `index_plan_versions_profileId_version` " +
+                        "ON `plan_versions` (`profileId`, `version`)",
+                )
+
+                connection.exec(
+                    "CREATE TABLE IF NOT EXISTS `plan_slots` (" +
+                        "`id` TEXT NOT NULL, `planId` TEXT NOT NULL, `profileId` TEXT NOT NULL, " +
+                        "`dayEpochDay` INTEGER NOT NULL, `mealSlot` TEXT NOT NULL, `recipeId` TEXT, " +
+                        "`recipeVersion` INTEGER, `recipeName` TEXT, `servings` REAL NOT NULL, " +
+                        "`state` TEXT NOT NULL, `replacedByEntryId` TEXT, `successorSlotId` TEXT, " +
+                        "`replacesSlotId` TEXT, `parentSlotId` TEXT, `isCookEvent` INTEGER NOT NULL, " +
+                        "`batchServings` REAL, `kcalPerServing` REAL, `proteinGPerServing` REAL, " +
+                        "`carbGPerServing` REAL, `fatGPerServing` REAL, `fiberGPerServing` REAL, " +
+                        "`createdAtEpochMs` INTEGER NOT NULL, `updatedAtEpochMs` INTEGER, PRIMARY KEY(`id`))",
+                )
+                connection.exec(
+                    "CREATE INDEX IF NOT EXISTS `index_plan_slots_planId` ON `plan_slots` (`planId`)",
+                )
+                connection.exec(
+                    "CREATE INDEX IF NOT EXISTS `index_plan_slots_profileId_dayEpochDay` " +
+                        "ON `plan_slots` (`profileId`, `dayEpochDay`)",
+                )
+                connection.exec(
+                    "CREATE INDEX IF NOT EXISTS `index_plan_slots_recipeId` ON `plan_slots` (`recipeId`)",
+                )
+
+                connection.exec(
+                    "CREATE TABLE IF NOT EXISTS `list_items` (" +
+                        "`id` TEXT NOT NULL, `profileId` TEXT NOT NULL, `listId` TEXT NOT NULL, " +
+                        "`groceryItemId` TEXT NOT NULL, `name` TEXT NOT NULL, `qty` REAL NOT NULL, " +
+                        "`unit` TEXT NOT NULL, `aisle` TEXT NOT NULL, `state` TEXT NOT NULL, " +
+                        "`checkedAtEpochMs` INTEGER, `deltaQty` REAL, `sourcesJson` TEXT NOT NULL, " +
+                        "`createdAtEpochMs` INTEGER NOT NULL, `updatedAtEpochMs` INTEGER, " +
+                        "`archivedAtEpochMs` INTEGER, PRIMARY KEY(`id`))",
+                )
+                connection.exec(
+                    "CREATE INDEX IF NOT EXISTS `index_list_items_profileId_listId` " +
+                        "ON `list_items` (`profileId`, `listId`)",
+                )
+                connection.exec(
+                    "CREATE INDEX IF NOT EXISTS `index_list_items_groceryItemId` " +
+                        "ON `list_items` (`groceryItemId`)",
+                )
+
+                connection.exec(
+                    "CREATE TABLE IF NOT EXISTS `pantry_items` (" +
+                        "`id` TEXT NOT NULL, `profileId` TEXT NOT NULL, `groceryItemId` TEXT NOT NULL, " +
+                        "`name` TEXT NOT NULL, `qty` REAL NOT NULL, `unit` TEXT NOT NULL, " +
+                        "`expiryEpochDay` INTEGER, `addedAtEpochMs` INTEGER NOT NULL, " +
+                        "`lastPurchasedAtEpochMs` INTEGER, `purchaseCount` INTEGER NOT NULL, " +
+                        "`isStaple` INTEGER NOT NULL, `outOfStock` INTEGER NOT NULL, " +
+                        "`updatedAtEpochMs` INTEGER, `archivedAtEpochMs` INTEGER, PRIMARY KEY(`id`))",
+                )
+                connection.exec(
+                    "CREATE INDEX IF NOT EXISTS `index_pantry_items_profileId` ON `pantry_items` (`profileId`)",
+                )
+                connection.exec(
+                    "CREATE INDEX IF NOT EXISTS `index_pantry_items_groceryItemId` " +
+                        "ON `pantry_items` (`groceryItemId`)",
+                )
+
+                connection.exec(
+                    "CREATE TABLE IF NOT EXISTS `aisle_corrections` (" +
+                        "`profileId` TEXT NOT NULL, `groceryItemId` TEXT NOT NULL, " +
+                        "`aisle` TEXT NOT NULL, `updatedAtEpochMs` INTEGER NOT NULL, " +
+                        "PRIMARY KEY(`profileId`, `groceryItemId`))",
+                )
+            }
+        }
+
     public val ALL: Array<Migration> =
-        arrayOf(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5)
+        arrayOf(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6)
 }
 
 /** Small extension mirroring the statement-prepare/step pattern used above. */

@@ -1,0 +1,68 @@
+{
+ "note": "F03 golden planner scenarios (M5, WLO-0027 PART A). Synthetic libraries; assertions pin the deterministic engine behavior: constraint families fill or miss HONESTLY, day fit within the ±5% badge (R-S7), swaps never cross hard rules. dayKcal feeds each day's DayTargets; fiber is the R-B3 plan-fit signal.",
+ "recipes": [
+  {"id":"vf-b1","slots":["breakfast"],"tags":["vegetarian"],"fodmapTags":[],"servingsBase":1,"kcal":420,"proteinG":12,"carbG":58,"fatG":11,"fiberG":9},
+  {"id":"vf-b2","slots":["breakfast"],"tags":["vegetarian"],"fodmapTags":[],"servingsBase":1,"kcal":455,"proteinG":15,"carbG":60,"fatG":12,"fiberG":8},
+  {"id":"vf-b3","slots":["breakfast"],"tags":["vegetarian"],"fodmapTags":[],"servingsBase":1,"kcal":480,"proteinG":10,"carbG":66,"fatG":13,"fiberG":10},
+  {"id":"vf-b4","slots":["breakfast"],"tags":["vegetarian"],"fodmapTags":[],"servingsBase":1,"kcal":435,"proteinG":14,"carbG":57,"fatG":12,"fiberG":12},
+  {"id":"vf-l1","slots":["lunch"],"tags":["vegetarian","high-fiber"],"fodmapTags":[],"servingsBase":1,"kcal":610,"proteinG":25,"carbG":82,"fatG":16,"fiberG":14},
+  {"id":"vf-l2","slots":["lunch"],"tags":["vegetarian","high-fiber"],"fodmapTags":[],"servingsBase":1,"kcal":640,"proteinG":22,"carbG":88,"fatG":17,"fiberG":16},
+  {"id":"vf-l3","slots":["lunch"],"tags":["vegetarian","high-fiber"],"fodmapTags":[],"servingsBase":1,"kcal":585,"proteinG":28,"carbG":78,"fatG":15,"fiberG":15},
+  {"id":"vf-l4","slots":["lunch"],"tags":["vegetarian","high-fiber"],"fodmapTags":[],"servingsBase":1,"kcal":660,"proteinG":20,"carbG":92,"fatG":18,"fiberG":18},
+  {"id":"vf-d1","slots":["dinner"],"tags":["vegetarian","high-fiber"],"fodmapTags":[],"servingsBase":1,"kcal":700,"proteinG":30,"carbG":92,"fatG":20,"fiberG":18},
+  {"id":"vf-d2","slots":["dinner"],"tags":["vegetarian","high-fiber"],"fodmapTags":["fructans"],"servingsBase":1,"kcal":730,"proteinG":26,"carbG":98,"fatG":21,"fiberG":20},
+  {"id":"vf-d3","slots":["dinner"],"tags":["vegetarian","high-fiber"],"fodmapTags":[],"servingsBase":1,"kcal":675,"proteinG":32,"carbG":88,"fatG":19,"fiberG":17},
+  {"id":"vf-d4","slots":["dinner"],"tags":["vegetarian","high-fiber"],"fodmapTags":[],"servingsBase":1,"kcal":745,"proteinG":24,"carbG":102,"fatG":22,"fiberG":22},
+  {"id":"lf-b1","slots":["breakfast"],"tags":[],"fodmapTags":[],"servingsBase":1,"kcal":530,"proteinG":22,"carbG":62,"fatG":17,"fiberG":7},
+  {"id":"lf-b2","slots":["breakfast"],"tags":[],"fodmapTags":["fructans"],"servingsBase":1,"kcal":460,"proteinG":16,"carbG":58,"fatG":15,"fiberG":6},
+  {"id":"lf-l1","slots":["lunch"],"tags":[],"fodmapTags":[],"servingsBase":1,"kcal":660,"proteinG":44,"carbG":70,"fatG":19,"fiberG":8},
+  {"id":"lf-l2","slots":["lunch"],"tags":[],"fodmapTags":["lactose"],"servingsBase":1,"kcal":610,"proteinG":38,"carbG":64,"fatG":20,"fiberG":7},
+  {"id":"lf-d1","slots":["dinner"],"tags":[],"fodmapTags":[],"servingsBase":1,"kcal":740,"proteinG":45,"carbG":76,"fatG":22,"fiberG":9},
+  {"id":"lf-d2","slots":["dinner"],"tags":[],"fodmapTags":[],"servingsBase":1,"kcal":700,"proteinG":48,"carbG":70,"fatG":20,"fiberG":8},
+  {"id":"floor-b1","slots":["breakfast"],"tags":[],"fodmapTags":[],"servingsBase":1,"kcal":210,"proteinG":9,"carbG":26,"fatG":7,"fiberG":3},
+  {"id":"floor-b2","slots":["breakfast"],"tags":[],"fodmapTags":[],"servingsBase":1,"kcal":260,"proteinG":11,"carbG":30,"fatG":8,"fiberG":4},
+  {"id":"floor-l1","slots":["lunch"],"tags":[],"fodmapTags":[],"servingsBase":1,"kcal":620,"proteinG":34,"carbG":60,"fatG":22,"fiberG":8},
+  {"id":"floor-d1","slots":["dinner"],"tags":[],"fodmapTags":[],"servingsBase":1,"kcal":760,"proteinG":40,"carbG":80,"fatG":26,"fiberG":10}
+ ],
+ "scenarios": [
+  {
+   "name": "vegetarian-high-fiber-week",
+   "days": 7,
+   "slots": ["breakfast","lunch","dinner"],
+   "dayKcal": 1800,
+   "fiberG": 28,
+   "seed": 7,
+   "libraryPrefix": "vf-",
+   "constraints": {"requireTags":["vegetarian"],"allergies":[],"exclusions":[],"dislikes":[],"forbidTags":[],"lowFodmap":false,"minKcalPerSlot":0},
+   "expectedFilledSlots": 21,
+   "expectedFitDaysMin": 6,
+   "expectedDistinctRecipesMax": 12
+  },
+  {
+   "name": "low-fodmap-three-days",
+   "days": 3,
+   "slots": ["breakfast","lunch","dinner"],
+   "dayKcal": 2000,
+   "fiberG": 24,
+   "seed": 11,
+   "libraryPrefix": "lf-",
+   "constraints": {"requireTags":[],"allergies":[],"exclusions":[],"dislikes":[],"forbidTags":[],"lowFodmap":true,"minKcalPerSlot":0},
+   "expectedFilledSlots": 9,
+   "expectedFitDaysMin": 1,
+   "expectedActiveFodmapRecipes": 0
+  },
+  {
+   "name": "calorie-floor-honest-miss",
+   "days": 2,
+   "slots": ["breakfast","lunch","dinner"],
+   "dayKcal": 1600,
+   "fiberG": 25,
+   "seed": 3,
+   "libraryPrefix": "floor-",
+   "constraints": {"requireTags":[],"allergies":[],"exclusions":[],"dislikes":[],"forbidTags":[],"lowFodmap":false,"minKcalPerSlot":350},
+   "expectedFilledSlots": 4,
+   "expectedUnfilledSlots": 2,
+   "expectUnfilledReason": "kcal floor 350"
+  }
+ ]
+}

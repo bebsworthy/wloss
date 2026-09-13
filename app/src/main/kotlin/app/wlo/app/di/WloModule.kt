@@ -22,15 +22,25 @@ import app.wlo.core.data.DayProjectionRepository
 import app.wlo.core.data.DayProjector
 import app.wlo.core.data.DiaryRepository
 import app.wlo.core.data.FoodRepository
+import app.wlo.core.data.GroceryRepository
 import app.wlo.core.data.MeasurementRepository
+import app.wlo.core.data.PantryRepository
+import app.wlo.core.data.PlannerRepository
 import app.wlo.core.data.ProfileRepository
+import app.wlo.core.data.RecipeRepository
 import app.wlo.core.data.RoomDayProjectionRepository
 import app.wlo.core.data.RoomDiaryRepository
 import app.wlo.core.data.RoomFoodRepository
+import app.wlo.core.data.RoomGroceryRepository
 import app.wlo.core.data.RoomMeasurementRepository
+import app.wlo.core.data.RoomPantryRepository
+import app.wlo.core.data.RoomPlannerRepository
 import app.wlo.core.data.RoomProfileRepository
+import app.wlo.core.data.RoomRecipeRepository
+import app.wlo.core.data.RoomShoppingListRepository
 import app.wlo.core.data.RoomTargetsRepository
 import app.wlo.core.data.RoomWeighInRepository
+import app.wlo.core.data.ShoppingListRepository
 import app.wlo.core.data.TargetsRepository
 import app.wlo.core.data.TargetsWriters
 import app.wlo.core.data.WeighInRepository
@@ -53,6 +63,8 @@ import app.wlo.core.ports.PhotoAnalyzer
 import app.wlo.feature.f01.onboarding.di.f01OnboardingModule
 import app.wlo.feature.f01.onboarding.domain.TemplateLibrary
 import app.wlo.feature.f02.food.di.f02FoodModule
+import app.wlo.feature.f03.planning.di.f03PlanningModule
+import app.wlo.feature.f04.shopping.di.f04ShoppingModule
 import app.wlo.feature.f06.weight.di.f06WeightModule
 import app.wlo.feature.f10.hub.di.f10HubModule
 import okio.Path
@@ -84,7 +96,14 @@ public val appModule: Module =
         factory { EgressMonitorViewModel(ledger = get(), zoo = get()) }
         // The F12 model manager (R-S14): the wlo://ai/models surface's state.
         factory { ZooViewModel(zoo = get()) }
-        includes(f01OnboardingModule, f02FoodModule, f06WeightModule, f10HubModule)
+        includes(
+            f01OnboardingModule,
+            f02FoodModule,
+            f03PlanningModule,
+            f04ShoppingModule,
+            f06WeightModule,
+            f10HubModule,
+        )
     }
 
 /**
@@ -127,6 +146,30 @@ public val platformModule: Module =
             )
         }
         single { TargetsWriters(db = get<WloDatabase>(), clock = get<ClockPort>()) }
+
+        // F03/F04 planning spine (M5): the planner + list + pantry + recipe
+        // doors, and the shipped seed bundle's reader (R-S3 content rules).
+        single<RecipeRepository> { RoomRecipeRepository(db = get<WloDatabase>()) }
+        single<PlannerRepository> {
+            RoomPlannerRepository(
+                db = get<WloDatabase>(),
+                targets = get<TargetsRepository>(),
+                recipes = get<RecipeRepository>(),
+                projector = get<DayProjector>(),
+                clock = get<ClockPort>(),
+            )
+        }
+        single<PantryRepository> { RoomPantryRepository(db = get<WloDatabase>(), clock = get<ClockPort>()) }
+        single<ShoppingListRepository> {
+            RoomShoppingListRepository(
+                db = get<WloDatabase>(),
+                planner = get<PlannerRepository>(),
+                recipes = get<RecipeRepository>(),
+                pantry = get<PantryRepository>(),
+                clock = get<ClockPort>(),
+            )
+        }
+        single<GroceryRepository> { RoomGroceryRepository(db = get<WloDatabase>()) }
 
         // F01 shipped template library: plain JSON assets, read through the
         // injectable [OnboardingTemplates.Reader] (F01 §3 — no template is

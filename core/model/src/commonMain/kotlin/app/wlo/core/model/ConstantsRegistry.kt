@@ -14,10 +14,15 @@ package app.wlo.core.model
  * v3 (M3, WLO-0025): adds the F06 smoothing/outlier/body-fat formula versions
  * (R-A2, F06 §3), the F02 diary portion math, and the F10 Day Model fixed
  * rules (F10 §3).
+ *
+ * v4 (M5, WLO-0027 PART A): adds the F03 planner constants — fit tolerance
+ * (R-S7), cook/leftover defaults (F03 §3), the adherence data gate (F03 §4,
+ * R-B4), and the slot-budget shares the planner scores against. DEFAULTED
+ * values are spec-sane choices, published here, cheap to amend in one place.
  */
 public object ConstantsRegistry {
     /** Registry schema/content version (R-A1). */
-    public const val VERSION: Int = 3
+    public const val VERSION: Int = 4
 
     // --- Energy equivalence (R-A1) ---
 
@@ -163,6 +168,57 @@ public object ConstantsRegistry {
      * (21:30 per R-U1) the Hub assumes wind-down.
      */
     public const val DAY_MODEL_NIGHT_START_MINUTES: Int = 22 * 60
+
+    // --- F03 planner (M5; rulings R-S7, R-B3, R-B4; F03 §3) ---
+
+    /** Deterministic filter → score → greedy + pairwise-refine planner. */
+    public const val PLANNER_FORMULA_VERSION: String = "planner/greedy-pairwise-v1"
+
+    /** Per-day kcal fit-badge tolerance (R-S7: ±5 %, aligned with F07 semantics). */
+    public const val PLANNER_FIT_TOLERANCE_PCT: Double = 5.0
+
+    /**
+     * Macro-gap band for the non-kcal parts of the day badge ("P ✓", "P −6 g").
+     * DEFAULTED (not fixed by spec): ±10 % — the badge shows the gram delta
+     * either way; the check only marks the ✓.
+     */
+    public const val PLANNER_MACRO_TOLERANCE_PCT: Double = 10.0
+
+    /**
+     * Slot kcal budget shares the planner scores against, keyed by meal slot
+     * wire name. DEFAULTED (not fixed by spec): breakfast 25 %, lunch 35 %,
+     * dinner 40 %, snack/drink 15 % — renormalized over the slots actually
+     * planned, so any slot mix sums to the day budget exactly.
+     */
+    public val PLANNER_SLOT_SHARES: Map<String, Double> =
+        mapOf(
+            "breakfast" to 0.25,
+            "lunch" to 0.35,
+            "dinner" to 0.40,
+            "snack" to 0.15,
+            "drink" to 0.15,
+        )
+
+    /** Variety down-weight per prior use of a recipe within one plan (F03 §3 variety bias). */
+    public const val PLANNER_VARIETY_BIAS_DEFAULT: Double = 0.35
+
+    /** Ingredient-overlap (waste-aware reuse) objective weight (F03 §3). */
+    public const val PLANNER_OVERLAP_WEIGHT_DEFAULT: Double = 1.0
+
+    /** Cooking-frequency cap (F03 §3: "max 3 cook events/week — leftovers fill the rest"). */
+    public const val PLANNER_COOK_EVENTS_CAP_DEFAULT: Int = 3
+
+    /** Leftover shelf-life hint (F03 §3: "default 3 days"; beyond is flagged, not blocked). */
+    public const val PLANNER_LEFTOVER_SHELF_LIFE_DAYS: Int = 3
+
+    /** Bounded pairwise-refinement swap budget (keeps the re-deal ≤ 100 ms, ARCHITECTURE §2.6). */
+    public const val PLANNER_PAIRWISE_SWAP_BUDGET: Int = 240
+
+    /**
+     * Adherence data gate (F03 §4): adherence % is refused ("not yet
+     * meaningful") until ≥ 3 logged days exist in the window (R-B4).
+     */
+    public const val ADHERENCE_MIN_LOGGED_DAYS: Int = 3
 
     // --- Formula versions (stamped into Provenance.Derived + the decision ledger) ---
 

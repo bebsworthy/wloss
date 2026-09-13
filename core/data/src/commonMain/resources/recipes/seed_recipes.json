@@ -1,0 +1,6632 @@
+{
+ "schemaVersion": 1,
+ "license": "CC0",
+ "contentNote": "Shipped seed content (R-S3): CC0, fully inspectable, user-editable, excludable. Nutrition is estimated from the grocery catalog (Atwater: 4P+4C+9F+2 fiber).",
+ "groceryItems": [
+  {
+   "id": "almonds",
+   "name": "almonds",
+   "aisle": "pantry",
+   "unit": "g",
+   "densityGPerMl": null,
+   "gramsPerPiece": null,
+   "aliases": [],
+   "per100": {
+    "proteinG": 21.2,
+    "carbG": 9.4,
+    "fatG": 49.9,
+    "fiberG": 12.5
+   },
+   "facets": [
+    "nuts"
+   ]
+  },
+  {
+   "id": "anchovies",
+   "name": "anchovies",
+   "aisle": "pantry",
+   "unit": "g",
+   "densityGPerMl": null,
+   "gramsPerPiece": null,
+   "aliases": [],
+   "per100": {
+    "proteinG": 20.0,
+    "carbG": 0.0,
+    "fatG": 4.8,
+    "fiberG": 0.0
+   },
+   "facets": [
+    "fish"
+   ]
+  },
+  {
+   "id": "apple",
+   "name": "apples",
+   "aisle": "produce",
+   "unit": "x",
+   "densityGPerMl": null,
+   "gramsPerPiece": 180,
+   "aliases": [],
+   "per100": {
+    "proteinG": 0.3,
+    "carbG": 13.8,
+    "fatG": 0.2,
+    "fiberG": 2.4
+   },
+   "facets": [
+    "fructose"
+   ]
+  },
+  {
+   "id": "avocado",
+   "name": "avocados",
+   "aisle": "produce",
+   "unit": "x",
+   "densityGPerMl": null,
+   "gramsPerPiece": 150,
+   "aliases": [],
+   "per100": {
+    "proteinG": 2.0,
+    "carbG": 8.5,
+    "fatG": 14.7,
+    "fiberG": 6.7
+   },
+   "facets": []
+  },
+  {
+   "id": "baking-powder",
+   "name": "baking powder",
+   "aisle": "pantry",
+   "unit": "tsp",
+   "densityGPerMl": 0.9,
+   "gramsPerPiece": null,
+   "aliases": [],
+   "per100": {
+    "proteinG": 0.0,
+    "carbG": 45.0,
+    "fatG": 0.0,
+    "fiberG": 0.0
+   },
+   "facets": []
+  },
+  {
+   "id": "balsamic",
+   "name": "balsamic vinegar",
+   "aisle": "pantry",
+   "unit": "ml",
+   "densityGPerMl": 1.05,
+   "gramsPerPiece": null,
+   "aliases": [],
+   "per100": {
+    "proteinG": 0.5,
+    "carbG": 17.0,
+    "fatG": 0.0,
+    "fiberG": 0.0
+   },
+   "facets": []
+  },
+  {
+   "id": "banana",
+   "name": "bananas",
+   "aisle": "produce",
+   "unit": "x",
+   "densityGPerMl": null,
+   "gramsPerPiece": 118,
+   "aliases": [],
+   "per100": {
+    "proteinG": 1.1,
+    "carbG": 22.8,
+    "fatG": 0.3,
+    "fiberG": 2.6
+   },
+   "facets": []
+  },
+  {
+   "id": "basmati-rice",
+   "name": "basmati rice",
+   "aisle": "pantry",
+   "unit": "g",
+   "densityGPerMl": null,
+   "gramsPerPiece": null,
+   "aliases": [],
+   "per100": {
+    "proteinG": 7.5,
+    "carbG": 78.0,
+    "fatG": 0.8,
+    "fiberG": 1.5
+   },
+   "facets": []
+  },
+  {
+   "id": "beef-mince",
+   "name": "lean beef mince (5%)",
+   "aisle": "meat-fish",
+   "unit": "g",
+   "densityGPerMl": null,
+   "gramsPerPiece": null,
+   "aliases": [
+    "ground beef"
+   ],
+   "per100": {
+    "proteinG": 21.5,
+    "carbG": 0.0,
+    "fatG": 5.0,
+    "fiberG": 0.0
+   },
+   "facets": [
+    "meat"
+   ]
+  },
+  {
+   "id": "beef-stewing",
+   "name": "beef stewing steak",
+   "aisle": "meat-fish",
+   "unit": "g",
+   "densityGPerMl": null,
+   "gramsPerPiece": null,
+   "aliases": [],
+   "per100": {
+    "proteinG": 26.0,
+    "carbG": 0.0,
+    "fatG": 6.5,
+    "fiberG": 0.0
+   },
+   "facets": [
+    "meat"
+   ]
+  },
+  {
+   "id": "black-beans",
+   "name": "canned black beans",
+   "aisle": "pantry",
+   "unit": "g",
+   "densityGPerMl": null,
+   "gramsPerPiece": null,
+   "aliases": [],
+   "per100": {
+    "proteinG": 8.9,
+    "carbG": 17.6,
+    "fatG": 0.5,
+    "fiberG": 8.7
+   },
+   "facets": [
+    "gos"
+   ]
+  },
+  {
+   "id": "black-pepper",
+   "name": "black pepper",
+   "aisle": "pantry",
+   "unit": "g",
+   "densityGPerMl": null,
+   "gramsPerPiece": null,
+   "aliases": [],
+   "per100": {
+    "proteinG": 10.4,
+    "carbG": 45.0,
+    "fatG": 3.3,
+    "fiberG": 25.3
+   },
+   "facets": []
+  },
+  {
+   "id": "breadcrumbs",
+   "name": "breadcrumbs",
+   "aisle": "pantry",
+   "unit": "g",
+   "densityGPerMl": null,
+   "gramsPerPiece": null,
+   "aliases": [],
+   "per100": {
+    "proteinG": 12.0,
+    "carbG": 72.0,
+    "fatG": 3.0,
+    "fiberG": 4.0
+   },
+   "facets": [
+    "gluten"
+   ]
+  },
+  {
+   "id": "broccoli",
+   "name": "broccoli",
+   "aisle": "produce",
+   "unit": "x",
+   "densityGPerMl": null,
+   "gramsPerPiece": 300,
+   "aliases": [],
+   "per100": {
+    "proteinG": 2.8,
+    "carbG": 4.0,
+    "fatG": 0.4,
+    "fiberG": 3.3
+   },
+   "facets": []
+  },
+  {
+   "id": "brown-onion",
+   "name": "brown onions",
+   "aisle": "produce",
+   "unit": "x",
+   "densityGPerMl": null,
+   "gramsPerPiece": 150,
+   "aliases": [
+    "yellow onion"
+   ],
+   "per100": {
+    "proteinG": 1.1,
+    "carbG": 9.0,
+    "fatG": 0.1,
+    "fiberG": 1.7
+   },
+   "facets": [
+    "fructans"
+   ]
+  },
+  {
+   "id": "brown-rice",
+   "name": "brown rice",
+   "aisle": "pantry",
+   "unit": "g",
+   "densityGPerMl": null,
+   "gramsPerPiece": null,
+   "aliases": [],
+   "per100": {
+    "proteinG": 7.9,
+    "carbG": 77.2,
+    "fatG": 2.9,
+    "fiberG": 3.5
+   },
+   "facets": []
+  },
+  {
+   "id": "bulgur",
+   "name": "bulgur wheat",
+   "aisle": "pantry",
+   "unit": "g",
+   "densityGPerMl": null,
+   "gramsPerPiece": null,
+   "aliases": [],
+   "per100": {
+    "proteinG": 12.3,
+    "carbG": 63.3,
+    "fatG": 1.3,
+    "fiberG": 12.5
+   },
+   "facets": [
+    "gluten"
+   ]
+  },
+  {
+   "id": "butter",
+   "name": "butter",
+   "aisle": "dairy",
+   "unit": "g",
+   "densityGPerMl": null,
+   "gramsPerPiece": null,
+   "aliases": [],
+   "per100": {
+    "proteinG": 0.9,
+    "carbG": 0.1,
+    "fatG": 81.1,
+    "fiberG": 0.0
+   },
+   "facets": [
+    "lactose"
+   ]
+  },
+  {
+   "id": "cannellini",
+   "name": "canned cannellini beans",
+   "aisle": "pantry",
+   "unit": "g",
+   "densityGPerMl": null,
+   "gramsPerPiece": null,
+   "aliases": [],
+   "per100": {
+    "proteinG": 8.1,
+    "carbG": 18.0,
+    "fatG": 0.6,
+    "fiberG": 5.4
+   },
+   "facets": [
+    "gos"
+   ]
+  },
+  {
+   "id": "capers",
+   "name": "capers",
+   "aisle": "pantry",
+   "unit": "g",
+   "densityGPerMl": null,
+   "gramsPerPiece": null,
+   "aliases": [],
+   "per100": {
+    "proteinG": 2.4,
+    "carbG": 2.0,
+    "fatG": 0.9,
+    "fiberG": 3.2
+   },
+   "facets": []
+  },
+  {
+   "id": "carrot",
+   "name": "carrots",
+   "aisle": "produce",
+   "unit": "x",
+   "densityGPerMl": null,
+   "gramsPerPiece": 61,
+   "aliases": [],
+   "per100": {
+    "proteinG": 0.9,
+    "carbG": 9.6,
+    "fatG": 0.2,
+    "fiberG": 2.8
+   },
+   "facets": []
+  },
+  {
+   "id": "cashews",
+   "name": "cashews",
+   "aisle": "pantry",
+   "unit": "g",
+   "densityGPerMl": null,
+   "gramsPerPiece": null,
+   "aliases": [],
+   "per100": {
+    "proteinG": 18.2,
+    "carbG": 28.6,
+    "fatG": 43.9,
+    "fiberG": 3.3
+   },
+   "facets": [
+    "nuts"
+   ]
+  },
+  {
+   "id": "cat-food",
+   "name": "cat food",
+   "aisle": "household",
+   "unit": "x",
+   "densityGPerMl": null,
+   "gramsPerPiece": 400,
+   "aliases": [],
+   "per100": {
+    "proteinG": 12.0,
+    "carbG": 3.0,
+    "fatG": 5.0,
+    "fiberG": 0.5
+   },
+   "facets": []
+  },
+  {
+   "id": "celery",
+   "name": "celery",
+   "aisle": "produce",
+   "unit": "x",
+   "densityGPerMl": null,
+   "gramsPerPiece": 80,
+   "aliases": [],
+   "per100": {
+    "proteinG": 0.7,
+    "carbG": 3.0,
+    "fatG": 0.2,
+    "fiberG": 1.6
+   },
+   "facets": [
+    "fructans-trace"
+   ]
+  },
+  {
+   "id": "cheddar",
+   "name": "cheddar",
+   "aisle": "dairy",
+   "unit": "g",
+   "densityGPerMl": null,
+   "gramsPerPiece": null,
+   "aliases": [],
+   "per100": {
+    "proteinG": 24.9,
+    "carbG": 2.4,
+    "fatG": 33.1,
+    "fiberG": 0.0
+   },
+   "facets": [
+    "lactose"
+   ]
+  },
+  {
+   "id": "cherry-tomatoes",
+   "name": "cherry tomatoes",
+   "aisle": "produce",
+   "unit": "g",
+   "densityGPerMl": null,
+   "gramsPerPiece": null,
+   "aliases": [],
+   "per100": {
+    "proteinG": 0.9,
+    "carbG": 3.9,
+    "fatG": 0.2,
+    "fiberG": 1.2
+   },
+   "facets": []
+  },
+  {
+   "id": "chia-seeds",
+   "name": "chia seeds",
+   "aisle": "pantry",
+   "unit": "g",
+   "densityGPerMl": null,
+   "gramsPerPiece": null,
+   "aliases": [],
+   "per100": {
+    "proteinG": 16.5,
+    "carbG": 6.5,
+    "fatG": 30.7,
+    "fiberG": 34.4
+   },
+   "facets": []
+  },
+  {
+   "id": "chicken-breast",
+   "name": "chicken breast",
+   "aisle": "meat-fish",
+   "unit": "g",
+   "densityGPerMl": null,
+   "gramsPerPiece": null,
+   "aliases": [],
+   "per100": {
+    "proteinG": 24.0,
+    "carbG": 0.0,
+    "fatG": 2.6,
+    "fiberG": 0.0
+   },
+   "facets": [
+    "meat"
+   ]
+  },
+  {
+   "id": "chicken-stock",
+   "name": "chicken stock cube",
+   "aisle": "pantry",
+   "unit": "x",
+   "densityGPerMl": null,
+   "gramsPerPiece": 10,
+   "aliases": [],
+   "per100": {
+    "proteinG": 10.0,
+    "carbG": 35.0,
+    "fatG": 10.0,
+    "fiberG": 0.5
+   },
+   "facets": []
+  },
+  {
+   "id": "chicken-thigh",
+   "name": "chicken thighs",
+   "aisle": "meat-fish",
+   "unit": "g",
+   "densityGPerMl": null,
+   "gramsPerPiece": null,
+   "aliases": [],
+   "per100": {
+    "proteinG": 19.0,
+    "carbG": 0.0,
+    "fatG": 9.0,
+    "fiberG": 0.0
+   },
+   "facets": [
+    "meat"
+   ]
+  },
+  {
+   "id": "chickpeas",
+   "name": "canned chickpeas",
+   "aisle": "pantry",
+   "unit": "g",
+   "densityGPerMl": null,
+   "gramsPerPiece": null,
+   "aliases": [
+    "garbanzo"
+   ],
+   "per100": {
+    "proteinG": 8.9,
+    "carbG": 19.6,
+    "fatG": 2.8,
+    "fiberG": 6.4
+   },
+   "facets": [
+    "gos"
+   ]
+  },
+  {
+   "id": "chili-flakes",
+   "name": "chili flakes",
+   "aisle": "pantry",
+   "unit": "g",
+   "densityGPerMl": null,
+   "gramsPerPiece": null,
+   "aliases": [],
+   "per100": {
+    "proteinG": 13.5,
+    "carbG": 50.0,
+    "fatG": 17.0,
+    "fiberG": 27.0
+   },
+   "facets": []
+  },
+  {
+   "id": "chopped-tomatoes",
+   "name": "canned chopped tomatoes",
+   "aisle": "pantry",
+   "unit": "g",
+   "densityGPerMl": null,
+   "gramsPerPiece": null,
+   "aliases": [],
+   "per100": {
+    "proteinG": 1.2,
+    "carbG": 6.6,
+    "fatG": 0.1,
+    "fiberG": 1.9
+   },
+   "facets": []
+  },
+  {
+   "id": "cinnamon",
+   "name": "ground cinnamon",
+   "aisle": "pantry",
+   "unit": "g",
+   "densityGPerMl": null,
+   "gramsPerPiece": null,
+   "aliases": [],
+   "per100": {
+    "proteinG": 4.0,
+    "carbG": 80.6,
+    "fatG": 3.2,
+    "fiberG": 53.1
+   },
+   "facets": []
+  },
+  {
+   "id": "cocoa-powder",
+   "name": "cocoa powder",
+   "aisle": "pantry",
+   "unit": "g",
+   "densityGPerMl": null,
+   "gramsPerPiece": null,
+   "aliases": [],
+   "per100": {
+    "proteinG": 19.6,
+    "carbG": 14.3,
+    "fatG": 13.7,
+    "fiberG": 29.8
+   },
+   "facets": []
+  },
+  {
+   "id": "coconut-milk",
+   "name": "coconut milk",
+   "aisle": "pantry",
+   "unit": "ml",
+   "densityGPerMl": 1.0,
+   "gramsPerPiece": null,
+   "aliases": [],
+   "per100": {
+    "proteinG": 2.0,
+    "carbG": 2.8,
+    "fatG": 21.3,
+    "fiberG": 0.0
+   },
+   "facets": []
+  },
+  {
+   "id": "cod",
+   "name": "cod fillets",
+   "aisle": "meat-fish",
+   "unit": "g",
+   "densityGPerMl": null,
+   "gramsPerPiece": null,
+   "aliases": [],
+   "per100": {
+    "proteinG": 17.8,
+    "carbG": 0.0,
+    "fatG": 0.7,
+    "fiberG": 0.0
+   },
+   "facets": [
+    "fish"
+   ]
+  },
+  {
+   "id": "corn-cakes",
+   "name": "corn cakes",
+   "aisle": "pantry",
+   "unit": "x",
+   "densityGPerMl": null,
+   "gramsPerPiece": 15,
+   "aliases": [
+    "rice cakes"
+   ],
+   "per100": {
+    "proteinG": 7.5,
+    "carbG": 74.0,
+    "fatG": 3.5,
+    "fiberG": 7.5
+   },
+   "facets": []
+  },
+  {
+   "id": "corn-frozen",
+   "name": "frozen sweetcorn",
+   "aisle": "pantry",
+   "unit": "g",
+   "densityGPerMl": null,
+   "gramsPerPiece": null,
+   "aliases": [],
+   "per100": {
+    "proteinG": 3.2,
+    "carbG": 20.0,
+    "fatG": 1.3,
+    "fiberG": 2.7
+   },
+   "facets": [
+    "polyols"
+   ]
+  },
+  {
+   "id": "corn-tortillas",
+   "name": "corn tortillas",
+   "aisle": "bakery",
+   "unit": "x",
+   "densityGPerMl": null,
+   "gramsPerPiece": 30,
+   "aliases": [],
+   "per100": {
+    "proteinG": 5.7,
+    "carbG": 48.0,
+    "fatG": 2.9,
+    "fiberG": 5.3
+   },
+   "facets": []
+  },
+  {
+   "id": "cottage-cheese",
+   "name": "cottage cheese",
+   "aisle": "dairy",
+   "unit": "g",
+   "densityGPerMl": null,
+   "gramsPerPiece": null,
+   "aliases": [],
+   "per100": {
+    "proteinG": 11.1,
+    "carbG": 3.4,
+    "fatG": 4.3,
+    "fiberG": 0.0
+   },
+   "facets": [
+    "lactose"
+   ]
+  },
+  {
+   "id": "couscous",
+   "name": "couscous (whole wheat)",
+   "aisle": "pantry",
+   "unit": "g",
+   "densityGPerMl": null,
+   "gramsPerPiece": null,
+   "aliases": [],
+   "per100": {
+    "proteinG": 13.0,
+    "carbG": 68.0,
+    "fatG": 1.0,
+    "fiberG": 8.0
+   },
+   "facets": [
+    "gluten"
+   ]
+  },
+  {
+   "id": "cream-cheese",
+   "name": "cream cheese",
+   "aisle": "dairy",
+   "unit": "g",
+   "densityGPerMl": null,
+   "gramsPerPiece": null,
+   "aliases": [],
+   "per100": {
+    "proteinG": 8.0,
+    "carbG": 4.0,
+    "fatG": 24.0,
+    "fiberG": 0.0
+   },
+   "facets": [
+    "lactose"
+   ]
+  },
+  {
+   "id": "cucumber",
+   "name": "cucumber",
+   "aisle": "produce",
+   "unit": "x",
+   "densityGPerMl": null,
+   "gramsPerPiece": 300,
+   "aliases": [],
+   "per100": {
+    "proteinG": 0.7,
+    "carbG": 3.1,
+    "fatG": 0.1,
+    "fiberG": 0.6
+   },
+   "facets": []
+  },
+  {
+   "id": "cumin",
+   "name": "ground cumin",
+   "aisle": "pantry",
+   "unit": "g",
+   "densityGPerMl": null,
+   "gramsPerPiece": null,
+   "aliases": [],
+   "per100": {
+    "proteinG": 17.8,
+    "carbG": 32.3,
+    "fatG": 22.3,
+    "fiberG": 33.4
+   },
+   "facets": []
+  },
+  {
+   "id": "curry-powder",
+   "name": "curry powder",
+   "aisle": "pantry",
+   "unit": "g",
+   "densityGPerMl": null,
+   "gramsPerPiece": null,
+   "aliases": [],
+   "per100": {
+    "proteinG": 14.3,
+    "carbG": 38.1,
+    "fatG": 14.0,
+    "fiberG": 22.4
+   },
+   "facets": []
+  },
+  {
+   "id": "dark-chocolate",
+   "name": "dark chocolate (70%)",
+   "aisle": "pantry",
+   "unit": "g",
+   "densityGPerMl": null,
+   "gramsPerPiece": null,
+   "aliases": [],
+   "per100": {
+    "proteinG": 7.8,
+    "carbG": 34.2,
+    "fatG": 38.3,
+    "fiberG": 10.9
+   },
+   "facets": [
+    "polyols-trace"
+   ]
+  },
+  {
+   "id": "dijon",
+   "name": "dijon mustard",
+   "aisle": "pantry",
+   "unit": "g",
+   "densityGPerMl": null,
+   "gramsPerPiece": null,
+   "aliases": [],
+   "per100": {
+    "proteinG": 6.4,
+    "carbG": 5.8,
+    "fatG": 4.6,
+    "fiberG": 3.3
+   },
+   "facets": []
+  },
+  {
+   "id": "double-cream",
+   "name": "double cream",
+   "aisle": "dairy",
+   "unit": "ml",
+   "densityGPerMl": 1.0,
+   "gramsPerPiece": null,
+   "aliases": [
+    "heavy cream"
+   ],
+   "per100": {
+    "proteinG": 2.1,
+    "carbG": 3.0,
+    "fatG": 36.0,
+    "fiberG": 0.0
+   },
+   "facets": [
+    "lactose"
+   ]
+  },
+  {
+   "id": "edamame-frozen",
+   "name": "shelled edamame",
+   "aisle": "pantry",
+   "unit": "g",
+   "densityGPerMl": null,
+   "gramsPerPiece": null,
+   "aliases": [],
+   "per100": {
+    "proteinG": 11.9,
+    "carbG": 8.9,
+    "fatG": 5.2,
+    "fiberG": 5.2
+   },
+   "facets": [
+    "soy"
+   ]
+  },
+  {
+   "id": "egg-noodles",
+   "name": "egg noodles",
+   "aisle": "pantry",
+   "unit": "g",
+   "densityGPerMl": null,
+   "gramsPerPiece": null,
+   "aliases": [],
+   "per100": {
+    "proteinG": 12.0,
+    "carbG": 71.0,
+    "fatG": 2.1,
+    "fiberG": 3.0
+   },
+   "facets": [
+    "gluten",
+    "egg"
+   ]
+  },
+  {
+   "id": "eggplant",
+   "name": "eggplant",
+   "aisle": "produce",
+   "unit": "x",
+   "densityGPerMl": null,
+   "gramsPerPiece": 300,
+   "aliases": [
+    "aubergine"
+   ],
+   "per100": {
+    "proteinG": 1.0,
+    "carbG": 5.4,
+    "fatG": 0.2,
+    "fiberG": 3.0
+   },
+   "facets": []
+  },
+  {
+   "id": "eggs",
+   "name": "eggs",
+   "aisle": "dairy",
+   "unit": "x",
+   "densityGPerMl": null,
+   "gramsPerPiece": 50,
+   "aliases": [],
+   "per100": {
+    "proteinG": 12.6,
+    "carbG": 0.7,
+    "fatG": 9.5,
+    "fiberG": 0.0
+   },
+   "facets": [
+    "egg"
+   ]
+  },
+  {
+   "id": "feta",
+   "name": "feta",
+   "aisle": "dairy",
+   "unit": "g",
+   "densityGPerMl": null,
+   "gramsPerPiece": null,
+   "aliases": [
+    "feta cheese"
+   ],
+   "per100": {
+    "proteinG": 14.2,
+    "carbG": 4.1,
+    "fatG": 21.3,
+    "fiberG": 0.0
+   },
+   "facets": [
+    "lactose"
+   ]
+  },
+  {
+   "id": "fish-sauce",
+   "name": "fish sauce",
+   "aisle": "pantry",
+   "unit": "ml",
+   "densityGPerMl": 1.15,
+   "gramsPerPiece": null,
+   "aliases": [],
+   "per100": {
+    "proteinG": 5.0,
+    "carbG": 0.8,
+    "fatG": 0.2,
+    "fiberG": 0.0
+   },
+   "facets": [
+    "fish"
+   ]
+  },
+  {
+   "id": "flour",
+   "name": "all-purpose flour",
+   "aisle": "pantry",
+   "unit": "g",
+   "densityGPerMl": null,
+   "gramsPerPiece": null,
+   "aliases": [],
+   "per100": {
+    "proteinG": 10.3,
+    "carbG": 72.6,
+    "fatG": 1.2,
+    "fiberG": 2.7
+   },
+   "facets": [
+    "gluten"
+   ]
+  },
+  {
+   "id": "fresh-basil",
+   "name": "fresh basil",
+   "aisle": "produce",
+   "unit": "x",
+   "densityGPerMl": null,
+   "gramsPerPiece": 25,
+   "aliases": [],
+   "per100": {
+    "proteinG": 3.2,
+    "carbG": 2.7,
+    "fatG": 0.6,
+    "fiberG": 1.6
+   },
+   "facets": []
+  },
+  {
+   "id": "fresh-coriander",
+   "name": "fresh coriander",
+   "aisle": "produce",
+   "unit": "x",
+   "densityGPerMl": null,
+   "gramsPerPiece": 25,
+   "aliases": [
+    "cilantro"
+   ],
+   "per100": {
+    "proteinG": 3.5,
+    "carbG": 1.5,
+    "fatG": 0.5,
+    "fiberG": 2.8
+   },
+   "facets": []
+  },
+  {
+   "id": "fresh-dill",
+   "name": "fresh dill",
+   "aisle": "produce",
+   "unit": "x",
+   "densityGPerMl": null,
+   "gramsPerPiece": 25,
+   "aliases": [],
+   "per100": {
+    "proteinG": 3.0,
+    "carbG": 3.0,
+    "fatG": 0.7,
+    "fiberG": 2.1
+   },
+   "facets": []
+  },
+  {
+   "id": "fresh-mint",
+   "name": "fresh mint",
+   "aisle": "produce",
+   "unit": "x",
+   "densityGPerMl": null,
+   "gramsPerPiece": 20,
+   "aliases": [],
+   "per100": {
+    "proteinG": 3.8,
+    "carbG": 6.9,
+    "fatG": 0.9,
+    "fiberG": 8.0
+   },
+   "facets": []
+  },
+  {
+   "id": "fresh-parsley",
+   "name": "flat-leaf parsley",
+   "aisle": "produce",
+   "unit": "x",
+   "densityGPerMl": null,
+   "gramsPerPiece": 25,
+   "aliases": [],
+   "per100": {
+    "proteinG": 3.0,
+    "carbG": 3.0,
+    "fatG": 0.8,
+    "fiberG": 3.3
+   },
+   "facets": []
+  },
+  {
+   "id": "fresh-sage",
+   "name": "fresh sage",
+   "aisle": "produce",
+   "unit": "x",
+   "densityGPerMl": null,
+   "gramsPerPiece": 20,
+   "aliases": [
+    "sage"
+   ],
+   "per100": {
+    "proteinG": 3.0,
+    "carbG": 2.5,
+    "fatG": 0.9,
+    "fiberG": 3.5
+   },
+   "facets": []
+  },
+  {
+   "id": "garam-masala",
+   "name": "garam masala",
+   "aisle": "pantry",
+   "unit": "g",
+   "densityGPerMl": null,
+   "gramsPerPiece": null,
+   "aliases": [],
+   "per100": {
+    "proteinG": 15.0,
+    "carbG": 40.0,
+    "fatG": 15.0,
+    "fiberG": 24.0
+   },
+   "facets": []
+  },
+  {
+   "id": "garlic",
+   "name": "garlic",
+   "aisle": "produce",
+   "unit": "x",
+   "densityGPerMl": null,
+   "gramsPerPiece": 3,
+   "aliases": [
+    "garlic clove"
+   ],
+   "per100": {
+    "proteinG": 6.4,
+    "carbG": 30.9,
+    "fatG": 0.5,
+    "fiberG": 1.0
+   },
+   "facets": [
+    "fructans"
+   ]
+  },
+  {
+   "id": "garlic-infused-oil",
+   "name": "garlic-infused olive oil",
+   "aisle": "pantry",
+   "unit": "ml",
+   "densityGPerMl": 0.91,
+   "gramsPerPiece": null,
+   "aliases": [],
+   "per100": {
+    "proteinG": 0.0,
+    "carbG": 0.0,
+    "fatG": 100.0,
+    "fiberG": 0.0
+   },
+   "facets": []
+  },
+  {
+   "id": "ginger",
+   "name": "fresh ginger",
+   "aisle": "produce",
+   "unit": "g",
+   "densityGPerMl": null,
+   "gramsPerPiece": null,
+   "aliases": [],
+   "per100": {
+    "proteinG": 1.8,
+    "carbG": 15.8,
+    "fatG": 0.8,
+    "fiberG": 2.0
+   },
+   "facets": []
+  },
+  {
+   "id": "greek-yogurt",
+   "name": "greek yogurt",
+   "aisle": "dairy",
+   "unit": "g",
+   "densityGPerMl": null,
+   "gramsPerPiece": null,
+   "aliases": [],
+   "per100": {
+    "proteinG": 10.0,
+    "carbG": 3.6,
+    "fatG": 5.0,
+    "fiberG": 0.0
+   },
+   "facets": [
+    "lactose"
+   ]
+  },
+  {
+   "id": "green-beans",
+   "name": "green beans",
+   "aisle": "produce",
+   "unit": "g",
+   "densityGPerMl": null,
+   "gramsPerPiece": null,
+   "aliases": [],
+   "per100": {
+    "proteinG": 1.8,
+    "carbG": 5.7,
+    "fatG": 0.1,
+    "fiberG": 2.7
+   },
+   "facets": []
+  },
+  {
+   "id": "green-curry-paste",
+   "name": "green curry paste",
+   "aisle": "pantry",
+   "unit": "g",
+   "densityGPerMl": null,
+   "gramsPerPiece": null,
+   "aliases": [],
+   "per100": {
+    "proteinG": 5.0,
+    "carbG": 15.0,
+    "fatG": 6.0,
+    "fiberG": 4.0
+   },
+   "facets": [
+    "fructans-trace"
+   ]
+  },
+  {
+   "id": "green-lentils",
+   "name": "green lentils",
+   "aisle": "pantry",
+   "unit": "g",
+   "densityGPerMl": null,
+   "gramsPerPiece": null,
+   "aliases": [],
+   "per100": {
+    "proteinG": 24.0,
+    "carbG": 46.0,
+    "fatG": 1.4,
+    "fiberG": 10.5
+   },
+   "facets": [
+    "gos"
+   ]
+  },
+  {
+   "id": "halloumi",
+   "name": "halloumi",
+   "aisle": "dairy",
+   "unit": "g",
+   "densityGPerMl": null,
+   "gramsPerPiece": null,
+   "aliases": [],
+   "per100": {
+    "proteinG": 25.0,
+    "carbG": 2.0,
+    "fatG": 24.0,
+    "fiberG": 0.0
+   },
+   "facets": [
+    "lactose"
+   ]
+  },
+  {
+   "id": "harissa",
+   "name": "harissa paste",
+   "aisle": "pantry",
+   "unit": "g",
+   "densityGPerMl": null,
+   "gramsPerPiece": null,
+   "aliases": [],
+   "per100": {
+    "proteinG": 3.0,
+    "carbG": 12.0,
+    "fatG": 8.0,
+    "fiberG": 5.0
+   },
+   "facets": []
+  },
+  {
+   "id": "honey",
+   "name": "honey",
+   "aisle": "pantry",
+   "unit": "g",
+   "densityGPerMl": null,
+   "gramsPerPiece": null,
+   "aliases": [],
+   "per100": {
+    "proteinG": 0.3,
+    "carbG": 82.3,
+    "fatG": 0.0,
+    "fiberG": 0.2
+   },
+   "facets": [
+    "fructose",
+    "not-vegan"
+   ]
+  },
+  {
+   "id": "jalapeno",
+   "name": "jalape\u00f1os",
+   "aisle": "produce",
+   "unit": "x",
+   "densityGPerMl": null,
+   "gramsPerPiece": 14,
+   "aliases": [],
+   "per100": {
+    "proteinG": 0.9,
+    "carbG": 5.9,
+    "fatG": 0.4,
+    "fiberG": 1.2
+   },
+   "facets": []
+  },
+  {
+   "id": "jasmine-rice",
+   "name": "jasmine rice",
+   "aisle": "pantry",
+   "unit": "g",
+   "densityGPerMl": null,
+   "gramsPerPiece": null,
+   "aliases": [
+    "rice"
+   ],
+   "per100": {
+    "proteinG": 7.1,
+    "carbG": 78.6,
+    "fatG": 0.7,
+    "fiberG": 1.3
+   },
+   "facets": []
+  },
+  {
+   "id": "kalamata-olives",
+   "name": "kalamata olives",
+   "aisle": "pantry",
+   "unit": "g",
+   "densityGPerMl": null,
+   "gramsPerPiece": null,
+   "aliases": [],
+   "per100": {
+    "proteinG": 1.0,
+    "carbG": 3.0,
+    "fatG": 16.0,
+    "fiberG": 0.5
+   },
+   "facets": []
+  },
+  {
+   "id": "kale",
+   "name": "curly kale",
+   "aisle": "produce",
+   "unit": "g",
+   "densityGPerMl": null,
+   "gramsPerPiece": null,
+   "aliases": [
+    "cavolo nero"
+   ],
+   "per100": {
+    "proteinG": 2.9,
+    "carbG": 3.4,
+    "fatG": 1.5,
+    "fiberG": 4.1
+   },
+   "facets": []
+  },
+  {
+   "id": "kidney-beans",
+   "name": "canned kidney beans",
+   "aisle": "pantry",
+   "unit": "g",
+   "densityGPerMl": null,
+   "gramsPerPiece": null,
+   "aliases": [],
+   "per100": {
+    "proteinG": 8.7,
+    "carbG": 17.7,
+    "fatG": 0.5,
+    "fiberG": 6.4
+   },
+   "facets": [
+    "gos"
+   ]
+  },
+  {
+   "id": "lactose-free-milk",
+   "name": "lactose-free milk",
+   "aisle": "dairy",
+   "unit": "ml",
+   "densityGPerMl": 1.03,
+   "gramsPerPiece": null,
+   "aliases": [],
+   "per100": {
+    "proteinG": 3.4,
+    "carbG": 4.8,
+    "fatG": 3.9,
+    "fiberG": 0.0
+   },
+   "facets": []
+  },
+  {
+   "id": "lemon",
+   "name": "lemons",
+   "aisle": "produce",
+   "unit": "x",
+   "densityGPerMl": null,
+   "gramsPerPiece": 85,
+   "aliases": [],
+   "per100": {
+    "proteinG": 1.1,
+    "carbG": 9.3,
+    "fatG": 0.3,
+    "fiberG": 2.8
+   },
+   "facets": []
+  },
+  {
+   "id": "lettuce",
+   "name": "romaine lettuce",
+   "aisle": "produce",
+   "unit": "x",
+   "densityGPerMl": null,
+   "gramsPerPiece": 300,
+   "aliases": [],
+   "per100": {
+    "proteinG": 1.2,
+    "carbG": 2.0,
+    "fatG": 0.3,
+    "fiberG": 1.3
+   },
+   "facets": []
+  },
+  {
+   "id": "lime",
+   "name": "limes",
+   "aisle": "produce",
+   "unit": "x",
+   "densityGPerMl": null,
+   "gramsPerPiece": 67,
+   "aliases": [],
+   "per100": {
+    "proteinG": 0.7,
+    "carbG": 11.0,
+    "fatG": 0.2,
+    "fiberG": 2.8
+   },
+   "facets": []
+  },
+  {
+   "id": "mango",
+   "name": "mango",
+   "aisle": "produce",
+   "unit": "g",
+   "densityGPerMl": null,
+   "gramsPerPiece": null,
+   "aliases": [],
+   "per100": {
+    "proteinG": 0.8,
+    "carbG": 15.0,
+    "fatG": 0.4,
+    "fiberG": 1.6
+   },
+   "facets": [
+    "fructose"
+   ]
+  },
+  {
+   "id": "maple-syrup",
+   "name": "maple syrup",
+   "aisle": "pantry",
+   "unit": "ml",
+   "densityGPerMl": 1.32,
+   "gramsPerPiece": null,
+   "aliases": [],
+   "per100": {
+    "proteinG": 0.0,
+    "carbG": 67.0,
+    "fatG": 0.1,
+    "fiberG": 0.0
+   },
+   "facets": []
+  },
+  {
+   "id": "mayonnaise",
+   "name": "mayonnaise",
+   "aisle": "pantry",
+   "unit": "g",
+   "densityGPerMl": null,
+   "gramsPerPiece": null,
+   "aliases": [],
+   "per100": {
+    "proteinG": 1.0,
+    "carbG": 2.5,
+    "fatG": 68.0,
+    "fiberG": 0.0
+   },
+   "facets": [
+    "egg"
+   ]
+  },
+  {
+   "id": "milk",
+   "name": "milk",
+   "aisle": "dairy",
+   "unit": "ml",
+   "densityGPerMl": 1.03,
+   "gramsPerPiece": null,
+   "aliases": [],
+   "per100": {
+    "proteinG": 3.4,
+    "carbG": 4.8,
+    "fatG": 3.9,
+    "fiberG": 0.0
+   },
+   "facets": [
+    "lactose"
+   ]
+  },
+  {
+   "id": "mixed-berries",
+   "name": "mixed berries",
+   "aisle": "pantry",
+   "unit": "g",
+   "densityGPerMl": null,
+   "gramsPerPiece": null,
+   "aliases": [],
+   "per100": {
+    "proteinG": 0.9,
+    "carbG": 9.6,
+    "fatG": 0.4,
+    "fiberG": 3.7
+   },
+   "facets": [
+    "fructose-polyols"
+   ]
+  },
+  {
+   "id": "mozzarella",
+   "name": "mozzarella",
+   "aisle": "dairy",
+   "unit": "g",
+   "densityGPerMl": null,
+   "gramsPerPiece": null,
+   "aliases": [],
+   "per100": {
+    "proteinG": 22.2,
+    "carbG": 2.2,
+    "fatG": 22.4,
+    "fiberG": 0.0
+   },
+   "facets": [
+    "lactose"
+   ]
+  },
+  {
+   "id": "mushrooms",
+   "name": "chestnut mushrooms",
+   "aisle": "produce",
+   "unit": "g",
+   "densityGPerMl": null,
+   "gramsPerPiece": null,
+   "aliases": [
+    "button mushrooms"
+   ],
+   "per100": {
+    "proteinG": 2.5,
+    "carbG": 3.3,
+    "fatG": 0.4,
+    "fiberG": 1.7
+   },
+   "facets": []
+  },
+  {
+   "id": "natural-yogurt",
+   "name": "natural yogurt",
+   "aisle": "dairy",
+   "unit": "g",
+   "densityGPerMl": null,
+   "gramsPerPiece": null,
+   "aliases": [],
+   "per100": {
+    "proteinG": 5.7,
+    "carbG": 7.7,
+    "fatG": 3.3,
+    "fiberG": 0.0
+   },
+   "facets": [
+    "lactose"
+   ]
+  },
+  {
+   "id": "olive-oil",
+   "name": "olive oil",
+   "aisle": "pantry",
+   "unit": "ml",
+   "densityGPerMl": 0.91,
+   "gramsPerPiece": null,
+   "aliases": [],
+   "per100": {
+    "proteinG": 0.0,
+    "carbG": 0.0,
+    "fatG": 100.0,
+    "fiberG": 0.0
+   },
+   "facets": []
+  },
+  {
+   "id": "orange",
+   "name": "oranges",
+   "aisle": "produce",
+   "unit": "x",
+   "densityGPerMl": null,
+   "gramsPerPiece": 140,
+   "aliases": [],
+   "per100": {
+    "proteinG": 0.9,
+    "carbG": 11.8,
+    "fatG": 0.1,
+    "fiberG": 2.4
+   },
+   "facets": []
+  },
+  {
+   "id": "oregano",
+   "name": "dried oregano",
+   "aisle": "pantry",
+   "unit": "g",
+   "densityGPerMl": null,
+   "gramsPerPiece": null,
+   "aliases": [],
+   "per100": {
+    "proteinG": 11.0,
+    "carbG": 51.5,
+    "fatG": 10.3,
+    "fiberG": 42.8
+   },
+   "facets": []
+  },
+  {
+   "id": "orzo",
+   "name": "orzo",
+   "aisle": "pantry",
+   "unit": "g",
+   "densityGPerMl": null,
+   "gramsPerPiece": null,
+   "aliases": [],
+   "per100": {
+    "proteinG": 12.0,
+    "carbG": 75.0,
+    "fatG": 1.5,
+    "fiberG": 3.0
+   },
+   "facets": [
+    "gluten"
+   ]
+  },
+  {
+   "id": "paneer",
+   "name": "paneer",
+   "aisle": "dairy",
+   "unit": "g",
+   "densityGPerMl": null,
+   "gramsPerPiece": null,
+   "aliases": [],
+   "per100": {
+    "proteinG": 18.3,
+    "carbG": 2.2,
+    "fatG": 20.8,
+    "fiberG": 0.0
+   },
+   "facets": [
+    "lactose"
+   ]
+  },
+  {
+   "id": "parmesan",
+   "name": "parmesan",
+   "aisle": "dairy",
+   "unit": "g",
+   "densityGPerMl": null,
+   "gramsPerPiece": null,
+   "aliases": [
+    "parmigiano"
+   ],
+   "per100": {
+    "proteinG": 35.8,
+    "carbG": 3.2,
+    "fatG": 25.8,
+    "fiberG": 0.0
+   },
+   "facets": [
+    "lactose"
+   ]
+  },
+  {
+   "id": "passata",
+   "name": "passata",
+   "aisle": "pantry",
+   "unit": "g",
+   "densityGPerMl": null,
+   "gramsPerPiece": null,
+   "aliases": [],
+   "per100": {
+    "proteinG": 1.7,
+    "carbG": 7.5,
+    "fatG": 0.4,
+    "fiberG": 1.7
+   },
+   "facets": []
+  },
+  {
+   "id": "peanut-butter",
+   "name": "peanut butter",
+   "aisle": "pantry",
+   "unit": "g",
+   "densityGPerMl": null,
+   "gramsPerPiece": null,
+   "aliases": [],
+   "per100": {
+    "proteinG": 25.1,
+    "carbG": 11.6,
+    "fatG": 50.4,
+    "fiberG": 6.0
+   },
+   "facets": [
+    "nuts"
+   ]
+  },
+  {
+   "id": "peanuts",
+   "name": "peanuts",
+   "aisle": "pantry",
+   "unit": "g",
+   "densityGPerMl": null,
+   "gramsPerPiece": null,
+   "aliases": [],
+   "per100": {
+    "proteinG": 25.8,
+    "carbG": 8.7,
+    "fatG": 49.2,
+    "fiberG": 8.5
+   },
+   "facets": [
+    "nuts"
+   ]
+  },
+  {
+   "id": "peas-frozen",
+   "name": "frozen peas",
+   "aisle": "pantry",
+   "unit": "g",
+   "densityGPerMl": null,
+   "gramsPerPiece": null,
+   "aliases": [],
+   "per100": {
+    "proteinG": 5.2,
+    "carbG": 9.4,
+    "fatG": 0.4,
+    "fiberG": 5.1
+   },
+   "facets": [
+    "gos"
+   ]
+  },
+  {
+   "id": "penne",
+   "name": "penne (whole wheat)",
+   "aisle": "pantry",
+   "unit": "g",
+   "densityGPerMl": null,
+   "gramsPerPiece": null,
+   "aliases": [],
+   "per100": {
+    "proteinG": 14.0,
+    "carbG": 68.0,
+    "fatG": 2.5,
+    "fiberG": 8.0
+   },
+   "facets": [
+    "gluten"
+   ]
+  },
+  {
+   "id": "pineapple",
+   "name": "pineapple",
+   "aisle": "produce",
+   "unit": "g",
+   "densityGPerMl": null,
+   "gramsPerPiece": null,
+   "aliases": [],
+   "per100": {
+    "proteinG": 0.5,
+    "carbG": 13.1,
+    "fatG": 0.1,
+    "fiberG": 1.4
+   },
+   "facets": [
+    "fructose"
+   ]
+  },
+  {
+   "id": "pita",
+   "name": "whole wheat pita",
+   "aisle": "bakery",
+   "unit": "x",
+   "densityGPerMl": null,
+   "gramsPerPiece": 60,
+   "aliases": [],
+   "per100": {
+    "proteinG": 9.8,
+    "carbG": 44.6,
+    "fatG": 2.6,
+    "fiberG": 6.4
+   },
+   "facets": [
+    "gluten"
+   ]
+  },
+  {
+   "id": "popcorn-kernels",
+   "name": "popcorn kernels",
+   "aisle": "pantry",
+   "unit": "g",
+   "densityGPerMl": null,
+   "gramsPerPiece": null,
+   "aliases": [],
+   "per100": {
+    "proteinG": 12.9,
+    "carbG": 57.0,
+    "fatG": 5.0,
+    "fiberG": 14.5
+   },
+   "facets": []
+  },
+  {
+   "id": "pork-loin",
+   "name": "pork loin",
+   "aisle": "meat-fish",
+   "unit": "g",
+   "densityGPerMl": null,
+   "gramsPerPiece": null,
+   "aliases": [],
+   "per100": {
+    "proteinG": 22.0,
+    "carbG": 0.0,
+    "fatG": 6.0,
+    "fiberG": 0.0
+   },
+   "facets": [
+    "meat"
+   ]
+  },
+  {
+   "id": "potato",
+   "name": "potatoes",
+   "aisle": "produce",
+   "unit": "g",
+   "densityGPerMl": null,
+   "gramsPerPiece": null,
+   "aliases": [],
+   "per100": {
+    "proteinG": 2.0,
+    "carbG": 17.5,
+    "fatG": 0.1,
+    "fiberG": 2.1
+   },
+   "facets": []
+  },
+  {
+   "id": "pumpkin-seeds",
+   "name": "pumpkin seeds",
+   "aisle": "pantry",
+   "unit": "g",
+   "densityGPerMl": null,
+   "gramsPerPiece": null,
+   "aliases": [],
+   "per100": {
+    "proteinG": 30.2,
+    "carbG": 3.6,
+    "fatG": 49.1,
+    "fiberG": 6.5
+   },
+   "facets": []
+  },
+  {
+   "id": "quinoa",
+   "name": "quinoa",
+   "aisle": "pantry",
+   "unit": "g",
+   "densityGPerMl": null,
+   "gramsPerPiece": null,
+   "aliases": [],
+   "per100": {
+    "proteinG": 14.1,
+    "carbG": 57.9,
+    "fatG": 6.1,
+    "fiberG": 7.0
+   },
+   "facets": []
+  },
+  {
+   "id": "red-lentils",
+   "name": "red split lentils",
+   "aisle": "pantry",
+   "unit": "g",
+   "densityGPerMl": null,
+   "gramsPerPiece": null,
+   "aliases": [],
+   "per100": {
+    "proteinG": 24.0,
+    "carbG": 50.0,
+    "fatG": 1.6,
+    "fiberG": 10.7
+   },
+   "facets": [
+    "gos"
+   ]
+  },
+  {
+   "id": "red-onion",
+   "name": "red onions",
+   "aisle": "produce",
+   "unit": "x",
+   "densityGPerMl": null,
+   "gramsPerPiece": 110,
+   "aliases": [],
+   "per100": {
+    "proteinG": 1.1,
+    "carbG": 9.0,
+    "fatG": 0.1,
+    "fiberG": 1.7
+   },
+   "facets": [
+    "fructans"
+   ]
+  },
+  {
+   "id": "red-pepper",
+   "name": "red bell peppers",
+   "aisle": "produce",
+   "unit": "x",
+   "densityGPerMl": null,
+   "gramsPerPiece": 160,
+   "aliases": [
+    "red capsicum"
+   ],
+   "per100": {
+    "proteinG": 1.0,
+    "carbG": 6.0,
+    "fatG": 0.3,
+    "fiberG": 2.1
+   },
+   "facets": []
+  },
+  {
+   "id": "rice-noodles",
+   "name": "rice noodles",
+   "aisle": "pantry",
+   "unit": "g",
+   "densityGPerMl": null,
+   "gramsPerPiece": null,
+   "aliases": [],
+   "per100": {
+    "proteinG": 2.0,
+    "carbG": 85.0,
+    "fatG": 0.3,
+    "fiberG": 1.5
+   },
+   "facets": []
+  },
+  {
+   "id": "rice-vinegar",
+   "name": "rice vinegar",
+   "aisle": "pantry",
+   "unit": "ml",
+   "densityGPerMl": 1.01,
+   "gramsPerPiece": null,
+   "aliases": [],
+   "per100": {
+    "proteinG": 0.0,
+    "carbG": 5.0,
+    "fatG": 0.0,
+    "fiberG": 0.0
+   },
+   "facets": []
+  },
+  {
+   "id": "rolled-oats",
+   "name": "rolled oats",
+   "aisle": "pantry",
+   "unit": "g",
+   "densityGPerMl": null,
+   "gramsPerPiece": null,
+   "aliases": [
+    "oats"
+   ],
+   "per100": {
+    "proteinG": 13.2,
+    "carbG": 55.5,
+    "fatG": 6.5,
+    "fiberG": 10.1
+   },
+   "facets": [
+    "gluten-trace"
+   ]
+  },
+  {
+   "id": "romanesco",
+   "name": "cauliflower",
+   "aisle": "produce",
+   "unit": "x",
+   "densityGPerMl": null,
+   "gramsPerPiece": 450,
+   "aliases": [],
+   "per100": {
+    "proteinG": 1.9,
+    "carbG": 4.3,
+    "fatG": 0.3,
+    "fiberG": 2.1
+   },
+   "facets": []
+  },
+  {
+   "id": "rye-bread",
+   "name": "rye bread",
+   "aisle": "bakery",
+   "unit": "x",
+   "densityGPerMl": null,
+   "gramsPerPiece": 45,
+   "aliases": [],
+   "per100": {
+    "proteinG": 8.5,
+    "carbG": 45.8,
+    "fatG": 1.7,
+    "fiberG": 5.8
+   },
+   "facets": [
+    "gluten"
+   ]
+  },
+  {
+   "id": "salmon",
+   "name": "salmon fillets",
+   "aisle": "meat-fish",
+   "unit": "g",
+   "densityGPerMl": null,
+   "gramsPerPiece": null,
+   "aliases": [],
+   "per100": {
+    "proteinG": 20.4,
+    "carbG": 0.0,
+    "fatG": 12.0,
+    "fiberG": 0.0
+   },
+   "facets": [
+    "fish"
+   ]
+  },
+  {
+   "id": "salt",
+   "name": "salt",
+   "aisle": "pantry",
+   "unit": "g",
+   "densityGPerMl": null,
+   "gramsPerPiece": null,
+   "aliases": [],
+   "per100": {
+    "proteinG": 0.0,
+    "carbG": 0.0,
+    "fatG": 0.0,
+    "fiberG": 0.0
+   },
+   "facets": []
+  },
+  {
+   "id": "sesame-oil",
+   "name": "sesame oil",
+   "aisle": "pantry",
+   "unit": "ml",
+   "densityGPerMl": 0.92,
+   "gramsPerPiece": null,
+   "aliases": [],
+   "per100": {
+    "proteinG": 0.0,
+    "carbG": 0.0,
+    "fatG": 100.0,
+    "fiberG": 0.0
+   },
+   "facets": [
+    "sesame"
+   ]
+  },
+  {
+   "id": "sesame-seeds",
+   "name": "sesame seeds",
+   "aisle": "pantry",
+   "unit": "g",
+   "densityGPerMl": null,
+   "gramsPerPiece": null,
+   "aliases": [],
+   "per100": {
+    "proteinG": 23.5,
+    "carbG": 11.7,
+    "fatG": 50.4,
+    "fiberG": 11.8
+   },
+   "facets": [
+    "sesame"
+   ]
+  },
+  {
+   "id": "shrimp",
+   "name": "shrimp",
+   "aisle": "meat-fish",
+   "unit": "g",
+   "densityGPerMl": null,
+   "gramsPerPiece": null,
+   "aliases": [
+    "prawns"
+   ],
+   "per100": {
+    "proteinG": 13.6,
+    "carbG": 1.0,
+    "fatG": 0.9,
+    "fiberG": 0.0
+   },
+   "facets": [
+    "shellfish"
+   ]
+  },
+  {
+   "id": "smoked-mackerel",
+   "name": "smoked mackerel",
+   "aisle": "meat-fish",
+   "unit": "g",
+   "densityGPerMl": null,
+   "gramsPerPiece": null,
+   "aliases": [],
+   "per100": {
+    "proteinG": 19.0,
+    "carbG": 0.0,
+    "fatG": 16.0,
+    "fiberG": 0.0
+   },
+   "facets": [
+    "fish"
+   ]
+  },
+  {
+   "id": "smoked-paprika",
+   "name": "smoked paprika",
+   "aisle": "pantry",
+   "unit": "g",
+   "densityGPerMl": null,
+   "gramsPerPiece": null,
+   "aliases": [
+    "paprika"
+   ],
+   "per100": {
+    "proteinG": 14.1,
+    "carbG": 45.8,
+    "fatG": 12.9,
+    "fiberG": 22.9
+   },
+   "facets": []
+  },
+  {
+   "id": "smoked-salmon",
+   "name": "smoked salmon",
+   "aisle": "meat-fish",
+   "unit": "g",
+   "densityGPerMl": null,
+   "gramsPerPiece": null,
+   "aliases": [],
+   "per100": {
+    "proteinG": 22.0,
+    "carbG": 0.0,
+    "fatG": 4.5,
+    "fiberG": 0.0
+   },
+   "facets": [
+    "fish"
+   ]
+  },
+  {
+   "id": "sourdough",
+   "name": "sourdough bread",
+   "aisle": "bakery",
+   "unit": "x",
+   "densityGPerMl": null,
+   "gramsPerPiece": 60,
+   "aliases": [],
+   "per100": {
+    "proteinG": 8.8,
+    "carbG": 49.5,
+    "fatG": 1.5,
+    "fiberG": 2.4
+   },
+   "facets": [
+    "gluten"
+   ]
+  },
+  {
+   "id": "soy-sauce",
+   "name": "soy sauce",
+   "aisle": "pantry",
+   "unit": "ml",
+   "densityGPerMl": 1.15,
+   "gramsPerPiece": null,
+   "aliases": [
+    "tamari"
+   ],
+   "per100": {
+    "proteinG": 8.1,
+    "carbG": 4.9,
+    "fatG": 0.6,
+    "fiberG": 0.8
+   },
+   "facets": [
+    "soy",
+    "gluten",
+    "fructans-trace"
+   ]
+  },
+  {
+   "id": "spaghetti",
+   "name": "spaghetti",
+   "aisle": "pantry",
+   "unit": "g",
+   "densityGPerMl": null,
+   "gramsPerPiece": null,
+   "aliases": [],
+   "per100": {
+    "proteinG": 12.5,
+    "carbG": 74.0,
+    "fatG": 1.5,
+    "fiberG": 3.2
+   },
+   "facets": [
+    "gluten"
+   ]
+  },
+  {
+   "id": "spinach",
+   "name": "baby spinach",
+   "aisle": "produce",
+   "unit": "g",
+   "densityGPerMl": null,
+   "gramsPerPiece": null,
+   "aliases": [],
+   "per100": {
+    "proteinG": 2.9,
+    "carbG": 1.4,
+    "fatG": 0.4,
+    "fiberG": 2.2
+   },
+   "facets": []
+  },
+  {
+   "id": "spring-onion",
+   "name": "spring onions",
+   "aisle": "produce",
+   "unit": "x",
+   "densityGPerMl": null,
+   "gramsPerPiece": 15,
+   "aliases": [
+    "scallion"
+   ],
+   "per100": {
+    "proteinG": 1.8,
+    "carbG": 6.5,
+    "fatG": 0.2,
+    "fiberG": 2.6
+   },
+   "facets": [
+    "fructans"
+   ]
+  },
+  {
+   "id": "strawberries",
+   "name": "strawberries",
+   "aisle": "produce",
+   "unit": "g",
+   "densityGPerMl": null,
+   "gramsPerPiece": null,
+   "aliases": [],
+   "per100": {
+    "proteinG": 0.7,
+    "carbG": 7.7,
+    "fatG": 0.3,
+    "fiberG": 2.0
+   },
+   "facets": []
+  },
+  {
+   "id": "sweet-potato",
+   "name": "sweet potatoes",
+   "aisle": "produce",
+   "unit": "g",
+   "densityGPerMl": null,
+   "gramsPerPiece": null,
+   "aliases": [
+    "kumara"
+   ],
+   "per100": {
+    "proteinG": 1.6,
+    "carbG": 20.1,
+    "fatG": 0.1,
+    "fiberG": 3.0
+   },
+   "facets": []
+  },
+  {
+   "id": "tahini",
+   "name": "tahini",
+   "aisle": "pantry",
+   "unit": "g",
+   "densityGPerMl": null,
+   "gramsPerPiece": null,
+   "aliases": [],
+   "per100": {
+    "proteinG": 17.0,
+    "carbG": 9.2,
+    "fatG": 53.8,
+    "fiberG": 9.3
+   },
+   "facets": [
+    "sesame"
+   ]
+  },
+  {
+   "id": "tempeh",
+   "name": "tempeh",
+   "aisle": "dairy",
+   "unit": "g",
+   "densityGPerMl": null,
+   "gramsPerPiece": null,
+   "aliases": [],
+   "per100": {
+    "proteinG": 19.0,
+    "carbG": 9.4,
+    "fatG": 11.0,
+    "fiberG": 3.9
+   },
+   "facets": [
+    "soy"
+   ]
+  },
+  {
+   "id": "teriyaki",
+   "name": "teriyaki sauce",
+   "aisle": "pantry",
+   "unit": "ml",
+   "densityGPerMl": 1.15,
+   "gramsPerPiece": null,
+   "aliases": [],
+   "per100": {
+    "proteinG": 5.6,
+    "carbG": 22.0,
+    "fatG": 0.2,
+    "fiberG": 0.3
+   },
+   "facets": [
+    "soy",
+    "gluten"
+   ]
+  },
+  {
+   "id": "tofu",
+   "name": "firm tofu",
+   "aisle": "dairy",
+   "unit": "g",
+   "densityGPerMl": null,
+   "gramsPerPiece": null,
+   "aliases": [
+    "bean curd"
+   ],
+   "per100": {
+    "proteinG": 15.7,
+    "carbG": 2.8,
+    "fatG": 8.9,
+    "fiberG": 0.9
+   },
+   "facets": [
+    "soy"
+   ]
+  },
+  {
+   "id": "tomato",
+   "name": "tomatoes",
+   "aisle": "produce",
+   "unit": "g",
+   "densityGPerMl": null,
+   "gramsPerPiece": null,
+   "aliases": [],
+   "per100": {
+    "proteinG": 0.9,
+    "carbG": 3.9,
+    "fatG": 0.2,
+    "fiberG": 1.2
+   },
+   "facets": []
+  },
+  {
+   "id": "tomato-paste",
+   "name": "tomato paste",
+   "aisle": "pantry",
+   "unit": "g",
+   "densityGPerMl": null,
+   "gramsPerPiece": null,
+   "aliases": [],
+   "per100": {
+    "proteinG": 4.3,
+    "carbG": 13.9,
+    "fatG": 0.5,
+    "fiberG": 3.3
+   },
+   "facets": []
+  },
+  {
+   "id": "tuna-canned",
+   "name": "canned tuna in water",
+   "aisle": "pantry",
+   "unit": "g",
+   "densityGPerMl": null,
+   "gramsPerPiece": null,
+   "aliases": [
+    "tinned tuna"
+   ],
+   "per100": {
+    "proteinG": 25.5,
+    "carbG": 0.0,
+    "fatG": 0.8,
+    "fiberG": 0.0
+   },
+   "facets": [
+    "fish"
+   ]
+  },
+  {
+   "id": "turkey-mince",
+   "name": "turkey mince",
+   "aisle": "meat-fish",
+   "unit": "g",
+   "densityGPerMl": null,
+   "gramsPerPiece": null,
+   "aliases": [],
+   "per100": {
+    "proteinG": 22.0,
+    "carbG": 0.0,
+    "fatG": 4.0,
+    "fiberG": 0.0
+   },
+   "facets": [
+    "meat"
+   ]
+  },
+  {
+   "id": "turmeric",
+   "name": "ground turmeric",
+   "aisle": "pantry",
+   "unit": "g",
+   "densityGPerMl": null,
+   "gramsPerPiece": null,
+   "aliases": [],
+   "per100": {
+    "proteinG": 7.8,
+    "carbG": 52.1,
+    "fatG": 9.9,
+    "fiberG": 22.7
+   },
+   "facets": []
+  },
+  {
+   "id": "veg-stock",
+   "name": "vegetable stock cube",
+   "aisle": "pantry",
+   "unit": "x",
+   "densityGPerMl": null,
+   "gramsPerPiece": 10,
+   "aliases": [],
+   "per100": {
+    "proteinG": 8.0,
+    "carbG": 40.0,
+    "fatG": 8.0,
+    "fiberG": 1.0
+   },
+   "facets": []
+  },
+  {
+   "id": "walnuts",
+   "name": "walnuts",
+   "aisle": "pantry",
+   "unit": "g",
+   "densityGPerMl": null,
+   "gramsPerPiece": null,
+   "aliases": [],
+   "per100": {
+    "proteinG": 15.2,
+    "carbG": 6.9,
+    "fatG": 65.2,
+    "fiberG": 6.7
+   },
+   "facets": [
+    "nuts",
+    "polyols"
+   ]
+  },
+  {
+   "id": "wholemeal-flour",
+   "name": "wholemeal flour",
+   "aisle": "pantry",
+   "unit": "g",
+   "densityGPerMl": null,
+   "gramsPerPiece": null,
+   "aliases": [],
+   "per100": {
+    "proteinG": 13.2,
+    "carbG": 63.9,
+    "fatG": 2.5,
+    "fiberG": 10.7
+   },
+   "facets": [
+    "gluten"
+   ]
+  },
+  {
+   "id": "zucchini",
+   "name": "zucchini",
+   "aisle": "produce",
+   "unit": "x",
+   "densityGPerMl": null,
+   "gramsPerPiece": 180,
+   "aliases": [
+    "courgette"
+   ],
+   "per100": {
+    "proteinG": 1.2,
+    "carbG": 2.5,
+    "fatG": 0.3,
+    "fiberG": 1.2
+   },
+   "facets": []
+  }
+ ],
+ "recipes": [
+  {
+   "id": "apple-peanut-butter",
+   "version": 1,
+   "name": "Apple and peanut butter",
+   "servingsBase": 1,
+   "cuisine": "american",
+   "slots": [
+    "snack"
+   ],
+   "tags": [
+    "dairy-free",
+    "quick",
+    "vegan",
+    "vegetarian"
+   ],
+   "fodmapTags": [
+    "fructose"
+   ],
+   "ingredients": [
+    {
+     "groceryItemId": "apple",
+     "name": "apples",
+     "qty": 1,
+     "unit": "x",
+     "optional": false
+    },
+    {
+     "groceryItemId": "peanut-butter",
+     "name": "peanut butter",
+     "qty": 2,
+     "unit": "tbsp",
+     "optional": false
+    }
+   ],
+   "steps": [
+    "Slice the apple into rounds.",
+    "Spread with peanut butter."
+   ],
+   "nutrition": {
+    "kcal": 297.1,
+    "proteinG": 8.1,
+    "carbG": 28.3,
+    "fatG": 15.5,
+    "fiberG": 6.1
+   },
+   "nutritionBasis": "estimated",
+   "source": "seed",
+   "license": "CC0"
+  },
+  {
+   "id": "baked-salmon-greens",
+   "version": 1,
+   "name": "Baked salmon with greens",
+   "servingsBase": 2,
+   "cuisine": "nordic",
+   "slots": [
+    "dinner"
+   ],
+   "tags": [
+    "dairy-free",
+    "gluten-free",
+    "one-pan",
+    "pescatarian",
+    "quick"
+   ],
+   "fodmapTags": [],
+   "ingredients": [
+    {
+     "groceryItemId": "salmon",
+     "name": "salmon fillets",
+     "qty": 280,
+     "unit": "g",
+     "optional": false
+    },
+    {
+     "groceryItemId": "potato",
+     "name": "potatoes",
+     "qty": 300,
+     "unit": "g",
+     "optional": false
+    },
+    {
+     "groceryItemId": "broccoli",
+     "name": "broccoli",
+     "qty": 1,
+     "unit": "x",
+     "optional": false
+    },
+    {
+     "groceryItemId": "green-beans",
+     "name": "green beans",
+     "qty": 150,
+     "unit": "g",
+     "optional": false
+    },
+    {
+     "groceryItemId": "lemon",
+     "name": "lemon",
+     "qty": 1,
+     "unit": "x",
+     "optional": false
+    },
+    {
+     "groceryItemId": "garlic-infused-oil",
+     "name": "garlic-infused olive oil",
+     "qty": 1,
+     "unit": "tbsp",
+     "optional": false
+    }
+   ],
+   "steps": [
+    "Heat oven to 200C; potatoes 25 min in the oil.",
+    "Add salmon and greens to the tray; 12 min more.",
+    "Squeeze lemon over."
+   ],
+   "nutrition": {
+    "kcal": 556.0,
+    "proteinG": 37.6,
+    "carbG": 40.5,
+    "fatG": 24.6,
+    "fiberG": 11.3
+   },
+   "nutritionBasis": "estimated",
+   "source": "seed",
+   "license": "CC0"
+  },
+  {
+   "id": "beef-chili",
+   "version": 1,
+   "name": "Beef chili con carne",
+   "servingsBase": 4,
+   "cuisine": "mexican",
+   "slots": [
+    "dinner"
+   ],
+   "tags": [
+    "batch",
+    "dairy-free",
+    "gluten-free",
+    "one-pan"
+   ],
+   "fodmapTags": [
+    "fructans",
+    "gos"
+   ],
+   "ingredients": [
+    {
+     "groceryItemId": "beef-mince",
+     "name": "lean beef mince (5%)",
+     "qty": 500,
+     "unit": "g",
+     "optional": false
+    },
+    {
+     "groceryItemId": "kidney-beans",
+     "name": "canned kidney beans",
+     "qty": 400,
+     "unit": "g",
+     "optional": false
+    },
+    {
+     "groceryItemId": "chopped-tomatoes",
+     "name": "canned chopped tomatoes",
+     "qty": 800,
+     "unit": "g",
+     "optional": false
+    },
+    {
+     "groceryItemId": "brown-onion",
+     "name": "brown onion",
+     "qty": 1,
+     "unit": "x",
+     "optional": false
+    },
+    {
+     "groceryItemId": "garlic",
+     "name": "garlic",
+     "qty": 2,
+     "unit": "x",
+     "optional": false
+    },
+    {
+     "groceryItemId": "cumin",
+     "name": "ground cumin",
+     "qty": 1,
+     "unit": "tbsp",
+     "optional": false
+    },
+    {
+     "groceryItemId": "smoked-paprika",
+     "name": "smoked paprika",
+     "qty": 2,
+     "unit": "tsp",
+     "optional": false
+    },
+    {
+     "groceryItemId": "brown-rice",
+     "name": "brown rice",
+     "qty": 300,
+     "unit": "g",
+     "optional": false
+    }
+   ],
+   "steps": [
+    "Brown the mince; drain excess fat.",
+    "Soften onion and garlic; add spices.",
+    "Add tomatoes and beans; simmer 30 min.",
+    "Serve over rice."
+   ],
+   "nutrition": {
+    "kcal": 685.2,
+    "proteinG": 45.4,
+    "carbG": 95.0,
+    "fatG": 10.3,
+    "fiberG": 15.3
+   },
+   "nutritionBasis": "estimated",
+   "source": "seed",
+   "license": "CC0"
+  },
+  {
+   "id": "beef-lettuce-cups",
+   "version": 1,
+   "name": "Beef lettuce cups",
+   "servingsBase": 2,
+   "cuisine": "south-east-asian",
+   "slots": [
+    "lunch"
+   ],
+   "tags": [
+    "dairy-free",
+    "low-carb",
+    "quick"
+   ],
+   "fodmapTags": [
+    "fructans"
+   ],
+   "ingredients": [
+    {
+     "groceryItemId": "beef-mince",
+     "name": "lean beef mince (5%)",
+     "qty": 300,
+     "unit": "g",
+     "optional": false
+    },
+    {
+     "groceryItemId": "lettuce",
+     "name": "romaine lettuce",
+     "qty": 1,
+     "unit": "x",
+     "optional": false
+    },
+    {
+     "groceryItemId": "garlic",
+     "name": "garlic",
+     "qty": 2,
+     "unit": "x",
+     "optional": false
+    },
+    {
+     "groceryItemId": "ginger",
+     "name": "fresh ginger",
+     "qty": 15,
+     "unit": "g",
+     "optional": false
+    },
+    {
+     "groceryItemId": "soy-sauce",
+     "name": "soy sauce",
+     "qty": 1,
+     "unit": "tbsp",
+     "optional": false
+    },
+    {
+     "groceryItemId": "carrot",
+     "name": "carrots",
+     "qty": 1,
+     "unit": "x",
+     "optional": false
+    }
+   ],
+   "steps": [
+    "Brown the beef with garlic and ginger.",
+    "Season with soy; add grated carrot.",
+    "Spoon into lettuce leaves."
+   ],
+   "nutrition": {
+    "kcal": 254.6,
+    "proteinG": 35.4,
+    "carbG": 8.4,
+    "fatG": 8.2,
+    "fiberG": 3.0
+   },
+   "nutritionBasis": "estimated",
+   "source": "seed",
+   "license": "CC0"
+  },
+  {
+   "id": "beef-stew",
+   "version": 1,
+   "name": "Beef and root vegetable stew",
+   "servingsBase": 6,
+   "cuisine": "british",
+   "slots": [
+    "dinner"
+   ],
+   "tags": [
+    "batch",
+    "dairy-free",
+    "gluten-free",
+    "one-pan"
+   ],
+   "fodmapTags": [
+    "fructans"
+   ],
+   "ingredients": [
+    {
+     "groceryItemId": "beef-stewing",
+     "name": "beef stewing steak",
+     "qty": 700,
+     "unit": "g",
+     "optional": false
+    },
+    {
+     "groceryItemId": "carrot",
+     "name": "carrots",
+     "qty": 4,
+     "unit": "x",
+     "optional": false
+    },
+    {
+     "groceryItemId": "potato",
+     "name": "potatoes",
+     "qty": 600,
+     "unit": "g",
+     "optional": false
+    },
+    {
+     "groceryItemId": "brown-onion",
+     "name": "brown onion",
+     "qty": 2,
+     "unit": "x",
+     "optional": false
+    },
+    {
+     "groceryItemId": "tomato-paste",
+     "name": "tomato paste",
+     "qty": 2,
+     "unit": "tbsp",
+     "optional": false
+    },
+    {
+     "groceryItemId": "chicken-stock",
+     "name": "chicken stock cube",
+     "qty": 2,
+     "unit": "x",
+     "optional": false
+    },
+    {
+     "groceryItemId": "oregano",
+     "name": "dried oregano",
+     "qty": 2,
+     "unit": "tsp",
+     "optional": false
+    },
+    {
+     "groceryItemId": "olive-oil",
+     "name": "olive oil",
+     "qty": 2,
+     "unit": "tbsp",
+     "optional": false
+    }
+   ],
+   "steps": [
+    "Brown the beef in batches.",
+    "Soften onion; paste and herbs in.",
+    "Everything in a pot with stock and 500 ml water; 2 h low.",
+    "Potatoes in for the last 40 min."
+   ],
+   "nutrition": {
+    "kcal": 376.4,
+    "proteinG": 34.0,
+    "carbG": 28.6,
+    "fatG": 12.9,
+    "fiberG": 5.0
+   },
+   "nutritionBasis": "estimated",
+   "source": "seed",
+   "license": "CC0"
+  },
+  {
+   "id": "burrito-bowl",
+   "version": 1,
+   "name": "Black bean burrito bowl",
+   "servingsBase": 4,
+   "cuisine": "mexican",
+   "slots": [
+    "dinner",
+    "lunch"
+   ],
+   "tags": [
+    "batch",
+    "dairy-free",
+    "vegan",
+    "vegetarian"
+   ],
+   "fodmapTags": [
+    "fructans",
+    "gos"
+   ],
+   "ingredients": [
+    {
+     "groceryItemId": "black-beans",
+     "name": "canned black beans",
+     "qty": 400,
+     "unit": "g",
+     "optional": false
+    },
+    {
+     "groceryItemId": "brown-rice",
+     "name": "brown rice",
+     "qty": 300,
+     "unit": "g",
+     "optional": false
+    },
+    {
+     "groceryItemId": "corn-frozen",
+     "name": "frozen sweetcorn",
+     "qty": 150,
+     "unit": "g",
+     "optional": false
+    },
+    {
+     "groceryItemId": "avocado",
+     "name": "avocados",
+     "qty": 2,
+     "unit": "x",
+     "optional": false
+    },
+    {
+     "groceryItemId": "lime",
+     "name": "limes",
+     "qty": 2,
+     "unit": "x",
+     "optional": false
+    },
+    {
+     "groceryItemId": "cumin",
+     "name": "ground cumin",
+     "qty": 2,
+     "unit": "tsp",
+     "optional": false
+    },
+    {
+     "groceryItemId": "smoked-paprika",
+     "name": "smoked paprika",
+     "qty": 1,
+     "unit": "tsp",
+     "optional": false
+    },
+    {
+     "groceryItemId": "lettuce",
+     "name": "romaine lettuce",
+     "qty": 0.5,
+     "unit": "x",
+     "optional": false
+    }
+   ],
+   "steps": [
+    "Cook rice; warm beans with cumin and paprika.",
+    "Char the corn in a dry pan.",
+    "Bowl with avocado, lettuce, lime."
+   ],
+   "nutrition": {
+    "kcal": 631.7,
+    "proteinG": 18.8,
+    "carbG": 95.2,
+    "fatG": 15.1,
+    "fiberG": 19.9
+   },
+   "nutritionBasis": "estimated",
+   "source": "seed",
+   "license": "CC0"
+  },
+  {
+   "id": "caprese-salad",
+   "version": 1,
+   "name": "Caprese salad",
+   "servingsBase": 2,
+   "cuisine": "italian",
+   "slots": [
+    "lunch",
+    "snack"
+   ],
+   "tags": [
+    "low-carb",
+    "quick",
+    "vegetarian"
+   ],
+   "fodmapTags": [],
+   "ingredients": [
+    {
+     "groceryItemId": "mozzarella",
+     "name": "mozzarella",
+     "qty": 250,
+     "unit": "g",
+     "optional": false
+    },
+    {
+     "groceryItemId": "tomato",
+     "name": "tomatoes",
+     "qty": 4,
+     "unit": "x",
+     "optional": false
+    },
+    {
+     "groceryItemId": "fresh-basil",
+     "name": "fresh basil",
+     "qty": 1,
+     "unit": "x",
+     "optional": false
+    },
+    {
+     "groceryItemId": "olive-oil",
+     "name": "olive oil",
+     "qty": 1,
+     "unit": "tbsp",
+     "optional": false
+    },
+    {
+     "groceryItemId": "balsamic",
+     "name": "balsamic vinegar",
+     "qty": 1,
+     "unit": "tsp",
+     "optional": false
+    }
+   ],
+   "steps": [
+    "Slice tomatoes and mozzarella.",
+    "Layer with basil.",
+    "Dress with oil and balsamic."
+   ],
+   "nutrition": {
+    "kcal": 488.1,
+    "proteinG": 29.9,
+    "carbG": 11.3,
+    "fatG": 35.3,
+    "fiberG": 2.6
+   },
+   "nutritionBasis": "estimated",
+   "source": "seed",
+   "license": "CC0"
+  },
+  {
+   "id": "chia-almond-pudding",
+   "version": 1,
+   "name": "Chia almond pudding",
+   "servingsBase": 2,
+   "cuisine": "californian",
+   "slots": [
+    "breakfast",
+    "snack"
+   ],
+   "tags": [
+    "dairy-free",
+    "meal-prep",
+    "quick",
+    "vegan",
+    "vegetarian"
+   ],
+   "fodmapTags": [],
+   "ingredients": [
+    {
+     "groceryItemId": "chia-seeds",
+     "name": "chia seeds",
+     "qty": 50,
+     "unit": "g",
+     "optional": false
+    },
+    {
+     "groceryItemId": "lactose-free-milk",
+     "name": "lactose-free milk",
+     "qty": 400,
+     "unit": "ml",
+     "optional": false
+    },
+    {
+     "groceryItemId": "maple-syrup",
+     "name": "maple syrup",
+     "qty": 2,
+     "unit": "tsp",
+     "optional": false
+    },
+    {
+     "groceryItemId": "almonds",
+     "name": "almonds",
+     "qty": 25,
+     "unit": "g",
+     "optional": false
+    },
+    {
+     "groceryItemId": "strawberries",
+     "name": "strawberries",
+     "qty": 100,
+     "unit": "g",
+     "optional": false
+    }
+   ],
+   "steps": [
+    "Whisk chia into the milk with maple.",
+    "Rest 15 min, whisk again, chill overnight.",
+    "Top with almonds and strawberries."
+   ],
+   "nutrition": {
+    "kcal": 361.6,
+    "proteinG": 14.2,
+    "carbG": 20.9,
+    "fatG": 22.1,
+    "fiberG": 11.2
+   },
+   "nutritionBasis": "estimated",
+   "source": "seed",
+   "license": "CC0"
+  },
+  {
+   "id": "chicken-quinoa-bowl",
+   "version": 1,
+   "name": "Chicken quinoa bowl",
+   "servingsBase": 4,
+   "cuisine": "californian",
+   "slots": [
+    "lunch",
+    "dinner"
+   ],
+   "tags": [
+    "batch",
+    "dairy-free",
+    "gluten-free",
+    "high-protein",
+    "meal-prep"
+   ],
+   "fodmapTags": [
+    "gos"
+   ],
+   "ingredients": [
+    {
+     "groceryItemId": "chicken-breast",
+     "name": "chicken breast",
+     "qty": 500,
+     "unit": "g",
+     "optional": false
+    },
+    {
+     "groceryItemId": "quinoa",
+     "name": "quinoa",
+     "qty": 250,
+     "unit": "g",
+     "optional": false
+    },
+    {
+     "groceryItemId": "broccoli",
+     "name": "broccoli",
+     "qty": 1,
+     "unit": "x",
+     "optional": false
+    },
+    {
+     "groceryItemId": "red-pepper",
+     "name": "red bell pepper",
+     "qty": 1,
+     "unit": "x",
+     "optional": false
+    },
+    {
+     "groceryItemId": "olive-oil",
+     "name": "olive oil",
+     "qty": 2,
+     "unit": "tbsp",
+     "optional": false
+    },
+    {
+     "groceryItemId": "lemon",
+     "name": "lemon",
+     "qty": 1,
+     "unit": "x",
+     "optional": false
+    }
+   ],
+   "steps": [
+    "Roast the chicken at 200C for 20 min; rest and slice.",
+    "Simmer quinoa 15 min.",
+    "Steam broccoli; char the pepper.",
+    "Bowl it all with lemon and olive oil."
+   ],
+   "nutrition": {
+    "kcal": 486.4,
+    "proteinG": 41.5,
+    "carbG": 43.6,
+    "fatG": 14.4,
+    "fiberG": 8.3
+   },
+   "nutritionBasis": "estimated",
+   "source": "seed",
+   "license": "CC0"
+  },
+  {
+   "id": "chicken-tikka-masala",
+   "version": 1,
+   "name": "Chicken tikka masala",
+   "servingsBase": 4,
+   "cuisine": "indian",
+   "slots": [
+    "dinner"
+   ],
+   "tags": [
+    "batch",
+    "gluten-free"
+   ],
+   "fodmapTags": [
+    "fructans",
+    "lactose"
+   ],
+   "ingredients": [
+    {
+     "groceryItemId": "chicken-breast",
+     "name": "chicken breast",
+     "qty": 600,
+     "unit": "g",
+     "optional": false
+    },
+    {
+     "groceryItemId": "greek-yogurt",
+     "name": "greek yogurt",
+     "qty": 100,
+     "unit": "g",
+     "optional": false
+    },
+    {
+     "groceryItemId": "garam-masala",
+     "name": "garam masala",
+     "qty": 2,
+     "unit": "tsp",
+     "optional": false
+    },
+    {
+     "groceryItemId": "turmeric",
+     "name": "ground turmeric",
+     "qty": 1,
+     "unit": "tsp",
+     "optional": false
+    },
+    {
+     "groceryItemId": "tomato-paste",
+     "name": "tomato paste",
+     "qty": 2,
+     "unit": "tbsp",
+     "optional": false
+    },
+    {
+     "groceryItemId": "double-cream",
+     "name": "double cream",
+     "qty": 150,
+     "unit": "ml",
+     "optional": false
+    },
+    {
+     "groceryItemId": "passata",
+     "name": "passata",
+     "qty": 500,
+     "unit": "g",
+     "optional": false
+    },
+    {
+     "groceryItemId": "brown-onion",
+     "name": "brown onion",
+     "qty": 1,
+     "unit": "x",
+     "optional": false
+    },
+    {
+     "groceryItemId": "garlic",
+     "name": "garlic",
+     "qty": 3,
+     "unit": "x",
+     "optional": false
+    },
+    {
+     "groceryItemId": "ginger",
+     "name": "fresh ginger",
+     "qty": 20,
+     "unit": "g",
+     "optional": false
+    },
+    {
+     "groceryItemId": "basmati-rice",
+     "name": "basmati rice",
+     "qty": 300,
+     "unit": "g",
+     "optional": false
+    }
+   ],
+   "steps": [
+    "Marinate chicken in yogurt and spices 30 min.",
+    "Grill hot until charred.",
+    "Sauce: onion, garlic, ginger, tomato paste, passata; 15 min.",
+    "Fold in cream and chicken; serve over basmati."
+   ],
+   "nutrition": {
+    "kcal": 697.4,
+    "proteinG": 48.5,
+    "carbG": 77.5,
+    "fatG": 20.4,
+    "fiberG": 5.2
+   },
+   "nutritionBasis": "estimated",
+   "source": "seed",
+   "license": "CC0"
+  },
+  {
+   "id": "chickpea-tuna-salad",
+   "version": 1,
+   "name": "Chickpea and tuna salad",
+   "servingsBase": 2,
+   "cuisine": "mediterranean",
+   "slots": [
+    "lunch"
+   ],
+   "tags": [
+    "high-fiber",
+    "high-protein",
+    "pescatarian",
+    "quick"
+   ],
+   "fodmapTags": [
+    "gos"
+   ],
+   "ingredients": [
+    {
+     "groceryItemId": "chickpeas",
+     "name": "canned chickpeas",
+     "qty": 240,
+     "unit": "g",
+     "optional": false
+    },
+    {
+     "groceryItemId": "tuna-canned",
+     "name": "canned tuna in water",
+     "qty": 160,
+     "unit": "g",
+     "optional": false
+    },
+    {
+     "groceryItemId": "cherry-tomatoes",
+     "name": "cherry tomatoes",
+     "qty": 150,
+     "unit": "g",
+     "optional": false
+    },
+    {
+     "groceryItemId": "cucumber",
+     "name": "cucumber",
+     "qty": 0.5,
+     "unit": "x",
+     "optional": false
+    },
+    {
+     "groceryItemId": "lemon",
+     "name": "lemon",
+     "qty": 0.5,
+     "unit": "x",
+     "optional": false
+    },
+    {
+     "groceryItemId": "olive-oil",
+     "name": "olive oil",
+     "qty": 1,
+     "unit": "tbsp",
+     "optional": false
+    }
+   ],
+   "steps": [
+    "Drain and rinse the chickpeas.",
+    "Toss everything together.",
+    "Dress with lemon and olive oil."
+   ],
+   "nutrition": {
+    "kcal": 372.3,
+    "proteinG": 32.5,
+    "carbG": 30.8,
+    "fatG": 11.1,
+    "fiberG": 9.6
+   },
+   "nutritionBasis": "estimated",
+   "source": "seed",
+   "license": "CC0"
+  },
+  {
+   "id": "chili-sin-carne",
+   "version": 1,
+   "name": "Chili sin carne",
+   "servingsBase": 4,
+   "cuisine": "mexican",
+   "slots": [
+    "dinner",
+    "lunch"
+   ],
+   "tags": [
+    "batch",
+    "dairy-free",
+    "one-pan",
+    "vegan",
+    "vegetarian"
+   ],
+   "fodmapTags": [
+    "fructans",
+    "gos"
+   ],
+   "ingredients": [
+    {
+     "groceryItemId": "black-beans",
+     "name": "canned black beans",
+     "qty": 400,
+     "unit": "g",
+     "optional": false
+    },
+    {
+     "groceryItemId": "kidney-beans",
+     "name": "canned kidney beans",
+     "qty": 400,
+     "unit": "g",
+     "optional": false
+    },
+    {
+     "groceryItemId": "chopped-tomatoes",
+     "name": "canned chopped tomatoes",
+     "qty": 800,
+     "unit": "g",
+     "optional": false
+    },
+    {
+     "groceryItemId": "brown-onion",
+     "name": "brown onion",
+     "qty": 1,
+     "unit": "x",
+     "optional": false
+    },
+    {
+     "groceryItemId": "garlic",
+     "name": "garlic",
+     "qty": 3,
+     "unit": "x",
+     "optional": false
+    },
+    {
+     "groceryItemId": "smoked-paprika",
+     "name": "smoked paprika",
+     "qty": 2,
+     "unit": "tsp",
+     "optional": false
+    },
+    {
+     "groceryItemId": "cumin",
+     "name": "ground cumin",
+     "qty": 1,
+     "unit": "tbsp",
+     "optional": false
+    },
+    {
+     "groceryItemId": "jalapeno",
+     "name": "jalape\u00f1os",
+     "qty": 1,
+     "unit": "x",
+     "optional": false
+    },
+    {
+     "groceryItemId": "brown-rice",
+     "name": "brown rice",
+     "qty": 300,
+     "unit": "g",
+     "optional": false
+    },
+    {
+     "groceryItemId": "corn-frozen",
+     "name": "frozen sweetcorn",
+     "qty": 150,
+     "unit": "g",
+     "optional": false
+    }
+   ],
+   "steps": [
+    "Soften onion, garlic, jalape\u00f1o; toast the spices.",
+    "Add tomatoes and beans; simmer 20 min.",
+    "Stir in corn.",
+    "Serve over brown rice."
+   ],
+   "nutrition": {
+    "kcal": 693.0,
+    "proteinG": 28.7,
+    "carbG": 120.5,
+    "fatG": 5.1,
+    "fiberG": 25.1
+   },
+   "nutritionBasis": "estimated",
+   "source": "seed",
+   "license": "CC0"
+  },
+  {
+   "id": "cod-tomato-olive-bake",
+   "version": 1,
+   "name": "Cod with tomato and olives",
+   "servingsBase": 2,
+   "cuisine": "mediterranean",
+   "slots": [
+    "dinner"
+   ],
+   "tags": [
+    "dairy-free",
+    "gluten-free",
+    "one-pan",
+    "pescatarian"
+   ],
+   "fodmapTags": [],
+   "ingredients": [
+    {
+     "groceryItemId": "cod",
+     "name": "cod fillets",
+     "qty": 350,
+     "unit": "g",
+     "optional": false
+    },
+    {
+     "groceryItemId": "chopped-tomatoes",
+     "name": "canned chopped tomatoes",
+     "qty": 400,
+     "unit": "g",
+     "optional": false
+    },
+    {
+     "groceryItemId": "kalamata-olives",
+     "name": "kalamata olives",
+     "qty": 60,
+     "unit": "g",
+     "optional": false
+    },
+    {
+     "groceryItemId": "capers",
+     "name": "capers",
+     "qty": 1,
+     "unit": "tbsp",
+     "optional": false
+    },
+    {
+     "groceryItemId": "garlic-infused-oil",
+     "name": "garlic-infused olive oil",
+     "qty": 1,
+     "unit": "tbsp",
+     "optional": false
+    },
+    {
+     "groceryItemId": "potato",
+     "name": "potatoes",
+     "qty": 400,
+     "unit": "g",
+     "optional": false
+    }
+   ],
+   "steps": [
+    "Parboil sliced potatoes 8 min; layer in a dish.",
+    "Tomatoes, olives, capers, oil over.",
+    "Cod on top; bake 25 min at 200C."
+   ],
+   "nutrition": {
+    "kcal": 485.8,
+    "proteinG": 38.0,
+    "carbG": 49.2,
+    "fatG": 13.3,
+    "fiberG": 8.4
+   },
+   "nutritionBasis": "estimated",
+   "source": "seed",
+   "license": "CC0"
+  },
+  {
+   "id": "cottage-pineapple",
+   "version": 1,
+   "name": "Cottage cheese with pineapple",
+   "servingsBase": 1,
+   "cuisine": "american",
+   "slots": [
+    "snack",
+    "breakfast"
+   ],
+   "tags": [
+    "high-protein",
+    "quick",
+    "vegetarian"
+   ],
+   "fodmapTags": [
+    "fructose",
+    "lactose"
+   ],
+   "ingredients": [
+    {
+     "groceryItemId": "cottage-cheese",
+     "name": "cottage cheese",
+     "qty": 200,
+     "unit": "g",
+     "optional": false
+    },
+    {
+     "groceryItemId": "pineapple",
+     "name": "pineapple",
+     "qty": 150,
+     "unit": "g",
+     "optional": false
+    }
+   ],
+   "steps": [
+    "Spoon the cottage cheese into a bowl.",
+    "Pineapple on top; black pepper if you like."
+   ],
+   "nutrition": {
+    "kcal": 280.6,
+    "proteinG": 22.9,
+    "carbG": 26.4,
+    "fatG": 8.8,
+    "fiberG": 2.1
+   },
+   "nutritionBasis": "estimated",
+   "source": "seed",
+   "license": "CC0"
+  },
+  {
+   "id": "cumin-lentil-soup",
+   "version": 1,
+   "name": "Cumin lentil soup",
+   "servingsBase": 4,
+   "cuisine": "middle-eastern",
+   "slots": [
+    "lunch",
+    "dinner"
+   ],
+   "tags": [
+    "batch",
+    "dairy-free",
+    "high-fiber",
+    "one-pan",
+    "vegan",
+    "vegetarian"
+   ],
+   "fodmapTags": [
+    "fructans",
+    "gos"
+   ],
+   "ingredients": [
+    {
+     "groceryItemId": "green-lentils",
+     "name": "green lentils",
+     "qty": 250,
+     "unit": "g",
+     "optional": false
+    },
+    {
+     "groceryItemId": "cumin",
+     "name": "ground cumin",
+     "qty": 2,
+     "unit": "tsp",
+     "optional": false
+    },
+    {
+     "groceryItemId": "carrot",
+     "name": "carrots",
+     "qty": 2,
+     "unit": "x",
+     "optional": false
+    },
+    {
+     "groceryItemId": "celery",
+     "name": "celery",
+     "qty": 2,
+     "unit": "x",
+     "optional": false
+    },
+    {
+     "groceryItemId": "veg-stock",
+     "name": "vegetable stock cube",
+     "qty": 2,
+     "unit": "x",
+     "optional": false
+    },
+    {
+     "groceryItemId": "lemon",
+     "name": "lemon",
+     "qty": 1,
+     "unit": "x",
+     "optional": false
+    },
+    {
+     "groceryItemId": "olive-oil",
+     "name": "olive oil",
+     "qty": 1,
+     "unit": "tbsp",
+     "optional": false
+    }
+   ],
+   "steps": [
+    "Sweat carrot and celery in oil with cumin.",
+    "Add lentils and stock; simmer 30 min.",
+    "Blend half the pot for body; finish with lemon."
+   ],
+   "nutrition": {
+    "kcal": 285.3,
+    "proteinG": 16.6,
+    "carbG": 37.6,
+    "fatG": 5.5,
+    "fiberG": 9.5
+   },
+   "nutritionBasis": "estimated",
+   "source": "seed",
+   "license": "CC0"
+  },
+  {
+   "id": "dark-choc-almonds",
+   "version": 1,
+   "name": "Dark chocolate and almonds",
+   "servingsBase": 2,
+   "cuisine": "european",
+   "slots": [
+    "snack"
+   ],
+   "tags": [
+    "quick",
+    "vegetarian"
+   ],
+   "fodmapTags": [
+    "polyols"
+   ],
+   "ingredients": [
+    {
+     "groceryItemId": "dark-chocolate",
+     "name": "dark chocolate (70%)",
+     "qty": 40,
+     "unit": "g",
+     "optional": false
+    },
+    {
+     "groceryItemId": "almonds",
+     "name": "almonds",
+     "qty": 30,
+     "unit": "g",
+     "optional": false
+    }
+   ],
+   "steps": [
+    "Portion both into two bowls.",
+    "Slow, not gone."
+   ],
+   "nutrition": {
+    "kcal": 196.4,
+    "proteinG": 4.8,
+    "carbG": 8.2,
+    "fatG": 15.2,
+    "fiberG": 4.0
+   },
+   "nutritionBasis": "estimated",
+   "source": "seed",
+   "license": "CC0"
+  },
+  {
+   "id": "edamame-salt",
+   "version": 1,
+   "name": "Sea salt edamame",
+   "servingsBase": 2,
+   "cuisine": "japanese",
+   "slots": [
+    "snack"
+   ],
+   "tags": [
+    "dairy-free",
+    "high-fiber",
+    "quick",
+    "vegan",
+    "vegetarian"
+   ],
+   "fodmapTags": [],
+   "ingredients": [
+    {
+     "groceryItemId": "edamame-frozen",
+     "name": "shelled edamame",
+     "qty": 340,
+     "unit": "g",
+     "optional": false
+    },
+    {
+     "groceryItemId": "salt",
+     "name": "salt",
+     "qty": 1,
+     "unit": "tsp",
+     "optional": false
+    }
+   ],
+   "steps": [
+    "Boil the edamame 4 min.",
+    "Drain; salt generously."
+   ],
+   "nutrition": {
+    "kcal": 238.7,
+    "proteinG": 20.2,
+    "carbG": 15.2,
+    "fatG": 8.8,
+    "fiberG": 8.8
+   },
+   "nutritionBasis": "estimated",
+   "source": "seed",
+   "license": "CC0"
+  },
+  {
+   "id": "egg-fried-rice",
+   "version": 1,
+   "name": "Veggie egg fried rice",
+   "servingsBase": 3,
+   "cuisine": "east-asian",
+   "slots": [
+    "lunch",
+    "dinner"
+   ],
+   "tags": [
+    "quick",
+    "vegetarian"
+   ],
+   "fodmapTags": [
+    "fructans",
+    "gos"
+   ],
+   "ingredients": [
+    {
+     "groceryItemId": "jasmine-rice",
+     "name": "jasmine rice",
+     "qty": 250,
+     "unit": "g",
+     "optional": false
+    },
+    {
+     "groceryItemId": "eggs",
+     "name": "eggs",
+     "qty": 3,
+     "unit": "x",
+     "optional": false
+    },
+    {
+     "groceryItemId": "peas-frozen",
+     "name": "frozen peas",
+     "qty": 150,
+     "unit": "g",
+     "optional": false
+    },
+    {
+     "groceryItemId": "carrot",
+     "name": "carrots",
+     "qty": 2,
+     "unit": "x",
+     "optional": false
+    },
+    {
+     "groceryItemId": "soy-sauce",
+     "name": "soy sauce",
+     "qty": 2,
+     "unit": "tbsp",
+     "optional": false
+    },
+    {
+     "groceryItemId": "sesame-oil",
+     "name": "sesame oil",
+     "qty": 1,
+     "unit": "tbsp",
+     "optional": false
+    }
+   ],
+   "steps": [
+    "Cook the rice and cool it.",
+    "Scramble the eggs; set aside.",
+    "Stir-fry carrot and peas; add rice, soy, sesame oil; fold in egg."
+   ],
+   "nutrition": {
+    "kcal": 466.8,
+    "proteinG": 16.1,
+    "carbG": 75.0,
+    "fatG": 10.3,
+    "fiberG": 4.9
+   },
+   "nutritionBasis": "estimated",
+   "source": "seed",
+   "license": "CC0"
+  },
+  {
+   "id": "eggs-spinach-toast",
+   "version": 1,
+   "name": "Eggs on spinach toast",
+   "servingsBase": 1,
+   "cuisine": "european",
+   "slots": [
+    "breakfast"
+   ],
+   "tags": [
+    "quick",
+    "vegetarian"
+   ],
+   "fodmapTags": [
+    "fructans",
+    "fructose"
+   ],
+   "ingredients": [
+    {
+     "groceryItemId": "sourdough",
+     "name": "sourdough bread",
+     "qty": 1,
+     "unit": "x",
+     "optional": false
+    },
+    {
+     "groceryItemId": "eggs",
+     "name": "eggs",
+     "qty": 2,
+     "unit": "x",
+     "optional": false
+    },
+    {
+     "groceryItemId": "spinach",
+     "name": "baby spinach",
+     "qty": 60,
+     "unit": "g",
+     "optional": false
+    },
+    {
+     "groceryItemId": "butter",
+     "name": "butter",
+     "qty": 10,
+     "unit": "g",
+     "optional": false
+    }
+   ],
+   "steps": [
+    "Butter the toast; wilt the spinach in the same pan.",
+    "Poach the eggs 3 min.",
+    "Stack spinach, eggs and black pepper on the toast."
+   ],
+   "nutrition": {
+    "kcal": 378.1,
+    "proteinG": 19.7,
+    "carbG": 31.2,
+    "fatG": 18.8,
+    "fiberG": 2.8
+   },
+   "nutritionBasis": "estimated",
+   "source": "seed",
+   "license": "CC0"
+  },
+  {
+   "id": "falafel-wrap",
+   "version": 1,
+   "name": "Mediterranean falafel wrap",
+   "servingsBase": 2,
+   "cuisine": "middle-eastern",
+   "slots": [
+    "lunch"
+   ],
+   "tags": [
+    "vegetarian"
+   ],
+   "fodmapTags": [
+    "fructans",
+    "gos"
+   ],
+   "ingredients": [
+    {
+     "groceryItemId": "chickpeas",
+     "name": "canned chickpeas",
+     "qty": 240,
+     "unit": "g",
+     "optional": false
+    },
+    {
+     "groceryItemId": "fresh-parsley",
+     "name": "flat-leaf parsley",
+     "qty": 1,
+     "unit": "x",
+     "optional": false
+    },
+    {
+     "groceryItemId": "garlic",
+     "name": "garlic",
+     "qty": 2,
+     "unit": "x",
+     "optional": false
+    },
+    {
+     "groceryItemId": "cumin",
+     "name": "ground cumin",
+     "qty": 1,
+     "unit": "tsp",
+     "optional": false
+    },
+    {
+     "groceryItemId": "pita",
+     "name": "whole wheat pita",
+     "qty": 2,
+     "unit": "x",
+     "optional": false
+    },
+    {
+     "groceryItemId": "natural-yogurt",
+     "name": "natural yogurt",
+     "qty": 100,
+     "unit": "g",
+     "optional": false
+    },
+    {
+     "groceryItemId": "cucumber",
+     "name": "cucumber",
+     "qty": 0.5,
+     "unit": "x",
+     "optional": false
+    },
+    {
+     "groceryItemId": "olive-oil",
+     "name": "olive oil",
+     "qty": 2,
+     "unit": "tbsp",
+     "optional": false
+    }
+   ],
+   "steps": [
+    "Blitz chickpeas, parsley, garlic, cumin; form 8 balls.",
+    "Shallow-fry until crisp.",
+    "Warm pitas; fill with falafel, cucumber and yogurt."
+   ],
+   "nutrition": {
+    "kcal": 533.2,
+    "proteinG": 20.9,
+    "carbG": 58.5,
+    "fatG": 20.9,
+    "fiberG": 13.2
+   },
+   "nutritionBasis": "estimated",
+   "source": "seed",
+   "license": "CC0"
+  },
+  {
+   "id": "greek-lemon-chicken",
+   "version": 1,
+   "name": "Greek lemon chicken and potatoes",
+   "servingsBase": 4,
+   "cuisine": "greek",
+   "slots": [
+    "dinner"
+   ],
+   "tags": [
+    "dairy-free",
+    "gluten-free",
+    "one-pan"
+   ],
+   "fodmapTags": [
+    "fructans"
+   ],
+   "ingredients": [
+    {
+     "groceryItemId": "chicken-thigh",
+     "name": "chicken thighs",
+     "qty": 640,
+     "unit": "g",
+     "optional": false
+    },
+    {
+     "groceryItemId": "potato",
+     "name": "potatoes",
+     "qty": 700,
+     "unit": "g",
+     "optional": false
+    },
+    {
+     "groceryItemId": "lemon",
+     "name": "lemons",
+     "qty": 2,
+     "unit": "x",
+     "optional": false
+    },
+    {
+     "groceryItemId": "oregano",
+     "name": "dried oregano",
+     "qty": 2,
+     "unit": "tsp",
+     "optional": false
+    },
+    {
+     "groceryItemId": "garlic",
+     "name": "garlic",
+     "qty": 4,
+     "unit": "x",
+     "optional": false
+    },
+    {
+     "groceryItemId": "olive-oil",
+     "name": "olive oil",
+     "qty": 3,
+     "unit": "tbsp",
+     "optional": false
+    }
+   ],
+   "steps": [
+    "Oven 200C. Everything in a roasting tin with oil, lemon, oregano.",
+    "Roast 45 min, turning the potatoes once.",
+    "Rest 5 min; pan juices over."
+   ],
+   "nutrition": {
+    "kcal": 525.4,
+    "proteinG": 34.8,
+    "carbG": 36.8,
+    "fatG": 25.2,
+    "fiberG": 6.0
+   },
+   "nutritionBasis": "estimated",
+   "source": "seed",
+   "license": "CC0"
+  },
+  {
+   "id": "greek-salad-side",
+   "version": 1,
+   "name": "Greek salad",
+   "servingsBase": 2,
+   "cuisine": "greek",
+   "slots": [
+    "snack",
+    "lunch"
+   ],
+   "tags": [
+    "low-carb",
+    "quick",
+    "vegetarian"
+   ],
+   "fodmapTags": [
+    "fructans",
+    "lactose"
+   ],
+   "ingredients": [
+    {
+     "groceryItemId": "tomato",
+     "name": "tomatoes",
+     "qty": 3,
+     "unit": "x",
+     "optional": false
+    },
+    {
+     "groceryItemId": "cucumber",
+     "name": "cucumber",
+     "qty": 0.5,
+     "unit": "x",
+     "optional": false
+    },
+    {
+     "groceryItemId": "red-onion",
+     "name": "red onions",
+     "qty": 0.5,
+     "unit": "x",
+     "optional": false
+    },
+    {
+     "groceryItemId": "feta",
+     "name": "feta",
+     "qty": 100,
+     "unit": "g",
+     "optional": false
+    },
+    {
+     "groceryItemId": "kalamata-olives",
+     "name": "kalamata olives",
+     "qty": 50,
+     "unit": "g",
+     "optional": false
+    },
+    {
+     "groceryItemId": "oregano",
+     "name": "dried oregano",
+     "qty": 1,
+     "unit": "tsp",
+     "optional": false
+    },
+    {
+     "groceryItemId": "olive-oil",
+     "name": "olive oil",
+     "qty": 2,
+     "unit": "tsp",
+     "optional": false
+    }
+   ],
+   "steps": [
+    "Chunky chop the vegetables.",
+    "Feta and olives over; oregano and oil."
+   ],
+   "nutrition": {
+    "kcal": 284.7,
+    "proteinG": 9.8,
+    "carbG": 14.8,
+    "fatG": 19.9,
+    "fiberG": 3.9
+   },
+   "nutritionBasis": "estimated",
+   "source": "seed",
+   "license": "CC0"
+  },
+  {
+   "id": "greek-yogurt-berry-bowl",
+   "version": 1,
+   "name": "Greek yogurt berry bowl",
+   "servingsBase": 1,
+   "cuisine": "mediterranean",
+   "slots": [
+    "breakfast",
+    "snack"
+   ],
+   "tags": [
+    "high-protein",
+    "quick",
+    "vegetarian"
+   ],
+   "fodmapTags": [
+    "fructose"
+   ],
+   "ingredients": [
+    {
+     "groceryItemId": "greek-yogurt",
+     "name": "greek yogurt",
+     "qty": 200,
+     "unit": "g",
+     "optional": false
+    },
+    {
+     "groceryItemId": "mixed-berries",
+     "name": "mixed berries",
+     "qty": 80,
+     "unit": "g",
+     "optional": false
+    },
+    {
+     "groceryItemId": "almonds",
+     "name": "almonds",
+     "qty": 15,
+     "unit": "g",
+     "optional": false
+    },
+    {
+     "groceryItemId": "honey",
+     "name": "honey",
+     "qty": 1,
+     "unit": "tsp",
+     "optional": false
+    }
+   ],
+   "steps": [
+    "Spoon the yogurt into a bowl.",
+    "Top with berries and almonds.",
+    "Drizzle with honey."
+   ],
+   "nutrition": {
+    "kcal": 347.2,
+    "proteinG": 23.9,
+    "carbG": 20.4,
+    "fatG": 17.8,
+    "fiberG": 4.8
+   },
+   "nutritionBasis": "estimated",
+   "source": "seed",
+   "license": "CC0"
+  },
+  {
+   "id": "hummus-veg-sticks",
+   "version": 1,
+   "name": "Hummus with veg sticks",
+   "servingsBase": 2,
+   "cuisine": "middle-eastern",
+   "slots": [
+    "snack"
+   ],
+   "tags": [
+    "dairy-free",
+    "quick",
+    "vegan",
+    "vegetarian"
+   ],
+   "fodmapTags": [
+    "fructans",
+    "gos"
+   ],
+   "ingredients": [
+    {
+     "groceryItemId": "chickpeas",
+     "name": "canned chickpeas",
+     "qty": 240,
+     "unit": "g",
+     "optional": false
+    },
+    {
+     "groceryItemId": "tahini",
+     "name": "tahini",
+     "qty": 2,
+     "unit": "tbsp",
+     "optional": false
+    },
+    {
+     "groceryItemId": "lemon",
+     "name": "lemon",
+     "qty": 0.5,
+     "unit": "x",
+     "optional": false
+    },
+    {
+     "groceryItemId": "cumin",
+     "name": "ground cumin",
+     "qty": 0.5,
+     "unit": "tsp",
+     "optional": false
+    },
+    {
+     "groceryItemId": "carrot",
+     "name": "carrots",
+     "qty": 2,
+     "unit": "x",
+     "optional": false
+    },
+    {
+     "groceryItemId": "cucumber",
+     "name": "cucumber",
+     "qty": 0.5,
+     "unit": "x",
+     "optional": false
+    },
+    {
+     "groceryItemId": "red-pepper",
+     "name": "red bell pepper",
+     "qty": 1,
+     "unit": "x",
+     "optional": false
+    }
+   ],
+   "steps": [
+    "Blitz chickpeas, tahini, lemon, cumin with a splash of water.",
+    "Cut the veg into sticks.",
+    "Dip."
+   ],
+   "nutrition": {
+    "kcal": 361.0,
+    "proteinG": 15.6,
+    "carbG": 40.2,
+    "fatG": 12.2,
+    "fiberG": 13.9
+   },
+   "nutritionBasis": "estimated",
+   "source": "seed",
+   "license": "CC0"
+  },
+  {
+   "id": "lf-chicken-rice-salad",
+   "version": 1,
+   "name": "Herby chicken rice salad",
+   "servingsBase": 3,
+   "cuisine": "mediterranean",
+   "slots": [
+    "lunch"
+   ],
+   "tags": [
+    "dairy-free",
+    "gluten-free",
+    "high-protein",
+    "meal-prep"
+   ],
+   "fodmapTags": [],
+   "ingredients": [
+    {
+     "groceryItemId": "chicken-breast",
+     "name": "chicken breast",
+     "qty": 400,
+     "unit": "g",
+     "optional": false
+    },
+    {
+     "groceryItemId": "brown-rice",
+     "name": "brown rice",
+     "qty": 200,
+     "unit": "g",
+     "optional": false
+    },
+    {
+     "groceryItemId": "cucumber",
+     "name": "cucumber",
+     "qty": 0.5,
+     "unit": "x",
+     "optional": false
+    },
+    {
+     "groceryItemId": "cherry-tomatoes",
+     "name": "cherry tomatoes",
+     "qty": 150,
+     "unit": "g",
+     "optional": false
+    },
+    {
+     "groceryItemId": "fresh-mint",
+     "name": "fresh mint",
+     "qty": 1,
+     "unit": "x",
+     "optional": false
+    },
+    {
+     "groceryItemId": "lemon",
+     "name": "lemon",
+     "qty": 1,
+     "unit": "x",
+     "optional": false
+    },
+    {
+     "groceryItemId": "garlic-infused-oil",
+     "name": "garlic-infused olive oil",
+     "qty": 1,
+     "unit": "tbsp",
+     "optional": false
+    }
+   ],
+   "steps": [
+    "Roast the chicken 22 min at 200C; cool, slice.",
+    "Cook the rice; cool.",
+    "Toss with cucumber, tomatoes, mint; lemon and oil over."
+   ],
+   "nutrition": {
+    "kcal": 488.1,
+    "proteinG": 38.6,
+    "carbG": 58.1,
+    "fatG": 10.2,
+    "fiberG": 4.6
+   },
+   "nutritionBasis": "estimated",
+   "source": "seed",
+   "license": "CC0"
+  },
+  {
+   "id": "lf-eggs-spinach-cakes",
+   "version": 1,
+   "name": "Eggs and spinach on corn cakes",
+   "servingsBase": 1,
+   "cuisine": "californian",
+   "slots": [
+    "breakfast",
+    "snack"
+   ],
+   "tags": [
+    "gluten-free",
+    "quick",
+    "vegetarian"
+   ],
+   "fodmapTags": [],
+   "ingredients": [
+    {
+     "groceryItemId": "eggs",
+     "name": "eggs",
+     "qty": 2,
+     "unit": "x",
+     "optional": false
+    },
+    {
+     "groceryItemId": "spinach",
+     "name": "baby spinach",
+     "qty": 60,
+     "unit": "g",
+     "optional": false
+    },
+    {
+     "groceryItemId": "corn-cakes",
+     "name": "corn cakes",
+     "qty": 2,
+     "unit": "x",
+     "optional": false
+    },
+    {
+     "groceryItemId": "garlic-infused-oil",
+     "name": "garlic-infused olive oil",
+     "qty": 1,
+     "unit": "tsp",
+     "optional": false
+    }
+   ],
+   "steps": [
+    "Wilt the spinach in the oil.",
+    "Fry the eggs.",
+    "Stack on the corn cakes; pepper over."
+   ],
+   "nutrition": {
+    "kcal": 306.5,
+    "proteinG": 16.6,
+    "carbG": 23.7,
+    "fatG": 15.3,
+    "fiberG": 3.6
+   },
+   "nutritionBasis": "estimated",
+   "source": "seed",
+   "license": "CC0"
+  },
+  {
+   "id": "mackerel-potato-salad",
+   "version": 1,
+   "name": "Smoked mackerel potato salad",
+   "servingsBase": 2,
+   "cuisine": "nordic",
+   "slots": [
+    "lunch"
+   ],
+   "tags": [
+    "dairy-free",
+    "gluten-free",
+    "pescatarian"
+   ],
+   "fodmapTags": [],
+   "ingredients": [
+    {
+     "groceryItemId": "potato",
+     "name": "potatoes",
+     "qty": 400,
+     "unit": "g",
+     "optional": false
+    },
+    {
+     "groceryItemId": "smoked-mackerel",
+     "name": "smoked mackerel",
+     "qty": 200,
+     "unit": "g",
+     "optional": false
+    },
+    {
+     "groceryItemId": "green-beans",
+     "name": "green beans",
+     "qty": 150,
+     "unit": "g",
+     "optional": false
+    },
+    {
+     "groceryItemId": "dijon",
+     "name": "dijon mustard",
+     "qty": 1,
+     "unit": "tsp",
+     "optional": false
+    },
+    {
+     "groceryItemId": "olive-oil",
+     "name": "olive oil",
+     "qty": 1,
+     "unit": "tbsp",
+     "optional": false
+    },
+    {
+     "groceryItemId": "lemon",
+     "name": "lemon",
+     "qty": 0.5,
+     "unit": "x",
+     "optional": false
+    }
+   ],
+   "steps": [
+    "Boil potatoes until tender; halve.",
+    "Blanch beans 3 min.",
+    "Flake mackerel over; dress with mustard, oil and lemon."
+   ],
+   "nutrition": {
+    "kcal": 487.9,
+    "proteinG": 24.8,
+    "carbG": 41.4,
+    "fatG": 23.3,
+    "fiberG": 6.9
+   },
+   "nutritionBasis": "estimated",
+   "source": "seed",
+   "license": "CC0"
+  },
+  {
+   "id": "minestrone",
+   "version": 1,
+   "name": "Minestrone soup",
+   "servingsBase": 6,
+   "cuisine": "italian",
+   "slots": [
+    "lunch",
+    "dinner"
+   ],
+   "tags": [
+    "batch",
+    "dairy-free",
+    "one-pan",
+    "vegan",
+    "vegetarian"
+   ],
+   "fodmapTags": [
+    "fructans",
+    "gos",
+    "polyols"
+   ],
+   "ingredients": [
+    {
+     "groceryItemId": "olive-oil",
+     "name": "olive oil",
+     "qty": 2,
+     "unit": "tbsp",
+     "optional": false
+    },
+    {
+     "groceryItemId": "brown-onion",
+     "name": "brown onion",
+     "qty": 1,
+     "unit": "x",
+     "optional": false
+    },
+    {
+     "groceryItemId": "carrot",
+     "name": "carrots",
+     "qty": 2,
+     "unit": "x",
+     "optional": false
+    },
+    {
+     "groceryItemId": "zucchini",
+     "name": "zucchini",
+     "qty": 1,
+     "unit": "x",
+     "optional": false
+    },
+    {
+     "groceryItemId": "chopped-tomatoes",
+     "name": "canned chopped tomatoes",
+     "qty": 800,
+     "unit": "g",
+     "optional": false
+    },
+    {
+     "groceryItemId": "cannellini",
+     "name": "canned cannellini beans",
+     "qty": 400,
+     "unit": "g",
+     "optional": false
+    },
+    {
+     "groceryItemId": "penne",
+     "name": "penne (whole wheat)",
+     "qty": 100,
+     "unit": "g",
+     "optional": false
+    },
+    {
+     "groceryItemId": "veg-stock",
+     "name": "vegetable stock cube",
+     "qty": 2,
+     "unit": "x",
+     "optional": false
+    },
+    {
+     "groceryItemId": "oregano",
+     "name": "dried oregano",
+     "qty": 2,
+     "unit": "tsp",
+     "optional": false
+    }
+   ],
+   "steps": [
+    "Soften onion, carrot, zucchini in oil.",
+    "Add tomatoes, stock, beans and 1.5 L water; simmer 20 min.",
+    "Add pasta, cook 10 min more.",
+    "Finish with oregano and pepper."
+   ],
+   "nutrition": {
+    "kcal": 273.5,
+    "proteinG": 10.6,
+    "carbG": 39.3,
+    "fatG": 6.1,
+    "fiberG": 9.6
+   },
+   "nutritionBasis": "estimated",
+   "source": "seed",
+   "license": "CC0"
+  },
+  {
+   "id": "mushroom-risotto",
+   "version": 1,
+   "name": "Mushroom risotto",
+   "servingsBase": 3,
+   "cuisine": "italian",
+   "slots": [
+    "dinner"
+   ],
+   "tags": [
+    "vegetarian"
+   ],
+   "fodmapTags": [
+    "fructans",
+    "lactose"
+   ],
+   "ingredients": [
+    {
+     "groceryItemId": "jasmine-rice",
+     "name": "jasmine rice",
+     "qty": 300,
+     "unit": "g",
+     "optional": false
+    },
+    {
+     "groceryItemId": "mushrooms",
+     "name": "chestnut mushrooms",
+     "qty": 400,
+     "unit": "g",
+     "optional": false
+    },
+    {
+     "groceryItemId": "veg-stock",
+     "name": "vegetable stock cube",
+     "qty": 2,
+     "unit": "x",
+     "optional": false
+    },
+    {
+     "groceryItemId": "parmesan",
+     "name": "parmesan",
+     "qty": 60,
+     "unit": "g",
+     "optional": false
+    },
+    {
+     "groceryItemId": "butter",
+     "name": "butter",
+     "qty": 40,
+     "unit": "g",
+     "optional": false
+    },
+    {
+     "groceryItemId": "brown-onion",
+     "name": "brown onion",
+     "qty": 1,
+     "unit": "x",
+     "optional": false
+    },
+    {
+     "groceryItemId": "garlic",
+     "name": "garlic",
+     "qty": 2,
+     "unit": "x",
+     "optional": false
+    }
+   ],
+   "steps": [
+    "Fry mushrooms hard; set aside.",
+    "Soften onion and garlic; toast the rice.",
+    "Add stock a ladle at a time, 18 min.",
+    "Beat in butter, parmesan, mushrooms."
+   ],
+   "nutrition": {
+    "kcal": 610.7,
+    "proteinG": 18.9,
+    "carbG": 91.4,
+    "fatG": 17.8,
+    "fiberG": 4.5
+   },
+   "nutritionBasis": "estimated",
+   "source": "seed",
+   "license": "CC0"
+  },
+  {
+   "id": "overnight-oats-apple",
+   "version": 1,
+   "name": "Overnight oats with apple",
+   "servingsBase": 2,
+   "cuisine": "american",
+   "slots": [
+    "breakfast"
+   ],
+   "tags": [
+    "meal-prep",
+    "quick",
+    "vegetarian"
+   ],
+   "fodmapTags": [
+    "fructose",
+    "gos"
+   ],
+   "ingredients": [
+    {
+     "groceryItemId": "rolled-oats",
+     "name": "rolled oats",
+     "qty": 90,
+     "unit": "g",
+     "optional": false
+    },
+    {
+     "groceryItemId": "milk",
+     "name": "milk",
+     "qty": 300,
+     "unit": "ml",
+     "optional": false
+    },
+    {
+     "groceryItemId": "apple",
+     "name": "apple",
+     "qty": 1,
+     "unit": "x",
+     "optional": true
+    },
+    {
+     "groceryItemId": "chia-seeds",
+     "name": "chia seeds",
+     "qty": 15,
+     "unit": "g",
+     "optional": false
+    },
+    {
+     "groceryItemId": "natural-yogurt",
+     "name": "natural yogurt",
+     "qty": 100,
+     "unit": "g",
+     "optional": false
+    }
+   ],
+   "steps": [
+    "Stir oats, chia and milk together.",
+    "Layer with grated apple and yogurt.",
+    "Chill overnight."
+   ],
+   "nutrition": {
+    "kcal": 395.1,
+    "proteinG": 15.6,
+    "carbG": 49.1,
+    "fatG": 13.1,
+    "fiberG": 9.3
+   },
+   "nutritionBasis": "estimated",
+   "source": "seed",
+   "license": "CC0"
+  },
+  {
+   "id": "paneer-jalfrezi",
+   "version": 1,
+   "name": "Paneer jalfrezi",
+   "servingsBase": 4,
+   "cuisine": "indian",
+   "slots": [
+    "dinner"
+   ],
+   "tags": [
+    "batch",
+    "vegetarian"
+   ],
+   "fodmapTags": [
+    "fructans",
+    "lactose"
+   ],
+   "ingredients": [
+    {
+     "groceryItemId": "paneer",
+     "name": "paneer",
+     "qty": 300,
+     "unit": "g",
+     "optional": false
+    },
+    {
+     "groceryItemId": "red-pepper",
+     "name": "red bell peppers",
+     "qty": 2,
+     "unit": "x",
+     "optional": false
+    },
+    {
+     "groceryItemId": "brown-onion",
+     "name": "brown onion",
+     "qty": 1,
+     "unit": "x",
+     "optional": false
+    },
+    {
+     "groceryItemId": "garlic",
+     "name": "garlic",
+     "qty": 3,
+     "unit": "x",
+     "optional": false
+    },
+    {
+     "groceryItemId": "ginger",
+     "name": "fresh ginger",
+     "qty": 15,
+     "unit": "g",
+     "optional": false
+    },
+    {
+     "groceryItemId": "garam-masala",
+     "name": "garam masala",
+     "qty": 2,
+     "unit": "tsp",
+     "optional": false
+    },
+    {
+     "groceryItemId": "passata",
+     "name": "passata",
+     "qty": 500,
+     "unit": "g",
+     "optional": false
+    },
+    {
+     "groceryItemId": "basmati-rice",
+     "name": "basmati rice",
+     "qty": 300,
+     "unit": "g",
+     "optional": false
+    }
+   ],
+   "steps": [
+    "Fry paneer cubes; set aside.",
+    "Peppers with onion, garlic, ginger, spices.",
+    "Passata in; paneer back; 10 min.",
+    "Basmati alongside."
+   ],
+   "nutrition": {
+    "kcal": 582.1,
+    "proteinG": 23.3,
+    "carbG": 80.0,
+    "fatG": 17.4,
+    "fiberG": 6.3
+   },
+   "nutritionBasis": "estimated",
+   "source": "seed",
+   "license": "CC0"
+  },
+  {
+   "id": "paprika-popcorn",
+   "version": 1,
+   "name": "Smoked paprika popcorn",
+   "servingsBase": 4,
+   "cuisine": "american",
+   "slots": [
+    "snack"
+   ],
+   "tags": [
+    "dairy-free",
+    "vegan",
+    "vegetarian"
+   ],
+   "fodmapTags": [
+    "fructans"
+   ],
+   "ingredients": [
+    {
+     "groceryItemId": "popcorn-kernels",
+     "name": "popcorn kernels",
+     "qty": 80,
+     "unit": "g",
+     "optional": false
+    },
+    {
+     "groceryItemId": "olive-oil",
+     "name": "olive oil",
+     "qty": 1,
+     "unit": "tbsp",
+     "optional": false
+    },
+    {
+     "groceryItemId": "smoked-paprika",
+     "name": "smoked paprika",
+     "qty": 1,
+     "unit": "tsp",
+     "optional": false
+    },
+    {
+     "groceryItemId": "salt",
+     "name": "salt",
+     "qty": 0.5,
+     "unit": "tsp",
+     "optional": false
+    }
+   ],
+   "steps": [
+    "Pop the kernels (lidded pot, medium heat).",
+    "Dress with oil, paprika, salt."
+   ],
+   "nutrition": {
+    "kcal": 106.5,
+    "proteinG": 2.8,
+    "carbG": 12.0,
+    "fatG": 4.6,
+    "fiberG": 3.2
+   },
+   "nutritionBasis": "estimated",
+   "source": "seed",
+   "license": "CC0"
+  },
+  {
+   "id": "pb-banana-smoothie",
+   "version": 1,
+   "name": "Peanut butter banana smoothie",
+   "servingsBase": 1,
+   "cuisine": "american",
+   "slots": [
+    "breakfast",
+    "snack"
+   ],
+   "tags": [
+    "quick",
+    "vegetarian"
+   ],
+   "fodmapTags": [],
+   "ingredients": [
+    {
+     "groceryItemId": "milk",
+     "name": "milk",
+     "qty": 250,
+     "unit": "ml",
+     "optional": false
+    },
+    {
+     "groceryItemId": "banana",
+     "name": "banana",
+     "qty": 1,
+     "unit": "x",
+     "optional": false
+    },
+    {
+     "groceryItemId": "peanut-butter",
+     "name": "peanut butter",
+     "qty": 2,
+     "unit": "tbsp",
+     "optional": false
+    },
+    {
+     "groceryItemId": "natural-yogurt",
+     "name": "natural yogurt",
+     "qty": 50,
+     "unit": "g",
+     "optional": false
+    }
+   ],
+   "steps": [
+    "Blend everything until smooth.",
+    "Pour and drink cold."
+   ],
+   "nutrition": {
+    "kcal": 522.3,
+    "proteinG": 20.4,
+    "carbG": 46.6,
+    "fatG": 27.2,
+    "fiberG": 4.9
+   },
+   "nutritionBasis": "estimated",
+   "source": "seed",
+   "license": "CC0"
+  },
+  {
+   "id": "peanut-noodles",
+   "version": 1,
+   "name": "Peanut noodles with tofu",
+   "servingsBase": 2,
+   "cuisine": "east-asian",
+   "slots": [
+    "lunch"
+   ],
+   "tags": [
+    "dairy-free",
+    "vegan",
+    "vegetarian"
+   ],
+   "fodmapTags": [
+    "fructans"
+   ],
+   "ingredients": [
+    {
+     "groceryItemId": "rice-noodles",
+     "name": "rice noodles",
+     "qty": 150,
+     "unit": "g",
+     "optional": false
+    },
+    {
+     "groceryItemId": "peanut-butter",
+     "name": "peanut butter",
+     "qty": 2,
+     "unit": "tbsp",
+     "optional": false
+    },
+    {
+     "groceryItemId": "soy-sauce",
+     "name": "soy sauce",
+     "qty": 2,
+     "unit": "tbsp",
+     "optional": false
+    },
+    {
+     "groceryItemId": "lime",
+     "name": "limes",
+     "qty": 1,
+     "unit": "x",
+     "optional": false
+    },
+    {
+     "groceryItemId": "tofu",
+     "name": "firm tofu",
+     "qty": 200,
+     "unit": "g",
+     "optional": false
+    },
+    {
+     "groceryItemId": "carrot",
+     "name": "carrots",
+     "qty": 1,
+     "unit": "x",
+     "optional": false
+    },
+    {
+     "groceryItemId": "red-pepper",
+     "name": "red bell pepper",
+     "qty": 1,
+     "unit": "x",
+     "optional": false
+    }
+   ],
+   "steps": [
+    "Soak noodles in boiling water.",
+    "Whisk peanut butter, soy, lime into a sauce.",
+    "Fry tofu; toss everything with shredded carrot and pepper."
+   ],
+   "nutrition": {
+    "kcal": 584.4,
+    "proteinG": 23.6,
+    "carbG": 80.5,
+    "fatG": 17.1,
+    "fiberG": 6.5
+   },
+   "nutritionBasis": "estimated",
+   "source": "seed",
+   "license": "CC0"
+  },
+  {
+   "id": "pork-apple-tray",
+   "version": 1,
+   "name": "Pork and apple tray bake",
+   "servingsBase": 4,
+   "cuisine": "british",
+   "slots": [
+    "dinner"
+   ],
+   "tags": [
+    "gluten-free",
+    "one-pan"
+   ],
+   "fodmapTags": [
+    "fructans",
+    "fructose"
+   ],
+   "ingredients": [
+    {
+     "groceryItemId": "pork-loin",
+     "name": "pork loin",
+     "qty": 600,
+     "unit": "g",
+     "optional": false
+    },
+    {
+     "groceryItemId": "apple",
+     "name": "apples",
+     "qty": 2,
+     "unit": "x",
+     "optional": false
+    },
+    {
+     "groceryItemId": "potato",
+     "name": "potatoes",
+     "qty": 600,
+     "unit": "g",
+     "optional": false
+    },
+    {
+     "groceryItemId": "fresh-sage",
+     "name": "fresh sage",
+     "qty": 1,
+     "unit": "x",
+     "optional": false
+    },
+    {
+     "groceryItemId": "olive-oil",
+     "name": "olive oil",
+     "qty": 2,
+     "unit": "tbsp",
+     "optional": false
+    },
+    {
+     "groceryItemId": "chicken-stock",
+     "name": "chicken stock cube",
+     "qty": 1,
+     "unit": "x",
+     "optional": false
+    }
+   ],
+   "steps": [
+    "Oven 200C. Pork and potatoes in oil.",
+    "Apples and sage around; cider poured in.",
+    "Roast 40 min; rest before slicing."
+   ],
+   "nutrition": {
+    "kcal": 464.4,
+    "proteinG": 36.7,
+    "carbG": 39.7,
+    "fatG": 16.4,
+    "fiberG": 5.5
+   },
+   "nutritionBasis": "estimated",
+   "source": "seed",
+   "license": "CC0"
+  },
+  {
+   "id": "protein-pancakes",
+   "version": 1,
+   "name": "Yogurt protein pancakes",
+   "servingsBase": 2,
+   "cuisine": "american",
+   "slots": [
+    "breakfast",
+    "snack"
+   ],
+   "tags": [
+    "quick",
+    "vegetarian"
+   ],
+   "fodmapTags": [
+    "fructans",
+    "lactose"
+   ],
+   "ingredients": [
+    {
+     "groceryItemId": "rolled-oats",
+     "name": "rolled oats",
+     "qty": 80,
+     "unit": "g",
+     "optional": false
+    },
+    {
+     "groceryItemId": "eggs",
+     "name": "eggs",
+     "qty": 2,
+     "unit": "x",
+     "optional": false
+    },
+    {
+     "groceryItemId": "greek-yogurt",
+     "name": "greek yogurt",
+     "qty": 150,
+     "unit": "g",
+     "optional": false
+    },
+    {
+     "groceryItemId": "baking-powder",
+     "name": "baking powder",
+     "qty": 1,
+     "unit": "tsp",
+     "optional": false
+    },
+    {
+     "groceryItemId": "maple-syrup",
+     "name": "maple syrup",
+     "qty": 2,
+     "unit": "tsp",
+     "optional": false
+    }
+   ],
+   "steps": [
+    "Blitz oats, eggs, yogurt, baking powder.",
+    "Fry small pancakes 2 min a side.",
+    "Maple over."
+   ],
+   "nutrition": {
+    "kcal": 307.1,
+    "proteinG": 19.1,
+    "carbG": 30.7,
+    "fatG": 11.1,
+    "fiberG": 4.0
+   },
+   "nutritionBasis": "estimated",
+   "source": "seed",
+   "license": "CC0"
+  },
+  {
+   "id": "red-lentil-curry",
+   "version": 1,
+   "name": "Red lentil curry",
+   "servingsBase": 4,
+   "cuisine": "indian",
+   "slots": [
+    "lunch",
+    "dinner"
+   ],
+   "tags": [
+    "batch",
+    "dairy-free",
+    "one-pan",
+    "vegan",
+    "vegetarian"
+   ],
+   "fodmapTags": [
+    "fructans",
+    "gos"
+   ],
+   "ingredients": [
+    {
+     "groceryItemId": "red-lentils",
+     "name": "red split lentils",
+     "qty": 300,
+     "unit": "g",
+     "optional": false
+    },
+    {
+     "groceryItemId": "coconut-milk",
+     "name": "coconut milk",
+     "qty": 400,
+     "unit": "ml",
+     "optional": false
+    },
+    {
+     "groceryItemId": "brown-onion",
+     "name": "brown onion",
+     "qty": 1,
+     "unit": "x",
+     "optional": false
+    },
+    {
+     "groceryItemId": "garlic",
+     "name": "garlic",
+     "qty": 3,
+     "unit": "x",
+     "optional": false
+    },
+    {
+     "groceryItemId": "ginger",
+     "name": "fresh ginger",
+     "qty": 20,
+     "unit": "g",
+     "optional": false
+    },
+    {
+     "groceryItemId": "garam-masala",
+     "name": "garam masala",
+     "qty": 2,
+     "unit": "tsp",
+     "optional": false
+    },
+    {
+     "groceryItemId": "turmeric",
+     "name": "ground turmeric",
+     "qty": 1,
+     "unit": "tsp",
+     "optional": false
+    },
+    {
+     "groceryItemId": "chopped-tomatoes",
+     "name": "canned chopped tomatoes",
+     "qty": 400,
+     "unit": "g",
+     "optional": false
+    },
+    {
+     "groceryItemId": "spinach",
+     "name": "baby spinach",
+     "qty": 100,
+     "unit": "g",
+     "optional": false
+    },
+    {
+     "groceryItemId": "jasmine-rice",
+     "name": "jasmine rice",
+     "qty": 250,
+     "unit": "g",
+     "optional": false
+    }
+   ],
+   "steps": [
+    "Fry onion, garlic and ginger in a little oil.",
+    "Toast the spices; add lentils, tomatoes and coconut milk.",
+    "Simmer 25 min until lentils collapse; wilt in spinach.",
+    "Serve over rice."
+   ],
+   "nutrition": {
+    "kcal": 760.9,
+    "proteinG": 27.5,
+    "carbG": 102.9,
+    "fatG": 23.7,
+    "fiberG": 12.9
+   },
+   "nutritionBasis": "estimated",
+   "source": "seed",
+   "license": "CC0"
+  },
+  {
+   "id": "rice-cakes-avocado",
+   "version": 1,
+   "name": "Rice cakes with avocado",
+   "servingsBase": 1,
+   "cuisine": "californian",
+   "slots": [
+    "snack"
+   ],
+   "tags": [
+    "dairy-free",
+    "quick",
+    "vegan",
+    "vegetarian"
+   ],
+   "fodmapTags": [
+    "fructans"
+   ],
+   "ingredients": [
+    {
+     "groceryItemId": "corn-cakes",
+     "name": "corn cakes",
+     "qty": 2,
+     "unit": "x",
+     "optional": false
+    },
+    {
+     "groceryItemId": "avocado",
+     "name": "avocados",
+     "qty": 0.5,
+     "unit": "x",
+     "optional": false
+    },
+    {
+     "groceryItemId": "lemon",
+     "name": "lemon",
+     "qty": 0.25,
+     "unit": "x",
+     "optional": false
+    },
+    {
+     "groceryItemId": "chili-flakes",
+     "name": "chili flakes",
+     "qty": 0.25,
+     "unit": "tsp",
+     "optional": false
+    }
+   ],
+   "steps": [
+    "Mash the avocado with lemon.",
+    "Spread on the corn cakes; chili over."
+   ],
+   "nutrition": {
+    "kcal": 268.9,
+    "proteinG": 4.2,
+    "carbG": 31.2,
+    "fatG": 12.4,
+    "fiberG": 8.2
+   },
+   "nutritionBasis": "estimated",
+   "source": "seed",
+   "license": "CC0"
+  },
+  {
+   "id": "roast-chicken-salad",
+   "version": 1,
+   "name": "Roast chicken salad",
+   "servingsBase": 2,
+   "cuisine": "european",
+   "slots": [
+    "lunch"
+   ],
+   "tags": [
+    "gluten-free",
+    "high-protein"
+   ],
+   "fodmapTags": [
+    "gos"
+   ],
+   "ingredients": [
+    {
+     "groceryItemId": "chicken-thigh",
+     "name": "chicken thighs",
+     "qty": 4,
+     "unit": "x",
+     "optional": false
+    },
+    {
+     "groceryItemId": "lettuce",
+     "name": "romaine lettuce",
+     "qty": 0.5,
+     "unit": "x",
+     "optional": false
+    },
+    {
+     "groceryItemId": "avocado",
+     "name": "avocados",
+     "qty": 1,
+     "unit": "x",
+     "optional": false
+    },
+    {
+     "groceryItemId": "cucumber",
+     "name": "cucumber",
+     "qty": 0.5,
+     "unit": "x",
+     "optional": false
+    },
+    {
+     "groceryItemId": "olive-oil",
+     "name": "olive oil",
+     "qty": 1,
+     "unit": "tbsp",
+     "optional": false
+    },
+    {
+     "groceryItemId": "lemon",
+     "name": "lemon",
+     "qty": 0.5,
+     "unit": "x",
+     "optional": false
+    }
+   ],
+   "steps": [
+    "Roast the thighs 35 min at 200C; cool and slice.",
+    "Toss leaves, avocado, cucumber.",
+    "Top with chicken; dress with lemon and oil."
+   ],
+   "nutrition": {
+    "kcal": 553.4,
+    "proteinG": 41.1,
+    "carbG": 12.2,
+    "fatG": 36.2,
+    "fiberG": 7.0
+   },
+   "nutritionBasis": "estimated",
+   "source": "seed",
+   "license": "CC0"
+  },
+  {
+   "id": "roast-chicken-tray",
+   "version": 1,
+   "name": "Lemon roast chicken tray bake",
+   "servingsBase": 4,
+   "cuisine": "mediterranean",
+   "slots": [
+    "dinner"
+   ],
+   "tags": [
+    "batch",
+    "dairy-free",
+    "gluten-free",
+    "one-pan"
+   ],
+   "fodmapTags": [],
+   "ingredients": [
+    {
+     "groceryItemId": "chicken-thigh",
+     "name": "chicken thighs",
+     "qty": 640,
+     "unit": "g",
+     "optional": false
+    },
+    {
+     "groceryItemId": "potato",
+     "name": "potatoes",
+     "qty": 600,
+     "unit": "g",
+     "optional": false
+    },
+    {
+     "groceryItemId": "lemon",
+     "name": "lemons",
+     "qty": 2,
+     "unit": "x",
+     "optional": false
+    },
+    {
+     "groceryItemId": "garlic-infused-oil",
+     "name": "garlic-infused olive oil",
+     "qty": 2,
+     "unit": "tbsp",
+     "optional": false
+    },
+    {
+     "groceryItemId": "oregano",
+     "name": "dried oregano",
+     "qty": 2,
+     "unit": "tsp",
+     "optional": false
+    },
+    {
+     "groceryItemId": "green-beans",
+     "name": "green beans",
+     "qty": 200,
+     "unit": "g",
+     "optional": false
+    }
+   ],
+   "steps": [
+    "Oven 210C. Potatoes and lemon wedges in the oil and oregano.",
+    "Chicken on top, skin up; 40 min.",
+    "Beans under the tray for the last 8 min."
+   ],
+   "nutrition": {
+    "kcal": 487.4,
+    "proteinG": 35.0,
+    "carbG": 34.4,
+    "fatG": 21.8,
+    "fiberG": 6.8
+   },
+   "nutritionBasis": "estimated",
+   "source": "seed",
+   "license": "CC0"
+  },
+  {
+   "id": "roasted-chickpeas",
+   "version": 1,
+   "name": "Smoky roasted chickpeas",
+   "servingsBase": 4,
+   "cuisine": "mediterranean",
+   "slots": [
+    "snack"
+   ],
+   "tags": [
+    "dairy-free",
+    "high-fiber",
+    "vegan",
+    "vegetarian"
+   ],
+   "fodmapTags": [
+    "gos"
+   ],
+   "ingredients": [
+    {
+     "groceryItemId": "chickpeas",
+     "name": "canned chickpeas",
+     "qty": 480,
+     "unit": "g",
+     "optional": false
+    },
+    {
+     "groceryItemId": "olive-oil",
+     "name": "olive oil",
+     "qty": 1,
+     "unit": "tbsp",
+     "optional": false
+    },
+    {
+     "groceryItemId": "smoked-paprika",
+     "name": "smoked paprika",
+     "qty": 1,
+     "unit": "tsp",
+     "optional": false
+    },
+    {
+     "groceryItemId": "cumin",
+     "name": "ground cumin",
+     "qty": 1,
+     "unit": "tsp",
+     "optional": false
+    },
+    {
+     "groceryItemId": "salt",
+     "name": "salt",
+     "qty": 0.5,
+     "unit": "tsp",
+     "optional": false
+    }
+   ],
+   "steps": [
+    "Drain and dry the chickpeas well.",
+    "Toss with oil and spices.",
+    "Roast 30 min at 200C until crisp."
+   ],
+   "nutrition": {
+    "kcal": 224.0,
+    "proteinG": 11.1,
+    "carbG": 24.5,
+    "fatG": 7.2,
+    "fiberG": 8.4
+   },
+   "nutritionBasis": "estimated",
+   "source": "seed",
+   "license": "CC0"
+  },
+  {
+   "id": "shakshuka",
+   "version": 1,
+   "name": "Shakshuka",
+   "servingsBase": 4,
+   "cuisine": "middle-eastern",
+   "slots": [
+    "breakfast",
+    "dinner"
+   ],
+   "tags": [
+    "batch",
+    "one-pan",
+    "vegetarian"
+   ],
+   "fodmapTags": [
+    "fructans"
+   ],
+   "ingredients": [
+    {
+     "groceryItemId": "olive-oil",
+     "name": "olive oil",
+     "qty": 2,
+     "unit": "tbsp",
+     "optional": false
+    },
+    {
+     "groceryItemId": "brown-onion",
+     "name": "brown onion",
+     "qty": 1,
+     "unit": "x",
+     "optional": false
+    },
+    {
+     "groceryItemId": "red-pepper",
+     "name": "red bell pepper",
+     "qty": 1,
+     "unit": "x",
+     "optional": false
+    },
+    {
+     "groceryItemId": "cumin",
+     "name": "ground cumin",
+     "qty": 1,
+     "unit": "tsp",
+     "optional": false
+    },
+    {
+     "groceryItemId": "smoked-paprika",
+     "name": "smoked paprika",
+     "qty": 1,
+     "unit": "tsp",
+     "optional": false
+    },
+    {
+     "groceryItemId": "chopped-tomatoes",
+     "name": "canned chopped tomatoes",
+     "qty": 800,
+     "unit": "g",
+     "optional": false
+    },
+    {
+     "groceryItemId": "eggs",
+     "name": "eggs",
+     "qty": 6,
+     "unit": "x",
+     "optional": false
+    },
+    {
+     "groceryItemId": "feta",
+     "name": "feta",
+     "qty": 50,
+     "unit": "g",
+     "optional": false
+    },
+    {
+     "groceryItemId": "fresh-parsley",
+     "name": "flat-leaf parsley",
+     "qty": 1,
+     "unit": "x",
+     "optional": false
+    }
+   ],
+   "steps": [
+    "Soften onion and pepper in oil with the spices.",
+    "Add tomatoes; simmer 10 min.",
+    "Make wells, crack in the eggs, cover until just set.",
+    "Crumble feta and parsley over."
+   ],
+   "nutrition": {
+    "kcal": 314.3,
+    "proteinG": 15.0,
+    "carbG": 21.2,
+    "fatG": 17.4,
+    "fiberG": 6.2
+   },
+   "nutritionBasis": "estimated",
+   "source": "seed",
+   "license": "CC0"
+  },
+  {
+   "id": "shrimp-garlic-pasta",
+   "version": 1,
+   "name": "Shrimp garlic pasta",
+   "servingsBase": 2,
+   "cuisine": "italian",
+   "slots": [
+    "dinner"
+   ],
+   "tags": [
+    "pescatarian",
+    "quick"
+   ],
+   "fodmapTags": [
+    "fructans"
+   ],
+   "ingredients": [
+    {
+     "groceryItemId": "spaghetti",
+     "name": "spaghetti",
+     "qty": 200,
+     "unit": "g",
+     "optional": false
+    },
+    {
+     "groceryItemId": "shrimp",
+     "name": "shrimp",
+     "qty": 300,
+     "unit": "g",
+     "optional": false
+    },
+    {
+     "groceryItemId": "garlic",
+     "name": "garlic",
+     "qty": 3,
+     "unit": "x",
+     "optional": false
+    },
+    {
+     "groceryItemId": "chili-flakes",
+     "name": "chili flakes",
+     "qty": 1,
+     "unit": "tsp",
+     "optional": false
+    },
+    {
+     "groceryItemId": "olive-oil",
+     "name": "olive oil",
+     "qty": 3,
+     "unit": "tbsp",
+     "optional": false
+    },
+    {
+     "groceryItemId": "lemon",
+     "name": "lemon",
+     "qty": 1,
+     "unit": "x",
+     "optional": false
+    },
+    {
+     "groceryItemId": "fresh-parsley",
+     "name": "flat-leaf parsley",
+     "qty": 1,
+     "unit": "x",
+     "optional": false
+    }
+   ],
+   "steps": [
+    "Cook the spaghetti; keep a cup of water.",
+    "Sizzle garlic and chili in oil; add shrimp 3 min.",
+    "Toss with pasta, water, lemon, parsley."
+   ],
+   "nutrition": {
+    "kcal": 694.4,
+    "proteinG": 34.4,
+    "carbG": 82.5,
+    "fatG": 24.0,
+    "fiberG": 5.5
+   },
+   "nutritionBasis": "estimated",
+   "source": "seed",
+   "license": "CC0"
+  },
+  {
+   "id": "smoked-salmon-rye-toast",
+   "version": 1,
+   "name": "Smoked salmon rye toast",
+   "servingsBase": 2,
+   "cuisine": "nordic",
+   "slots": [
+    "breakfast",
+    "lunch"
+   ],
+   "tags": [
+    "high-protein",
+    "pescatarian",
+    "quick"
+   ],
+   "fodmapTags": [
+    "fructans"
+   ],
+   "ingredients": [
+    {
+     "groceryItemId": "rye-bread",
+     "name": "rye bread",
+     "qty": 2,
+     "unit": "x",
+     "optional": false
+    },
+    {
+     "groceryItemId": "smoked-salmon",
+     "name": "smoked salmon",
+     "qty": 100,
+     "unit": "g",
+     "optional": false
+    },
+    {
+     "groceryItemId": "cream-cheese",
+     "name": "cream cheese",
+     "qty": 40,
+     "unit": "g",
+     "optional": false
+    },
+    {
+     "groceryItemId": "fresh-dill",
+     "name": "fresh dill",
+     "qty": 1,
+     "unit": "x",
+     "optional": false
+    },
+    {
+     "groceryItemId": "lemon",
+     "name": "lemon",
+     "qty": 0.25,
+     "unit": "x",
+     "optional": false
+    },
+    {
+     "groceryItemId": "fresh-dill",
+     "name": "fresh dill",
+     "qty": 1,
+     "unit": "x",
+     "optional": false
+    }
+   ],
+   "steps": [
+    "Toast the rye bread.",
+    "Spread cream cheese, layer salmon.",
+    "Finish with dill and lemon."
+   ],
+   "nutrition": {
+    "kcal": 240.8,
+    "proteinG": 17.3,
+    "carbG": 23.1,
+    "fatG": 8.0,
+    "fiberG": 3.5
+   },
+   "nutritionBasis": "estimated",
+   "source": "seed",
+   "license": "CC0"
+  },
+  {
+   "id": "spaghetti-bolognese",
+   "version": 1,
+   "name": "Spaghetti bolognese",
+   "servingsBase": 4,
+   "cuisine": "italian",
+   "slots": [
+    "dinner"
+   ],
+   "tags": [
+    "batch"
+   ],
+   "fodmapTags": [
+    "fructans"
+   ],
+   "ingredients": [
+    {
+     "groceryItemId": "spaghetti",
+     "name": "spaghetti",
+     "qty": 400,
+     "unit": "g",
+     "optional": false
+    },
+    {
+     "groceryItemId": "beef-mince",
+     "name": "lean beef mince (5%)",
+     "qty": 500,
+     "unit": "g",
+     "optional": false
+    },
+    {
+     "groceryItemId": "chopped-tomatoes",
+     "name": "canned chopped tomatoes",
+     "qty": 800,
+     "unit": "g",
+     "optional": false
+    },
+    {
+     "groceryItemId": "tomato-paste",
+     "name": "tomato paste",
+     "qty": 2,
+     "unit": "tbsp",
+     "optional": false
+    },
+    {
+     "groceryItemId": "carrot",
+     "name": "carrots",
+     "qty": 2,
+     "unit": "x",
+     "optional": false
+    },
+    {
+     "groceryItemId": "celery",
+     "name": "celery",
+     "qty": 2,
+     "unit": "x",
+     "optional": false
+    },
+    {
+     "groceryItemId": "brown-onion",
+     "name": "brown onion",
+     "qty": 1,
+     "unit": "x",
+     "optional": false
+    },
+    {
+     "groceryItemId": "garlic",
+     "name": "garlic",
+     "qty": 2,
+     "unit": "x",
+     "optional": false
+    },
+    {
+     "groceryItemId": "oregano",
+     "name": "dried oregano",
+     "qty": 2,
+     "unit": "tsp",
+     "optional": false
+    },
+    {
+     "groceryItemId": "parmesan",
+     "name": "parmesan",
+     "qty": 40,
+     "unit": "g",
+     "optional": false
+    }
+   ],
+   "steps": [
+    "Soffritto: carrot, celery, onion in oil, 10 min.",
+    "Add garlic, mince; brown.",
+    "Tomatoes, paste, oregano; simmer 40 min.",
+    "Cook spaghetti; parmesan on top."
+   ],
+   "nutrition": {
+    "kcal": 699.4,
+    "proteinG": 47.0,
+    "carbG": 97.8,
+    "fatG": 11.0,
+    "fiberG": 10.5
+   },
+   "nutritionBasis": "estimated",
+   "source": "seed",
+   "license": "CC0"
+  },
+  {
+   "id": "sweet-potato-tacos",
+   "version": 1,
+   "name": "Sweet potato black bean tacos",
+   "servingsBase": 3,
+   "cuisine": "mexican",
+   "slots": [
+    "dinner"
+   ],
+   "tags": [
+    "dairy-free",
+    "vegan",
+    "vegetarian"
+   ],
+   "fodmapTags": [
+    "fructans",
+    "fructose",
+    "gos"
+   ],
+   "ingredients": [
+    {
+     "groceryItemId": "sweet-potato",
+     "name": "sweet potatoes",
+     "qty": 600,
+     "unit": "g",
+     "optional": false
+    },
+    {
+     "groceryItemId": "black-beans",
+     "name": "canned black beans",
+     "qty": 400,
+     "unit": "g",
+     "optional": false
+    },
+    {
+     "groceryItemId": "corn-tortillas",
+     "name": "corn tortillas",
+     "qty": 6,
+     "unit": "x",
+     "optional": false
+    },
+    {
+     "groceryItemId": "cumin",
+     "name": "ground cumin",
+     "qty": 2,
+     "unit": "tsp",
+     "optional": false
+    },
+    {
+     "groceryItemId": "smoked-paprika",
+     "name": "smoked paprika",
+     "qty": 1,
+     "unit": "tsp",
+     "optional": false
+    },
+    {
+     "groceryItemId": "lime",
+     "name": "limes",
+     "qty": 2,
+     "unit": "x",
+     "optional": false
+    },
+    {
+     "groceryItemId": "avocado",
+     "name": "avocados",
+     "qty": 1,
+     "unit": "x",
+     "optional": false
+    },
+    {
+     "groceryItemId": "red-onion",
+     "name": "red onions",
+     "qty": 1,
+     "unit": "x",
+     "optional": false
+    }
+   ],
+   "steps": [
+    "Oven 210C. Sweet potato wedges in spices.",
+    "Warm the beans.",
+    "Load tortillas; avocado, pickled onion, lime."
+   ],
+   "nutrition": {
+    "kcal": 665.6,
+    "proteinG": 21.0,
+    "carbG": 106.8,
+    "fatG": 11.0,
+    "fiberG": 27.5
+   },
+   "nutritionBasis": "estimated",
+   "source": "seed",
+   "license": "CC0"
+  },
+  {
+   "id": "teriyaki-salmon-bowl",
+   "version": 1,
+   "name": "Teriyaki salmon rice bowl",
+   "servingsBase": 2,
+   "cuisine": "japanese",
+   "slots": [
+    "dinner"
+   ],
+   "tags": [
+    "pescatarian",
+    "quick"
+   ],
+   "fodmapTags": [
+    "fructans"
+   ],
+   "ingredients": [
+    {
+     "groceryItemId": "salmon",
+     "name": "salmon fillets",
+     "qty": 280,
+     "unit": "g",
+     "optional": false
+    },
+    {
+     "groceryItemId": "teriyaki",
+     "name": "teriyaki sauce",
+     "qty": 4,
+     "unit": "tbsp",
+     "optional": false
+    },
+    {
+     "groceryItemId": "jasmine-rice",
+     "name": "jasmine rice",
+     "qty": 250,
+     "unit": "g",
+     "optional": false
+    },
+    {
+     "groceryItemId": "edamame-frozen",
+     "name": "shelled edamame",
+     "qty": 150,
+     "unit": "g",
+     "optional": false
+    },
+    {
+     "groceryItemId": "cucumber",
+     "name": "cucumber",
+     "qty": 0.5,
+     "unit": "x",
+     "optional": false
+    },
+    {
+     "groceryItemId": "sesame-seeds",
+     "name": "sesame seeds",
+     "qty": 2,
+     "unit": "tsp",
+     "optional": false
+    }
+   ],
+   "steps": [
+    "Roast salmon 12 min at 200C, glazed with teriyaki.",
+    "Steam edamame; cook rice.",
+    "Bowl: rice, flaked salmon, edamame, cucumber, sesame."
+   ],
+   "nutrition": {
+    "kcal": 893.1,
+    "proteinG": 50.0,
+    "carbG": 115.4,
+    "fatG": 24.2,
+    "fiberG": 6.7
+   },
+   "nutritionBasis": "estimated",
+   "source": "seed",
+   "license": "CC0"
+  },
+  {
+   "id": "thai-green-curry",
+   "version": 1,
+   "name": "Thai green chicken curry",
+   "servingsBase": 4,
+   "cuisine": "thai",
+   "slots": [
+    "dinner"
+   ],
+   "tags": [
+    "dairy-free",
+    "gluten-free"
+   ],
+   "fodmapTags": [
+    "fructans"
+   ],
+   "ingredients": [
+    {
+     "groceryItemId": "chicken-thigh",
+     "name": "chicken thighs",
+     "qty": 600,
+     "unit": "g",
+     "optional": false
+    },
+    {
+     "groceryItemId": "green-curry-paste",
+     "name": "green curry paste",
+     "qty": 3,
+     "unit": "tbsp",
+     "optional": false
+    },
+    {
+     "groceryItemId": "coconut-milk",
+     "name": "coconut milk",
+     "qty": 400,
+     "unit": "ml",
+     "optional": false
+    },
+    {
+     "groceryItemId": "red-pepper",
+     "name": "red bell pepper",
+     "qty": 1,
+     "unit": "x",
+     "optional": false
+    },
+    {
+     "groceryItemId": "green-beans",
+     "name": "green beans",
+     "qty": 150,
+     "unit": "g",
+     "optional": false
+    },
+    {
+     "groceryItemId": "fish-sauce",
+     "name": "fish sauce",
+     "qty": 1,
+     "unit": "tbsp",
+     "optional": false
+    },
+    {
+     "groceryItemId": "jasmine-rice",
+     "name": "jasmine rice",
+     "qty": 300,
+     "unit": "g",
+     "optional": false
+    },
+    {
+     "groceryItemId": "fresh-basil",
+     "name": "fresh basil",
+     "qty": 1,
+     "unit": "x",
+     "optional": false
+    }
+   ],
+   "steps": [
+    "Fry the paste until fragrant.",
+    "Add chicken; seal.",
+    "Pour in coconut milk; simmer 15 min with pepper and beans.",
+    "Season with fish sauce; basil over rice."
+   ],
+   "nutrition": {
+    "kcal": 756.8,
+    "proteinG": 37.9,
+    "carbG": 68.2,
+    "fatG": 36.2,
+    "fiberG": 3.4
+   },
+   "nutritionBasis": "estimated",
+   "source": "seed",
+   "license": "CC0"
+  },
+  {
+   "id": "tofu-scramble",
+   "version": 1,
+   "name": "Savory tofu scramble",
+   "servingsBase": 2,
+   "cuisine": "american",
+   "slots": [
+    "breakfast"
+   ],
+   "tags": [
+    "dairy-free",
+    "quick",
+    "vegan",
+    "vegetarian"
+   ],
+   "fodmapTags": [],
+   "ingredients": [
+    {
+     "groceryItemId": "olive-oil",
+     "name": "olive oil",
+     "qty": 1,
+     "unit": "tbsp",
+     "optional": false
+    },
+    {
+     "groceryItemId": "spring-onion",
+     "name": "spring onions",
+     "qty": 2,
+     "unit": "x",
+     "optional": false
+    },
+    {
+     "groceryItemId": "turmeric",
+     "name": "ground turmeric",
+     "qty": 0.5,
+     "unit": "tsp",
+     "optional": false
+    },
+    {
+     "groceryItemId": "tofu",
+     "name": "firm tofu",
+     "qty": 300,
+     "unit": "g",
+     "optional": false
+    }
+   ],
+   "steps": [
+    "Crumble the tofu.",
+    "Fry spring onion greens in oil, add tofu and turmeric.",
+    "Scramble 5 min, season."
+   ],
+   "nutrition": {
+    "kcal": 306.0,
+    "proteinG": 23.9,
+    "carbG": 5.8,
+    "fatG": 20.4,
+    "fiberG": 2.0
+   },
+   "nutritionBasis": "estimated",
+   "source": "seed",
+   "license": "CC0"
+  },
+  {
+   "id": "turkey-club",
+   "version": 1,
+   "name": "Turkey club sandwich",
+   "servingsBase": 1,
+   "cuisine": "american",
+   "slots": [
+    "lunch"
+   ],
+   "tags": [
+    "high-protein"
+   ],
+   "fodmapTags": [
+    "fructans",
+    "fructose"
+   ],
+   "ingredients": [
+    {
+     "groceryItemId": "sourdough",
+     "name": "sourdough bread",
+     "qty": 3,
+     "unit": "x",
+     "optional": false
+    },
+    {
+     "groceryItemId": "turkey-mince",
+     "name": "turkey mince",
+     "qty": 120,
+     "unit": "g",
+     "optional": false
+    },
+    {
+     "groceryItemId": "lettuce",
+     "name": "romaine lettuce",
+     "qty": 0.25,
+     "unit": "x",
+     "optional": false
+    },
+    {
+     "groceryItemId": "tomato",
+     "name": "tomatoes",
+     "qty": 1,
+     "unit": "x",
+     "optional": false
+    },
+    {
+     "groceryItemId": "mayonnaise",
+     "name": "mayonnaise",
+     "qty": 1,
+     "unit": "tbsp",
+     "optional": false
+    },
+    {
+     "groceryItemId": "cheddar",
+     "name": "cheddar",
+     "qty": 20,
+     "unit": "g",
+     "optional": false
+    }
+   ],
+   "steps": [
+    "Cook the turkey mince with salt and pepper.",
+    "Toast the bread; spread mayo.",
+    "Stack turkey, cheese, lettuce, tomato; skewer."
+   ],
+   "nutrition": {
+    "kcal": 813.8,
+    "proteinG": 49.2,
+    "carbG": 95.4,
+    "fatG": 24.7,
+    "fiberG": 6.5
+   },
+   "nutritionBasis": "estimated",
+   "source": "seed",
+   "license": "CC0"
+  },
+  {
+   "id": "veggie-omelette",
+   "version": 1,
+   "name": "Three-egg veggie omelette",
+   "servingsBase": 1,
+   "cuisine": "european",
+   "slots": [
+    "breakfast",
+    "lunch"
+   ],
+   "tags": [
+    "high-protein",
+    "low-carb",
+    "quick",
+    "vegetarian"
+   ],
+   "fodmapTags": [
+    "fructans"
+   ],
+   "ingredients": [
+    {
+     "groceryItemId": "eggs",
+     "name": "eggs",
+     "qty": 3,
+     "unit": "x",
+     "optional": false
+    },
+    {
+     "groceryItemId": "spinach",
+     "name": "baby spinach",
+     "qty": 50,
+     "unit": "g",
+     "optional": false
+    },
+    {
+     "groceryItemId": "red-pepper",
+     "name": "red bell pepper",
+     "qty": 0.5,
+     "unit": "x",
+     "optional": false
+    },
+    {
+     "groceryItemId": "cheddar",
+     "name": "cheddar",
+     "qty": 30,
+     "unit": "g",
+     "optional": false
+    },
+    {
+     "groceryItemId": "olive-oil",
+     "name": "olive oil",
+     "qty": 1,
+     "unit": "tbsp",
+     "optional": false
+    }
+   ],
+   "steps": [
+    "Whisk the eggs.",
+    "Soften pepper and spinach in an oiled pan.",
+    "Add eggs, cook gently, cheese on top, fold."
+   ],
+   "nutrition": {
+    "kcal": 493.5,
+    "proteinG": 28.6,
+    "carbG": 7.3,
+    "fatG": 38.3,
+    "fiberG": 2.8
+   },
+   "nutritionBasis": "estimated",
+   "source": "seed",
+   "license": "CC0"
+  },
+  {
+   "id": "veggie-tofu-stirfry",
+   "version": 1,
+   "name": "Veggie tofu stir-fry",
+   "servingsBase": 2,
+   "cuisine": "east-asian",
+   "slots": [
+    "dinner",
+    "lunch"
+   ],
+   "tags": [
+    "dairy-free",
+    "quick",
+    "vegan",
+    "vegetarian"
+   ],
+   "fodmapTags": [
+    "fructans"
+   ],
+   "ingredients": [
+    {
+     "groceryItemId": "tofu",
+     "name": "firm tofu",
+     "qty": 300,
+     "unit": "g",
+     "optional": false
+    },
+    {
+     "groceryItemId": "broccoli",
+     "name": "broccoli",
+     "qty": 1,
+     "unit": "x",
+     "optional": false
+    },
+    {
+     "groceryItemId": "red-pepper",
+     "name": "red bell pepper",
+     "qty": 1,
+     "unit": "x",
+     "optional": false
+    },
+    {
+     "groceryItemId": "carrot",
+     "name": "carrots",
+     "qty": 2,
+     "unit": "x",
+     "optional": false
+    },
+    {
+     "groceryItemId": "soy-sauce",
+     "name": "soy sauce",
+     "qty": 2,
+     "unit": "tbsp",
+     "optional": false
+    },
+    {
+     "groceryItemId": "garlic",
+     "name": "garlic",
+     "qty": 2,
+     "unit": "x",
+     "optional": false
+    },
+    {
+     "groceryItemId": "ginger",
+     "name": "fresh ginger",
+     "qty": 10,
+     "unit": "g",
+     "optional": false
+    },
+    {
+     "groceryItemId": "sesame-oil",
+     "name": "sesame oil",
+     "qty": 1,
+     "unit": "tbsp",
+     "optional": false
+    },
+    {
+     "groceryItemId": "jasmine-rice",
+     "name": "jasmine rice",
+     "qty": 200,
+     "unit": "g",
+     "optional": false
+    }
+   ],
+   "steps": [
+    "Press and cube the tofu; fry until crisp.",
+    "Stir-fry the veg with garlic and ginger.",
+    "Add soy; toss; serve over rice."
+   ],
+   "nutrition": {
+    "kcal": 780.8,
+    "proteinG": 37.9,
+    "carbG": 102.0,
+    "fatG": 22.1,
+    "fiberG": 11.2
+   },
+   "nutritionBasis": "estimated",
+   "source": "seed",
+   "license": "CC0"
+  }
+ ]
+}

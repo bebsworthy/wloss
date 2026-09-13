@@ -4,10 +4,11 @@ import androidx.room3.Database
 import androidx.room3.RoomDatabase
 
 /**
- * WLO relational core, schema v5 (M4 — the F12 egress receipt ledger on the
- * M3 spine). Every schema change lands with a migration + exported-schema test
- * in the same PR (ADR-003 house rule); see [Migrations] and schemas/ (exported
- * by the androidx.room3 Gradle plugin).
+ * WLO relational core, schema v6 (M5 — the F03/F04 planning surface on the
+ * M4 spine: recipes, grocery catalog, plan versions/slots, list items,
+ * pantry, aisle corrections). Every schema change lands with a migration +
+ * exported-schema test in the same PR (ADR-003 house rule); see [Migrations]
+ * and schemas/ (exported by the androidx.room3 Gradle plugin).
  */
 @Database(
     entities = [
@@ -23,8 +24,15 @@ import androidx.room3.RoomDatabase
         DiaryEntryRevisionEntity::class,
         TargetsVersionEntity::class,
         NetworkReceiptEntity::class,
+        RecipeEntity::class,
+        GroceryItemEntity::class,
+        PlanVersionEntity::class,
+        PlanSlotEntity::class,
+        ListItemEntity::class,
+        PantryItemEntity::class,
+        AisleCorrectionEntity::class,
     ],
-    version = 5,
+    version = 6,
     exportSchema = true,
 )
 public abstract class WloDatabase : RoomDatabase() {
@@ -55,6 +63,20 @@ public abstract class WloDatabase : RoomDatabase() {
 
     /** Append-only egress receipts — write access belongs to :core:network's ledger. */
     public abstract fun networkReceipts(): NetworkReceiptDao
+
+    public abstract fun recipes(): RecipeDao
+
+    public abstract fun groceryItems(): GroceryItemDao
+
+    public abstract fun planVersions(): PlanVersionDao
+
+    public abstract fun planSlots(): PlanSlotDao
+
+    public abstract fun listItems(): ListItemDao
+
+    public abstract fun pantryItems(): PantryItemDao
+
+    public abstract fun aisleCorrections(): AisleCorrectionDao
 
     public companion object {
         public const val NAME: String = "wlo.db"

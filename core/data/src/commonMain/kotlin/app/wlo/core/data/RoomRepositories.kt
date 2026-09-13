@@ -22,6 +22,7 @@ import app.wlo.core.documents.TargetsDocumentIO
 import app.wlo.core.documents.TargetsRecord
 import app.wlo.core.documents.TargetsWriterId
 import app.wlo.core.engines.InputsHash
+import app.wlo.core.engines.PlannerEngine
 import app.wlo.core.model.ConstantsRegistry
 import app.wlo.core.model.DerivedValue
 import app.wlo.core.model.MeasurementAttr
@@ -394,6 +395,34 @@ public class RoomDayProjectionRepository public constructor(
 
         val projection = current?.let { dayProjectionOf(it.document, it.version, day) }
 
+        // R-B1: fold the plan's claim for this day in at read time — planned
+        // vs logged stays one door, and plan edits land without a recompute.
+        val planSlots =
+            db
+                .planSlots()
+                .range(profileId, day, day)
+                .map { it.toDomain() }
+        val planned = PlannerEngine.plannedDayTotals(planSlots)
+        val plannedProvenance =
+            Provenance.Derived(
+                formulaVersion = PLANNED_DAY_PROJECTION_VERSION,
+                inputs = listOf("slots=${planned.slotCount}", "planId=${planSlots.firstOrNull()?.planId ?: "none"}"),
+            )
+        val plannedDerived =
+            if (planned.slotCount > 0) {
+                DayPlannedScalars(
+                    kcal = DerivedValue(round1(planned.kcal), plannedProvenance),
+                    proteinG = DerivedValue(round1(planned.proteinG), plannedProvenance),
+                    carbG = DerivedValue(round1(planned.carbG), plannedProvenance),
+                    fatG = DerivedValue(round1(planned.fatG), plannedProvenance),
+                    fiberG = DerivedValue(round1(planned.fiberG), plannedProvenance),
+                    slotCount = planned.slotCount,
+                    openCount = planSlots.count { it.state == app.wlo.core.model.PlannedSlotState.PLANNED },
+                )
+            } else {
+                null
+            }
+
         return DayView(
             profileId = profileId,
             dayEpochDay = day,
@@ -406,9 +435,31 @@ public class RoomDayProjectionRepository public constructor(
             trendWeightKg = measured("trendWeightKg", record?.trendWeightKg),
             intakeKcal = measured("intakeKcal", record?.intakeKcal),
             burnKcal = measured("burnKcal", record?.burnKcal),
+            plannedKcal = plannedDerived?.kcal,
+            plannedProteinG = plannedDerived?.proteinG,
+            plannedCarbG = plannedDerived?.carbG,
+            plannedFatG = plannedDerived?.fatG,
+            plannedFiberG = plannedDerived?.fiberG,
+            plannedSlotCount = plannedDerived?.slotCount ?: 0,
+            plannedOpenSlots = plannedDerived?.openCount ?: 0,
         )
     }
 }
+
+internal data class DayPlannedScalars(
+    val kcal: DerivedValue<Double>,
+    val proteinG: DerivedValue<Double>,
+    val carbG: DerivedValue<Double>,
+    val fatG: DerivedValue<Double>,
+    val fiberG: DerivedValue<Double>,
+    val slotCount: Int,
+    val openCount: Int,
+)
+
+internal fun round1(value: Double): Double = kotlin.math.round(value * 10.0) / 10.0
+
+/** R-B1 planned-side projection formula (stamped into the DerivedValue chip). */
+internal const val PLANNED_DAY_PROJECTION_VERSION: String = "planner/planned-day-v1"
 
 /** Resolved A.3 scalars for one day, each provenance-chipped to the Targets version. */
 internal data class ResolvedDayProjection(

@@ -3,6 +3,17 @@ plugins {
 }
 
 android {
+    buildTypes {
+        // Macrobenchmark-module shape (:benchmarks targets this app): a
+        // release-like build signed with the debug key for local/CI baseline
+        // runs (M5, WLO-0027 PART A).
+        create("benchmark") {
+            initWith(getByName("release"))
+            signingConfig = signingConfigs.getByName("debug")
+            matchingFallbacks += listOf("release")
+        }
+    }
+
     defaultConfig {
         // AndroidX Test Orchestrator: every instrumented test starts from
         // cleared app data + a fresh app process — the onboarding acceptance
@@ -55,6 +66,8 @@ dependencies {
     implementation(project(":core:consent"))
     implementation(project(":feature:f01-onboarding"))
     implementation(project(":feature:f02-food"))
+    implementation(project(":feature:f03-planning"))
+    implementation(project(":feature:f04-shopping"))
     implementation(project(":feature:f06-weight"))
     implementation(project(":feature:f10-daily-hub"))
 

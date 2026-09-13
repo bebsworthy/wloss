@@ -7,12 +7,11 @@ import androidx.room3.Fts5
 import androidx.room3.Index
 import androidx.room3.PrimaryKey
 
-// Schema v5 (M4, WLO-0026 PART A): the F12 egress receipt ledger
-// (`network_receipts`) — the append-only, hash-chained record of every packet
-// that left (or tried to leave) the device through the NetworkDispatcher.
-// on top of schema v4, plus the R-B7 Fresh Start ledger columns (hide-not-delete)
-// on the event stores.
-// Layout per F12 §3.6/§3.8, F13 §9, FEATURES.md rulings R-C4/R-S13/R-S14.
+// Schema v6 (M5, WLO-0027 PART A): the F03/F04 planning surface on the spine —
+// recipes (versioned), the canonical grocery catalog, plan_versions + plan_slots
+// (the R-B1 state machine), list_items (delta-reconciled), pantry_items and
+// aisle_corrections (the learned aisle loop). on top of schema v5.
+// Layout per F03 §3, F04 §3, rulings R-B1/R-B9/R-S3/R-S8.
 //
 // House rule (ADR-003): every schema change lands with a migration +
 // exported-schema test in the same PR — see [Migrations] and `MigrationTest`.
@@ -336,4 +335,236 @@ public data class TargetsVersionEntity(
     public val writtenBy: String,
     public val createdAtEpochMs: Long,
     public val supersededAtEpochMs: Long? = null,
+)
+
+// --- v6: F03 meal planning + F04 shopping list & pantry (WLO-0027 PART A) ----
+
+/**
+ * One recipe VERSION (F03 §3; R-S3 content rules): versions are immutable
+ * rows keyed (recipeId, version); an edit writes vN+1. Ingredients/steps/tags
+ * ride as JSON columns (same pattern as `servingPresetsJson`) — codec in
+ * :core:data against :core:model's canonical types. Per-serving macros are
+ * stored size-normalized so plan rollups never scale by assumption.
+ */
+@Entity(
+    tableName = "recipes",
+    primaryKeys = ["recipeId", "version"],
+    indices = [Index("recipeId"), Index(value = ["profileId", "archivedAtEpochMs"])],
+)
+public data class RecipeEntity(
+    public val recipeId: String,
+    public val version: Int,
+    public val profileId: String,
+    public val name: String,
+    public val servingsBase: Double,
+    public val cuisine: String? = null,
+    /** JSON array of meal-slot wire names ("breakfast"…). */
+    public val slotsJson: String = "[]",
+    /** JSON array of diet/facet tags (open vocabulary, e.g. "vegetarian", "batch"). */
+    public val tagsJson: String = "[]",
+    /** JSON array of R-S8 FODMAP tags (subset of the shipped six). */
+    public val fodmapTagsJson: String = "[]",
+    /** JSON array of {groceryItemId, name, qty, unit, optional} canonical lines. */
+    public val ingredientsJson: String = "[]",
+    /** JSON array of step strings (plain text in v1, F03 §3). */
+    public val stepsJson: String = "[]",
+    public val kcalPerServing: Double,
+    public val proteinGPerServing: Double,
+    public val carbGPerServing: Double,
+    public val fatGPerServing: Double,
+    public val fiberGPerServing: Double,
+    /** Wire name of [app.wlo.core.model.NutritionBasis]: label | db | estimated. */
+    public val nutritionBasis: String = "estimated",
+    /** Wire name of [app.wlo.core.model.RecipeSource]: seed | manual | import | ai-draft. */
+    public val source: String = "manual",
+    /** R-S3: "CC0" for shipped seeds; null for user rows. */
+    public val license: String? = null,
+    public val rating: Int? = null,
+    public val lastPlannedAtEpochMs: Long? = null,
+    public val createdAtEpochMs: Long,
+    public val updatedAtEpochMs: Long? = null,
+    /** Archive-don't-delete (F13 §3). */
+    public val archivedAtEpochMs: Long? = null,
+)
+
+/**
+ * The canonical grocery catalog (F04 §3 data model's `canonicalItem`): the
+ * list/pantry/plan ingredient vocabulary, profile-scoped per R-B9 (the seed
+ * loader copies the shipped catalog into each profile at first use). Rows are
+ * archive-don't-delete like the food catalog.
+ */
+@Entity(
+    tableName = "grocery_items",
+    indices = [Index("profileId")],
+)
+public data class GroceryItemEntity(
+    @PrimaryKey
+    public val id: String,
+    public val profileId: String,
+    public val name: String,
+    /** Shipped aisle tag ([app.wlo.core.model.Aisle.wireName]). */
+    public val aisle: String,
+    /** [app.wlo.core.model.MeasureUnit.wireName] — new list/pantry rows default to it. */
+    public val defaultUnit: String,
+    /** g per ml for pourables; a display/sweep hint, never a consolidation input. */
+    public val densityGPerMl: Double? = null,
+    /** g per piece for count items; nutrition/estimation hint, never a consolidation input. */
+    public val gramsPerPiece: Double? = null,
+    /** JSON array of alias strings. */
+    public val aliasesJson: String? = null,
+    public val createdAtEpochMs: Long,
+    public val archivedAtEpochMs: Long? = null,
+)
+
+/**
+ * One plan generation (F03): header row for an immutable slot set; one active
+ * plan per profile ([supersededAtEpochMs] NULL). The generation settings and
+ * the "why this plan" report ride along as JSON — the plan stays re-runnable
+ * and explainable (F03 §8 visible reasoning).
+ */
+@Entity(
+    tableName = "plan_versions",
+    indices = [Index(value = ["profileId", "version"], unique = true)],
+)
+public data class PlanVersionEntity(
+    @PrimaryKey
+    public val id: String,
+    public val profileId: String,
+    public val version: Int,
+    public val startDayEpochDay: Long,
+    public val endDayEpochDay: Long,
+    /** The variety seed the deal ran with (re-runnable). */
+    public val seed: Long,
+    /** JSON [app.wlo.core.engines.PlannerEngine.Settings]. */
+    public val settingsJson: String,
+    /** JSON [app.wlo.core.engines.PlannerEngine.Report] ("why this plan"). */
+    public val reportJson: String,
+    public val createdAtEpochMs: Long,
+    public val supersededAtEpochMs: Long? = null,
+)
+
+/**
+ * One planned meal slot (R-B1): F03's state machine rows projecting into the
+ * day record. Slots are append-only records — a swap retires the old row
+ * (`state = 'swapped'`, successor link) and inserts a fresh `planned` row;
+ * `replaced` links the F02 diary entry that owns the nutrition. Per-serving
+ * macros are denormalized so the day projection never joins a recipe version
+ * that may not exist anymore.
+ */
+@Entity(
+    tableName = "plan_slots",
+    indices = [Index("planId"), Index(value = ["profileId", "dayEpochDay"]), Index("recipeId")],
+)
+public data class PlanSlotEntity(
+    @PrimaryKey
+    public val id: String,
+    public val planId: String,
+    public val profileId: String,
+    public val dayEpochDay: Long,
+    /** Wire name of [app.wlo.core.model.MealSlot]. */
+    public val mealSlot: String,
+    public val recipeId: String? = null,
+    public val recipeVersion: Int? = null,
+    public val recipeName: String? = null,
+    public val servings: Double,
+    /** Wire name of [app.wlo.core.model.PlannedSlotState]. */
+    public val state: String = "planned",
+    /** R-B1 `replaced`: the F02 diary entry that now owns this meal's nutrition. */
+    public val replacedByEntryId: String? = null,
+    public val successorSlotId: String? = null,
+    public val replacesSlotId: String? = null,
+    /** Leftovers: non-null when eating from a cook event's batch. */
+    public val parentSlotId: String? = null,
+    public val isCookEvent: Boolean = false,
+    public val batchServings: Double? = null,
+    public val kcalPerServing: Double? = null,
+    public val proteinGPerServing: Double? = null,
+    public val carbGPerServing: Double? = null,
+    public val fatGPerServing: Double? = null,
+    public val fiberGPerServing: Double? = null,
+    public val createdAtEpochMs: Long,
+    public val updatedAtEpochMs: Long? = null,
+)
+
+/**
+ * One shopping-list row (F04 §3 `ListItem`, hardened): the stable id is the
+ * anchor of delta reconciliation — plan edits update rows in place; checks
+ * ride the row and survive every change. `archivedAtEpochMs` is the
+ * struck-through, recoverable removal; nothing is ever hard-deleted silently.
+ */
+@Entity(
+    tableName = "list_items",
+    indices = [Index(value = ["profileId", "listId"]), Index("groceryItemId")],
+)
+public data class ListItemEntity(
+    @PrimaryKey
+    public val id: String,
+    public val profileId: String,
+    /** Default list "shopping" (renameable, never deletable — Paprika's anchor rule). */
+    public val listId: String = "shopping",
+    public val groceryItemId: String,
+    /** Denormalized display name (the canonical name at last write). */
+    public val name: String,
+    public val qty: Double,
+    /** [app.wlo.core.model.MeasureUnit.wireName]. */
+    public val unit: String,
+    /** [app.wlo.core.model.Aisle.wireName] (corrections already applied at write). */
+    public val aisle: String,
+    /** "pending" | "checked". */
+    public val state: String = "pending",
+    public val checkedAtEpochMs: Long? = null,
+    /** The "+2" chip payload from the last reconciliation; null = no pending delta. */
+    public val deltaQty: Double? = null,
+    /** JSON array of {recipeId, slotId, dayEpochDay, qty, unit} provenance lines. */
+    public val sourcesJson: String = "[]",
+    public val createdAtEpochMs: Long,
+    public val updatedAtEpochMs: Long? = null,
+    public val archivedAtEpochMs: Long? = null,
+)
+
+/**
+ * One pantry row (F04 §3 `PantryItem`): stock levels, expiry, staple flag and
+ * the out-of-stock marker that puts an item on the next generated list.
+ * Purchase history is a counter + timestamp pair in v1 (the cadence stat is
+ * [purchaseCount] over [addedAtEpochMs]..[lastPurchasedAtEpochMs]).
+ */
+@Entity(
+    tableName = "pantry_items",
+    indices = [Index("profileId"), Index("groceryItemId")],
+)
+public data class PantryItemEntity(
+    @PrimaryKey
+    public val id: String,
+    public val profileId: String,
+    public val groceryItemId: String,
+    public val name: String,
+    public val qty: Double,
+    public val unit: String,
+    /** Calendar day (epoch day) of expiry; null = unknown (never guessed). */
+    public val expiryEpochDay: Long? = null,
+    public val addedAtEpochMs: Long,
+    public val lastPurchasedAtEpochMs: Long? = null,
+    public val purchaseCount: Int = 0,
+    /** Staples auto-participate in list generation when deduction is enabled (R-S5). */
+    public val isStaple: Boolean = false,
+    public val outOfStock: Boolean = false,
+    public val updatedAtEpochMs: Long? = null,
+    public val archivedAtEpochMs: Long? = null,
+)
+
+/**
+ * Learned aisle assignment (F04 §3 "teach-the-system loop"): one row per
+ * (profile, item) — every user reassignment wins forever over the shipped
+ * tag and the keyword guesser.
+ */
+@Entity(
+    tableName = "aisle_corrections",
+    primaryKeys = ["profileId", "groceryItemId"],
+)
+public data class AisleCorrectionEntity(
+    public val profileId: String,
+    public val groceryItemId: String,
+    /** [app.wlo.core.model.Aisle.wireName]. */
+    public val aisle: String,
+    public val updatedAtEpochMs: Long,
 )

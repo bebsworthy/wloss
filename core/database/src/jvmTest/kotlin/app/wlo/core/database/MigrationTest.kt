@@ -21,8 +21,9 @@ import kotlin.test.assertTrue
  * (c) the structural guarantees the spine relies on (FK clause on the EAV
  * sidecar, unique (profileId, version) on targets_versions). v3 → v4 lands
  * the F02 diary + FTS5 search and proves the FTS backfill finds pre-existing
- * catalog rows. v4 → v5 lands the F12 egress receipt ledger. v1 → v2 remains
- * from M1: users on schema v1 chain 1→2→3→4→5.
+ * catalog rows. v4 → v5 lands the F12 egress receipt ledger. v5 → v6 lands
+ * the F03/F04 planning surface. v1 → v2 remains
+ * from M1: users on schema v1 chain 1→2→3→4→5→6.
  */
 class MigrationTest {
     private val schemasDir: java.nio.file.Path =
@@ -231,28 +232,120 @@ class MigrationTest {
         }
 
     @Test
-    fun v1DatabaseChainsThroughToV5() =
+    fun migrate5To6_landsThePlanningSurface() =
+        runTest {
+            helper.createDatabase(5).use { connection ->
+                // A v5-era receipt row must come through untouched.
+                connection.exec(
+                    "INSERT INTO network_receipts " +
+                        "(purpose, host, operation, bytes, outcome, atEpochMs, prevHashHex, hashHex) " +
+                        "VALUES ('zoo-download', 'huggingface.co', 'food-classifier/1', 9835830, 'ok', 1000, " +
+                        "'" + "0".repeat(64) + "', 'abc')",
+                )
+            }
+
+            val migrated = helper.runMigrationsAndValidate(6, listOf(Migrations.MIGRATION_5_6))
+            migrated.use { connection ->
+                // (a) All seven new tables + their key indices exist (the helper
+                // has already validated each table's exact shape against 6.json).
+                listOf(
+                    "recipes",
+                    "grocery_items",
+                    "plan_versions",
+                    "plan_slots",
+                    "list_items",
+                    "pantry_items",
+                    "aisle_corrections",
+                    "index_recipes_recipeId",
+                    "index_plan_versions_profileId_version",
+                    "index_plan_slots_profileId_dayEpochDay",
+                    "index_list_items_profileId_listId",
+                    "index_pantry_items_profileId",
+                ).forEach { name ->
+                    assertEquals(
+                        1L,
+                        queryLong(connection, "SELECT COUNT(*) FROM sqlite_master WHERE name='$name'"),
+                        "$name must exist after migration",
+                    )
+                }
+
+                // (b) The recipes table carries the versioned composite PK and
+                // the R-S3 license column (structural proof via sqlite_master).
+                val recipesSql = queryText(connection, "SELECT sql FROM sqlite_master WHERE name='recipes'")
+                assertTrue(recipesSql.contains("PRIMARY KEY(`recipeId`, `version`)"), recipesSql)
+                assertTrue(recipesSql.contains("`license` TEXT"), recipesSql)
+
+                // (c) Rows are writable with sane defaults: one versioned recipe,
+                // one slot per R-B1 state vocabulary, one pending list row.
+                connection.exec(
+                    "INSERT INTO recipes (recipeId, version, profileId, name, servingsBase, slotsJson, " +
+                        "tagsJson, fodmapTagsJson, ingredientsJson, stepsJson, kcalPerServing, " +
+                        "proteinGPerServing, carbGPerServing, fatGPerServing, fiberGPerServing, " +
+                        "nutritionBasis, createdAtEpochMs, source, license) " +
+                        "VALUES ('r1', 1, 'p1', 'Red lentil curry', 2.0, '[]', '[]', '[]', '[]', '[]', " +
+                        "520.0, 24.0, 70.0, 12.0, 14.0, 'estimated', 1000, 'seed', 'CC0')",
+                )
+                connection.exec(
+                    "INSERT INTO plan_slots (id, planId, profileId, dayEpochDay, mealSlot, servings, state, " +
+                        "isCookEvent, createdAtEpochMs) " +
+                        "VALUES ('s1', 'pl1', 'p1', 20708, 'dinner', 1.0, 'planned', 0, 1000)",
+                )
+                connection.exec(
+                    "INSERT INTO list_items (id, profileId, listId, groceryItemId, name, qty, unit, aisle, " +
+                        "state, sourcesJson, createdAtEpochMs) " +
+                        "VALUES ('li1', 'p1', 'shopping', 'g1', 'red onions', 3.0, 'x', 'produce', 'pending', '[]', 1000)",
+                )
+                connection.exec(
+                    "INSERT INTO pantry_items (id, profileId, groceryItemId, name, qty, unit, " +
+                        "addedAtEpochMs, purchaseCount, isStaple, outOfStock) " +
+                        "VALUES ('pi1', 'p1', 'g1', 'red onions', 0.0, 'x', 1000, 0, 0, 0)",
+                )
+                connection.exec(
+                    "INSERT INTO aisle_corrections (profileId, groceryItemId, aisle, updatedAtEpochMs) " +
+                        "VALUES ('p1', 'g1', 'produce', 1000)",
+                )
+                assertEquals(
+                    1L,
+                    queryLong(connection, "SELECT COUNT(*) FROM recipes WHERE recipeId='r1' AND version=1"),
+                    "versioned recipe rows key (recipeId, version)",
+                )
+            }
+        }
+
+    @Test
+    fun v1DatabaseChainsThroughToV6() =
         runTest {
             helper.createDatabase(1).close()
             helper
                 .runMigrationsAndValidate(
-                    5,
+                    6,
                     listOf(
                         Migrations.MIGRATION_1_2,
                         Migrations.MIGRATION_2_3,
                         Migrations.MIGRATION_3_4,
                         Migrations.MIGRATION_4_5,
+                        Migrations.MIGRATION_5_6,
                     ),
                 ).use { connection ->
                     assertEquals(
                         1L,
                         queryLong(connection, "SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name='diary_entries'"),
-                        "the chained 1→2→3→4→5 migration reaches the M3 diary schema",
+                        "the chained 1→2→…→6 migration reaches the M3 diary schema",
                     )
                     assertEquals(
                         1L,
                         queryLong(connection, "SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name='network_receipts'"),
-                        "the chained 1→2→3→4→5 migration reaches the M4 egress receipt ledger",
+                        "the chained 1→2→…→6 migration reaches the M4 egress receipt ledger",
+                    )
+                    assertEquals(
+                        1L,
+                        queryLong(connection, "SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name='plan_slots'"),
+                        "the chained 1→2→…→6 migration reaches the M5 planner schema",
+                    )
+                    assertEquals(
+                        1L,
+                        queryLong(connection, "SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name='pantry_items'"),
+                        "the chained 1→2→…→6 migration reaches the M5 pantry schema",
                     )
                 }
         }

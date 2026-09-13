@@ -23,6 +23,7 @@ import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
@@ -64,6 +65,13 @@ import app.wlo.feature.f02.food.state.CaptureLensMode
 import app.wlo.feature.f02.food.ui.CaptureScreen
 import app.wlo.feature.f02.food.ui.DiaryDayScreen
 import app.wlo.feature.f02.food.ui.FoodLogScreen
+import app.wlo.feature.f03.planning.F03Routes
+import app.wlo.feature.f03.planning.ui.PlanScreen
+import app.wlo.feature.f03.planning.ui.PlanSegment
+import app.wlo.feature.f03.planning.ui.RecipeEditScreen
+import app.wlo.feature.f04.shopping.F04Routes
+import app.wlo.feature.f04.shopping.ui.ListScreen
+import app.wlo.feature.f04.shopping.ui.PantryScreen
 import app.wlo.feature.f06.weight.F06Routes
 import app.wlo.feature.f06.weight.ui.BodyFatScreen
 import app.wlo.feature.f06.weight.ui.MathDocsScreen
@@ -153,7 +161,7 @@ public fun WloApp(
                 ) { entry ->
                     RouteSurface(
                         route = route,
-                        entryArg = entry.arguments?.getString(ENTRY_ARG),
+                        arguments = entry.arguments,
                         shellState = shellState,
                         onSurfaceChanged = onSurfaceChanged,
                         navController = navController,
@@ -163,12 +171,29 @@ public fun WloApp(
             // Internal surfaces without registry URIs (reached from their owners).
             composable(route = F06Routes.MATH) { MathDocsScreen() }
             composable(route = F06Routes.BODY_FAT) { BodyFatScreen(viewModel = koinViewModel()) }
+            composable(
+                route = F03Routes.RECIPE_EDIT,
+                arguments = routeArguments(F03Routes.RECIPE_EDIT),
+            ) { entry ->
+                RecipeEditScreen(
+                    viewModel = koinViewModel(parameters = { parametersOf(null, null) }),
+                    recipeId =
+                        entry.arguments
+                            ?.getString(F03Routes.ARG_RECIPE_ID)
+                            ?.takeIf { it.isNotEmpty() && it != "new" },
+                    onDone = { navController.popBackStack() },
+                )
+            }
         }
     }
 }
 
-/** The optional query arg carried by routes that take one (f02/diary?entry=). */
+/** The optional query args carried by routes that take them (f02/diary?entry=, f03 focus args). */
 private const val ENTRY_ARG: String = "entry"
+private const val DAY_ARG: String = "day"
+private const val SLOT_ARG: String = "slot"
+private const val PROPOSAL_ARG: String = "proposal"
+private const val RECIPE_ID_ARG: String = "recipeId"
 
 private fun routeArguments(route: String): List<NamedNavArgument> =
     when {
@@ -179,6 +204,35 @@ private fun routeArguments(route: String): List<NamedNavArgument> =
                     defaultValue = ""
                 },
             )
+
+        route.startsWith("f03/plan/focus") ->
+            listOf(
+                navArgument(DAY_ARG) {
+                    type = NavType.StringType
+                    defaultValue = ""
+                },
+                navArgument(SLOT_ARG) {
+                    type = NavType.StringType
+                    defaultValue = ""
+                },
+            )
+
+        route.startsWith("f03/studio") ->
+            listOf(
+                navArgument(PROPOSAL_ARG) {
+                    type = NavType.StringType
+                    defaultValue = ""
+                },
+            )
+
+        route.startsWith("f03/recipe/edit") ->
+            listOf(
+                navArgument(RECIPE_ID_ARG) {
+                    type = NavType.StringType
+                    defaultValue = ""
+                },
+            )
+
         else -> emptyList()
     }
 
@@ -186,11 +240,13 @@ private fun routeArguments(route: String): List<NamedNavArgument> =
 @Composable
 private fun RouteSurface(
     route: String,
-    entryArg: String?,
+    arguments: Bundle?,
     shellState: ShellState,
     onSurfaceChanged: (String) -> Unit,
     navController: NavHostController,
 ) {
+    val entryArg: String? = arguments?.getString(ENTRY_ARG)
+    val entryArgSecond: String? = arguments?.getString(SLOT_ARG)
     when (route) {
         WloTabs.HUB ->
             when (shellState) {
@@ -218,15 +274,41 @@ private fun RouteSurface(
                                 onOpenWeight = { navController.navigate("f06/weight") },
                                 onGutLog = { navController.navigate("stub/gut") },
                                 onWorkout = { navController.navigate("stub/exercise") },
+                                onOpenPlan = { navController.navigate(WloTabs.PLAN) },
+                                onPlanTomorrow = { navController.navigate(F03Routes.TOMORROW) },
                             ),
                     )
                 }
             }
 
-        WloTabs.PLAN -> PlaceholderScreen(title = "Plan", body = PlaceholderCopy.PLAN)
+        WloTabs.PLAN -> PlanTabRoute(focusDay = null, focusSlot = null, navController = navController)
         WloTabs.INSIGHTS -> PlaceholderScreen(title = "Insights", body = PlaceholderCopy.INSIGHTS)
         WloTabs.ARCHIVE -> PlaceholderScreen(title = "Archive", body = PlaceholderCopy.ARCHIVE)
         WloTabs.DIGESTION -> PlaceholderScreen(title = "Digestion", body = PlaceholderCopy.DIGESTION)
+
+        // F03 focus routes: the touched slot for today (wlo://log/planned) and
+        // the evening "plan tomorrow" card (wlo://plan/tomorrow).
+        F03Routes.FOCUS ->
+            PlanTabRoute(
+                focusDay = entryArg?.toLongOrNull(),
+                focusSlot = entryArgSecond,
+                navController = navController,
+            )
+
+        F03Routes.TOMORROW ->
+            PlanTabRoute(
+                focusDay = tomorrowEpochDay(),
+                focusSlot = null,
+                navController = navController,
+            )
+
+        // The plan-studio landing keeps the F01 proposal arg passthrough (the
+        // diff UI itself is F01's); the planner is the surface it lands on.
+        F03Routes.STUDIO -> PlanTabRoute(focusDay = null, focusSlot = null, navController = navController)
+
+        // F04's pipeline surfaces (the Plan tab's List/Pantry segments).
+        F04Routes.LIST -> ListScreen(viewModel = koinViewModel())
+        F04Routes.PANTRY -> PantryScreen(viewModel = koinViewModel())
 
         // The diary destination's route carries the optional ?entry= scaffold.
         "f02/diary?entry={entry}" ->
@@ -347,3 +429,48 @@ private fun WloBottomBar(
             }
         }
     }
+
+/**
+ * The Plan tab host (M5): owns the IA §1 segmented pipeline state (Plan ·
+ * Recipes · List · Pantry) and wires the segment exits onto the :app nav
+ * graph (D2 — the features never see each other). [focusDay]/[focusSlot]
+ * carry the deep-link context in (wlo://log/planned, wlo://plan/tomorrow).
+ */
+@Composable
+private fun PlanTabRoute(
+    focusDay: Long?,
+    focusSlot: String?,
+    navController: NavHostController,
+) {
+    val viewModel: app.wlo.feature.f03.planning.state.PlanViewModel =
+        koinViewModel(parameters = { parametersOf(focusDay, focusSlot) })
+    var segment by androidx.compose.runtime.saveable.rememberSaveable {
+        androidx.compose.runtime.mutableStateOf(PlanSegment.PLAN)
+    }
+    PlanScreen(
+        viewModel = viewModel,
+        segment = segment,
+        onSegmentSelect = { next -> segment = next },
+        onOpenList = { navController.navigate(F04Routes.LIST) },
+        onOpenPantry = { navController.navigate(F04Routes.PANTRY) },
+        onEditRecipe = { recipeId ->
+            // Navigation's route matcher rejects empty query values; "new" is
+            // the sentinel for the create path.
+            navController.navigate("f03/recipe/edit?recipeId=${recipeId ?: "new"}")
+        },
+    )
+}
+
+/** Tomorrow in the device zone — the plan-tomorrow deep link's focus day. */
+@Composable
+private fun tomorrowEpochDay(): Long {
+    val koin =
+        org.koin.core.context.GlobalContext
+            .get()
+    val clock: app.wlo.core.common.ClockPort = remember { koin.get() }
+    return remember {
+        app.wlo.core.common
+            .DayBoundary
+            .epochDay(clock.now(), kotlinx.datetime.TimeZone.currentSystemDefault()) + 1
+    }
+}

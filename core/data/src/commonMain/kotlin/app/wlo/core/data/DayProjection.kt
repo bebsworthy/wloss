@@ -50,6 +50,13 @@ public interface DayProjectionRepository {
  * One day's rendering view. Every number is a [DerivedValue] (chip mandatory)
  * or null (absence is silent, R-D14); provenance for the targets part names
  * the Targets version it resolved from ("adaptive · check-in Sep 8").
+ *
+ * The planned side (R-B1) folds the F03 plan's slots for the day in at read
+ * time: `planned*` scalars are the plan's claim (PLANNED + CONFIRMED slots;
+ * swapped rows are retired, skipped/replaced contribute nothing), so the
+ * planned-vs-logged distinction renders from one door and stays in lockstep
+ * with any plan edit. Null = no plan for the day — a user who never plans
+ * sees no plan surfaces (R-D14).
  */
 public data class DayView(
     public val profileId: String,
@@ -65,4 +72,14 @@ public data class DayView(
     public val trendWeightKg: DerivedValue<Double>?,
     public val intakeKcal: DerivedValue<Double>?,
     public val burnKcal: DerivedValue<Double>?,
+    // --- planned scalars folded from the F03 plan (R-B1) ---
+    public val plannedKcal: DerivedValue<Double>? = null,
+    public val plannedProteinG: DerivedValue<Double>? = null,
+    public val plannedCarbG: DerivedValue<Double>? = null,
+    public val plannedFatG: DerivedValue<Double>? = null,
+    public val plannedFiberG: DerivedValue<Double>? = null,
+    /** Slots with a recipe in states planned + confirmed (the plan's claim). */
+    public val plannedSlotCount: Int = 0,
+    /** Of those, still open (planned) — "1 of 3 open" in the day header. */
+    public val plannedOpenSlots: Int = 0,
 )

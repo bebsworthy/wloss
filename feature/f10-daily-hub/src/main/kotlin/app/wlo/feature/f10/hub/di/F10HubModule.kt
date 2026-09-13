@@ -20,6 +20,7 @@ public val f10HubModule: Module =
                 targets = get(),
                 weighIns = get(),
                 diary = get(),
+                planner = get(),
             )
         }
     }
