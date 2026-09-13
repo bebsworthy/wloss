@@ -75,10 +75,18 @@ public data class TrendUi(
     public val samples: List<ChartPoint>,
     public val trend: List<ChartPoint>,
     public val reference: List<ChartPoint>,
+    /**
+     * The headline trend value: the CANONICAL shared read (the Hub shows the
+     * same number — WLO-0030 defect 9) while the smoother selection sits at
+     * its defaults; once the tuner moves, this becomes the tuner's preview
+     * output and [preview] says so.
+     */
     public val current: DerivedValue<Double>?,
     public val delta7: DerivedValue<Double>?,
     /** F06 §4 gate: the trend line only renders from ≥3 trailing-7-day points. */
     public val trendLineVisible: Boolean,
+    /** True while the chart reflects a non-default tuner selection (a preview). */
+    public val preview: Boolean,
     public val description: String,
 )
 
@@ -243,27 +251,34 @@ public class WeighInViewModel(
             val samples = weighIns.dailyScalars(id, from, today).getOrNull().orEmpty()
             val series = weighIns.trend(id, from, today, method.value, alpha.value).getOrNull()
             val points = series?.points.orEmpty()
+            // THE single trend source (WLO-0030 defect 9): the canonical
+            // read — the exact number the Hub shows. The tuner's own output
+            // is a preview and is labeled as one.
+            val canonical = weighIns.currentTrend(id, today).getOrNull()
+            val atDefaults =
+                method.value == TrendMethod.EWMA &&
+                    abs(alpha.value - ConstantsRegistry.EWMA_ALPHA_DEFAULT) < 1e-9
 
             val byDay = points.associate { it.epochDay to it.trendKg.value }
             val reference =
                 points.mapNotNull { point ->
                     byDay[point.epochDay - REFERENCE_SHIFT_DAYS]?.let { behind -> ChartPoint(point.epochDay, behind) }
                 }
-            val currentPoint = points.lastOrNull()
-            val lastDay = samples.lastOrNull()?.epochDay ?: today
-            val weekAgo = byDay[lastDay - DELTA_WINDOW_DAYS]
-            val delta =
-                currentPoint
-                    ?.let { point -> weekAgo?.let { behind -> point.trendKg.value - behind } }
-                    ?.let { diff ->
-                        DerivedValue(
-                            diff,
-                            Provenance.Derived(
-                                formulaVersion = seriesVersion(method.value),
-                                inputs = listOf("windowDays=$DELTA_WINDOW_DAYS"),
-                            ),
-                        )
-                    }
+            val lastPoint = points.lastOrNull()
+            val weekAgo = lastPoint?.epochDay?.let { byDay[it - DELTA_WINDOW_DAYS] }
+            val tunerDelta =
+                if (lastPoint != null && weekAgo != null) {
+                    DerivedValue(
+                        lastPoint.trendKg.value - weekAgo,
+                        Provenance.Derived(
+                            formulaVersion = seriesVersion(method.value),
+                            inputs = listOf("windowDays=$DELTA_WINDOW_DAYS"),
+                        ),
+                    )
+                } else {
+                    null
+                }
+            val delta = if (atDefaults) canonical?.delta7 else tunerDelta
 
             val trailing7 = samples.count { it.epochDay > today - TREND_GATE_WINDOW_DAYS }
             val trendVisible = trailing7 >= TREND_GATE_POINTS
@@ -290,9 +305,10 @@ public class WeighInViewModel(
                                     emptyList()
                                 },
                             reference = reference,
-                            current = currentPoint?.trendKg?.let { DerivedValue(it.value, it.provenance) },
+                            current = if (atDefaults) canonical?.current else lastPoint?.trendKg,
                             delta7 = delta,
                             trendLineVisible = trendVisible,
+                            preview = !atDefaults,
                             description =
                                 if (trendVisible) {
                                     "Weight chart: scale dots with the trend line over them."

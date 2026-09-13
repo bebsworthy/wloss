@@ -65,11 +65,17 @@ public data class WloTypography(
     val title: TextStyle,
     /** 15 sp, wght 400 — prose, explainers. */
     val body: TextStyle,
-    /** 11.5 sp, wght 500, +2% tracking, sentence case — chips, axis labels. */
+    /** 11 sp, wght 500, +2% tracking, sentence case — chips, axis labels. */
     val label: TextStyle,
 )
 
-/** The WLO ramp per DESIGN-SYSTEM.md §2 (weights snapped to static Inter instances). */
+/**
+ * The WLO ramp per DESIGN-SYSTEM.md §2 (weights snapped to static Inter
+ * instances). Audit vs §2 (WLO-0030): hero is Inter Display (`opsz` display)
+ * at 56 sp w600 `tnum`; `stat-l` 28 sp w600; `stat-m` 20 sp — spec asks w550,
+ * snapped to SemiBold (no 550 static instance, documented deviation); `label`
+ * 11 sp w500 +2% tracking.
+ */
 public fun wloTypography(): WloTypography =
     WloTypography(
         hero =
@@ -130,7 +136,7 @@ public fun wloTypography(): WloTypography =
             TextStyle(
                 fontFamily = WloFontFamily,
                 fontWeight = FontWeight.Medium,
-                fontSize = 11.5.sp,
+                fontSize = 11.sp,
                 letterSpacing = (0.02f).em,
             ),
     )

@@ -51,9 +51,13 @@ public fun <T : Any> WloStat(
     }
 
 /**
- * Dense row-level stat (CSS `.stat-row`): label left, provenance chip right,
- * hairline-divided by the caller. D6: value is a [DerivedValue] — no String
- * overload exists.
+ * Dense row-level stat (CSS `.stat-row`): label left, VALUE in the middle
+ * (the chip never repeats the value — owner review WLO-0030, defect 15 — so
+ * the row renders the number itself), provenance chip right, hairline-divided
+ * by the caller. D6: value is a [DerivedValue] — no String overload exists.
+ *
+ * @param onExplain tap-through wired into the chip's info mark — WLO-0030
+ *   defect 11: no chip with an info mark may render dead
  */
 @Composable
 public fun <T : Any> WloStatRow(
@@ -61,6 +65,7 @@ public fun <T : Any> WloStatRow(
     value: DerivedValue<T>,
     format: (T) -> String,
     modifier: Modifier = Modifier,
+    onExplain: (() -> Unit)? = null,
 ): Unit =
     Row(
         modifier =
@@ -78,7 +83,9 @@ public fun <T : Any> WloStatRow(
             overflow = TextOverflow.Ellipsis,
             modifier = Modifier.weight(1f),
         )
-        ProvenanceChip(value = value, format = format)
+        Text(text = format(value.value), style = wloType.statM)
+        Spacer(Modifier.width(WloSpacing.TIGHT))
+        ProvenanceChip(value = value, format = format, onClick = onExplain)
     }
 
 /**

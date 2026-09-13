@@ -20,9 +20,10 @@ import org.junit.runner.RunWith
 
 /**
  * M3 acceptance (a): the 7-day seeded diary renders across Hub → diary —
- * budget/trend correct, the R-D4 heatmap carries one cell per logged day,
- * water lands as a drink entry, and every entry's provenance sheet shows the
- * correction history (F02 §5 / acceptance 5).
+ * budget/trend correct, the diary card's week-dots row carries one dot per
+ * logged day of the CURRENT week (owner review WLO-0030 defect 12: the mock's
+ * week dots, not a month heatmap), water lands as a drink entry, and every
+ * entry's provenance sheet shows the correction history (F02 §5 / acceptance 5).
  */
 @RunWith(AndroidJUnit4::class)
 public class M3DiaryHubTest {
@@ -35,7 +36,7 @@ public class M3DiaryHubTest {
     }
 
     @Test
-    public fun seededWeek_hubRendersBudgetTrendHeatmap_andDiaryCarriesTheDay() {
+    public fun seededWeek_hubRendersBudgetTrendWeekDots_andDiaryCarriesTheDay() {
         TestNav.awaitTag(rule, "hub-trend-card")
 
         // Budget from Targets (the ring's number) and the forecast card (M2);
@@ -43,14 +44,15 @@ public class M3DiaryHubTest {
         rule.onNodeWithTag("hub-budget-row", useUnmergedTree = true).assertIsDisplayed()
         rule.onNodeWithTag("hub-forecast-card", useUnmergedTree = true).performScrollTo().assertIsDisplayed()
 
-        // The diary slice: 7 seeded days → 7 logged cells on the month heatmap.
+        // The diary slice: the week-dots row marks the CURRENT week's logged
+        // days (seeder days Sep 2–8; only Sep 7 + Sep 8 fall in this week).
         rule.onNodeWithTag("hub-diary-card", useUnmergedTree = true).performScrollTo()
-        val loggedCells =
+        val loggedDots =
             rule
                 .onAllNodesWithContentDescription("— logged", substring = true, useUnmergedTree = true)
                 .fetchSemanticsNodes()
                 .size
-        assertEquals("one heatmap cell per logged day", LOGGED_DAYS, loggedCells)
+        assertEquals("one filled dot per logged day of the current week", LOGGED_WEEK_DAYS, loggedDots)
 
         rule.onNodeWithTag("hub-open-diary").performScrollTo().performClick()
         TestNav.awaitTag(rule, "f02-diary-title")
@@ -94,7 +96,7 @@ public class M3DiaryHubTest {
     }
 
     private companion object {
-        /** Sep 2–8 in the seeded month: 7 logged days, 1 unlogged (Sep 1). */
-        const val LOGGED_DAYS: Int = 7
+        /** The seeded week runs Sep 2–8; only Sep 7 + Sep 8 sit in the current week (Mon Sep 7–Sun Sep 13). */
+        const val LOGGED_WEEK_DAYS: Int = 2
     }
 }

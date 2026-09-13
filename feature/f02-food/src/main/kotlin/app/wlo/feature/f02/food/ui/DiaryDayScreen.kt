@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
@@ -69,11 +70,20 @@ public fun DiaryDayScreen(
 
         WloCard(modifier = Modifier.testTag("f02-totals-card")) {
             Text(text = "eaten so far", style = wloType.label, color = wloExtendedColors.textTertiary)
-            ProvenanceChip(
-                value = state.totals,
-                format = ::formatKcal,
-                modifier = Modifier.testTag("f02-day-total"),
-            )
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                // The numeral renders HERE; the chip carries the kind + info
+                // mark only (new chip anatomy never repeats the value).
+                Text(
+                    text = formatKcal(state.totals.value),
+                    style = wloType.statL,
+                    modifier = Modifier.testTag("f02-day-total"),
+                )
+                Spacer(Modifier.width(WloSpacing.TIGHT))
+                ProvenanceChip(
+                    value = state.totals,
+                    format = ::formatKcal,
+                )
+            }
             if (state.macroLine.isNotBlank()) {
                 Text(text = state.macroLine, style = wloType.receipt, color = wloExtendedColors.textTertiary)
             }

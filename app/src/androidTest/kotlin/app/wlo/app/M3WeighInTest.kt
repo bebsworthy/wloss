@@ -2,6 +2,7 @@ package app.wlo.app
 
 import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
+import androidx.compose.ui.test.onAllNodesWithContentDescription
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onFirst
 import androidx.compose.ui.test.onNodeWithTag
@@ -20,10 +21,12 @@ import kotlin.math.abs
 
 /**
  * M3 acceptance (b): weigh in twice in one day — both events stay listed
- * verbatim (R-B8), the trend matches a hand-rolled EWMA over the daily
- * scalars, the smoothing controls move the visible line, the outlier guard
- * asks keep-or-correct without dropping the event, and the math
- * documentation screen opens from the chart.
+ * verbatim (R-B8), the hero shows the CANONICAL trend (the shared read: the
+ * default smoother over the canonical 30-day window — the exact number the
+ * Hub shows; WLO-0030 defect 9), the smoothing controls move the visible line
+ * and mark the headline as a PREVIEW, the outlier guard asks keep-or-correct
+ * without dropping the event, and the math documentation screen opens from
+ * the chart.
  */
 @RunWith(AndroidJUnit4::class)
 public class M3WeighInTest {
@@ -36,63 +39,68 @@ public class M3WeighInTest {
     }
 
     @Test
-    public fun doubleWeighIn_keepsBothEvents_andTrendMatchesHandRolledEwma() {
+    public fun doubleWeighIn_keepsBothEvents_andHeroMatchesTheCanonicalTrend() {
         awaitWeightSurface()
 
-        // Weigh in #1 (today already carries the seeded 81.05 reading).
+        // Weigh in #1: today already carries the seeded morning reading — a
+        // LOWER re-weigh replaces it as the day's scalar (lowest-of-day).
         rule.onNodeWithTag("f06-weight-field").performTextClearance()
-        rule.onNodeWithTag("f06-weight-field").performTextInput("79.6")
+        rule.onNodeWithTag("f06-weight-field").performTextInput("76.8")
         rule.onNodeWithTag("f06-save-weighin").performClick()
-        pollText("79.6 kg")
+        pollText("76.8 kg")
 
         // Weigh in #2: the post-bathroom-win re-weigh is normal data.
         rule.onNodeWithTag("f06-open-sheet").performClick()
         rule.onNodeWithTag("f06-weight-field").performTextClearance()
-        rule.onNodeWithTag("f06-weight-field").performTextInput("80.4")
+        rule.onNodeWithTag("f06-weight-field").performTextInput("77.6")
         rule.onNodeWithTag("f06-save-weighin").performClick()
-        pollText("80.4 kg")
+        pollText("77.6 kg")
 
         // Both events stay listed verbatim; the lowest is marked as the day's weight.
         assertTrue(
             "both weigh-ins are listed",
-            rule.onAllNodesWithText("79.6 kg").fetchSemanticsNodes().isNotEmpty() &&
-                rule.onAllNodesWithText("80.4 kg").fetchSemanticsNodes().isNotEmpty(),
+            rule.onAllNodesWithText("76.8 kg").fetchSemanticsNodes().isNotEmpty() &&
+                rule.onAllNodesWithText("77.6 kg").fetchSemanticsNodes().isNotEmpty(),
         )
         assertTrue(
             "the lowest-of-day is marked",
             rule.onAllNodesWithText("day's weight").fetchSemanticsNodes().isNotEmpty(),
         )
 
-        // The trend value equals a hand-rolled EWMA over the daily scalars;
-        // today's lowest (79.6) REPLACES the seeded 81.05 — same calendar day.
-        val scalars = SEEDED_SCALARS.dropLast(1) + 79.6
-        pollText(formatTrend(trailingEwmaLast(scalars, ALPHA)))
+        // The hero equals a hand-rolled EWMA over the canonical 30-day window
+        // (the shared read — Hub and Weight page show the same number);
+        // today's lowest (76.8) REPLACES the seeded reading — same calendar day.
+        val canonicalWindow = SEEDED_SCALARS.takeLast(CANONICAL_WINDOW_DAYS).dropLast(1) + 76.8
+        pollTrend(trailingEwmaLast(canonicalWindow, ALPHA))
     }
 
     @Test
-    public fun smoothingControls_moveTheLine() {
+    public fun smoothingControls_moveTheLine_asLabeledPreview() {
         awaitWeightSurface()
 
         rule.onNodeWithTag("f06-weight-field").performTextClearance()
-        rule.onNodeWithTag("f06-weight-field").performTextInput("79.6")
+        rule.onNodeWithTag("f06-weight-field").performTextInput("76.8")
         rule.onNodeWithTag("f06-save-weighin").performClick()
-        val scalars = SEEDED_SCALARS.dropLast(1) + 79.6
-        pollText(formatTrend(trailingEwmaLast(scalars, ALPHA)))
+        val canonicalWindow = SEEDED_SCALARS.takeLast(CANONICAL_WINDOW_DAYS).dropLast(1) + 76.8
+        pollTrend(trailingEwmaLast(canonicalWindow, ALPHA))
 
         // The α tuner (R-A2: visible, default 0.15): pushing α to its cap
-        // makes the trend follow the raw readings — a different last value.
-        val snappyLast = trailingEwmaLast(scalars, ALPHA_MAX)
-        assertNotEquals(trailingEwmaLast(scalars, ALPHA), snappyLast, 1e-9)
+        // makes the PREVIEW trend follow the raw readings — a different last
+        // value, and the headline is labeled a preview (the saved trend keeps
+        // the default smoother).
+        val snappyLast = trailingEwmaLast(SCALARS_WITH_REWEIGH, ALPHA_MAX)
+        assertNotEquals(trailingEwmaLast(canonicalWindow, ALPHA), snappyLast, 1e-9)
         rule
             .onNodeWithTag("f06-alpha-slider")
             .performSemanticsAction(SemanticsActions.SetProgress) { action -> checkNotNull(action)(ALPHA_MAX.toFloat()) }
-        pollText(formatTrend(snappyLast))
+        pollTrend(snappyLast)
+        pollText("preview — the saved trend keeps the default smoother", substring = true)
 
         // The method switch: zero-phase differs from the EWMA at older points,
-        // so the weekly delta the hero chip shows changes. Both smoothers run
-        // with the α the tuner now holds (0.5 after the slider push).
-        val ewmaDelta = ewmaSeries(scalars, ALPHA_MAX).let { it.last() - it[DELTA_LOOKBACK_INDEX] }
-        val zeroDelta = zeroPhaseSeries(scalars, ALPHA_MAX).let { it.last() - it[DELTA_LOOKBACK_INDEX] }
+        // so the weekly delta the preview chip shows changes. Both smoothers
+        // run with the α the tuner now holds (0.5 after the slider push).
+        val ewmaDelta = ewmaSeries(SCALARS_WITH_REWEIGH, ALPHA_MAX).let { it.last() - it[it.lastIndex - DELTA_LOOKBACK_DAYS] }
+        val zeroDelta = zeroPhaseSeries(SCALARS_WITH_REWEIGH, ALPHA_MAX).let { it.last() - it[it.lastIndex - DELTA_LOOKBACK_DAYS] }
         assertNotEquals("zero-phase must re-shape the series", ewmaDelta, zeroDelta, 1e-9)
         rule.onNodeWithTag("f06-method-ewma-zero-phase").performClick()
         pollText(formatDelta(zeroDelta))
@@ -119,9 +127,15 @@ public class M3WeighInTest {
         awaitWeightSurface()
         rule.onNodeWithTag("f06-open-math").performClick()
         TestNav.awaitTag(rule, "f06-math-title")
+        // The formula version rides the doc card's provenance chip; the new
+        // chip anatomy speaks the value via its content description (the chip
+        // never repeats the value as visible text — WLO-0030 defect 15).
         assertTrue(
             "each smoother's formula version is documented",
-            rule.onAllNodesWithText("trend/ewma-v1", substring = true).fetchSemanticsNodes().isNotEmpty(),
+            rule
+                .onAllNodesWithContentDescription("derived, trend/ewma-v1", substring = true)
+                .fetchSemanticsNodes()
+                .isNotEmpty(),
         )
     }
 
@@ -131,8 +145,14 @@ public class M3WeighInTest {
         TestNav.awaitTag(rule, "hub-trend-card")
         // The rail's weigh-in quick action (no intent re-delivery — the compose
         // rule's teardown hangs on in-flight deep links, the M1 note's trap).
-        rule.onAllNodesWithText("weigh in").onFirst().performClick()
+        rule.onAllNodesWithText("Weigh in").onFirst().performClick()
         TestNav.awaitTag(rule, "f06-title")
+    }
+
+    private fun pollTrend(kg: Double) {
+        // The hero renders the numeral WITHOUT the unit (defect 14) — poll for
+        // the bare numeral run.
+        pollText(formatTrend(kg))
     }
 
     private fun pollText(
@@ -192,7 +212,7 @@ public class M3WeighInTest {
         return backward.asReversed()
     }
 
-    private fun formatTrend(kg: Double): String = "${decimals1(kg)} kg"
+    private fun formatTrend(kg: Double): String = decimals1(kg)
 
     private fun formatDelta(kg: Double): String {
         val sign = if (kg < 0) "− " else "+ "
@@ -210,16 +230,22 @@ public class M3WeighInTest {
         const val ALPHA: Double = 0.15
         const val ALPHA_MAX: Double = 0.5
 
-        /** The weekly-delta lookback inside the seeded series (index of today-7). */
-        const val DELTA_LOOKBACK_INDEX: Int = 1
+        /** The canonical window the shared trend read computes over (days). */
+        const val CANONICAL_WINDOW_DAYS: Int = 30
+
+        /** The weekly-delta lookback (days behind the last point). */
+        const val DELTA_LOOKBACK_DAYS: Int = 7
         const val TIMEOUT_MS: Long = 20_000
         const val POLL_MS: Long = 150L
 
         /**
-         * Lowest-of-day scalars the seeder produces, oldest first: two quiet
-         * days before the seeder week, then the seven seeded days.
+         * Lowest-of-day scalars the seeder produces, oldest first: one morning
+         * reading per day for the whole 45-day series (the evening re-weigh on
+         * the double day lands higher, so the morning value is the scalar).
          */
-        val SEEDED_SCALARS: List<Double> =
-            listOf(82.10, 82.00, 81.90, 81.75, 81.60, 81.20, 81.35, 81.15, 81.05)
+        val SEEDED_SCALARS: List<Double> = List(SeedingRobot.SERIES_DAYS) { SeedingRobot.demoWeightKg(it) }
+
+        /** The scalars after the 76.8 re-weigh replaces today's reading. */
+        val SCALARS_WITH_REWEIGH: List<Double> = SEEDED_SCALARS.dropLast(1) + 76.8
     }
 }

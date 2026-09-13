@@ -16,7 +16,6 @@ import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Slider
 import androidx.compose.material3.SliderDefaults
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -25,14 +24,17 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import app.wlo.core.designsystem.ProvenanceChip
 import app.wlo.core.designsystem.SelectChip
+import app.wlo.core.designsystem.WloButton
 import app.wlo.core.designsystem.WloCard
+import app.wlo.core.designsystem.WloCardHeader
 import app.wlo.core.designsystem.WloDeltaChip
+import app.wlo.core.designsystem.WloHeroStat
+import app.wlo.core.designsystem.WloSecondaryButton
 import app.wlo.core.designsystem.WloShape
 import app.wlo.core.designsystem.WloSpacing
-import app.wlo.core.designsystem.WloStat
 import app.wlo.core.designsystem.WloStatDivider
 import app.wlo.core.designsystem.WloTrendChart
 import app.wlo.core.designsystem.wloExtendedColors
@@ -46,12 +48,14 @@ import app.wlo.feature.f06.weight.state.WeighInUiState
 import app.wlo.feature.f06.weight.state.WeighInViewModel
 
 /**
- * The F06 weight surface: trend-first hero (the raw number stays small
- * beneath), the verbatim day log (both re-weighs listed; lowest-of-day marked
- * and explained), the trend chart with its smoother tuner (α visible,
- * R-A2 default 0.15), and the outlier guard's one-line keep-or-correct. The
- * weigh-in sheet opens over this surface (wlo://weight/log) — the typed path
- * is first-class, R-U15.
+ * The F06 weight surface (owner review WLO-0030): trend-first hero — one
+ * "Weight" card header, the hero numeral + small unit + weekly delta, the
+ * last raw reading line, a real weigh-in button — then the verbatim day log
+ * (both re-weighs listed; lowest-of-day marked and explained), the trend
+ * chart with its smoother tuner (α visible, R-A2 default 0.15; a non-default
+ * selection is a labeled PREVIEW — the saved trend keeps the default), and
+ * the outlier guard's one-line keep-or-correct. The weigh-in sheet opens over
+ * this surface (wlo://weight/log) — the typed path is first-class, R-U15.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -84,7 +88,7 @@ public fun WeightScreen(
         verdict?.let { current ->
             // The outlier guard's one line (F06 §4): describe, offer both taps,
             // never judge. The event is already stored — this only confirms.
-            Surface(
+            androidx.compose.material3.Surface(
                 modifier =
                     Modifier
                         .fillMaxWidth()
@@ -99,67 +103,91 @@ public fun WeightScreen(
                     verticalArrangement = Arrangement.spacedBy(WloSpacing.TIGHT),
                 ) {
                     Text(
-                        text = "${current.weightLabel} kg is ${current.residualLabel} vs your trend — keep or correct?",
+                        text = "${current.weightLabel} is ${current.residualLabel} vs your trend — keep or correct?",
                         style = wloType.body,
                     )
                     Row(horizontalArrangement = Arrangement.spacedBy(WloSpacing.CARD)) {
-                        PrimaryRow(label = "keep", modifier = Modifier.weight(1f).testTag("f06-outlier-keep")) {
-                            viewModel.onEvent(WeighInEvent.KeepFlagged)
-                        }
-                        PrimaryRow(label = "correct", modifier = Modifier.weight(1f).testTag("f06-outlier-correct")) {
-                            viewModel.onEvent(WeighInEvent.CorrectFlagged)
-                        }
+                        WloSecondaryButton(
+                            label = "Keep",
+                            onClick = { viewModel.onEvent(WeighInEvent.KeepFlagged) },
+                            modifier = Modifier.weight(1f).testTag("f06-outlier-keep"),
+                        )
+                        WloButton(
+                            label = "Correct",
+                            onClick = { viewModel.onEvent(WeighInEvent.CorrectFlagged) },
+                            modifier = Modifier.weight(1f).testTag("f06-outlier-correct"),
+                        )
                     }
                 }
             }
         }
 
         WloCard(modifier = Modifier.testTag("f06-hero-card")) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Text(
-                    text = "trend",
-                    style = wloType.label,
-                    color = wloExtendedColors.textTertiary,
-                    modifier = Modifier.weight(1f),
-                )
-                state.trend?.delta7?.let { delta ->
-                    WloDeltaChip(
-                        value = delta,
-                        format = { "${format1(it)} kg / 7 d" },
-                        style = wloType.statM,
-                        context = "trend delta",
-                    )
-                }
-            }
-            state.trend?.current?.let { current ->
-                WloStat(
-                    label = "trend now",
+            val trend = state.trend
+            val current = trend?.current
+            val delta7 = trend?.delta7
+            WloCardHeader(
+                title = "Weight",
+                provenance =
+                    if (current != null) {
+                        {
+                            // The chip opens the math sheet — real "how we got
+                            // here" content, never a dead info mark.
+                            ProvenanceChip(
+                                value = current,
+                                format = { kg -> "${format1(kg)} kg" },
+                                onClick = onOpenMath,
+                            )
+                        }
+                    } else {
+                        null
+                    },
+            )
+            if (current != null) {
+                WloHeroStat(
                     value = current,
-                    format = { "${format1(it)} kg" },
+                    format = ::format1,
+                    unit = "kg",
+                    delta =
+                        if (delta7 != null) {
+                            {
+                                WloDeltaChip(
+                                    value = delta7,
+                                    format = { magnitude -> "${format1(magnitude)} kg / 7 d" },
+                                    style = wloType.statM,
+                                    context = "trend delta",
+                                )
+                            }
+                        } else {
+                            null
+                        },
+                    // The card header owns the single provenance chip (top-right).
+                    provenance = {},
                     modifier = Modifier.testTag("f06-trend-stat"),
                 )
             }
             state.lastWeighInLabel?.let { last ->
                 Text(
-                    text = "last raw reading $last",
+                    text = "Last raw reading $last",
                     style = wloType.receipt,
                     color = wloExtendedColors.textTertiary,
                 )
             }
-            PrimaryRow(
-                label = "weigh in",
+            WloButton(
+                label = "Weigh in",
+                onClick = { viewModel.onEvent(WeighInEvent.OpenSheet()) },
                 modifier = Modifier.fillMaxWidth().testTag("f06-open-sheet"),
-            ) { viewModel.onEvent(WeighInEvent.OpenSheet()) }
+            )
         }
 
         state.trend?.let { trend ->
             WloCard(modifier = Modifier.testTag("f06-trend-card")) {
-                Text(text = "90 days", style = wloType.title)
+                WloCardHeader(title = "90 days")
                 WloTrendChart(
                     samples = trend.samples,
                     trend = trend.trend,
-                    currentTrend = trend.current,
-                    formatWeight = { "${format1(it)} kg" },
+                    currentTrend = null,
+                    formatWeight = { kg -> "${format1(kg)} kg" },
                     reference = trend.reference,
                     describe = trend.description,
                 )
@@ -176,14 +204,23 @@ public fun WeightScreen(
                     onMethod = { viewModel.onEvent(WeighInEvent.MethodChange(it)) },
                     onAlpha = { viewModel.onEvent(WeighInEvent.AlphaChange(it)) },
                 )
-                PrimaryRow(label = "how the math works", modifier = Modifier.fillMaxWidth().testTag("f06-open-math")) {
-                    onOpenMath()
+                if (trend.preview) {
+                    Text(
+                        text = "preview — the saved trend keeps the default smoother",
+                        style = wloType.body.copy(fontSize = wloType.receipt.fontSize),
+                        color = wloExtendedColors.held,
+                    )
                 }
+                WloSecondaryButton(
+                    label = "How the math works",
+                    onClick = onOpenMath,
+                    modifier = Modifier.fillMaxWidth().testTag("f06-open-math"),
+                )
             }
         }
 
         WloCard(modifier = Modifier.testTag("f06-day-card")) {
-            Text(text = "today's weigh-ins", style = wloType.title)
+            WloCardHeader(title = "Today's weigh-ins")
             if (state.rows.isEmpty()) {
                 Text(
                     text = "none yet — the morning window reads steadiest, whenever you get to it",
@@ -203,9 +240,11 @@ public fun WeightScreen(
                     color = wloExtendedColors.textTertiary,
                 )
             }
-            PrimaryRow(label = "body fat methods", modifier = Modifier.fillMaxWidth().testTag("f06-open-bodyfat")) {
-                onOpenBodyFat()
-            }
+            WloSecondaryButton(
+                label = "Body-fat methods",
+                onClick = onOpenBodyFat,
+                modifier = Modifier.fillMaxWidth().testTag("f06-open-bodyfat"),
+            )
         }
 
         notice?.let {
@@ -244,7 +283,7 @@ private fun SmootherTuner(
 ): Unit =
     Column(verticalArrangement = Arrangement.spacedBy(WloSpacing.TIGHT)) {
         Text(
-            text = "smoother",
+            text = "Smoother",
             style = wloType.label,
             color = wloExtendedColors.textTertiary,
         )
@@ -259,7 +298,7 @@ private fun SmootherTuner(
             }
         }
         Text(
-            text = "responsiveness α ${format2(alpha)}",
+            text = "Responsiveness α ${format2(alpha)}",
             style = wloType.label,
             color = wloExtendedColors.textTertiary,
         )
@@ -269,11 +308,6 @@ private fun SmootherTuner(
             valueRange = ALPHA_MIN..ALPHA_MAX,
             colors = SliderDefaults.colors(thumbColor = MaterialTheme.colorScheme.primary),
             modifier = Modifier.fillMaxWidth().testTag("f06-alpha-slider"),
-        )
-        Text(
-            text = "lower reads calmer, higher reads faster — the formulas live behind “how the math works”",
-            style = wloType.body.copy(fontSize = wloType.receipt.fontSize),
-            color = wloExtendedColors.textTertiary,
         )
     }
 
@@ -339,10 +373,22 @@ private fun WeighInSheetContent(
             placeholder = { Text("kg", style = wloType.body, color = wloExtendedColors.textTertiary) },
         )
         Row(horizontalArrangement = Arrangement.spacedBy(WloSpacing.CARD)) {
-            PrimaryRow(label = "− 0.1", modifier = Modifier.weight(1f).testTag("f06-step-down")) { onStepDown() }
-            PrimaryRow(label = "+ 0.1", modifier = Modifier.weight(1f).testTag("f06-step-up")) { onStepUp() }
+            WloSecondaryButton(
+                label = "−0.1",
+                onClick = onStepDown,
+                modifier = Modifier.weight(1f).testTag("f06-step-down"),
+            )
+            WloSecondaryButton(
+                label = "+0.1",
+                onClick = onStepUp,
+                modifier = Modifier.weight(1f).testTag("f06-step-up"),
+            )
         }
-        PrimaryRow(label = "save weigh-in", modifier = Modifier.fillMaxWidth().testTag("f06-save-weighin")) { onSave() }
+        WloButton(
+            label = "Save weigh-in",
+            onClick = onSave,
+            modifier = Modifier.fillMaxWidth().testTag("f06-save-weighin"),
+        )
     }
 
 private fun methodLabel(method: TrendMethod): String =
@@ -350,28 +396,6 @@ private fun methodLabel(method: TrendMethod): String =
         TrendMethod.EWMA -> "trend (default)"
         TrendMethod.ZERO_PHASE_EWMA -> "zero-phase"
         TrendMethod.MOVING_AVERAGE_7D -> "7-day avg"
-    }
-
-/** A row-level button (48 dp floor — daily-use target, §3). */
-@Composable
-internal fun PrimaryRow(
-    label: String,
-    modifier: Modifier = Modifier,
-    onClick: () -> Unit,
-): Unit =
-    Surface(
-        onClick = onClick,
-        modifier = modifier.heightIn(min = WloSpacing.TOUCH_PRIMARY),
-        shape = WloShape.Chip,
-        color = MaterialTheme.colorScheme.surface,
-        contentColor = MaterialTheme.colorScheme.onSurface,
-        border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
-    ) {
-        Text(
-            text = label,
-            style = wloType.title.copy(fontSize = 15.sp),
-            modifier = Modifier.padding(WloSpacing.CARD),
-        )
     }
 
 private const val ALPHA_MIN = 0.05f

@@ -63,9 +63,10 @@ public class WloShellTest {
         composeTestRule.onAllNodesWithText("derived").onFirst().assertExists()
         composeTestRule.onAllNodesWithText("estimated").onFirst().assertExists()
         composeTestRule.onAllNodesWithText("ESTIMATED").onFirst().assertExists()
-        composeTestRule.onAllNodesWithText("Weight trend").onFirst().assertExists()
-        // The wizard's default start weight lands as the first trend scalar.
-        composeTestRule.onAllNodesWithText("82.0 kg").onFirst().assertExists()
+        // WloCardHeader uppercases the source string; the hero numeral renders
+        // WITHOUT the unit (defect 14) — the start weight stands in alone.
+        composeTestRule.onAllNodesWithText("WEIGHT TREND").onFirst().assertExists()
+        composeTestRule.onAllNodesWithText("82.0").onFirst().assertExists()
     }
 
     /** Grid-luminance check: the window must render the canonical dark palette. */

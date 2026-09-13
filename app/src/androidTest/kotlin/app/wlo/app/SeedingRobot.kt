@@ -163,42 +163,110 @@ public object SeedingRobot {
                 )
             }
 
-            // The seeder's double weigh-in day, verbatim (R-B8).
-            for (weighIn in DiarySeeder.weighIns()) {
-                val day = today - (6 - weighIn.dayOffset)
-                val at = DayBoundary.startOfDay(day, zone) + weighIn.hourOfDay.hours + weighIn.minuteOfHour.minutes
+            // The demo weigh-in series (WLO-0030 defects 10 + 13): ~45 days of
+            // gentle decline with bounded noise — the trend sits WITHIN ~0.5 kg
+            // of the latest raw reading, so the hero never reads as nonsense.
+            // Includes one double-weigh-in day, verbatim (R-B8): the evening
+            // re-weigh lands HIGHER, so lowest-of-day stays the morning value.
+            for (weighIn in demoWeighInSeries()) {
+                val day = today - weighIn.daysAgo
+                val at =
+                    DayBoundary.startOfDay(day, zone) +
+                        weighIn.hourOfDay.hours +
+                        weighIn.minuteOfHour.minutes
                 weighIns.appendWeighIn(
                     profileId = profileId,
                     dayEpochDay = day,
                     weightKg = weighIn.weightKg,
                     capturedAt = at,
-                    source = weighIn.source,
-                )
-            }
-            // Quiet weigh-ins on every other day (plus two days before the
-            // seeder week, so the 7-day delta has a lookback point): the
-            // trailing-7-day trend gate (F06 §4 / F10 §4) passes and the
-            // trend has data.
-            val base =
-                linkedMapOf(
-                    -2 to 82.10,
-                    -1 to 82.00,
-                    0 to 81.90,
-                    1 to 81.75,
-                    2 to 81.60,
-                    4 to 81.35,
-                    5 to 81.15,
-                    6 to 81.05,
-                )
-            for ((offset, kg) in base) {
-                val day = today - (6 - offset)
-                weighIns.appendWeighIn(
-                    profileId = profileId,
-                    dayEpochDay = day,
-                    weightKg = kg,
-                    capturedAt = DayBoundary.startOfDay(day, zone) + 7.hours,
                     source = MeasurementSource.MANUAL,
                 )
             }
         }
+
+    /**
+     * One row of the demo weigh-in series: how many days ago it was captured,
+     * the reading, and its morning-window time (the double day adds an evening
+     * re-weigh).
+     */
+    public data class SeriesWeighIn(
+        public val daysAgo: Long,
+        public val weightKg: Double,
+        public val hourOfDay: Int,
+        public val minuteOfHour: Int,
+    )
+
+    /** The series length (days) — a season of daily morning weigh-ins. */
+    public const val SERIES_DAYS: Int = 45
+
+    /** Series endpoints: 78.2 kg declining to ~77.0 kg (~0.027 kg/day). */
+    public const val SERIES_START_KG: Double = 78.2
+    public const val SERIES_END_KG: Double = 77.0
+
+    /** The morning weigh-in time — the same conditions every day. */
+    public const val MORNING_HOUR: Int = 6
+    public const val MORNING_MINUTE: Int = 30
+
+    /** The double-weigh-in day (R-B8): an evening re-weigh +0.3 kg above it. */
+    public const val DOUBLE_DAY_DAYS_AGO: Long = 3
+    public const val EVENING_DELTA_KG: Double = 0.3
+
+    /**
+     * Deterministic bounded noise (±0.35 kg), 15-entry cycle; the LAST
+     * entry is 0.0 so today's raw reading sits exactly on the trend line —
+     * no randomness anywhere, expectations stay hand-checkable.
+     */
+    public val NOISE_KG: List<Double> =
+        listOf(
+            0.12,
+            -0.31,
+            0.05,
+            0.22,
+            -0.18,
+            -0.35,
+            0.09,
+            0.27,
+            -0.08,
+            0.33,
+            -0.24,
+            0.02,
+            0.16,
+            -0.29,
+            0.0,
+        )
+
+    /**
+     * The demo series' morning reading for the day [dayOffsetFromStart]
+     * days after the series start (0 = first day). Gentle decline + noise.
+     */
+    public fun demoWeightKg(dayOffsetFromStart: Int): Double {
+        val span = SERIES_DAYS - 1
+        val decline = SERIES_START_KG - (SERIES_START_KG - SERIES_END_KG) * dayOffsetFromStart / span
+        return decline + NOISE_KG[dayOffsetFromStart % NOISE_KG.size]
+    }
+
+    /**
+     * The full demo weigh-in series, newest last: one morning reading per
+     * day for [SERIES_DAYS] days plus the evening re-weigh on the double
+     * day (higher — lowest-of-day keeps the morning value).
+     */
+    public fun demoWeighInSeries(): List<SeriesWeighIn> {
+        val mornings =
+            (0 until SERIES_DAYS).map { offset ->
+                SeriesWeighIn(
+                    daysAgo = (SERIES_DAYS - 1).toLong() - offset,
+                    weightKg = demoWeightKg(offset),
+                    hourOfDay = MORNING_HOUR,
+                    minuteOfHour = MORNING_MINUTE,
+                )
+            }
+        val doubleDay =
+            SeriesWeighIn(
+                daysAgo = DOUBLE_DAY_DAYS_AGO,
+                weightKg = demoWeightKg(SERIES_DAYS - 1 - DOUBLE_DAY_DAYS_AGO.toInt()) + EVENING_DELTA_KG,
+                hourOfDay = 19,
+                minuteOfHour = 45,
+            )
+        return mornings + doubleDay
+    }
 }

@@ -23,7 +23,9 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import app.wlo.core.designsystem.ProvenanceChip
 import app.wlo.core.designsystem.SelectChip
+import app.wlo.core.designsystem.WloButton
 import app.wlo.core.designsystem.WloCard
+import app.wlo.core.designsystem.WloSecondaryButton
 import app.wlo.core.designsystem.WloSpacing
 import app.wlo.core.designsystem.wloExtendedColors
 import app.wlo.core.designsystem.wloType
@@ -109,10 +111,11 @@ public fun BodyFatScreen(
                 }
             }
 
-            PrimaryRow(
-                label = "estimate",
+            WloButton(
+                label = "Estimate",
+                onClick = { viewModel.onEvent(BodyFatEvent.Compute) },
                 modifier = Modifier.fillMaxWidth().testTag("f06-bf-compute"),
-            ) { viewModel.onEvent(BodyFatEvent.Compute) }
+            )
         }
 
         state.estimate?.let { estimate ->
@@ -144,10 +147,11 @@ public fun BodyFatScreen(
                         }
                     }
                 }
-                PrimaryRow(
-                    label = "save to its series",
+                WloSecondaryButton(
+                    label = "Save to its series",
+                    onClick = { viewModel.onEvent(BodyFatEvent.SaveToLogbook) },
                     modifier = Modifier.fillMaxWidth().testTag("f06-bf-save"),
-                ) { viewModel.onEvent(BodyFatEvent.SaveToLogbook) }
+                )
             }
         }
 

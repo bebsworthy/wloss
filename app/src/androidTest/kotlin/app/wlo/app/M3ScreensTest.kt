@@ -65,7 +65,7 @@ public class M3ScreensTest {
         // Ladder: the hub camera tile now opens the REAL capture flow (M4
         // PART B); the manual ladder is its R-U15 twin, one tap away — which
         // this also exercises.
-        rule.onAllNodesWithText("log food").onFirst().performClick()
+        rule.onAllNodesWithText("Log food").onFirst().performClick()
         TestNav.awaitTag(rule, "f02-capture-viewfinder")
         rule.onNodeWithTag("f02-capture-manual", useUnmergedTree = true).performClick()
         TestNav.awaitTag(rule, "f02-search-field")
@@ -105,7 +105,7 @@ public class M3ScreensTest {
         backTo(ui, "hub-quick-actions")
 
         // Weigh-in sheet, the outlier prompt, the trend chart + tuner, math docs.
-        rule.onAllNodesWithText("weigh in").onFirst().performClick()
+        rule.onAllNodesWithText("Weigh in").onFirst().performClick()
         TestNav.awaitTag(rule, "f06-weighin-sheet")
         shot("m3-weighin-sheet")
         rule.onNodeWithTag("f06-weight-field", useUnmergedTree = true).performTextClearance()
@@ -127,7 +127,7 @@ public class M3ScreensTest {
         // rule-based test hang the rule's teardown; the M1 note's trap).
         rule.onNodeWithTag("tab-hub").performClick()
         TestNav.awaitTag(rule, "hub-quick-actions")
-        rule.onAllNodesWithText("digestion").onFirst().performClick()
+        rule.onAllNodesWithText("Digestion").onFirst().performClick()
         TestNav.awaitTag(rule, "title-stub")
         shot("m3-stub-gut")
         rule.onNodeWithTag("tab-hub").performClick()

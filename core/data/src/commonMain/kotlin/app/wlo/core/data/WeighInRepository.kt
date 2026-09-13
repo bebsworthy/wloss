@@ -5,12 +5,15 @@ import app.wlo.core.common.getOrNull
 import app.wlo.core.common.map
 import app.wlo.core.engines.OutlierVerdict
 import app.wlo.core.engines.SmoothingEngine
+import app.wlo.core.engines.TrendSeries
 import app.wlo.core.engines.WeightSample
 import app.wlo.core.model.ConstantsRegistry
+import app.wlo.core.model.DerivedValue
 import app.wlo.core.model.MeasurementAttr
 import app.wlo.core.model.MeasurementEvent
 import app.wlo.core.model.MeasurementKind
 import app.wlo.core.model.MeasurementSource
+import app.wlo.core.model.Provenance
 import app.wlo.core.model.TrendMethod
 import kotlinx.datetime.Instant
 
@@ -69,7 +72,37 @@ public interface WeighInRepository {
         method: TrendMethod = TrendMethod.EWMA,
         alpha: Double = ConstantsRegistry.EWMA_ALPHA_DEFAULT,
     ): WloResult<app.wlo.core.engines.TrendSeries>
+
+    /**
+     * THE one current-trend answer (owner review WLO-0030, defect 9: the Hub
+     * read the persisted day projection while the weight page recomputed over
+     * its own window — two sources of truth). Default smoother (EWMA, R-A2 α)
+     * over the canonical [RoomWeighInRepository.TREND_WINDOW_DAYS]-day window
+     * ending [toDay]. The Hub hero, the F06 default view, AND the projection
+     * writer (the persisted TREND scalar) all go through this one function, so
+     * every surface's inputs are identical by construction. [TrendUi]-style
+     * tuner selections are F06's preview, never this door.
+     */
+    public suspend fun currentTrend(
+        profileId: String,
+        toDay: Long,
+    ): WloResult<CurrentTrend>
 }
+
+/**
+ * The shared current-trend snapshot: the canonical series for a sparkline, the
+ * latest smoothed value, and the weekly delta — all from the one window.
+ */
+public data class CurrentTrend(
+    /** Lowest-of-day scalars of the canonical window, oldest first. */
+    public val samples: List<WeightSample>,
+    /** The default smoother's series over those samples (null when empty). */
+    public val series: TrendSeries?,
+    /** The latest trend value (null while no weigh-ins exist in the window). */
+    public val current: DerivedValue<Double>?,
+    /** Trend now minus trend 7 days back (null when the lookback point is absent). */
+    public val delta7: DerivedValue<Double>?,
+)
 
 /** Append result: the stored event plus the guard's verdict (UI confirm input). */
 public data class WeighInOutcome(
@@ -137,23 +170,23 @@ public class RoomWeighInRepository public constructor(
             )
         }
 
-        // Persist today's trend scalar (default smoother) so the day view and
-        // F07's contract (R-B5) read one consistent series. The last TREND
-        // event of a day wins in the projection — recompute-safe, append-only.
-        trend(profileId, dayEpochDay - TREND_WINDOW_DAYS, dayEpochDay)
+        // Persist today's trend scalar (the canonical current-trend answer —
+        // the same computation [currentTrend] serves) so the day view and F07's
+        // contract (R-B5) read one consistent series. The last TREND event of a
+        // day wins in the projection — recompute-safe, append-only.
+        currentTrend(profileId, dayEpochDay)
             .getOrNull()
-            ?.points
-            ?.lastOrNull()
-            ?.let { point ->
+            ?.current
+            ?.let { current ->
                 measurements.append(
                     NewMeasurement(
                         profileId = profileId,
                         dayEpochDay = dayEpochDay,
                         kind = MeasurementKind.TREND,
-                        valueReal = point.trendKg.value,
+                        valueReal = current.value,
                         source = MeasurementSource.ENGINE,
                         capturedAt = capturedAt,
-                        note = point.trendKg.provenance.toString(),
+                        note = current.provenance.toString(),
                     ),
                 )
             }
@@ -205,11 +238,53 @@ public class RoomWeighInRepository public constructor(
             SmoothingEngine.trend(samples, method, alpha)
         }
 
+    override suspend fun currentTrend(
+        profileId: String,
+        toDay: Long,
+    ): WloResult<CurrentTrend> =
+        dailyScalars(profileId, toDay - TREND_WINDOW_DAYS + 1, toDay).map { samples ->
+            if (samples.isEmpty()) {
+                CurrentTrend(samples = samples, series = null, current = null, delta7 = null)
+            } else {
+                val series = SmoothingEngine.trend(samples)
+                val last = series.points.last()
+                val byDay = series.points.associate { it.epochDay to it.trendKg.value }
+                val delta =
+                    byDay[last.epochDay - DELTA_WINDOW_DAYS]?.let { weekAgo ->
+                        DerivedValue(
+                            last.trendKg.value - weekAgo,
+                            Provenance.Derived(
+                                formulaVersion = seriesFormulaVersion(series),
+                                inputs = listOf("windowDays=$DELTA_WINDOW_DAYS"),
+                            ),
+                        )
+                    }
+                CurrentTrend(
+                    samples = samples,
+                    series = series,
+                    current = last.trendKg,
+                    delta7 = delta,
+                )
+            }
+        }
+
+    /** The series' formula version from its points' provenance (EWMA default). */
+    private fun seriesFormulaVersion(series: app.wlo.core.engines.TrendSeries): String =
+        (series.points.lastOrNull()?.trendKg?.provenance as? Provenance.Derived)?.formulaVersion
+            ?: ConstantsRegistry.EWMA_FORMULA_VERSION
+
     public companion object {
         /** EAV attr key carrying the outlier flag (F06 §4, kept-verbatim rule). */
         public const val OUTLIER_ATTR: String = "outlier"
 
-        /** Days of daily scalars the trend is computed over on append. */
+        /**
+         * THE canonical trend window (days of daily scalars): [currentTrend]
+         * computes over it and the append path persists its answer — one
+         * window, one answer, everywhere.
+         */
         public const val TREND_WINDOW_DAYS: Long = 30
+
+        /** The weekly delta lookback (days) behind the last trend point. */
+        public const val DELTA_WINDOW_DAYS: Long = 7
     }
 }

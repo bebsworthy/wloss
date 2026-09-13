@@ -2,9 +2,12 @@ package app.wlo.feature.f10.hub.ui
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -12,7 +15,9 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -26,19 +31,24 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import app.wlo.core.common.MassUnit
+import app.wlo.core.designsystem.ProvenanceChip
 import app.wlo.core.designsystem.WloCard
+import app.wlo.core.designsystem.WloCardHeader
+import app.wlo.core.designsystem.WloDeltaChip
 import app.wlo.core.designsystem.WloForecastBands
 import app.wlo.core.designsystem.WloForecastCard
-import app.wlo.core.designsystem.WloMonthHeatmap
+import app.wlo.core.designsystem.WloHeroStat
+import app.wlo.core.designsystem.WloSecondaryButton
 import app.wlo.core.designsystem.WloShape
 import app.wlo.core.designsystem.WloSpacing
-import app.wlo.core.designsystem.WloStat
 import app.wlo.core.designsystem.WloStatDivider
 import app.wlo.core.designsystem.WloStatRow
+import app.wlo.core.designsystem.WloTrendChart
 import app.wlo.core.designsystem.wloExtendedColors
 import app.wlo.core.designsystem.wloType
 import app.wlo.core.engines.CardState
@@ -48,18 +58,19 @@ import app.wlo.core.engines.HubQuickAction
 import app.wlo.core.model.DerivedValue
 import app.wlo.feature.f10.hub.state.DiarySliceUi
 import app.wlo.feature.f10.hub.state.ExplainerUi
-import app.wlo.feature.f10.hub.state.HeatmapUi
 import app.wlo.feature.f10.hub.state.HubEvent
 import app.wlo.feature.f10.hub.state.HubUiState
 import app.wlo.feature.f10.hub.state.HubViewModel
-import kotlin.math.abs
+import app.wlo.feature.f10.hub.state.WeekDotUi
+import kotlinx.datetime.LocalDate
 
 /**
  * The Hub (F10 surface): the Adaptive Day Model's phase-aware card stack, the
- * quick-action rail, the diary slice with the shared month heatmap (R-D4),
- * and the R-A5 cold-start forecast — ESTIMATED-chipped from day zero. Every
- * chip taps through to the "how we got here" sheet; "Computed on your device"
- * is stated once, here. The user never types on the Hub (F10 §4).
+ * quick-action rail, the diary slice with the mock's week-dots row (owner
+ * review WLO-0030, defect 12 — the month heatmap never belonged here), and
+ * the R-A5 cold-start forecast — ESTIMATED-chipped from day zero. Every chip
+ * taps through to the "how we got here" sheet; "Computed on your device" is
+ * stated once, here. The user never types on the Hub (F10 §4).
  */
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -110,14 +121,17 @@ public fun HubScreen(
                         isHero = card.card == current.dayModel.heroCard,
                         state = current,
                         actions = actions,
+                        onExplain = { explainer -> viewModel.onEvent(HubEvent.ShowExplainer(explainer)) },
                     )
                 }
 
                 current.diarySlice?.let { slice ->
                     DiaryCard(
                         slice = slice,
-                        heatmap = current.heatmap,
+                        weekDots = current.weekDots,
+                        diaryExplainer = current.diaryExplainer,
                         onOpenDiary = actions.onOpenDiary,
+                        onExplain = { viewModel.onEvent(HubEvent.ShowExplainer(it)) },
                     )
                 }
 
@@ -137,7 +151,7 @@ public fun HubScreen(
                             ),
                         goalWeight = forecast.goalWeight,
                         estimate = forecast.estimate,
-                        formatWeight = { kg -> MassUnit.KILOGRAM.format(kg) },
+                        formatWeight = { kg -> current.massUnit.format(kg) },
                         formatKcal = ::formatKcalValue,
                         onExplain = { viewModel.onEvent(HubEvent.ShowExplainer(forecast.explainer)) },
                         modifier = Modifier.testTag("hub-forecast-card"),
@@ -215,13 +229,13 @@ private fun QuickActionRail(
             val item =
                 when (quick) {
                     HubQuickAction.PHOTO_LOG ->
-                        RailItem("log food", HubIcons.Photo, actions.onOpenCapture, actions.onQuickAddKcal)
+                        RailItem("Log food", HubIcons.Photo, actions.onOpenCapture, actions.onQuickAddKcal)
                     HubQuickAction.WEIGH_IN ->
-                        RailItem("weigh in", HubIcons.Weigh, actions.onLogWeight)
+                        RailItem("Weigh in", HubIcons.Weigh, actions.onLogWeight)
                     HubQuickAction.POOP_LOG ->
-                        RailItem("digestion", HubIcons.Gut, actions.onGutLog)
+                        RailItem("Digestion", HubIcons.Gut, actions.onGutLog)
                     HubQuickAction.WORKOUT_START ->
-                        RailItem("workout", HubIcons.Workout, actions.onWorkout)
+                        RailItem("Workout", HubIcons.Workout, actions.onWorkout)
                 }
             RailButton(
                 item = item,
@@ -274,15 +288,12 @@ private fun HubCardView(
     isHero: Boolean,
     state: HubUiState.Ready,
     actions: HubActions,
+    onExplain: (ExplainerUi) -> Unit,
 ) {
     when (card.card) {
         HubCard.WEIGH_IN ->
             WloCard(modifier = Modifier.testTag("hub-weigh-card").clickable(onClick = actions.onLogWeight)) {
-                Text(
-                    text = "the morning window",
-                    style = wloType.label,
-                    color = wloExtendedColors.textTertiary,
-                )
+                WloCardHeader(title = "Morning window")
                 Text(text = "Weigh in", style = wloType.title)
                 Text(
                     text = "one number — the trend does the reading",
@@ -291,29 +302,27 @@ private fun HubCardView(
                 )
             }
 
-        HubCard.TREND -> TrendCard(isHero = isHero, state = state, onOpenWeight = actions.onOpenWeight)
+        HubCard.TREND ->
+            TrendCard(isHero = isHero, state = state, onOpenWeight = actions.onOpenWeight, onExplain = onExplain)
 
-        HubCard.CALORIE_RING -> BudgetCard(state = state)
+        HubCard.CALORIE_RING -> BudgetCard(state = state, onExplain = onExplain)
 
         HubCard.CLOSE_DAY ->
             WloCard(modifier = Modifier.testTag("hub-close-card").clickable(onClick = actions.onOpenDiary)) {
-                Text(
-                    text = "close the day",
-                    style = wloType.label,
-                    color = wloExtendedColors.textTertiary,
-                )
+                WloCardHeader(title = "Close the day")
                 Text(text = "See today's diary", style = wloType.title)
             }
 
         HubCard.RECAP ->
             WloCard(modifier = Modifier.testTag("hub-recap-card")) {
-                Text(
-                    text = "the day, so far",
-                    style = wloType.label,
-                    color = wloExtendedColors.textTertiary,
-                )
+                WloCardHeader(title = "The day, so far")
                 state.diarySlice?.let { slice ->
-                    WloStatRow(label = "logged today", value = slice.kcal, format = ::formatKcalValue)
+                    WloStatRow(
+                        label = "logged today",
+                        value = slice.kcal,
+                        format = ::formatKcalValue,
+                        onExplain = state.diaryExplainer?.let { handler -> { onExplain(handler) } },
+                    )
                 } ?: Text(
                     text = "nothing logged yet today",
                     style = wloType.body.copy(fontSize = wloType.receipt.fontSize),
@@ -327,11 +336,7 @@ private fun HubCardView(
 
         HubCard.PLAN_TOMORROW ->
             WloCard(modifier = Modifier.testTag("hub-plan-tomorrow-card").clickable(onClick = actions.onPlanTomorrow)) {
-                Text(
-                    text = "tomorrow",
-                    style = wloType.label,
-                    color = wloExtendedColors.textTertiary,
-                )
+                WloCardHeader(title = "Tomorrow")
                 Text(text = "Plan tomorrow", style = wloType.title)
                 Text(
                     text = "deal or check the week before the morning decides for you",
@@ -351,11 +356,7 @@ private fun MealsTodayCard(
     onOpenPlan: () -> Unit,
 ): Unit =
     WloCard(modifier = Modifier.testTag("hub-meals-card").clickable(onClick = onOpenPlan)) {
-        Text(
-            text = "meals · today",
-            style = wloType.label,
-            color = wloExtendedColors.textTertiary,
-        )
+        WloCardHeader(title = "Meals · today")
         val open = state.plannedMealsOpen ?: 0
         Text(
             text = if (open == 1) "1 planned meal open" else "$open planned meals open",
@@ -368,11 +369,19 @@ private fun MealsTodayCard(
         )
     }
 
+/**
+ * The hero (F10 §5, mock ann. 2/3 — owner review WLO-0030): card header with
+ * the derived chip TOP-RIGHT (single icon, no repeated value), the hero
+ * numeral with a small unit suffix + the weekly delta inline, the 30-day
+ * sparkline with its caption + "tap for history" hint — and the whole card
+ * still taps through to the weight page.
+ */
 @Composable
 private fun TrendCard(
     isHero: Boolean,
     state: HubUiState.Ready,
     onOpenWeight: () -> Unit,
+    onExplain: (ExplainerUi) -> Unit,
 ): Unit =
     WloCard(
         modifier =
@@ -380,130 +389,178 @@ private fun TrendCard(
                 .testTag("hub-trend-card")
                 .clickable(onClick = onOpenWeight),
     ) {
+        val trendExplainer = state.trendExplainer
+        val heroDelta = state.heroDelta
+        WloCardHeader(
+            title = "Weight trend",
+            provenance =
+                if (trendExplainer != null) {
+                    {
+                        ProvenanceChip(
+                            value = state.heroTrend,
+                            format = ::formatNumeral,
+                            onClick = { onExplain(trendExplainer) },
+                        )
+                    }
+                } else {
+                    null
+                },
+        )
+
+        WloHeroStat(
+            value = state.heroTrend,
+            format = ::formatNumeral,
+            unit = state.massUnit.symbol,
+            valueStyle = if (isHero) wloType.hero else wloType.statL,
+            delta =
+                if (heroDelta != null) {
+                    { DeltaChipFor(heroDelta, state.massUnit) }
+                } else {
+                    null
+                },
+            // The card header owns the single provenance chip (top-right).
+            provenance = {},
+        )
+
+        WloTrendChart(
+            samples = state.trendSamples,
+            trend = state.trendLine,
+            currentTrend = null,
+            formatWeight = { kg -> "${formatNumeral(kg)} ${state.massUnit.symbol}" },
+            describe = "Weight trend chart: 30 days of scale dots with the trend line.",
+            modifier = Modifier.fillMaxWidth(),
+        )
         Text(
-            text = "Weight trend",
-            style = wloType.label,
+            text = "Last 30 days · tap for history",
+            style = wloType.body.copy(fontSize = wloType.receipt.fontSize),
             color = wloExtendedColors.textTertiary,
         )
-        Spacer(Modifier.height(WloSpacing.CARD))
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            WloStat(
-                label = "trend",
-                value = state.heroTrend,
-                format = ::identity,
-                valueStyle = if (isHero) wloType.hero else wloType.statL,
-                modifier = Modifier.weight(1f),
-            )
-            state.heroDelta?.let { delta -> DeltaChipFor(delta) }
-        }
     }
 
-/** Delta chip (§7.1): sign-forward, valence-free hues — down = accent, up = neutral. */
+/** The weekly delta chip (§7.1): sign-forward, valence-free hues — down = accent, up = neutral. */
 @Composable
-private fun DeltaChipFor(delta: DerivedValue<Double>): Unit =
-    Row(verticalAlignment = Alignment.CenterVertically) {
-        val color =
-            when {
-                delta.value < 0.0 -> MaterialTheme.colorScheme.primary
-                delta.value > 0.0 -> wloExtendedColors.neutralDelta
-                else -> MaterialTheme.colorScheme.onSurfaceVariant
-            }
-        val sign =
-            when {
-                delta.value < 0.0 -> "− "
-                delta.value > 0.0 -> "+ "
-                else -> "± "
-            }
-        Text(
-            text = "$sign${MassUnit.KILOGRAM.format(abs(delta.value))} / 7 d",
-            style = wloType.statM,
-            color = color,
-        )
-    }
+private fun DeltaChipFor(
+    delta: DerivedValue<Double>,
+    unit: MassUnit,
+): Unit =
+    WloDeltaChip(
+        value = delta,
+        format = { magnitude -> "${formatNumeral(magnitude)} ${unit.symbol} / 7 d" },
+        context = "trend delta",
+    )
 
-private fun identity(value: String): String = value
+/** Numeral-only formatting (no unit) — the hero's numeral, the chart axis, the chip a11y text. */
+private fun formatNumeral(kg: Double): String {
+    val tenths = (kg * 10).toLong()
+    val whole = tenths / 10
+    val tenth = tenths % 10
+    return "$whole.$tenth"
+}
 
 @Composable
-private fun BudgetCard(state: HubUiState.Ready): Unit =
+private fun BudgetCard(
+    state: HubUiState.Ready,
+    onExplain: (ExplainerUi) -> Unit,
+): Unit =
     WloCard(modifier = Modifier.testTag("hub-energy-card")) {
-        Text(
-            text = "Calories",
-            style = wloType.label,
-            color = wloExtendedColors.textTertiary,
-        )
-        Spacer(Modifier.height(WloSpacing.TIGHT))
+        WloCardHeader(title = "Calories")
         state.budget?.let {
             WloStatRow(
                 label = "of today's budget",
                 value = it,
                 format = ::identity,
+                onExplain = state.budgetExplainer?.let { handler -> { onExplain(handler) } },
                 modifier = Modifier.testTag("hub-budget-row"),
             )
         }
-        state.burn?.let {
+        if (state.budget != null && state.burn != null) {
             WloStatDivider()
+        }
+        state.burn?.let {
             WloStatRow(
                 label = "estimated burn, today",
                 value = it,
                 format = ::identity,
+                onExplain = state.burnExplainer?.let { handler -> { onExplain(handler) } },
                 modifier = Modifier.testTag("hub-burn-row"),
             )
         }
     }
 
-/** The diary slice (F10 renders today; F02 owns the diary, R-B1) + the R-D4 heatmap. */
+/** The diary slice (F10 renders today; F02 owns the diary, R-B1) + the week dots. */
 @Composable
 private fun DiaryCard(
     slice: DiarySliceUi,
-    heatmap: HeatmapUi?,
+    weekDots: List<WeekDotUi>,
+    diaryExplainer: ExplainerUi?,
     onOpenDiary: () -> Unit,
+    onExplain: (ExplainerUi) -> Unit,
 ): Unit =
     WloCard(modifier = Modifier.testTag("hub-diary-card")) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Text(
-                text = "Diary · today",
-                style = wloType.label,
-                color = wloExtendedColors.textTertiary,
-                modifier = Modifier.weight(1f),
-            )
-            Text(
-                text = "${slice.entryCount} entries",
-                style = wloType.receipt,
-                color = wloExtendedColors.textTertiary,
-            )
-        }
-        WloStatRow(label = slice.slotSummary, value = slice.kcal, format = ::formatKcalValue)
-        heatmap?.let { hm ->
-            WloMonthHeatmap(
-                values = hm.values,
-                initialMonth = hm.monthStart,
-                upTo = hm.upTo,
-                describeCell = { date, intensity ->
-                    val dayLabel = "${date.month.name.lowercase().take(3)} ${date.dayOfMonth}"
-                    when {
-                        intensity == null -> "$dayLabel — not logged"
-                        intensity <= 0.0 -> "$dayLabel — logged, no energy"
-                        else -> "$dayLabel — logged"
-                    }
-                },
-                modifier = Modifier.fillMaxWidth().testTag("hub-heatmap"),
-            )
-        }
-        Surface(
+        WloCardHeader(
+            title = "Diary · today",
+            provenance = {
+                Text(
+                    text = "${slice.entryCount} entries",
+                    style = wloType.receipt,
+                    color = wloExtendedColors.textTertiary,
+                )
+            },
+        )
+        WloStatRow(
+            label = slice.slotSummary,
+            value = slice.kcal,
+            format = ::formatKcalValue,
+            onExplain = diaryExplainer?.let { handler -> { onExplain(handler) } },
+        )
+        WeekDotsRow(weekDots)
+        WloSecondaryButton(
+            label = "Open diary",
             onClick = onOpenDiary,
             modifier = Modifier.fillMaxWidth().testTag("hub-open-diary"),
-            shape = WloShape.Chip,
-            color = MaterialTheme.colorScheme.surface,
-            contentColor = MaterialTheme.colorScheme.onSurface,
-            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
-        ) {
-            Text(
-                text = "open the diary",
-                style = wloType.title.copy(fontSize = 15.sp),
-                modifier = Modifier.padding(WloSpacing.CARD),
+        )
+    }
+
+/** The mock's week-dots row: current week M..S, filled when the day has logged food. */
+@Composable
+private fun WeekDotsRow(weekDots: List<WeekDotUi>): Unit =
+    Row(
+        modifier = Modifier.fillMaxWidth().testTag("hub-week-dots"),
+        horizontalArrangement = Arrangement.spacedBy(WloSpacing.CARD),
+    ) {
+        val outline = wloExtendedColors.textTertiary.copy(alpha = 0.45f)
+        for (dot in weekDots) {
+            val label = weekdayShort(dot.epochDay)
+            val description =
+                when {
+                    dot.logged -> "$label — logged"
+                    dot.isFuture -> "$label — not yet"
+                    else -> "$label — not logged"
+                }
+            Box(
+                modifier =
+                    Modifier
+                        .size(14.dp)
+                        .then(
+                            if (dot.logged) {
+                                Modifier.background(MaterialTheme.colorScheme.primary, CircleShape)
+                            } else {
+                                Modifier.border(1.dp, outline, CircleShape)
+                            },
+                        ).semantics { this.contentDescription = description },
             )
         }
     }
+
+private fun weekdayShort(epochDay: Long): String {
+    val date = LocalDate.fromEpochDays(epochDay.toInt())
+    val weekday =
+        date.dayOfWeek.name
+            .lowercase()
+            .take(3)
+            .replaceFirstChar { it.uppercase() }
+    return "$weekday ${date.dayOfMonth}"
+}
 
 @Composable
 private fun ExplainerSheetContent(explainer: ExplainerUi) {
@@ -546,4 +603,7 @@ private fun ExplainerSheetContent(explainer: ExplainerUi) {
 }
 
 /** Identity formatter for display-ready strings (chips already carry units). */
+private fun identity(value: String): String = value
+
+/** kcal formatting for the diary/energy chips. */
 private fun formatKcalValue(value: Double): String = "%,d kcal".format(value.toInt())

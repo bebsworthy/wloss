@@ -7,12 +7,15 @@ import app.wlo.core.common.DayBoundary
 import app.wlo.core.common.MassUnit
 import app.wlo.core.common.getOrNull
 import app.wlo.core.data.DayProjectionRepository
+import app.wlo.core.data.DayProjector
 import app.wlo.core.data.DayView
 import app.wlo.core.data.DiaryRepository
 import app.wlo.core.data.PlannerRepository
 import app.wlo.core.data.ProfileRepository
+import app.wlo.core.data.RoomWeighInRepository
 import app.wlo.core.data.TargetsRepository
 import app.wlo.core.data.WeighInRepository
+import app.wlo.core.designsystem.ChartPoint
 import app.wlo.core.documents.DietTemplateApplier
 import app.wlo.core.documents.TargetsRecord
 import app.wlo.core.engines.ColdStartInput
@@ -22,7 +25,6 @@ import app.wlo.core.engines.DayModelInput
 import app.wlo.core.engines.DayPhase
 import app.wlo.core.engines.ForecastBands
 import app.wlo.core.engines.ForecastEngine
-import app.wlo.core.engines.TrendSeries
 import app.wlo.core.model.ConstantsRegistry
 import app.wlo.core.model.DerivedValue
 import app.wlo.core.model.MealSlot
@@ -42,6 +44,7 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.datetime.Instant
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.TimeZone
+import kotlinx.datetime.isoDayNumber
 import kotlinx.datetime.toLocalDateTime
 
 /**
@@ -62,14 +65,30 @@ public sealed interface HubUiState {
         public val todayLabel: String,
         public val phase: DayPhase,
         public val dayModel: DayModel,
-        /** The hero's trend-first number + the weekly delta (null until gated in). */
-        public val heroTrend: DerivedValue<String>,
+        /**
+         * The hero's trend-first number, UNIT-FREE (owner review WLO-0030,
+         * defect 14: "kg" used to be baked into a pre-formatted string so
+         * numeral + unit rendered as one display-size run). [massUnit] owns
+         * the symbol; the surface formats numeral and unit separately.
+         */
+        public val heroTrend: DerivedValue<Double>,
+        public val massUnit: MassUnit,
+        /** The weekly delta for the hero chip (null until gated in). */
         public val heroDelta: DerivedValue<Double>?,
         public val trendChipAvailable: Boolean,
+        /** The 30-day sparkline's raw scalars + canonical trend line. */
+        public val trendSamples: List<ChartPoint>,
+        public val trendLine: List<ChartPoint>,
+        /** "How we got here" for the trend chip (null while the gate holds). */
+        public val trendExplainer: ExplainerUi?,
         public val budget: DerivedValue<String>?,
+        public val budgetExplainer: ExplainerUi?,
         public val burn: DerivedValue<String>?,
+        public val burnExplainer: ExplainerUi?,
         public val diarySlice: DiarySliceUi?,
-        public val heatmap: HeatmapUi?,
+        public val diaryExplainer: ExplainerUi?,
+        /** Current week M..S — one dot per day, logged vs not (the mock's row). */
+        public val weekDots: List<WeekDotUi>,
         public val forecast: HubForecast?,
         public val explainer: ExplainerUi? = null,
         /** F03 (M5): open planned meals for today; null while no plan exists. */
@@ -84,13 +103,16 @@ public data class DiarySliceUi(
     public val slotSummary: String,
 )
 
-/** The month heatmap payload — diary density (R-D4: THE shared heatmap). */
-public data class HeatmapUi(
-    public val values: Map<Long, Double>,
-    public val monthStart: LocalDate,
-    public val description: String,
-    /** Today's epoch day — days after it render empty, never as gaps. */
-    public val upTo: Long,
+/**
+ * One day-dot of the diary card's week row (owner review WLO-0030, defect 12:
+ * the month heatmap was never in the mock — the week dots are).
+ */
+public data class WeekDotUi(
+    public val epochDay: Long,
+    public val logged: Boolean,
+    public val isToday: Boolean,
+    /** Days after today render as empty promise, never as gaps. */
+    public val isFuture: Boolean,
 )
 
 /**
@@ -205,20 +227,48 @@ public class HubViewModel(
         val (profile, day, current) = inputs
         val unit = massUnitFor(profile.unitPreference)
 
-        val trendValue = day?.trendWeightKg?.value ?: profile.startWeightKg
-        val trendProvenance =
-            day?.trendWeightKg?.provenance
-                ?: Provenance.Measured(at = profile.createdAt, instrument = "start-weight entry")
-        val heroTrend = DerivedValue(unit.format(trendValue), trendProvenance)
+        // THE single trend source (WLO-0030 defect 9): the same repository
+        // door F06's default view reads — never the persisted projection
+        // snapshot, never a differently-windowed recompute.
+        val trend = weighIns.currentTrend(profile.id, today).getOrNull()
+        val heroTrend =
+            trend?.current
+                ?: DerivedValue(
+                    profile.startWeightKg,
+                    Provenance.Measured(at = profile.createdAt, instrument = "start-weight entry"),
+                )
+
+        // The F10 §4 gate (≥3 weigh-ins in the trailing 7 days) opens the
+        // delta chip + the sparkline's trend line.
+        val gateOpen =
+            trend
+                ?.samples
+                .orEmpty()
+                .count { it.epochDay > today - TREND_GATE_WINDOW_DAYS } >= TREND_GATE_MIN_POINTS
+        val delta = if (gateOpen) trend?.delta7 else null
+        val trendSamples =
+            trend
+                ?.samples
+                .orEmpty()
+                .map { ChartPoint(it.epochDay, it.weightKg) }
+        val trendLine =
+            if (gateOpen) {
+                trend
+                    ?.series
+                    ?.points
+                    .orEmpty()
+                    .map { ChartPoint(it.epochDay, it.trendKg.value) }
+            } else {
+                emptyList()
+            }
 
         val budget = day?.budgetKcal?.let { DerivedValue(formatKcal(it.value), it.provenance) }
         val burn =
             day?.burnKcal?.takeIf { it.value > 0.0 }?.let { DerivedValue(formatKcal(it.value), it.provenance) }
-        val forecast = current?.let { coldStartForecast(profile, it, day, unit) }
+        val forecast = current?.let { coldStartForecast(profile, it, heroTrend.value, day?.budgetKcal?.value, unit) }
 
         val diarySlice = renderDiarySlice(profile.id)
-        val heatmap = renderHeatmap(profile.id)
-        val delta = trendDelta7(profile.id)
+        val weekDots = renderWeekDots(profile.id)
 
         // The Day Model rules (F10 §3). Completeness inputs the features own:
         // the weigh-in flag, the F10 §4 trend gate, and (since M5) the F03
@@ -244,12 +294,24 @@ public class HubViewModel(
             phase = dayModel.phase,
             dayModel = dayModel,
             heroTrend = heroTrend,
+            massUnit = unit,
             heroDelta = delta,
             trendChipAvailable = delta != null,
+            trendSamples = trendSamples,
+            trendLine = trendLine,
+            trendExplainer =
+                if (trend?.current != null) {
+                    trendExplainer()
+                } else {
+                    null
+                },
             budget = budget,
+            budgetExplainer = budget?.let { budgetExplainer(it) },
             burn = burn,
+            burnExplainer = burn?.let { burnExplainer(it) },
             diarySlice = diarySlice,
-            heatmap = heatmap,
+            diaryExplainer = diarySlice?.let { diaryExplainer(it) },
+            weekDots = weekDots,
             forecast = forecast,
             plannedMealsOpen = planFlags.openToday,
         )
@@ -278,7 +340,7 @@ public class HubViewModel(
         val tomorrowPending: Boolean,
     )
 
-    // --- diary slice + heatmap (R-D4) ---
+    // --- diary slice + week dots (F10 renders today; F02 owns the diary, R-B1) ---
 
     private suspend fun renderDiarySlice(profileId: String): DiarySliceUi? {
         val day = diary.day(profileId, today).getOrNull() ?: return null
@@ -295,29 +357,85 @@ public class HubViewModel(
     }
 
     /**
-     * The month heatmap of logged days (diary density): F02 §5's logged-days
-     * heatmap rendered on the Hub's diary card through the ONE shared
-     * designsystem component (R-D4), later reused by F05/F09/F11.
+     * The diary card's week-dots row (WLO-0030 defect 12: the mock's current
+     * week M..S replaces the month heatmap here): one dot per day, filled when
+     * that day has logged food. Same door the heatmap read — the day
+     * projection range (A.3), a day counts as logged when its intake scalar
+     * exists.
      */
-    private suspend fun renderHeatmap(profileId: String): HeatmapUi? {
-        val todayDate = toLocalDate(today)
-        val monthStart = LocalDate(year = todayDate.year, monthNumber = todayDate.monthNumber, dayOfMonth = 1)
-        val from = monthStart.toEpochDays().toLong()
-        val views = dayProjection.range(profileId, from, today).getOrNull().orEmpty()
-        val maxKcal = views.mapNotNull { it.intakeKcal?.value }.maxOrNull() ?: return null
-        if (maxKcal <= 0.0) return null
-        val values =
-            views
-                .mapNotNull { view -> view.intakeKcal?.let { view.dayEpochDay to it.value } }
-                .toMap()
-                .mapValues { (_, kcal) -> (kcal / maxKcal).coerceIn(0.0, 1.0) }
-        return HeatmapUi(
-            values = values,
-            monthStart = monthStart,
-            description = "logged days this month, energy density tinted",
-            upTo = today,
-        )
+    private suspend fun renderWeekDots(profileId: String): List<WeekDotUi> {
+        val weekStart = today - (toLocalDate(today).dayOfWeek.isoDayNumber - 1)
+        val views = dayProjection.range(profileId, weekStart, today).getOrNull().orEmpty()
+        val loggedDays = views.mapNotNullTo(mutableSetOf()) { view -> view.intakeKcal?.let { view.dayEpochDay } }
+        return (0 until 7).map { offset ->
+            val day = weekStart + offset
+            WeekDotUi(
+                epochDay = day,
+                logged = day in loggedDays,
+                isToday = day == today,
+                isFuture = day > today,
+            )
+        }
     }
+
+    // --- explainers ("how we got here" — every chip opens real content) ---
+
+    /** The hero trend chip's sheet: EWMA, α, window, inputs (defect 16). */
+    private fun trendExplainer(): ExplainerUi =
+        ExplainerUi(
+            headline = "How we got here",
+            rows =
+                listOf(
+                    "your weight" to "a trailing average, not one reading",
+                    "method" to "EWMA (exponential moving average)",
+                    "responsiveness α" to ConstantsRegistry.EWMA_ALPHA_DEFAULT.toString(),
+                    "window" to "the last ${RoomWeighInRepository.TREND_WINDOW_DAYS} days",
+                    "input" to "your daily lowest readings",
+                    "formula" to ConstantsRegistry.EWMA_FORMULA_VERSION,
+                ),
+            note = "Computed on your device from your daily lowest readings.",
+        )
+
+    /** The budget chip's sheet: the adaptive targets + the formulas behind them. */
+    private fun budgetExplainer(budget: DerivedValue<String>): ExplainerUi =
+        ExplainerUi(
+            headline = "How we got here",
+            rows =
+                listOf(
+                    "today's budget" to budget.value,
+                    "source" to "your adaptive targets",
+                    "BMR formula" to ConstantsRegistry.BMR_FORMULA_VERSION,
+                    "energy rule" to "${ConstantsRegistry.KCAL_PER_KG_FAT.toInt()} kcal per kg",
+                ),
+            note = "Computed on your device from your profile and plan.",
+        )
+
+    /** The burn chip's sheet: only logged workouts, never a guess. */
+    private fun burnExplainer(burn: DerivedValue<String>): ExplainerUi =
+        ExplainerUi(
+            headline = "How we got here",
+            rows =
+                listOf(
+                    "estimated burn, today" to burn.value,
+                    "method" to "sum of the workouts you logged today",
+                    "formula" to DayProjector.PROJECTION_FORMULA_VERSION,
+                ),
+            note = "Only workouts you logged count — nothing is assumed.",
+        )
+
+    /** The diary kcal chip's sheet: portion math over today's entries. */
+    private fun diaryExplainer(slice: DiarySliceUi): ExplainerUi =
+        ExplainerUi(
+            headline = "How we got here",
+            rows =
+                listOf(
+                    "logged today" to formatKcal(slice.kcal.value),
+                    "entries" to slice.entryCount.toString(),
+                    "method" to "portion × per-100 g energy, summed",
+                    "formula" to ConstantsRegistry.DIARY_PORTION_FORMULA_VERSION,
+                ),
+            note = "Corrections re-run the math; every prior version stays in the entry's history.",
+        )
 
     // --- F06 flags ---
 
@@ -328,46 +446,20 @@ public class HubViewModel(
             .orEmpty()
             .size
 
-    /** The weekly trend delta for the hero chip ("Trend 179.1, down 0.6"); null until F10 §4's gate passes. */
-    private suspend fun trendDelta7(profileId: String): DerivedValue<Double>? {
-        val scalars =
-            weighIns
-                .dailyScalars(profileId, today - TREND_GATE_WINDOW_DAYS + 1, today)
-                .getOrNull()
-                .orEmpty()
-        if (scalars.size < TREND_GATE_MIN_POINTS) return null
-        val series = weighIns.trend(profileId, today - DELTA_WINDOW_DAYS * 2, today).getOrNull() ?: return null
-        val byDay = series.points.associate { it.epochDay to it.trendKg.value }
-        val lastDay = series.points.lastOrNull()?.epochDay ?: return null
-        val weekAgo = byDay[lastDay - DELTA_WINDOW_DAYS] ?: return null
-        val current = byDay[lastDay] ?: return null
-        return DerivedValue(
-            current - weekAgo,
-            Provenance.Derived(
-                formulaVersion = series.formulaVersion(),
-                inputs = listOf("windowDays=$DELTA_WINDOW_DAYS"),
-            ),
-        )
-    }
-
-    private fun TrendSeries.formulaVersion(): String =
-        points.lastOrNull()?.trendKg?.provenance?.let { provenance ->
-            (provenance as? Provenance.Derived)?.formulaVersion
-        } ?: ConstantsRegistry.EWMA_FORMULA_VERSION
-
     // --- forecast (R-A5 cold start) ---
 
     /** R-A5 cold-start forecast (mandatory v1): visible before any weigh-in. */
     private fun coldStartForecast(
         profile: Profile,
         record: TargetsRecord,
-        day: DayView?,
+        startTrendKg: Double,
+        plannedIntakeKcal: Double?,
         unit: MassUnit,
     ): HubForecast? {
         val goal = record.document.goal
-        val startTrend = day?.trendWeightKg?.value ?: profile.startWeightKg
+        val startTrend = startTrendKg
         if (goal.targetWeightKg >= startTrend) return null
-        val intake = day?.budgetKcal?.value ?: DietTemplateApplier.DEFAULT_BUDGET_KCAL
+        val intake = plannedIntakeKcal ?: DietTemplateApplier.DEFAULT_BUDGET_KCAL
         val bands: ForecastBands =
             ForecastEngine.coldStart(
                 input =

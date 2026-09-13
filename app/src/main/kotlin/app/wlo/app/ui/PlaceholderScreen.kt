@@ -27,7 +27,7 @@ public fun PlaceholderScreen(
             modifier
                 .fillMaxSize()
                 .padding(horizontal = WloSpacing.SCREEN),
-        verticalArrangement = Arrangement.spacedBy(WloSpacing.CARD),
+        verticalArrangement = Arrangement.spacedBy(WloSpacing.SCREEN),
     ) {
         Text(
             text = title,

@@ -339,7 +339,8 @@ public fun formatDay(epochDay: Long): String {
     return "${MONTHS[date.monthNumber - 1]} ${date.dayOfMonth}"
 }
 
-private val MONTHS: List<String> =
+/** Month abbreviations shared by date formatters in this module. */
+internal val MONTHS: List<String> =
     listOf("Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec")
 
 private const val HORIZON_STEP_DAYS = 7

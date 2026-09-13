@@ -84,7 +84,7 @@ public object OnboardingRobot {
         }
         clickText(ui, "Start", required = true)
         // Wait for the plan write + gate flip to put the Hub on screen.
-        ui.wait(Until.hasObject(By.textContains("Weight trend")), TIMEOUT_MS)
+        ui.wait(Until.hasObject(By.textContains("WEIGHT TREND")), TIMEOUT_MS)
     }
 
     private fun clickText(
