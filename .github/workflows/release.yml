@@ -1,0 +1,81 @@
+# WLO-0029 — dogfooding distribution: alpha (main tip) + stable (v* tags).
+#
+# Both channels ride one signing identity (secrets), one monotonic versionCode
+# (`git rev-list --count HEAD`, injected into the build by the convention
+# plugin), and one applicationId so the alpha is replaced in place by stable.
+# The publish steps degrade to build-only when the signing secrets are absent
+# (the workflow can land before the owner configures the repo).
+#
+# Channel layout:
+#   push to main        → prerelease "alpha" (rolling, replaced every build)
+#   tag push v*         → prerelease=false, release "WLO x.y.z"
+name: release
+
+on:
+  push:
+    branches: [main]
+    tags: ["v*"]
+
+permissions:
+  contents: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # full history: versionCode = rev-list count
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - name: Decode signing keystore
+        id: sign
+        env:
+          WLO_SIGNING_KEYSTORE_BASE64: ${{ secrets.WLO_SIGNING_KEYSTORE_BASE64 }}
+          WLO_SIGNING_STORE_PASSWORD: ${{ secrets.WLO_SIGNING_STORE_PASSWORD }}
+          WLO_SIGNING_KEY_ALIAS: ${{ secrets.WLO_SIGNING_KEY_ALIAS }}
+          WLO_SIGNING_KEY_PASSWORD: ${{ secrets.WLO_SIGNING_KEY_PASSWORD }}
+        run: |
+          if [ -n "$WLO_SIGNING_KEYSTORE_BASE64" ]; then
+            echo "$WLO_SIGNING_KEYSTORE_BASE64" | base64 --decode > "$RUNNER_TEMP/wlo-release.keystore"
+            cat > keystore.properties <<EOF
+          storeFile=$RUNNER_TEMP/wlo-release.keystore
+          storePassword=$WLO_SIGNING_STORE_PASSWORD
+          keyAlias=$WLO_SIGNING_KEY_ALIAS
+          keyPassword=$WLO_SIGNING_KEY_PASSWORD
+          EOF
+            echo "signed=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "signed=false" >> "$GITHUB_OUTPUT"
+            echo "::warning::No signing secrets configured — building unsigned-ish (debug key), skipping publish."
+          fi
+
+      - name: Build channel APK
+        env:
+          WLO_VERSION_NAME: ${{ startsWith(github.ref, 'refs/tags/v') && format('{0}', github.ref_name) || format('0.1.0-alpha.{0}+{1}', github.run_number, github.sha) }}
+        run: ./gradlew :app:assembleRelease
+
+      - name: Publish alpha (rolling)
+        if: github.ref == 'refs/heads/main' && steps.sign.outputs.signed == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release delete alpha --yes --cleanup-tag 2>/dev/null || true
+          gh release create alpha \
+            --prerelease --title "WLO alpha ($GITHUB_SHA)" \
+            --notes "Latest green main. Install over any older WLO build (same signature, monotonic version code).$(printf '\n\n%s' "$(git log -1 --pretty=%B)")" \
+            app/build/outputs/apk/release/app-release.apk
+
+      - name: Publish stable (tag)
+        if: startsWith(github.ref, 'refs/tags/v') && steps.sign.outputs.signed == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "$GITHUB_REF_NAME" \
+            --title "WLO $GITHUB_REF_NAME" \
+            --notes "$(git log -1 --pretty=%B)" \
+            app/build/outputs/apk/release/app-release.apk

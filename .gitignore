@@ -19,3 +19,8 @@ captures/
 
 # Kotlin
 .kotlin/
+
+# Release signing (WLO-0029) — never commit keys
+keystore.properties
+*.keystore
+*.jks

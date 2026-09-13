@@ -1,16 +1,47 @@
 import org.gradle.api.JavaVersion
+import java.util.Properties
 
 /**
  * `wlo.application` — the `:app` composition root (nav graph, Koin wiring,
  * merged manifest). The ONLY module allowed to declare INTERNET (D4) and the
  * only one that sees the restricted impls (D1). ADR-005 §3: application id
  * `app.wlo`. AGP 9 built-in Kotlin support (no org.jetbrains.kotlin.android).
+ *
+ * Versioning (WLO-0029): `versionCode` is monotonic along the repo history
+ * (`git rev-list --count HEAD`) so channel builds always install over older
+ * ones and never over newer ones; CI or a local `-Pwlo.versionCode=` /
+ * `WLO_VERSION_CODE=` override wins (CI injects the same count — identical
+ * result). `versionName` follows the channel: `v*` tag → `x.y.z`, main tip →
+ * `0.1.0-alpha.N+<sha>` via `-Pwlo.versionName=` / `WLO_VERSION_NAME=`.
+ *
+ * Release signing (WLO-0029): one dedicated keystore for BOTH channels, never
+ * committed — loaded from `keystore.properties` (git-ignored; see
+ * keystore.properties.example) or env (`WLO_SIGNING_STORE_FILE`,
+ * `WLO_SIGNING_STORE_PASSWORD`, `WLO_SIGNING_KEY_ALIAS`,
+ * `WLO_SIGNING_KEY_PASSWORD`). Without a config the release build falls back
+ * to the debug key locally so `assembleRelease` never breaks a dev machine;
+ * CI always injects the real one (signature change ⇒ forced uninstall ⇒ data
+ * loss, so dogfood devices must stay on one identity).
  */
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.plugin.compose")
     id("wlo.quality")
 }
+
+/**
+ * Commit count of HEAD — monotonic by construction on main; falls back to 1
+ * outside a git repo (never the case for real builds).
+ */
+fun commitCount(): Int =
+    providers.exec {
+        commandLine("git", "rev-list", "--count", "HEAD")
+        workingDir = rootDir
+    }.standardOutput.asText.get().trim().toIntOrNull() ?: 1
+
+fun versionOverride(name: String): String? =
+    providers.gradleProperty("wlo.$name").orNull
+        ?: providers.environmentVariable("WLO_${name.uppercase()}").orNull
 
 android {
     namespace = app.wlo.buildlogic.AndroidConfig.namespaceFor(project.path)
@@ -20,8 +51,37 @@ android {
         applicationId = app.wlo.buildlogic.AndroidConfig.APPLICATION_ID
         minSdk = app.wlo.buildlogic.AndroidConfig.MIN_SDK
         targetSdk = app.wlo.buildlogic.AndroidConfig.TARGET_SDK
-        versionCode = 1
-        versionName = "0.1.0"
+        versionCode = versionOverride("versionCode")?.toIntOrNull() ?: commitCount()
+        versionName = versionOverride("versionName") ?: "0.1.0"
+    }
+
+    signingConfigs {
+        val props = Properties()
+        val propsFile = rootProject.file("keystore.properties")
+        fun prop(key: String): String? =
+            props.getProperty(key)
+                ?: providers.environmentVariable("WLO_SIGNING_${key.uppercase()}").orNull
+        if (propsFile.exists()) {
+            propsFile.inputStream().use(props::load)
+        }
+        val storeFile = prop("storeFile")?.let { rootProject.file(it) }
+        if (storeFile != null && storeFile.exists()) {
+            create("channel") {
+                this.storeFile = storeFile
+                storePassword = prop("storePassword")
+                keyAlias = prop("keyAlias")
+                keyPassword = prop("keyPassword")
+            }
+        }
+    }
+
+    buildTypes {
+        release {
+            isMinifyEnabled = false // R8 decision deferred (WLO-0029); dogfood builds unshrunk
+            signingConfig =
+                signingConfigs.findByName("channel")
+                    ?: signingConfigs.getByName("debug")
+        }
     }
 
     compileOptions {
