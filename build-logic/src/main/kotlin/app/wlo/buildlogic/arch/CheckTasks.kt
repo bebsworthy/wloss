@@ -15,8 +15,25 @@ import java.nio.file.Paths
  * (ARCHITECTURE.md §2.3 / ADR-005). Registered on the root project by
  * `wlo.architecture-check`; inputs are captured after all projects evaluate as
  * plain strings, so the action never touches a live Project (config-cache safe).
+ *
+ * uiAtoms (WLO-0031 P2) runs in the same action with a two-step severity
+ * model: `-Pwlo.uiAtoms=warn` (default) prints counts + files per module and
+ * NEVER fails — the P3 migration waves run under it; `-Pwlo.uiAtoms=enforce`
+ * fails the build, making conformance mandatory once the waves land.
  */
 public open class CheckArchitectureTask : DefaultTask() {
+
+    /** Severity for the uiAtoms rule: "warn" (default) or "enforce". */
+    @get:Input
+    public var uiAtomsMode: String = MODE_WARN
+
+    public companion object {
+        /** `-Pwlo.uiAtoms=warn` (default): print, never fail. */
+        public const val MODE_WARN: String = "warn"
+
+        /** `-Pwlo.uiAtoms=enforce`: fail the build on any uiAtoms hit. */
+        public const val MODE_ENFORCE: String = "enforce"
+    }
 
     /** Project-dependency edges, lines "from|to". */
     @get:Input
@@ -70,6 +87,8 @@ public open class CheckArchitectureTask : DefaultTask() {
             addAll(ArchRules.enginePurityViolations(engineDirs))
         }
 
+        val uiAtomHits = ArchRules.uiAtomViolations(uiFiles)
+
         if (violations.isNotEmpty()) {
             val report = violations.groupBy { it.rule }
                 .toSortedMap()
@@ -81,11 +100,57 @@ public open class CheckArchitectureTask : DefaultTask() {
                     "Rules are normative: ARCHITECTURE.md §2.3 / ADR-005. Amend the master doc first.",
             )
         }
+
+        // uiAtoms — same task path as the D-rules (`check`), own severity:
+        // warn NEVER fails (migration baseline, WLO-0031 P3); enforce does.
+        val moduleCount = uiAtomHits.map { it.project }.distinct().size
+        when (uiAtomsMode) {
+            MODE_ENFORCE ->
+                if (uiAtomHits.isNotEmpty()) {
+                    throw GradleException(
+                        "checkArchitecture FAILED — ${uiAtomHits.size} uiAtoms violation(s) " +
+                            "(mode=enforce):\n${uiAtomsReport(uiAtomHits)}\n" +
+                            "Render UI only through :core:designsystem atoms (WLO-0031); " +
+                            "the rule list lives in ArchRules.UI_ATOMS_*.",
+                    )
+                }
+
+            MODE_WARN ->
+                if (uiAtomHits.isNotEmpty()) {
+                    logger.warn(
+                        "uiAtoms: WARN mode — ${uiAtomHits.size} violation(s) across $moduleCount " +
+                            "module(s); WLO-0031 P2 migration gate (re-run with " +
+                            "-Pwlo.uiAtoms=enforce to fail the build)\n${uiAtomsReport(uiAtomHits)}",
+                    )
+                }
+
+            else ->
+                logger.warn(
+                    "uiAtoms: unknown -Pwlo.uiAtoms value '$uiAtomsMode' (expected " +
+                        "warn|enforce) — treating as warn.",
+                )
+        }
+
         logger.lifecycle(
             "checkArchitecture: OK — ${projectPathList.size} projects, D1–D7 + D9 clean " +
-                "(${edges.size} dependency edges, ${externalDeps.size} external artifacts scanned).",
+                "(${edges.size} dependency edges, ${externalDeps.size} external artifacts scanned). " +
+                "uiAtoms: mode=$uiAtomsMode, ${uiAtomHits.size} violation(s) across $moduleCount " +
+                "module(s) (-Pwlo.uiAtoms=warn|enforce; WLO-0031 P2).",
         )
     }
+
+    /** Per-module counts + file list, one `uiAtoms [tag]: file:line` per hit. */
+    private fun uiAtomsReport(hits: List<app.wlo.buildlogic.arch.UiAtomViolation>): String =
+        hits.groupBy { it.project }
+            .toSortedMap()
+            .entries
+            .joinToString(separator = "\n") { (project, list) ->
+                val files = list.map { it.file }.distinct()
+                "  $project: ${list.size} violation(s) in ${files.size} file(s)\n" +
+                    list.joinToString(separator = "\n") { hit ->
+                        "    uiAtoms [${hit.tag}]: ${hit.file}:${hit.line}"
+                    }
+            }
 
     private fun groupByProject(lines: Collection<String>): Map<String, List<String>> =
         lines.groupBy(

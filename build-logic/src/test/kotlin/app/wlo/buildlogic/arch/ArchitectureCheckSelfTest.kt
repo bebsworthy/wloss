@@ -46,18 +46,6 @@ class ArchitectureCheckSelfTest {
 
     private val rootBuild = "build.gradle.kts" to "plugins { id(\"wlo.architecture-check\") }\n"
 
-    private fun run(dir: File): BuildResult =
-        GradleRunner.create()
-            .withProjectDir(dir)
-            .withArguments("checkArchitecture", "--stacktrace")
-            .build()
-
-    private fun runFailing(dir: File): BuildResult =
-        GradleRunner.create()
-            .withProjectDir(dir)
-            .withArguments("checkArchitecture", "--stacktrace")
-            .buildAndFail()
-
     @Test
     fun d1_featureCannotSeeRestrictedModule() {
         val result = runFailing(
@@ -364,4 +352,173 @@ class ArchitectureCheckSelfTest {
             "clean fixture must pass:\n${result.output}",
         )
     }
+
+    // ------------------------------------------------------------------
+    // uiAtoms (WLO-0031 P2) — design-system enforcement, warn-by-default.
+
+    /** A feature screen committing every banned uiAtoms pattern at once. */
+    private val uiAtomsBadSource: String =
+        """
+        package feature.bad
+
+        import androidx.compose.material3.Button
+        import androidx.compose.material3.Card as M3Card
+        import androidx.compose.material3.CardDefaults
+        import androidx.compose.material3.*
+        import androidx.compose.ui.graphics.Color
+        import androidx.compose.ui.unit.dp
+
+        val defaults = CardDefaults.cardColors(containerColor = Color.Black)
+
+        fun fakeButton() = Button(onClick = {})
+        fun aliasedCard() = M3Card {}
+        fun surfaceClick() = Surface(
+            onClick = {},
+        ) {}
+        val stroke = BorderStroke(1.dp, Color.Black)
+        val receipt = FontFamily.Monospace
+        val bigger = wloType.title.copy(fontSize = 20.sp)
+        """.trimIndent()
+
+    @Test
+    fun uiAtoms_warnIsTheDefaultAndNeverFails() {
+        val result = run(
+            fixture(
+                mapOf(
+                    "settings.gradle.kts" to settings(":feature:f99-ui"),
+                    rootBuild.first to rootBuild.second,
+                    "feature/f99-ui/build.gradle.kts" to "",
+                    "feature/f99-ui/src/main/kotlin/Bad.kt" to uiAtomsBadSource,
+                ),
+            ),
+        )
+        assertEquals(
+            TaskOutcome.SUCCESS,
+            result.task(":checkArchitecture")?.outcome,
+            "warn mode must NEVER fail (migration baseline):\n${result.output}",
+        )
+        assertTrue("uiAtoms: WARN mode" in result.output, "must announce warn mode:\n${result.output}")
+        assertTrue(
+            "uiAtoms [banned-import material3.Button]:" in result.output,
+            "must print the violation line format:\n${result.output}",
+        )
+    }
+
+    @Test
+    fun uiAtoms_enforceFailsTheBuild() {
+        val result = runFailing(
+            fixture(
+                mapOf(
+                    "settings.gradle.kts" to settings(":feature:f99-ui"),
+                    rootBuild.first to rootBuild.second,
+                    "feature/f99-ui/build.gradle.kts" to "",
+                    "feature/f99-ui/src/main/kotlin/Bad.kt" to uiAtomsBadSource,
+                ),
+            ),
+            extraArguments = listOf("-Pwlo.uiAtoms=enforce"),
+        )
+        assertTrue("mode=enforce" in result.output, "must name the mode:\n${result.output}")
+        assertTrue(
+            "uiAtoms [banned-import material3.Card]:" in result.output,
+            "aliased banned imports must be caught:\n${result.output}",
+        )
+        assertTrue("uiAtoms [surface-onclick]:" in result.output, "Surface(onClick must be caught:\n${result.output}")
+        assertTrue("uiAtoms [border-stroke]:" in result.output, "BorderStroke must be caught:\n${result.output}")
+        assertTrue(
+            "uiAtoms [fontfamily-monospace]:" in result.output,
+            "FontFamily.Monospace must be caught:\n${result.output}",
+        )
+        assertTrue("uiAtoms [wlotype-copy]:" in result.output, "wloType.copy must be caught:\n${result.output}")
+    }
+
+    @Test
+    fun uiAtoms_coreDesignsystemIsExempt() {
+        // :core:designsystem is WHERE the sanctioned M3 usage lives — the scan
+        // covers :feature:* and :app: only, even in enforce mode.
+        val result = run(
+            fixture(
+                mapOf(
+                    "settings.gradle.kts" to settings(":core:designsystem"),
+                    rootBuild.first to rootBuild.second,
+                    "core/designsystem/build.gradle.kts" to "",
+                    "core/designsystem/src/main/kotlin/Bad.kt" to uiAtomsBadSource,
+                ),
+            ),
+            extraArguments = listOf("-Pwlo.uiAtoms=enforce"),
+        )
+        assertEquals(
+            TaskOutcome.SUCCESS,
+            result.task(":checkArchitecture")?.outcome,
+            "the design system itself must stay exempt:\n${result.output}",
+        )
+    }
+
+    @Test
+    fun uiAtoms_mainSourceSetsOnly_testsAreExempt() {
+        val dir = Files.createTempDirectory("wlo-uiatoms-scan").toFile()
+        val main = File(dir, "feature/f99-ui/src/main/kotlin").apply { mkdirs() }
+        val unitTest = File(dir, "feature/f99-ui/src/test/kotlin").apply { mkdirs() }
+        val mainFile = File(main, "Bad.kt").apply { writeText(uiAtomsBadSource) }
+        val testFile = File(unitTest, "BadTest.kt").apply { writeText(uiAtomsBadSource) }
+        val hits =
+            app.wlo.buildlogic.arch.ArchRules.uiAtomViolations(
+                mapOf(":feature:f99-ui" to listOf(mainFile.toPath(), testFile.toPath())),
+            )
+        assertTrue(hits.isNotEmpty(), "main-source violations must be found")
+        assertTrue(
+            hits.all { it.file.contains("/src/main/") },
+            "only main source sets are scanned, got: ${hits.map { it.file }}",
+        )
+    }
+
+    @Test
+    fun uiAtoms_companionRulesAreNeverCaught() {
+        val dir = Files.createTempDirectory("wlo-uiatoms-clean").toFile()
+        val main = File(dir, "feature/f99-ui/src/main/kotlin").apply { mkdirs() }
+        val fine = File(main, "Fine.kt")
+        fine.writeText(
+            """
+            package feature.fine
+
+            import androidx.compose.material3.CardDefaults
+            import androidx.compose.material3.Surface
+            import androidx.compose.material3.SwitchDefaults
+            import androidx.compose.material3.Text
+
+            fun well(color: androidx.compose.ui.graphics.Color) =
+                Surface(shape = androidx.compose.foundation.shape.RoundedCornerShape(8)) {
+                    Text("tonal well", style = androidx.compose.material3.MaterialTheme.typography.bodyLarge)
+                }
+
+            val switchColors = SwitchDefaults.colors()
+            val cardColors = CardDefaults.cardColors(containerColor = color)
+            """.trimIndent(),
+        )
+        val hits =
+            app.wlo.buildlogic.arch.ArchRules.uiAtomViolations(
+                mapOf(":feature:f99-ui" to listOf(fine.toPath())),
+            )
+        assertTrue(
+            hits.isEmpty(),
+            "tonal wells + Defaults companions stay legal, got: ${hits.map { "${it.tag} ${it.file}:${it.line}" }}",
+        )
+    }
+
+    private fun run(
+        dir: File,
+        extraArguments: List<String> = emptyList(),
+    ): BuildResult =
+        GradleRunner.create()
+            .withProjectDir(dir)
+            .withArguments(listOf("checkArchitecture", "--stacktrace") + extraArguments)
+            .build()
+
+    private fun runFailing(
+        dir: File,
+        extraArguments: List<String> = emptyList(),
+    ): BuildResult =
+        GradleRunner.create()
+            .withProjectDir(dir)
+            .withArguments(listOf("checkArchitecture", "--stacktrace") + extraArguments)
+            .buildAndFail()
 }

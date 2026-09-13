@@ -61,8 +61,16 @@ public data class WloTypography(
     val statS: TextStyle,
     /** 13 sp, wght 500, `tnum`, secondary color by convention — receipt lines. */
     val receipt: TextStyle,
-    /** 17 sp, wght 600 — card titles, screen headings. */
+    /**
+     * 13 sp, wght 400, `text-tertiary` by convention — captions, helper and
+     * explainer lines. The prose complement of [receipt] (which is the tabular
+     * number line): never copy a `fontSize` from another slot to reach this.
+     */
+    val caption: TextStyle,
+    /** 17 sp, wght 600 — card titles, section headings. */
     val title: TextStyle,
+    /** 24 sp, wght 600 — the screen-title slot: one per screen. */
+    val titleL: TextStyle,
     /** 15 sp, wght 400 — prose, explainers. */
     val body: TextStyle,
     /** 11 sp, wght 500, +2% tracking, sentence case — chips, axis labels. */
@@ -74,7 +82,10 @@ public data class WloTypography(
  * instances). Audit vs §2 (WLO-0030): hero is Inter Display (`opsz` display)
  * at 56 sp w600 `tnum`; `stat-l` 28 sp w600; `stat-m` 20 sp — spec asks w550,
  * snapped to SemiBold (no 550 static instance, documented deviation); `label`
- * 11 sp w500 +2% tracking.
+ * 11 sp w500 +2% tracking. WLO-0031 added the two highest-demand missing
+ * slots: [WloTypography.titleL] (24 sp screen titles — replaces the
+ * `title.fontSize * 1.5f` arithmetic) and [WloTypography.caption] (13 sp
+ * helper lines — replaces `body.copy(receipt.fontSize)`).
  */
 public fun wloTypography(): WloTypography =
     WloTypography(
@@ -118,11 +129,26 @@ public fun wloTypography(): WloTypography =
                 fontSize = 13.sp,
                 fontFeatureSettings = WloFontFeatures.TABULAR,
             ),
+        caption =
+            TextStyle(
+                fontFamily = WloFontFamily,
+                fontWeight = FontWeight.Normal,
+                fontSize = 13.sp,
+                lineHeight = 18.sp,
+            ),
         title =
             TextStyle(
                 fontFamily = WloFontFamily,
                 fontWeight = FontWeight.SemiBold,
                 fontSize = 17.sp,
+                letterSpacing = (-0.01f).em,
+            ),
+        titleL =
+            TextStyle(
+                fontFamily = WloFontFamily,
+                fontWeight = FontWeight.SemiBold,
+                fontSize = 24.sp,
+                lineHeight = 30.sp,
                 letterSpacing = (-0.01f).em,
             ),
         body =

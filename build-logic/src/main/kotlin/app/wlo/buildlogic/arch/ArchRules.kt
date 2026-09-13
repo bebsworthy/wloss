@@ -76,6 +76,64 @@ public object ArchRules {
     /** D9 — localhost test servers are exempt everywhere (they never egress). */
     public val D9_TEST_SERVER_NAMES: List<String> = listOf("mockwebserver")
 
+    /**
+     * uiAtoms (WLO-0031 P2) — the material3 symbols features must NOT import:
+     * every one of them has a sanctioned :core:designsystem wrapper (Wlo*Button,
+     * WloCard, WloSwitchRow, WloSheet, WloDialog, WloBottomBar, WloListRow,
+     * WloProgress, SelectChip/WloBadge). `Surface` stays legal for tonal wells
+     * — only the clickable form is banned (see [UI_ATOMS_SURFACE_ON_CLICK]).
+     * Matched as exact import paths, so `CardDefaults` / `SwitchDefaults`-style
+     * companions never trip the rule; aliased imports (`...Card as M3Card`)
+     * are caught too — an alias is still the banned symbol.
+     */
+    public val UI_ATOMS_BANNED_M3: List<String> =
+        listOf(
+            "Button",
+            "OutlinedButton",
+            "TextButton",
+            "IconButton",
+            "FilledIconButton",
+            "Card",
+            "ElevatedCard",
+            "OutlinedCard",
+            "Switch",
+            "ModalBottomSheet",
+            "AlertDialog",
+            "NavigationBar",
+            "NavigationBarItem",
+            "ListItem",
+            "LinearProgressIndicator",
+            "CircularProgressIndicator",
+            "FilterChip",
+            "AssistChip",
+        )
+
+    /**
+     * uiAtoms — `Surface(onClick` (any whitespace/newline form) is a fake
+     * button. Matched on the raw source with whitespace-tolerant `\s*`, which
+     * is the normalized form of the pattern; only the keyword-argument-first
+     * shape is matched (the shape every audit instance used) — a `Surface(`
+     * whose onClick hides behind other arguments is not caught (documented
+     * gap; import-level bans cover the real buttons).
+     */
+    public val UI_ATOMS_SURFACE_ON_CLICK: Regex =
+        Regex("(?<![A-Za-z0-9_.])Surface\\s*\\(\\s*onClick\\b")
+
+    /** uiAtoms — hand-built bordered surfaces must go through WloCard/WloBadge. */
+    public val UI_ATOMS_BORDER_STROKE: Regex = Regex("\\bBorderStroke\\s*\\(")
+
+    /** uiAtoms — the single WLO family is Inter (R-D3); no monospace receipts. */
+    public val UI_ATOMS_MONOSPACE: Regex = Regex("\\bFontFamily\\.Monospace\\b")
+
+    /** uiAtoms — the ramp is closed: no per-site `wloType.<slot>.copy(...)` overrides. */
+    public val UI_ATOMS_WLO_TYPE_COPY: Regex = Regex("\\bwloType\\.\\w+\\.copy\\s*\\(")
+
+    private val UI_ATOMS_M3_IMPORT: Regex =
+        Regex("^import\\s+androidx\\.compose\\.material3\\.([A-Za-z_][A-Za-z0-9_]*)\\b.*$", RegexOption.MULTILINE)
+
+    private val UI_ATOMS_M3_WILDCARD_IMPORT: Regex =
+        Regex("^import\\s+androidx\\.compose\\.material3\\.\\*.*$", RegexOption.MULTILINE)
+
     /** D1 + D2: project-dependency edges that must not exist. Self-edges
      * (from == to) are exempt: AGP's own library test configurations declare
      * the module as its own project dependency, and a module depending on
@@ -220,6 +278,72 @@ public object ArchRules {
         )
 
     /**
+     * uiAtoms (WLO-0031 P2): banned material3 imports, fake `Surface(onClick`
+     * buttons, `BorderStroke(`, `FontFamily.Monospace` and `wloType.<slot>.copy(`
+     * in the MAIN source sets (`src/main/`, `src/commonMain/`) of UI-scoped
+     * projects — :core:designsystem is exempt by construction (the scan only
+     * covers :feature:* and :app:), which is where these symbols live on
+     * purpose. Severity (warn vs enforce) is the task's business, not the
+     * rule's — [CheckArchitectureTask.uiAtomsMode].
+     */
+    public fun uiAtomViolations(uiSourceFiles: Map<String, List<Path>>): List<UiAtomViolation> =
+        uiSourceFiles
+            .flatMap { (projectPath, files) ->
+                files.flatMap { file -> uiAtomHits(file).map { hit -> hit.copy(project = projectPath) } }
+            }
+            .sortedWith(compareBy({ it.project }, { it.file }, { it.line }))
+
+    private fun uiAtomHits(file: Path): List<UiAtomViolation> {
+        val f = file.toFile()
+        // The plugin walks file entries; a directory (or missing) path is not a source.
+        if (!f.isFile) return emptyList()
+        val normalizedPath = f.path.replace(File.separatorChar, '/')
+        // Main source sets only: tests/fixtures may exercise raw M3 on purpose.
+        if (!normalizedPath.contains("/src/main/") && !normalizedPath.contains("/src/commonMain/")) {
+            return emptyList()
+        }
+        val text = f.readText()
+        val hits = mutableListOf<UiAtomViolation>()
+
+        fun addHit(
+            tag: String,
+            matchIndex: Int,
+            matchedText: String,
+        ) {
+            val line = text.substring(0, matchIndex).count { it == '\n' } + 1
+            hits += UiAtomViolation(
+                project = "",
+                tag = tag,
+                file = normalizedPath,
+                line = line,
+                snippet = matchedText.take(120),
+            )
+        }
+
+        for (match in UI_ATOMS_M3_WILDCARD_IMPORT.findAll(text)) {
+            addHit("banned-import material3.*", match.range.first, match.value.trim())
+        }
+        for (match in UI_ATOMS_M3_IMPORT.findAll(text)) {
+            val symbol = match.groupValues[1]
+            if (symbol in UI_ATOMS_BANNED_M3) {
+                addHit("banned-import material3.$symbol", match.range.first, match.value.trim())
+            }
+        }
+        for ((tag, regex) in
+            listOf(
+                "surface-onclick" to UI_ATOMS_SURFACE_ON_CLICK,
+                "border-stroke" to UI_ATOMS_BORDER_STROKE,
+                "fontfamily-monospace" to UI_ATOMS_MONOSPACE,
+                "wlotype-copy" to UI_ATOMS_WLO_TYPE_COPY,
+            )) {
+            for (match in regex.findAll(text)) {
+                addHit(tag, match.range.first, match.value)
+            }
+        }
+        return hits
+    }
+
+    /**
      * All Kotlin sources under [dir] whose text matches [regex]; [keep] filters
      * matched lines (e.g. allowlisted imports) before reporting.
      */
@@ -260,3 +384,16 @@ public data class Violation(public val rule: String, public val message: String)
 
 /** (absolute file path, matched text) for a source-scan violation. */
 public data class SourceHit(public val file: String, public val text: String)
+
+/**
+ * One uiAtoms finding (WLO-0031 P2). [tag] names the sub-rule for the
+ * `uiAtoms [tag]: file:line` report line; [project] is filled by
+ * [ArchRules.uiAtomViolations] (empty during the per-file scan).
+ */
+public data class UiAtomViolation(
+    public val project: String,
+    public val tag: String,
+    public val file: String,
+    public val line: Int,
+    public val snippet: String,
+)

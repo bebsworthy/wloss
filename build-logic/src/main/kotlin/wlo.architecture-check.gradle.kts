@@ -10,11 +10,25 @@ import java.io.File
  *
  * Rules D1–D7 + D9 live in [app.wlo.buildlogic.arch.ArchRules]; D8 is a
  * documented review convention enforced via `WloResult` types (ARCHITECTURE §2.3).
+ *
+ * uiAtoms (WLO-0031 P2) — design-system enforcement for :feature:* and :app:
+ * main sources. Severity via the `wlo.uiAtoms` Gradle property: `warn`
+ * (default — prints counts + files, never fails, the P3 migration baseline)
+ * or `enforce` (fails; the end state where a green build REQUIRES
+ * conformance). Run: `./gradlew checkArchitecture -Pwlo.uiAtoms=enforce`.
  */
 val checkArchitecture = tasks.register("checkArchitecture", CheckArchitectureTask::class)
 
 gradle.projectsEvaluated {
     val root = gradle.rootProject
+
+    // Two-step severity (WLO-0031 P2): warn during the migration waves,
+    // enforce once P3 lands. Unknown values degrade to warn with a message.
+    val uiAtomsSeverity: String =
+        root.providers
+            .gradleProperty("wlo.uiAtoms")
+            .orElse(CheckArchitectureTask.MODE_WARN)
+            .get()
 
     val edges = mutableListOf<String>()
     val commonMainDirs = mutableListOf<String>()
@@ -85,6 +99,7 @@ gradle.projectsEvaluated {
         engineDirLines.clear()
         engineDirLines.addAll(engineDirs)
         projectPathList = paths
+        uiAtomsMode = uiAtomsSeverity
 
         // D4 merged-manifest backstop — :app registers `checkMergedManifest`
         // via `wlo.application`; only wire it when the task exists (a fixture

@@ -6,9 +6,7 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -51,14 +49,9 @@ public fun WloForecastCard(
     modifier: Modifier = Modifier,
     onExplain: (() -> Unit)? = null,
 ) {
-    Surface(
-        modifier = modifier.fillMaxWidth(),
-        shape = WloShape.Card,
-        color = MaterialTheme.colorScheme.surface,
-        contentColor = MaterialTheme.colorScheme.onSurface,
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
-    ) {
-        Column(Modifier.padding(WloSpacing.PAD_CARD)) {
+    WloCard(
+        modifier = modifier,
+        header = {
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(WloSpacing.CARD),
@@ -72,34 +65,28 @@ public fun WloForecastCard(
                     EstimatedStamp()
                 }
             }
+        },
+    ) {
+        WloForecastChart(
+            bands = bands,
+            formatWeight = formatWeight,
+            onClick = onExplain,
+        )
 
-            Spacer(Modifier.height(WloSpacing.CARD))
+        FinishDateRow(bands = bands)
 
-            WloForecastChart(
-                bands = bands,
-                formatWeight = formatWeight,
+        Text(
+            text = "an estimate, not a promise — it sharpens as you log",
+            style = wloType.caption,
+            color = wloExtendedColors.textTertiary,
+        )
+
+        if (estimate != null) {
+            ProvenanceChip(
+                value = estimate,
+                format = formatKcal,
                 onClick = onExplain,
             )
-
-            Spacer(Modifier.height(WloSpacing.CARD))
-
-            FinishDateRow(bands = bands)
-
-            Text(
-                text = "an estimate, not a promise — it sharpens as you log",
-                style = wloType.body.copy(fontSize = wloType.receipt.fontSize),
-                color = wloExtendedColors.textTertiary,
-                modifier = Modifier.padding(top = WloSpacing.TIGHT),
-            )
-
-            if (estimate != null) {
-                Spacer(Modifier.height(WloSpacing.TIGHT))
-                ProvenanceChip(
-                    value = estimate,
-                    format = formatKcal,
-                    onClick = onExplain,
-                )
-            }
         }
     }
 }
@@ -139,7 +126,7 @@ public fun FinishDateRow(
         if (expected != null && fast != null && slow != null) {
             Text(
                 text = "on trend · range $fast – $slow",
-                style = wloType.body.copy(fontSize = wloType.receipt.fontSize),
+                style = wloType.caption,
                 color = wloExtendedColors.textTertiary,
             )
         }

@@ -1,13 +1,13 @@
 ---
 id: WLO-0030
 title: 'UI quality remediation — owner review round: M3 consistency, trend panel parity, number integrity'
-status: doing
+status: done
 theme:
 release:
 created: 2026-09-13T18:55:33Z
-modified: 2026-09-13T18:57:22Z
-closed:
-revision: d472a0ae022746e3
+modified: 2026-09-13T20:40:42Z
+closed: 2026-09-13T20:40:42Z
+revision: 9826a248885871eb
 blocks: []
 related: []
 ---

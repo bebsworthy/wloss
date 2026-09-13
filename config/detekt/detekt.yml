@@ -41,3 +41,8 @@ naming:
     functionPattern: '[a-zA-Z][a-zA-Z0-9]*'
   TopLevelPropertyNaming:
     constantPattern: '[A-Za-z][_A-Za-z0-9]*'
+  MatchingDeclarationName:
+    # WLO atoms colocate their small tone/accent/data types with the component
+    # (WloBadge + WloBadgeTone in WloBadge.kt); files are named after the
+    # composable, not the enum — WLO-0031.
+    active: false

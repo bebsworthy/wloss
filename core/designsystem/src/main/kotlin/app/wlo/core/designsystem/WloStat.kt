@@ -77,7 +77,7 @@ public fun <T : Any> WloStatRow(
     ) {
         Text(
             text = label,
-            style = wloType.body.copy(fontSize = wloType.receipt.fontSize),
+            style = wloType.caption,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             maxLines = 2,
             overflow = TextOverflow.Ellipsis,
