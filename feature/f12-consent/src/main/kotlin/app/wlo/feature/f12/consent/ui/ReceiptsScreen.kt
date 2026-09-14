@@ -17,6 +17,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import app.wlo.core.common.formatBytes
 import app.wlo.core.designsystem.WloBadge
 import app.wlo.core.designsystem.WloBadgeTone
 import app.wlo.core.designsystem.WloButton
@@ -224,11 +225,3 @@ private fun wireWords(wire: String): String =
         .split('-', '_', ' ')
         .filter { it.isNotBlank() }
         .joinToString(" ") { word -> word.replaceFirstChar { it.uppercaseChar() } }
-
-/** Byte counts the way a geek reads them (B → KB → MB, one decimal under 10). */
-internal fun formatBytes(bytes: Long): String =
-    when {
-        bytes >= 1_000_000 -> String.format(java.util.Locale.ROOT, "%.1f MB", bytes / 1_000_000.0)
-        bytes >= 1_000 -> String.format(java.util.Locale.ROOT, "%.1f KB", bytes / 1_000.0)
-        else -> "$bytes B"
-    }

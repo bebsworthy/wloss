@@ -24,14 +24,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.SolidColor
-import androidx.compose.ui.graphics.StrokeCap
-import androidx.compose.ui.graphics.StrokeJoin
-import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.graphics.vector.path
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.unit.dp
 import app.wlo.core.common.LengthUnit
 import app.wlo.core.common.MassUnit
 import app.wlo.core.designsystem.ProvenanceChip
@@ -47,6 +41,7 @@ import app.wlo.core.designsystem.WloForecastCard
 import app.wlo.core.designsystem.WloHaptic
 import app.wlo.core.designsystem.WloHaptics
 import app.wlo.core.designsystem.WloIconAction
+import app.wlo.core.designsystem.WloIcons
 import app.wlo.core.designsystem.WloMacroDot
 import app.wlo.core.designsystem.WloScheduleBarChart
 import app.wlo.core.designsystem.WloSecondaryButton
@@ -481,7 +476,7 @@ internal fun AdaptStep(
                             overflow = TextOverflow.Ellipsis,
                         )
                         WloIconAction(
-                            imageVector = WizardIcons.Close,
+                            imageVector = WloIcons.Close,
                             contentDescription = "Remove constraint",
                             onClick = { viewModel.onEvent(OnboardingEvent.RemoveConstraint(index)) },
                             modifier = Modifier.testTag("onboarding-constraint-remove-$index"),
@@ -908,76 +903,6 @@ private fun ExplainerRow(
     }
 }
 
-// --- wizard glyphs ----------------------------------------------------------
-// Hand-built marks, the WloIcons idiom from :core:designsystem (no icon-font
-// dependency): painted black so Icon(tint) recolors them. f01 needs only the
-// stepper and remove marks, which WloIcons does not carry yet.
-
-private object WizardIcons {
-    /** Paint source for all glyph paths; `Icon(tint = ...)` recolors at render. */
-    private val Black: SolidColor = SolidColor(Color.Black)
-
-    /** Stepper decrease. */
-    val Minus: ImageVector =
-        mark("WloMinus") {
-            path(
-                stroke = Black,
-                strokeLineWidth = 2f,
-                strokeLineCap = StrokeCap.Round,
-                strokeLineJoin = StrokeJoin.Round,
-            ) {
-                moveTo(5f, 12f)
-                lineTo(19f, 12f)
-            }
-        }
-
-    /** Stepper increase. */
-    val Plus: ImageVector =
-        mark("WloPlus") {
-            path(
-                stroke = Black,
-                strokeLineWidth = 2f,
-                strokeLineCap = StrokeCap.Round,
-                strokeLineJoin = StrokeJoin.Round,
-            ) {
-                moveTo(12f, 5f)
-                lineTo(12f, 19f)
-                moveTo(5f, 12f)
-                lineTo(19f, 12f)
-            }
-        }
-
-    /** Remove a constraint. */
-    val Close: ImageVector =
-        mark("WloClose") {
-            path(
-                stroke = Black,
-                strokeLineWidth = 2f,
-                strokeLineCap = StrokeCap.Round,
-                strokeLineJoin = StrokeJoin.Round,
-            ) {
-                moveTo(6f, 6f)
-                lineTo(18f, 18f)
-                moveTo(18f, 6f)
-                lineTo(6f, 18f)
-            }
-        }
-
-    private inline fun mark(
-        name: String,
-        builder: ImageVector.Builder.() -> ImageVector.Builder,
-    ): ImageVector =
-        ImageVector
-            .Builder(
-                name = name,
-                defaultWidth = 24.dp,
-                defaultHeight = 24.dp,
-                viewportWidth = 24f,
-                viewportHeight = 24f,
-            ).builder()
-            .build()
-}
-
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun ChoiceGrid(
@@ -1045,13 +970,13 @@ private fun StepperRow(
         )
         Text(text = value, style = wloType.statS, modifier = Modifier.testTag("onboarding-$testTag"))
         WloIconAction(
-            imageVector = WizardIcons.Minus,
+            imageVector = WloIcons.Minus,
             contentDescription = "Decrease",
             onClick = onMinus,
             modifier = Modifier.testTag("onboarding-$testTag-minus"),
         )
         WloIconAction(
-            imageVector = WizardIcons.Plus,
+            imageVector = WloIcons.Plus,
             contentDescription = "Increase",
             onClick = onPlus,
             modifier = Modifier.testTag("onboarding-$testTag-plus"),

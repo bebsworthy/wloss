@@ -138,7 +138,6 @@ public fun QuickAddSheetContent(
         modifier = Modifier.fillMaxWidth(),
         verticalArrangement = Arrangement.spacedBy(WloSpacing.CARD),
     ) {
-        Text(text = "Quick-add calories", style = wloType.title)
         OutlinedTextField(
             value = kcalText,
             onValueChange = onKcal,
@@ -172,8 +171,6 @@ public fun CustomFoodSheetContent(
         modifier = Modifier.fillMaxWidth().verticalScroll(rememberScrollState()),
         verticalArrangement = Arrangement.spacedBy(WloSpacing.CARD),
     ) {
-        Text(text = if (draft.editId == null) "Create a food" else "Edit food", style = wloType.title)
-
         OutlinedTextField(
             value = draft.name,
             onValueChange = { onChange(draft.copy(name = it)) },

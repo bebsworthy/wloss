@@ -17,6 +17,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import app.wlo.core.common.formatBytes
 import app.wlo.core.designsystem.WloBadge
 import app.wlo.core.designsystem.WloBadgeTone
 import app.wlo.core.designsystem.WloButton

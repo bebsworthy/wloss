@@ -1,5 +1,6 @@
 package app.wlo.core.designsystem
 
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
@@ -12,6 +13,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.semantics.Role
 
 /**
@@ -38,6 +40,13 @@ public fun WloSwitchColors(): SwitchColors =
  * @param checked current state
  * @param onCheckedChange state handler; the row (not just the switch) is the
  *   touch target
+ * @param enabled false disables the row's tap and the [Switch] and dims the
+ *   content to `textTertiary` — for real preconditions (a folder must be
+ *   chosen first, a passphrase must exist). Gate-by-VM flows that must stay
+ *   tappable (f12's behavioral consent contract) keep the default `true` and
+ *   express the gate in copy and state instead.
+ * @param secondary optional caption line under the label (the row's own
+ *   explainer, replacing a hand-stacked caption below the row)
  */
 @Composable
 public fun WloSwitchRow(
@@ -45,7 +54,9 @@ public fun WloSwitchRow(
     checked: Boolean,
     onCheckedChange: (Boolean) -> Unit,
     modifier: Modifier = Modifier,
-): Unit =
+    enabled: Boolean = true,
+    secondary: String? = null,
+) {
     Row(
         modifier =
             modifier
@@ -53,15 +64,31 @@ public fun WloSwitchRow(
                 .heightIn(min = WloSpacing.ROW_INTERACTIVE)
                 .toggleable(
                     value = checked,
+                    enabled = enabled,
                     role = Role.Switch,
                     onValueChange = onCheckedChange,
                 ),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Text(
-            text = label,
-            style = wloType.body,
-            modifier = Modifier.weight(1f),
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = label,
+                style = wloType.body,
+                color = if (enabled) Color.Unspecified else wloExtendedColors.textTertiary,
+            )
+            secondary?.let {
+                Text(
+                    text = it,
+                    style = wloType.caption,
+                    color = wloExtendedColors.textTertiary,
+                )
+            }
+        }
+        Switch(
+            checked = checked,
+            onCheckedChange = null,
+            enabled = enabled,
+            colors = WloSwitchColors(),
         )
-        Switch(checked = checked, onCheckedChange = null, colors = WloSwitchColors())
     }
+}

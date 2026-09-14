@@ -18,6 +18,7 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import app.wlo.core.ai.ZooModelState
+import app.wlo.core.common.formatBytes
 import app.wlo.core.designsystem.WloBadge
 import app.wlo.core.designsystem.WloBadgeTone
 import app.wlo.core.designsystem.WloBanner
@@ -199,17 +200,3 @@ private fun modelDisplayName(id: String): String =
         .split('/', '-', '_', '.')
         .filter { it.isNotBlank() }
         .joinToString(" ") { segment -> segment.replaceFirstChar { it.uppercaseChar() } }
-
-/**
- * Byte counts, decimal (B → KB → MB, one decimal under 10) — the same math as
- * f12's and f13's internal formatters, so every screen reads bytes one way.
- * (The one shared home in :core is the follow-up; until then this file keeps
- * the identical convention — never the binary 1024 ladder used before
- * WLO-0031.)
- */
-internal fun formatBytes(bytes: Long): String =
-    when {
-        bytes >= 1_000_000 -> String.format(java.util.Locale.ROOT, "%.1f MB", bytes / 1_000_000.0)
-        bytes >= 1_000 -> String.format(java.util.Locale.ROOT, "%.1f KB", bytes / 1_000.0)
-        else -> "$bytes B"
-    }

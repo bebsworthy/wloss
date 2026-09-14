@@ -26,13 +26,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.SolidColor
-import androidx.compose.ui.graphics.StrokeCap
-import androidx.compose.ui.graphics.StrokeJoin
-import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.graphics.vector.PathBuilder
-import androidx.compose.ui.graphics.vector.path
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextOverflow
@@ -48,6 +41,7 @@ import app.wlo.core.designsystem.WloCardHeader
 import app.wlo.core.designsystem.WloHaptic
 import app.wlo.core.designsystem.WloHaptics
 import app.wlo.core.designsystem.WloIconAction
+import app.wlo.core.designsystem.WloIcons
 import app.wlo.core.designsystem.WloListRow
 import app.wlo.core.designsystem.WloScreenTitle
 import app.wlo.core.designsystem.WloSecondaryButton
@@ -235,6 +229,9 @@ public fun CaptureScreen(
     (state.stage as? CaptureStage.OcrDraft)?.let { stage ->
         WloSheet(
             onDismissRequest = { viewModel.onEvent(CaptureEvent.Retake) },
+            // The draft is always a NEW catalog food — same title the manual
+            // twin's sheet carries (the OCR card below narrows it further).
+            title = "Create a food",
             modifier = Modifier.testTag("f02-capture-ocr-sheet"),
         ) {
             OcrDraftStage(stage, viewModel)
@@ -307,7 +304,7 @@ private fun ShutterAction(
     viewModel: CaptureViewModel,
 ): Unit =
     WloIconAction(
-        imageVector = CaptureGlyphs.Scan,
+        imageVector = WloIcons.Scan,
         contentDescription = "Scan",
         onClick = {
             shutter.take { frame ->
@@ -334,7 +331,7 @@ private fun ManualBarcodeField(viewModel: CaptureViewModel) {
         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
         trailingIcon = {
             WloIconAction(
-                imageVector = CaptureGlyphs.Search,
+                imageVector = WloIcons.Search,
                 contentDescription = "Look up",
                 onClick = {
                     if (text.isNotBlank()) {
@@ -706,9 +703,9 @@ public fun CaptureSearchSheet(
     if (state.stage is CaptureStage.Result && state.swappingItemId != null) {
         WloSheet(
             onDismissRequest = { viewModel.onEvent(CaptureEvent.DismissSearch) },
+            title = "Swap the chip for a food you keep",
             modifier = Modifier.testTag("f02-capture-search-sheet"),
         ) {
-            Text(text = "Swap the chip for a food you keep", style = wloType.title)
             OutlinedTextField(
                 value = state.searchQuery,
                 onValueChange = { viewModel.onEvent(CaptureEvent.SwapQueryChange(it)) },
@@ -724,71 +721,3 @@ public fun CaptureSearchSheet(
 
 /** A miss reason that keeps its human copy next to the state (used by sheets). */
 public fun missCopy(reason: MissReason): String = reason.userCopy()
-
-/**
- * The capture flow's two marks. The design system's WloIcons carries chrome
- * glyphs only, so the lens's shutter and lookup marks live here — hairline
- * strokes in WLO's outline idiom, painted black so `Icon(tint)` recolors.
- */
-private object CaptureGlyphs {
-    private const val VIEWPORT: Float = 24f
-    private val Stroke: SolidColor = SolidColor(Color.Black)
-
-    private fun builder(name: String): ImageVector.Builder =
-        ImageVector.Builder(
-            name = name,
-            defaultWidth = 24.dp,
-            defaultHeight = 24.dp,
-            viewportWidth = VIEWPORT,
-            viewportHeight = VIEWPORT,
-        )
-
-    private fun ImageVector.Builder.stroke(build: PathBuilder.() -> Unit): ImageVector.Builder =
-        path(
-            stroke = Stroke,
-            strokeLineWidth = 1.8f,
-            strokeLineCap = StrokeCap.Round,
-            strokeLineJoin = StrokeJoin.Round,
-        ) {
-            build()
-        }
-
-    /** The shutter: viewfinder brackets around the lens circle. */
-    public val Scan: ImageVector =
-        builder("CaptureGlyphScan")
-            .stroke {
-                moveTo(8.5f, 4f)
-                horizontalLineTo(6f)
-                arcTo(2f, 2f, 0f, true, true, 4f, 6f)
-                verticalLineTo(8.5f)
-                moveTo(15.5f, 4f)
-                horizontalLineTo(18f)
-                arcTo(2f, 2f, 0f, true, true, 20f, 6f)
-                verticalLineTo(8.5f)
-                moveTo(20f, 15.5f)
-                verticalLineTo(18f)
-                arcTo(2f, 2f, 0f, true, true, 18f, 20f)
-                horizontalLineTo(15.5f)
-                moveTo(8.5f, 20f)
-                horizontalLineTo(6f)
-                arcTo(2f, 2f, 0f, true, true, 4f, 18f)
-                verticalLineTo(15.5f)
-            }.stroke {
-                moveTo(8.8f, 12f)
-                arcTo(3.2f, 3.2f, 0f, true, true, 15.2f, 12f)
-                arcTo(3.2f, 3.2f, 0f, true, true, 8.8f, 12f)
-                close()
-            }.build()
-
-    /** Catalog lookup: the magnifier. */
-    public val Search: ImageVector =
-        builder("CaptureGlyphSearch")
-            .stroke {
-                moveTo(4.5f, 10.5f)
-                arcTo(6f, 6f, 0f, true, true, 16.5f, 10.5f)
-                arcTo(6f, 6f, 0f, true, true, 4.5f, 10.5f)
-                close()
-                moveTo(15.2f, 15.2f)
-                lineTo(19.5f, 19.5f)
-            }.build()
-}

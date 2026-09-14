@@ -23,6 +23,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import app.wlo.core.common.formatBytes
 import app.wlo.core.designsystem.WloBadge
 import app.wlo.core.designsystem.WloBadgeTone
 import app.wlo.core.designsystem.WloButton

@@ -23,6 +23,9 @@ import androidx.compose.ui.Modifier
  * [ExperimentalMaterial3Api] opt-in so callers never see it.
  *
  * @param onDismissRequest called when the user dismisses the sheet
+ * @param title optional sheet title, rendered as a [WloCardHeader] at the top
+ *   of the sheet column (the same uppercase micro-label cards wear) — sheets
+ *   stop hand-stacking a `Text(wloType.title)` first child
  * @param content sheet body, [ColumnScope] so callers can weight/space
  */
 @OptIn(ExperimentalMaterial3Api::class)
@@ -30,6 +33,7 @@ import androidx.compose.ui.Modifier
 public fun WloSheet(
     onDismissRequest: () -> Unit,
     modifier: Modifier = Modifier,
+    title: String? = null,
     content: @Composable ColumnScope.() -> Unit,
 ): Unit =
     ModalBottomSheet(
@@ -46,6 +50,8 @@ public fun WloSheet(
                     .padding(horizontal = WloSpacing.SCREEN)
                     .padding(bottom = WloSpacing.SCREEN),
             verticalArrangement = Arrangement.spacedBy(WloSpacing.CARD),
-            content = content,
-        )
+        ) {
+            title?.let { WloCardHeader(title = it) }
+            content()
+        }
     }

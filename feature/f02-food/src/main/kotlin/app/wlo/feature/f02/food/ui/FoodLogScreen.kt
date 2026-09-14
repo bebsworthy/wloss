@@ -184,6 +184,7 @@ public fun FoodLogScreen(
     state.quickAdd?.let { draft ->
         WloSheet(
             onDismissRequest = { viewModel.onEvent(FoodLogEvent.DismissQuickAdd) },
+            title = "Quick-add calories",
             modifier = Modifier.testTag("f02-quick-add-sheet"),
         ) {
             QuickAddSheetContent(
@@ -199,6 +200,7 @@ public fun FoodLogScreen(
     state.customDraft?.let { draft ->
         WloSheet(
             onDismissRequest = { viewModel.onEvent(FoodLogEvent.DismissCustom) },
+            title = if (draft.editId == null) "Create a food" else "Edit food",
             modifier = Modifier.testTag("f02-custom-sheet"),
         ) {
             CustomFoodSheetContent(

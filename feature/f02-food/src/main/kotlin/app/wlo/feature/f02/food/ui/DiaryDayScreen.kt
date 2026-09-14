@@ -125,6 +125,7 @@ public fun DiaryDayScreen(
     state.openEntry?.let { detail ->
         WloSheet(
             onDismissRequest = { viewModel.onEvent(DiaryEvent.DismissEntry) },
+            title = "How we got here",
             modifier = Modifier.testTag("f02-entry-sheet"),
         ) {
             EntrySheetContent(
@@ -229,8 +230,6 @@ private fun EntrySheetContent(
         modifier = Modifier.fillMaxWidth().verticalScroll(rememberScrollState()),
         verticalArrangement = Arrangement.spacedBy(WloSpacing.CARD),
     ) {
-        Text(text = "How we got here", style = wloType.title)
-
         WloCard {
             detail.rows.forEachIndexed { index, (label, value) ->
                 if (index > 0) HorizontalDivider(color = MaterialTheme.colorScheme.outline, thickness = 1.dp)

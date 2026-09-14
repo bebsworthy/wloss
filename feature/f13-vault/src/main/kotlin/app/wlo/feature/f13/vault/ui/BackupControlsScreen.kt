@@ -22,6 +22,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import app.wlo.core.common.formatBytes
 import app.wlo.core.designsystem.WloBadge
 import app.wlo.core.designsystem.WloBadgeTone
 import app.wlo.core.designsystem.WloButton
@@ -166,22 +167,17 @@ public fun BackupControlsScreen(viewModel: BackupControlsViewModel) {
             if (state.running) {
                 WloProgress(progress = null, label = "Backing up…")
             }
+            // Real preconditions (WLO-0032): folder AND passphrase must exist
+            // — the row renders disabled instead of silently refusing taps.
             WloSwitchRow(
                 label = "Automatic daily backups",
                 checked = state.autoEnabled,
-                onCheckedChange = { enabled ->
-                    if (state.folderUri != null && state.passphraseSet) {
-                        viewModel.setAuto(enabled)
-                    }
-                },
+                onCheckedChange = viewModel::setAuto,
+                enabled = state.folderUri != null && state.passphraseSet,
+                secondary =
+                    "Runs once a day while the folder is reachable. " +
+                        "A failed run raises one quiet notification.",
                 modifier = Modifier.testTag("f13-auto-toggle"),
-            )
-            Text(
-                text =
-                    "Runs once a day while the folder is reachable. A failed run raises " +
-                        "one quiet notification.",
-                style = wloType.caption,
-                color = wloExtendedColors.textTertiary,
             )
             state.lastOutcome?.let { outcome ->
                 Text(

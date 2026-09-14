@@ -19,6 +19,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import app.wlo.core.common.formatBytes
 import app.wlo.core.designsystem.WloCard
 import app.wlo.core.designsystem.WloCardHeader
 import app.wlo.core.designsystem.WloDialog
@@ -121,25 +122,20 @@ public fun VaultDashboardScreen(
                 style = wloType.body,
                 modifier = Modifier.testTag("f13-last-backup"),
             )
+            // Real precondition (WLO-0032): without a folder the row is
+            // disabled and dimmed — the gate is visible, not silent.
             WloSwitchRow(
                 label = "Automatic daily backup",
                 checked = backup?.autoEnabled ?: false,
-                onCheckedChange = { enabled ->
-                    if (backup?.folderUri != null) {
-                        viewModel.setAutoBackup(enabled)
-                    }
-                },
-                modifier = Modifier.testTag("f13-auto-toggle"),
-            )
-            Text(
-                text =
+                onCheckedChange = viewModel::setAutoBackup,
+                enabled = backup?.folderUri != null,
+                secondary =
                     if (backup?.folderUri != null) {
                         "Runs quietly once a day while the folder is reachable."
                     } else {
                         "Available once a folder is chosen."
                     },
-                style = wloType.caption,
-                color = wloExtendedColors.textTertiary,
+                modifier = Modifier.testTag("f13-auto-toggle"),
             )
             WloListRow(
                 label = "Backup controls",
@@ -229,10 +225,3 @@ public fun VaultDashboardScreen(
         )
     }
 }
-
-internal fun formatBytes(bytes: Long): String =
-    when {
-        bytes >= 1_000_000 -> String.format(java.util.Locale.ROOT, "%.1f MB", bytes / 1_000_000.0)
-        bytes >= 1_000 -> String.format(java.util.Locale.ROOT, "%.1f KB", bytes / 1_000.0)
-        else -> "$bytes B"
-    }

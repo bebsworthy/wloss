@@ -14,6 +14,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
+import app.wlo.core.common.formatBytes
 import app.wlo.core.designsystem.WloButton
 import app.wlo.core.designsystem.WloSecondaryButton
 import app.wlo.core.designsystem.WloShape

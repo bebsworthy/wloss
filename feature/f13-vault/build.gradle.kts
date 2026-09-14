@@ -23,6 +23,9 @@ dependencies {
     // D6: numbers render only via designsystem components.
     implementation(project(":core:designsystem"))
 
+    // Shared pure formatting (byte counts across the vault surfaces).
+    implementation(project(":core:common"))
+
     // The data-mechanics port (D1: the backup/restore pipeline is bound in
     // :app) + the typed settings store (folder uri, auto toggle, app lock).
     implementation(project(":core:ports"))

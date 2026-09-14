@@ -82,7 +82,9 @@ public class M3DiaryHubTest {
         TestNav.awaitText(rule, "Golden oats")
         rule.onAllNodesWithText("Golden oats").onFirst().performClick()
         TestNav.awaitTag(rule, "f02-entry-sheet")
-        rule.onAllNodesWithText("How we got here").onFirst().assertExists()
+        // The sheet title is a WloCardHeader now (WLO-0032), rendered
+        // uppercase — match case-blind, same as the slot headers above.
+        rule.onAllNodesWithText("How we got here", ignoreCase = true).onFirst().assertExists()
 
         // Correct the portion: the prior version stays in the history (R-B8).
         rule.onNodeWithTag("f02-entry-correct").performClick()

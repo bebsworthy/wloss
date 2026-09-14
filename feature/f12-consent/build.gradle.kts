@@ -18,6 +18,9 @@ dependencies {
     // D6: numbers render only via designsystem components.
     implementation(project(":core:designsystem"))
 
+    // Shared pure formatting (byte counts on receipts / consent sheets).
+    implementation(project(":core:common"))
+
     // The frozen six-category consent taxonomy + ledger/gate doors (R-C1);
     // egress receipt AUDIT via the port (D1: the ledger impl is :app's bind).
     implementation(project(":core:consent"))
