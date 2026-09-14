@@ -1,13 +1,13 @@
 ---
 id: WLO-0043
 title: 'F06 derived ratios surfaced: wire BmiEngine + waist-to-height / waist-to-hip, provenance-badged, on request'
-status: todo
+status: done
 theme:
 release:
 created: 2026-09-14T13:38:34Z
-modified: 2026-09-14T13:52:56Z
-closed:
-revision: ec59ed66477bb271
+modified: 2026-09-14T16:15:36Z
+closed: 2026-09-14T16:15:36Z
+revision: 8b7c2aea781f7f4f
 blocks: []
 related: []
 ---
