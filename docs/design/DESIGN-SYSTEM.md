@@ -360,6 +360,7 @@ items are treated [v1].)
 | Biometric lock gate | F13 | locked / unlocked; deep links land on gate, never content | [v1] | Required for Archive entry; PIN fallback; 200 ms fade |
 | Streak chip | F11 (displayed F10) | multi-oracle; `held` days neutral | [v1] | Ticks on log; no streak-loss notifications ever |
 | Empty state (teaching) | each feature | teaches next action; optional demo-data entry [v1.x] | [v1] | Teaches the next action (F02/F06 rule); no blank failures |
+| Swipe-to-dismiss list row | F06 (WLO-0050; M3 `SwipeToDismissBox`) | settled / swiping (delete surface revealed behind) / dismissed | [v1] | Stock M3 SwipeToDismissBox, `enableDismissFromStartToEnd = false`; the full swipe past the component threshold fires the action from `confirmValueChange` — the deliberate gesture is the confirmation; partial swipes spring back; the undo renders inline where the row was (never a dialog, never a page-level banner); `backgroundContent` stays empty while `Settled` (WLO rows are transparent over the card); TalkBack gets a custom row action |
 
 ### 7.2 F01 — Onboarding & Plan Studio
 

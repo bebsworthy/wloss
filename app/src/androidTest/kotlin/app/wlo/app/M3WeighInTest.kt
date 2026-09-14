@@ -2,6 +2,7 @@ package app.wlo.app
 
 import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
+import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onAllNodesWithContentDescription
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onFirst
@@ -11,6 +12,10 @@ import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performSemanticsAction
 import androidx.compose.ui.test.performTextClearance
 import androidx.compose.ui.test.performTextInput
+import androidx.compose.ui.test.performTouchInput
+import androidx.compose.ui.test.centerLeft
+import androidx.compose.ui.test.centerRight
+import androidx.compose.ui.test.swipe
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import androidx.test.uiautomator.UiDevice
@@ -29,7 +34,8 @@ import kotlin.math.abs
  * Hub shows; WLO-0030 defect 9), the smoothing controls move the visible line
  * and mark the headline as a PREVIEW, the outlier guard asks keep-or-correct
  * without dropping the event, and the math documentation screen opens from
- * the chart.
+ * the chart. The logbook delete is the M3 swipe-to-dismiss — a full swipe
+ * fires it — with the undo inline where the row was (WLO-0050).
  */
 @RunWith(AndroidJUnit4::class)
 public class M3WeighInTest {
@@ -145,6 +151,37 @@ public class M3WeighInTest {
                 .fetchSemanticsNodes()
                 .isNotEmpty(),
         )
+    }
+
+    @Test
+    public fun logbookDelete_fullSwipeFires_thenUndoInline() {
+        awaitWeightSurface()
+        // The sheet rides the quick action; dismiss it to reach the logbook.
+        UiDevice.getInstance(InstrumentationRegistry.getInstrumentation()).pressBack()
+
+        val rowsBefore = rule.onAllNodesWithTag("f06-row-weight").fetchSemanticsNodes().size
+
+        // One full swipe past the threshold IS the delete (M3 SwipeToDismissBox,
+        // WLO-0050) — no dialog, no parked-open row, no page-level banner.
+        rule.onAllNodesWithTag("f06-row").onFirst().performScrollTo()
+        rule.onAllNodesWithTag("f06-row").onFirst().performTouchInput { swipe(centerRight, centerLeft) }
+
+        // The undo notice lives in the logbook, where the row was.
+        TestNav.awaitTag(rule, "f06-deleted-banner")
+        pollRows(rowsBefore - 1)
+        rule.onNodeWithTag("f06-undo-delete").performClick()
+        pollRows(rowsBefore)
+    }
+
+    private fun pollRows(expected: Int) {
+        val deadline = System.currentTimeMillis() + TIMEOUT_MS
+        while (System.currentTimeMillis() < deadline) {
+            if (rule.onAllNodesWithTag("f06-row-weight").fetchSemanticsNodes().size == expected) {
+                return
+            }
+            Thread.sleep(POLL_MS)
+        }
+        error("logbook never settled at $expected rows")
     }
 
     // --- helpers ---

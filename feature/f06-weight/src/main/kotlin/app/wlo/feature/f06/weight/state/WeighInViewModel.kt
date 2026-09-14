@@ -173,9 +173,16 @@ public data class VerdictUi(
     public val residualLabel: String,
 )
 
-/** The just-deleted weigh-in, offered back until dismissed. */
+/**
+ * The just-deleted weigh-in, offered back inline — rendered inside the
+ * deleted row's day group (WLO-0050), never as a page-level banner. The day
+ * fields let the UI keep the day's label on screen even when the delete
+ * emptied the group entirely.
+ */
 public data class DeletedUi(
     public val label: String,
+    public val dayEpochDay: Long,
+    public val dayLabel: String,
 )
 
 /** The open weigh-in sheet. */
@@ -420,7 +427,11 @@ public class WeighInViewModel(
                     val event = outcome.value.event
                     undoSnapshot = outcome.value
                     deleted.value =
-                        DeletedUi(label = "${formatWeightInput(event.valueReal)} kg · ${timeLabel(event.capturedAt)}")
+                        DeletedUi(
+                            label = "${formatWeightInput(event.valueReal)} kg · ${timeLabel(event.capturedAt)}",
+                            dayEpochDay = event.dayEpochDay,
+                            dayLabel = dayLabel(event.dayEpochDay, DayBoundary.epochDay(clock.now(), zone)),
+                        )
                     reload()
                     if (reopenSheet) {
                         // Prefill from the day that remains — never the deleted value.
