@@ -5,10 +5,21 @@
 ## idea
 
 ## backlog
+- WLO-0029
+- WLO-0038
+- WLO-0037
+- WLO-0039
+- WLO-0041
+- WLO-0046
+- WLO-0047
+- WLO-0048
 
 ## todo
-- WLO-0029
-- WLO-0036
+- WLO-0040
+- WLO-0042
+- WLO-0043
+- WLO-0044
+- WLO-0045
 
 ## doing
 - WLO-0035

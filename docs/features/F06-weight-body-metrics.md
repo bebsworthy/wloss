@@ -60,7 +60,8 @@ Core objectives:
 **Processing — all on-device, all deterministic**
 
 - **Import semantics (frozen, event-level per R-B8):** the store keeps **every**
-  timestamped reading. Multiple weigh-ins per day are normal data — never
+  timestamped reading (explicit user deletes excepted — R-B8 amendment,
+  WLO-0035). Multiple weigh-ins per day are normal data — never
   collapsed, overwritten, or judged (owner note: people re-weigh after coffee,
   a walk, or the bathroom to "get their win"; that psychology is supported and
   recorded, and it is partly why the gut tracker exists beside the scale). The
@@ -74,7 +75,7 @@ Core objectives:
   - *Zero-phase (option):* centered filter using past **and future** weights; near-zero lag; honestly documented side effect — recent values revise slightly as new data lands, and during plateaus it can briefly project below any achieved weight (Happy Scale's documented caveat, shown as a note, not hidden).
   - *7-day moving average (option):* maximum simplicity, maximum lag.
   - A "compare modes" view overlays all smoothers on one chart for the geek.
-- **Body-fat % — a method registry, never one number:** US Navy (neck/waist/hip girths), RFM (height/waist, no neck tape), BMI-based (Deurenberg, labeled crude), smart-scale impedance decoded per vendor family (openScale pattern: per-device decoder first, published-formula fallback second), photo-scan estimates from **F08** [future]. Each method keeps its **own series**; the user picks a headline method; all are chartable together.
+- **Body-fat % — a method registry, never one number:** US Navy (neck/waist/hip girths), RFM (height/waist, no neck tape), BMI-based (Deurenberg, labeled crude), smart-scale impedance decoded per vendor family (openScale pattern: per-device decoder first, published-formula fallback second), photo-scan estimates from **F08** [future]. Each method keeps its **own series**; the user picks a headline method; all are chartable together on the weight surface — same screen, different series (owner ruling, WLO-0035; no separate body-fat route).
 - **Derived ratios:** BMI, waist-to-height, waist-to-hip — computed, badged *derived*, evaluated against published healthy ranges (openScale pattern).
 - **EAV metric store:** `Measurement / MeasurementType / MeasurementValue` — weight and the built-ins are just pre-registered types; the user can define arbitrary metrics (ketones, neck, waking pulse, coffee…) each getting charts, stats, and CSV columns. This one schema choice quietly powers F09 and any future tracker.
 
@@ -96,7 +97,7 @@ Core objectives:
   simply faster) → confirm. The camera/OCR assist is offered *above* the pad,
   never instead of it; OCR failure lands silently on the pad and nothing is
   lost.
-- *Outlier guard:* an entry ±3σ off recent residual triggers a one-line confirm — "4.2 kg above yesterday — keep or correct?" — one tap either way; an admitted typo is fixed, not judged.
+- *Outlier guard:* an entry ±3σ off recent residual triggers a one-line confirm — "4.2 kg above yesterday — keep or correct?" — one tap either way; "correct" means delete the bad entry and re-enter (R-B8 amendment, WLO-0035), and a deleted entry cannot stand as the day's scalar. An admitted typo is fixed, not judged.
 - *Back-fill:* missed a day? Long-press the chart on that date → number pad → the trend recomputes and, for the zero-phase smoother, recent values re-settle with a visible 300 ms ease. Editing history is honest and visible, never silent.
 - *Long gap / relapse:* returning after ≥ 14 days, the Hub offers **Fresh Start**: hide-not-delete everything before a chosen date; old history stays exportable and reversible. No "welcome back, you gained" copy — ever.
 - *Multi-profile:* per-profile stores (couples sharing a device), each with its own biometric lock; the weigh-in card is profile-aware without a picker in the common single-user case.
@@ -124,7 +125,7 @@ Core objectives:
 
 - **Headline pair:** raw weigh-in (small) + trend weight (hero) + weekly rate ("−0.6 kg/wk"); user-selectable progress number: trend, or **best-of-window** ("10-day-best" — record-low psychology vs. steady-number calm).
 - **Charts:** scale dots + trend line + progress ribbon (30d/90d/1y/all); per-metric trend charts for every girth and custom type; body-fat multi-method overlay; weight ↔ girth scatter with correlation coefficient and plain-language note ("waist −3.1 cm while weight flat — you're losing size, and the tape sees it") — **[v1.x]**; correlations stay out of v1 per the master scope.
-- **The logbook:** a raw table of every entry with provenance column and inline edit — the geek's ground truth beneath every smoothed view, and the source of the import log (which device wrote what, when, under which dedup rule).
+- **The logbook:** a raw table of every entry with provenance column, inline edit, and delete (R-B8 amendment) — the geek's ground truth beneath every smoothed view, and the source of the import log (which device wrote what, when, under which dedup rule).
 - **Milestone breakdown:** F01's auto-generated ladder (4–8 rungs) rendered with per-milestone dates (from F07's 3-band forecast — optimistic/expected/pessimistic dates shown as a range, never one promise).
 - **Provenance rule:** every body number is badged **measured** (tape, scale mass), **estimated** (Navy/RFM/impedance/photo-scan — with formula + inputs + citation), or **derived** (BMI, ratios). Tapping any number opens "How we got here" — the exact inputs, formula, constants, and its data-quality state.
 - **Exports:** full-history CSV/JSON via F13; a one-page doctor summary.

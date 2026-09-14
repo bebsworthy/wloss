@@ -185,7 +185,11 @@ these are binding until amended *here* (feature docs must not re-litigate them).
   never collapsed, overwritten, or judged. "One value per day" semantics
   (lowest-of-day for weight, last-in for girths) are **derived views** consumed
   by trend math, F07, and exports; the raw points stay queryable (time-of-day
-  lens, weigh-count stats) and ship in exports.
+  lens, weigh-count stats) and ship in exports. *Amendment (owner ruling,
+  2026-09-14, WLO-0035):* the verbatim rule governs ingestion and automatic
+  processing — a **user-initiated delete of their own entry is an explicit
+  act, not silent collapsing**: the store exposes a hard delete (no tombstone
+  audit trail), and deleted events drop out of derived views by construction.
 - **R-B9 — Profiles: single-profile v1, partition-ready schema (owner
   ruling).** Every domain row carries `profileId` (default profile created
   at onboarding); per-profile vault partitions, biometric locks, and backup
