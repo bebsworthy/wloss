@@ -30,6 +30,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.CustomAccessibilityAction
 import androidx.compose.ui.semantics.customActions
@@ -49,7 +50,6 @@ import app.wlo.core.designsystem.WloHeroStat
 import app.wlo.core.designsystem.WloIcons
 import app.wlo.core.designsystem.WloScreenTitle
 import app.wlo.core.designsystem.WloSecondaryButton
-import app.wlo.core.designsystem.WloShape
 import app.wlo.core.designsystem.WloSheet
 import app.wlo.core.designsystem.WloSpacing
 import app.wlo.core.designsystem.WloStatDivider
@@ -411,19 +411,15 @@ private fun LogbookRow(
         )
     SwipeToDismissBox(
         state = dismissState,
+        modifier = Modifier.clipToBounds(),
         enableDismissFromStartToEnd = false,
         backgroundContent = {
-            // Empty while Settled (the documented pattern) — WLO rows are
-            // transparent over the card, so a painted background would
-            // ghost through at rest.
+            // Nothing painted — the action is revealed in the space the item
+            // vacates, never as a color fill (WLO-0050 owner review).
             when (dismissState.dismissDirection) {
                 SwipeToDismissBoxValue.EndToStart -> {
                     Box(
-                        modifier =
-                            Modifier
-                                .fillMaxSize()
-                                .background(MaterialTheme.colorScheme.errorContainer, WloShape.Chip)
-                                .testTag("f06-row-delete"),
+                        modifier = Modifier.fillMaxSize().testTag("f06-row-delete"),
                         contentAlignment = Alignment.CenterEnd,
                     ) {
                         Row(
@@ -434,12 +430,12 @@ private fun LogbookRow(
                             Icon(
                                 imageVector = WloIcons.Close,
                                 contentDescription = null,
-                                tint = MaterialTheme.colorScheme.onErrorContainer,
+                                tint = MaterialTheme.colorScheme.error,
                             )
                             Text(
                                 text = "Delete",
                                 style = wloType.label,
-                                color = MaterialTheme.colorScheme.onErrorContainer,
+                                color = MaterialTheme.colorScheme.error,
                             )
                         }
                     }
@@ -454,6 +450,10 @@ private fun LogbookRow(
                 Modifier
                     .fillMaxWidth()
                     .heightIn(min = WloSpacing.ROW_MIN)
+                    // Opaque in the card's own color: the item reads as one
+                    // sliding piece and masks the action until its space is
+                    // vacated — no overlap, no fill showing through.
+                    .background(MaterialTheme.colorScheme.surface)
                     .semantics {
                         customActions =
                             listOf(
