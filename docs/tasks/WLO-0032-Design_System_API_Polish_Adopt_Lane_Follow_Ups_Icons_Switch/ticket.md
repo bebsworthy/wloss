@@ -1,13 +1,13 @@
 ---
 id: WLO-0032
 title: 'Design-system API polish — adopt lane follow-ups (icons, switch enabled, sheet header, shared byte formatting)'
-status: doing
+status: done
 theme:
 release:
 created: 2026-09-14T06:19:06Z
-modified: 2026-09-14T06:19:22Z
-closed:
-revision: eea971c99cc3348c
+modified: 2026-09-14T06:48:57Z
+closed: 2026-09-14T06:48:57Z
+revision: 10b6bfe2289c6f0f
 blocks: []
 related: []
 ---
