@@ -1,13 +1,13 @@
 ---
 id: WLO-0033
 title: 'Hub mock-parity: calorie ring + macro pills, one-tap log-as-planned, streak chip (F11 display-only)'
-status: doing
+status: done
 theme:
 release:
 created: 2026-09-14T07:43:27Z
-modified: 2026-09-14T07:43:35Z
-closed:
-revision: 304306edd45a2753
+modified: 2026-09-14T09:10:26Z
+closed: 2026-09-14T09:10:26Z
+revision: b7813bb06f75204c
 blocks: []
 related: []
 ---
