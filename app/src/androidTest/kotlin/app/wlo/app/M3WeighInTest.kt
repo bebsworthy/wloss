@@ -83,7 +83,7 @@ public class M3WeighInTest {
         )
         assertTrue(
             "the lowest-of-day is marked",
-            rule.onAllNodesWithText("day's weight").fetchSemanticsNodes().isNotEmpty(),
+            rule.onAllNodesWithText("day's weight", substring = true).fetchSemanticsNodes().isNotEmpty(),
         )
     }
 

@@ -1,6 +1,5 @@
 package app.wlo.feature.f06.weight.ui
 
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -9,7 +8,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.ListItem
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Slider
@@ -34,6 +32,7 @@ import app.wlo.core.designsystem.WloCard
 import app.wlo.core.designsystem.WloCardHeader
 import app.wlo.core.designsystem.WloDeltaChip
 import app.wlo.core.designsystem.WloHeroStat
+import app.wlo.core.designsystem.WloListRow
 import app.wlo.core.designsystem.WloScreenTitle
 import app.wlo.core.designsystem.WloSecondaryButton
 import app.wlo.core.designsystem.WloSheet
@@ -356,32 +355,22 @@ private fun SmootherTuner(
     }
 
 /**
- * One compressed-history bucket row (WLO-0055), on the standard M3 two-line
- * [ListItem]: the range as headline, the weigh-in count as supporting line,
- * the Δ and closing day's weight in the trailing slot. An empty bucket keeps
- * its row — gaps are data. Tapping any row opens the full logbook, where the
- * individual entries live.
+ * One compressed-history bucket row (WLO-0055), on the design system's
+ * standard [WloListRow] anatomy — headline range, supporting weigh-in count
+ * (always present, so the list rhythm stays even), the Δ and closing day's
+ * weight in the value slot. An empty bucket keeps its row — gaps are data.
+ * Tapping any row opens the full logbook, where the individual entries live.
  */
 @Composable
 private fun HistoryRow(
     bucket: HistoryBucketUi,
     onClick: () -> Unit,
 ) {
-    ListItem(
-        headlineContent = { Text(text = bucket.label, style = wloType.body) },
-        supportingContent =
-            if (bucket.countLabel == null) {
-                null
-            } else {
-                {
-                    Text(
-                        text = bucket.countLabel,
-                        style = wloType.caption,
-                        color = wloExtendedColors.textTertiary,
-                    )
-                }
-            },
-        trailingContent = {
+    WloListRow(
+        label = bucket.label,
+        secondary = bucket.countLabel,
+        modifier = Modifier.testTag("f06-history-row"),
+        value = {
             Row(
                 horizontalArrangement = Arrangement.spacedBy(WloSpacing.CARD),
                 verticalAlignment = Alignment.CenterVertically,
@@ -409,10 +398,7 @@ private fun HistoryRow(
                 }
             }
         },
-        modifier =
-            Modifier
-                .clickable(onClickLabel = "open the full logbook") { onClick() }
-                .testTag("f06-history-row"),
+        onClick = onClick,
     )
 }
 

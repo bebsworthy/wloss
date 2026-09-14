@@ -410,7 +410,7 @@ public class WeighInViewModel(
                     HistoryBucketUi(
                         tier = bucket.tier,
                         label = HistoryLabels.bucketLabel(bucket, today),
-                        countLabel = bucket.count.takeIf { it > 1 }?.let { "$it weigh-ins" },
+                        countLabel = "${bucket.count} weigh-in" + if (bucket.count == 1) "" else "s",
                         deltaLabel = bucket.deltaKg?.let { delta -> signedKg(delta) },
                         weightLabel = bucket.endValueKg?.let { kg -> "${formatWeightInput(kg)} kg" },
                     )

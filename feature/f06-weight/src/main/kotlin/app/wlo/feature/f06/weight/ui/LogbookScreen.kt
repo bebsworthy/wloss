@@ -23,8 +23,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.Icon
-import androidx.compose.material3.ListItem
-import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -46,6 +44,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import app.wlo.core.designsystem.WloHaptic
 import app.wlo.core.designsystem.WloIcons
+import app.wlo.core.designsystem.WloListRow
 import app.wlo.core.designsystem.WloMotion
 import app.wlo.core.designsystem.WloScreenTitle
 import app.wlo.core.designsystem.WloSecondaryButton
@@ -270,59 +269,42 @@ private fun LogbookRow(
             }
         },
     ) {
-        // The standard M3 list item supplies the metrics (56 dp one-line,
-        // 16 dp inner edges, trailing alignment) — the swipe wrapper only
-        // adds the reveal mechanics around it. Container in the page's own
-        // color: the item reads as one opaque sliding piece with no slab
-        // seams, and masks the action until its space is vacated.
-        ListItem(
-            headlineContent = {
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(WloSpacing.CARD),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Text(text = row.dateLabel, style = wloType.body)
-                    Text(
-                        text = row.timeLabel,
-                        style = wloType.receipt,
-                        color = wloExtendedColors.textTertiary,
-                    )
-                    if (row.isLowest) {
-                        Text(
-                            text = "day's weight",
-                            style = wloType.label,
-                            color = MaterialTheme.colorScheme.primary,
-                        )
-                    }
-                    if (row.flagged) {
-                        Text(
-                            text = "flagged — kept",
-                            style = wloType.label,
-                            color = wloExtendedColors.held,
-                        )
-                    }
+        // The design system's standard row anatomy (WLO-0031) — headline
+        // date, supporting time + provenance marks, the weight in the value
+        // slot — so every list in the app reads the same. The wrapper only
+        // adds the reveal mechanics; the box masks the action with the
+        // page's own color until the row's space is vacated (WloListRow
+        // itself renders on a transparent container).
+        Box(modifier = Modifier.background(MaterialTheme.colorScheme.background)) {
+            val meta =
+                buildString {
+                    append(row.timeLabel)
+                    if (row.isLowest) append(" · day's weight")
+                    if (row.flagged) append(" · flagged — kept")
                 }
-            },
-            trailingContent = {
-                Text(
-                    text = row.weightLabel,
-                    style = wloType.statS,
-                    modifier = Modifier.testTag("f06-row-weight"),
-                )
-            },
-            colors = ListItemDefaults.colors(containerColor = MaterialTheme.colorScheme.background),
-            modifier =
-                Modifier
-                    .semantics {
-                        customActions =
-                            listOf(
-                                CustomAccessibilityAction("Delete ${row.weightLabel} at ${row.dateLabel} ${row.timeLabel}") {
-                                    onDelete()
-                                    true
-                                },
-                            )
-                    }.testTag("f06-row"),
-        )
+            WloListRow(
+                label = row.dateLabel,
+                secondary = meta,
+                value = {
+                    Text(
+                        text = row.weightLabel,
+                        style = wloType.statS,
+                        modifier = Modifier.testTag("f06-row-weight"),
+                    )
+                },
+                modifier =
+                    Modifier
+                        .semantics {
+                            customActions =
+                                listOf(
+                                    CustomAccessibilityAction("Delete ${row.weightLabel} at ${row.dateLabel} ${row.timeLabel}") {
+                                        onDelete()
+                                        true
+                                    },
+                                )
+                        }.testTag("f06-row"),
+            )
+        }
     }
 }
 
