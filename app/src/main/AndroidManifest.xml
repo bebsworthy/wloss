@@ -11,6 +11,8 @@
     <uses-permission android:name="android.permission.INTERNET" />
     <!-- BiometricPrompt gate (F13 app lock): required for BiometricManager.canAuthenticate. -->
     <uses-permission android:name="android.permission.USE_BIOMETRIC" />
+    <!-- The weigh-in reminder (F06 §4, WLO-0040): runtime-asked when the user arms it. -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 
     <application
         android:name=".WloApplication"

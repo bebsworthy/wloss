@@ -48,6 +48,20 @@ class SettingsStoreTest {
             assertTrue(java.io.File(file.toString()).length() > 0, "preferences file must be written")
         }
 
+    @Test
+    fun weighInReminderDefaultsThenPersists() =
+        runBlocking {
+            val store = SettingsStoreFactory.create(tempFile())
+
+            // Off by default, morning-window anchor (F06 §2 / WLO-0040).
+            assertEquals(false, store.weighInReminderEnabled.first())
+            assertEquals(7 * 60 + 30, store.weighInReminderMinuteOfDay.first())
+
+            store.setWeighInReminder(enabled = true, minuteOfDay = 20 * 60)
+            assertEquals(true, store.weighInReminderEnabled.first())
+            assertEquals(20 * 60, store.weighInReminderMinuteOfDay.first())
+        }
+
     private fun tempFile(): okio.Path =
         Files
             .createTempDirectory("wlo-datastore-test")

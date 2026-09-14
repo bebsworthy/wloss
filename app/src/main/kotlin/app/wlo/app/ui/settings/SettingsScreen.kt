@@ -1,5 +1,9 @@
 package app.wlo.app.ui.settings
 
+import android.content.Context
+import android.os.Build
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -18,6 +22,7 @@ import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewModelScope
+import app.wlo.app.notification.WeighInReminder
 import app.wlo.core.datastore.SettingsStore
 import app.wlo.core.designsystem.SelectChip
 import app.wlo.core.designsystem.WloCard
@@ -55,6 +60,13 @@ public fun SettingsScreen(
     val state by viewModel.state.collectAsStateWithLifecycle()
     val context = LocalContext.current
     val canPrompt = (context as? FragmentActivity)?.canPromptBiometric() == true
+
+    // Android 13+ gates reminders behind POST_NOTIFICATIONS; a denial keeps
+    // the toggle off — no re-prompt loop, no settings lecture.
+    val permissionLauncher =
+        rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+            viewModel.setReminder(granted, state.reminderMinuteOfDay)
+        }
 
     Column(
         modifier =
@@ -153,6 +165,38 @@ public fun SettingsScreen(
             }
         }
 
+        // --- Weigh-in reminder (F06 §4, WLO-0040) ---------------------------
+        WloCard(
+            modifier = Modifier.testTag("settings-reminder"),
+            header = { WloCardHeader(title = "Weigh-in reminder") },
+        ) {
+            WloSwitchRow(
+                label = "One soft daily nudge — an invitation, never a streak",
+                checked = state.reminderEnabled,
+                onCheckedChange = { wanted ->
+                    if (wanted && Build.VERSION.SDK_INT >= 33) {
+                        permissionLauncher.launch(android.Manifest.permission.POST_NOTIFICATIONS)
+                    } else {
+                        viewModel.setReminder(wanted, state.reminderMinuteOfDay)
+                    }
+                },
+                modifier = Modifier.testTag("settings-reminder-toggle"),
+            )
+            if (state.reminderEnabled) {
+                Text(text = "Nudge me around…", style = wloType.statS)
+                Row(horizontalArrangement = Arrangement.spacedBy(WloSpacing.TIGHT)) {
+                    for (minute in listOf(360, 420, 450, 510, 720, 1200)) {
+                        SelectChip(
+                            label = minuteLabel(minute),
+                            selected = state.reminderMinuteOfDay == minute,
+                            onClick = { viewModel.setReminder(true, minute) },
+                            modifier = Modifier.testTag("settings-reminder-$minute"),
+                        )
+                    }
+                }
+            }
+        }
+
         Text(
             text =
                 "WLO is free, offline-first, and account-less. No telemetry exists in this app — " +
@@ -164,6 +208,8 @@ public fun SettingsScreen(
     }
 }
 
+private fun minuteLabel(minuteOfDay: Int): String = "%02d:%02d".format(minuteOfDay / 60, minuteOfDay % 60)
+
 private fun timeoutLabel(timeout: LockTimeout): String =
     when (timeout) {
         LockTimeout.IMMEDIATE -> "Immediately"
@@ -171,20 +217,43 @@ private fun timeoutLabel(timeout: LockTimeout): String =
         LockTimeout.FIVE_MINUTES -> "5 minutes"
     }
 
-/** Settings state: the app-lock posture (F13 §3). */
+/** Settings state: the app-lock posture (F13 §3) + the reminder (F06 §4). */
 public data class SettingsUiState(
     public val appLockEnabled: Boolean = false,
     public val lockTimeout: LockTimeout = LockTimeout.ONE_MINUTE,
+    public val reminderEnabled: Boolean = false,
+    public val reminderMinuteOfDay: Int = 450,
 )
 
 public class SettingsViewModel(
     private val settings: SettingsStore,
     private val appLock: AppLockController,
+    private val appContext: Context,
 ) : ViewModel() {
     public val state: StateFlow<SettingsUiState> =
-        combine(settings.appLockEnabled, settings.lockTimeout) { enabled, timeout ->
-            SettingsUiState(appLockEnabled = enabled, lockTimeout = LockTimeout.fromWire(timeout))
+        combine(
+            combine(settings.appLockEnabled, settings.lockTimeout) { enabled, timeout ->
+                SettingsUiState(appLockEnabled = enabled, lockTimeout = LockTimeout.fromWire(timeout))
+            },
+            settings.weighInReminderEnabled,
+            settings.weighInReminderMinuteOfDay,
+        ) { base, reminderEnabled, minute ->
+            base.copy(reminderEnabled = reminderEnabled, reminderMinuteOfDay = minute)
         }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), SettingsUiState())
+
+    /**
+     * Persists the reminder AND reschedules the WorkManager work — one door,
+     * so the on-device schedule can never drift from the stored choice.
+     */
+    public fun setReminder(
+        enabled: Boolean,
+        minuteOfDay: Int,
+    ) {
+        viewModelScope.launch {
+            settings.setWeighInReminder(enabled, minuteOfDay)
+            WeighInReminder.reschedule(appContext, enabled, minuteOfDay)
+        }
+    }
 
     public fun setAppLock(enabled: Boolean) {
         viewModelScope.launch { settings.setAppLockEnabled(enabled) }

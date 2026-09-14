@@ -1,13 +1,13 @@
 ---
 id: WLO-0040
 title: 'F06 weigh-in reminder notification: soft, user-set, zero-guilt copy'
-status: todo
+status: done
 theme:
 release:
 created: 2026-09-14T13:37:55Z
-modified: 2026-09-14T13:52:36Z
-closed:
-revision: 836656f7104f8b74
+modified: 2026-09-14T16:05:11Z
+closed: 2026-09-14T16:05:11Z
+revision: f75db9f3fff7ace2
 blocks: []
 related: []
 ---

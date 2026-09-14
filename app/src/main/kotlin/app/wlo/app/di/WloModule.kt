@@ -100,7 +100,7 @@ public val appModule: Module =
         // The Settings surface's app-lock state (M6 PART B).
         viewModel {
             app.wlo.app.ui.settings
-                .SettingsViewModel(settings = get(), appLock = get())
+                .SettingsViewModel(settings = get(), appLock = get(), appContext = get())
         }
         // The profile-facts editor (WLO-0035 W4): onboarding answers, correctable.
         viewModel {

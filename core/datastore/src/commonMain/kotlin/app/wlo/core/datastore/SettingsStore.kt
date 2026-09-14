@@ -4,6 +4,7 @@ import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
+import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import app.wlo.core.common.MassUnit
 import kotlinx.coroutines.flow.Flow
@@ -145,6 +146,26 @@ public class SettingsStore(
     }
 
     /**
+     * The soft daily weigh-in reminder (F06 §4, WLO-0040): off until asked
+     * for; the minute-of-day anchors the morning window (default 07:30).
+     */
+    public val weighInReminderEnabled: Flow<Boolean> =
+        dataStore.data.map { prefs -> prefs[KEY_WEIGH_IN_REMINDER_ENABLED] ?: false }
+
+    public val weighInReminderMinuteOfDay: Flow<Int> =
+        dataStore.data.map { prefs -> prefs[KEY_WEIGH_IN_REMINDER_MINUTE] ?: REMINDER_DEFAULT_MINUTE }
+
+    public suspend fun setWeighInReminder(
+        enabled: Boolean,
+        minuteOfDay: Int,
+    ) {
+        dataStore.edit {
+            it[KEY_WEIGH_IN_REMINDER_ENABLED] = enabled
+            it[KEY_WEIGH_IN_REMINDER_MINUTE] = minuteOfDay
+        }
+    }
+
+    /**
      * F06 body-fat headline method (WLO-0035 R2): which estimate series leads
      * ("navy-tape" | "rfm" wire names). The registry keeps every series —
      * this only picks the one the chart renders first.
@@ -230,6 +251,11 @@ public class SettingsStore(
         val KEY_AI_CLOUD_KILL_SWITCH = booleanPreferencesKey("ai_cloud_kill_switch")
         val KEY_REMEMBERED_CSV_MAPPING = stringPreferencesKey("remembered_csv_mapping")
         val KEY_BF_HEADLINE_METHOD = stringPreferencesKey("bf_headline_method")
+        val KEY_WEIGH_IN_REMINDER_ENABLED = booleanPreferencesKey("weigh_in_reminder_enabled")
+        val KEY_WEIGH_IN_REMINDER_MINUTE = intPreferencesKey("weigh_in_reminder_minute")
+
+        /** Default reminder anchor: 07:30, inside the morning window (F06 §2). */
+        const val REMINDER_DEFAULT_MINUTE = 7 * 60 + 30
 
         /** Default body-fat headline method (F06 §3: Navy tape first). */
         const val BF_HEADLINE_DEFAULT = "navy-tape"
