@@ -3,13 +3,12 @@ package app.wlo.app.ui.debug
 import android.content.pm.ApplicationInfo
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.ListItem
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -18,6 +17,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import app.wlo.core.designsystem.WloListRow
 import app.wlo.core.designsystem.WloScreenTitle
 import app.wlo.core.designsystem.WloSpacing
 import app.wlo.core.designsystem.wloExtendedColors
@@ -107,24 +107,20 @@ private fun CounterRow(
     label: String,
     count: Int,
 ) {
-    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-        Text(text = label, style = wloType.label)
-        Text(
-            text = count.toString(),
-            style = wloType.receipt,
-            modifier = Modifier.testTag(tag),
-        )
-    }
+    WloListRow(
+        label = label,
+        value = { Text(text = count.toString(), style = wloType.receipt, modifier = Modifier.testTag(tag)) },
+    )
 }
 
 @Composable
 private fun ReceiptRow(receipt: EgressReceipt) {
-    Row(Modifier.fillMaxWidth().testTag("egress-receipt-${receipt.seq}")) {
-        Column {
-            Text(
-                text = "#${receipt.seq} ${receipt.purpose.wireName} → ${receipt.host}",
-                style = wloType.receipt,
-            )
+    ListItem(
+        modifier = Modifier.testTag("egress-receipt-${receipt.seq}"),
+        headlineContent = {
+            Text(text = "#${receipt.seq} ${receipt.purpose.wireName} → ${receipt.host}", style = wloType.receipt)
+        },
+        supportingContent = {
             Text(
                 text =
                     "${receipt.operation} · ${receipt.bytes} B · ${receipt.outcome.wireName} · " +
@@ -132,6 +128,6 @@ private fun ReceiptRow(receipt: EgressReceipt) {
                 style = wloType.receipt,
                 color = wloExtendedColors.textTertiary,
             )
-        }
-    }
+        },
+    )
 }

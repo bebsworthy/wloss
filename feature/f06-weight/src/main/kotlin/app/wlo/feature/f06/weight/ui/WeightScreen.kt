@@ -5,11 +5,11 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.ListItem
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Slider
@@ -356,50 +356,64 @@ private fun SmootherTuner(
     }
 
 /**
- * One compressed-history bucket row (WLO-0055): the range, how many
- * weigh-ins it holds, the change vs the bucket before it, and the closing
- * day's weight. An empty bucket keeps its row — gaps are data. Tapping any
- * row opens the full logbook, where the individual entries live.
+ * One compressed-history bucket row (WLO-0055), on the standard M3 two-line
+ * [ListItem]: the range as headline, the weigh-in count as supporting line,
+ * the Δ and closing day's weight in the trailing slot. An empty bucket keeps
+ * its row — gaps are data. Tapping any row opens the full logbook, where the
+ * individual entries live.
  */
 @Composable
 private fun HistoryRow(
     bucket: HistoryBucketUi,
     onClick: () -> Unit,
 ) {
-    Row(
+    ListItem(
+        headlineContent = { Text(text = bucket.label, style = wloType.body) },
+        supportingContent =
+            if (bucket.countLabel == null) {
+                null
+            } else {
+                {
+                    Text(
+                        text = bucket.countLabel,
+                        style = wloType.caption,
+                        color = wloExtendedColors.textTertiary,
+                    )
+                }
+            },
+        trailingContent = {
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(WloSpacing.CARD),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                bucket.deltaLabel?.let { delta ->
+                    Text(
+                        text = delta,
+                        style = wloType.caption,
+                        color = wloExtendedColors.textTertiary,
+                    )
+                }
+                if (bucket.weightLabel == null) {
+                    Text(
+                        text = "—",
+                        style = wloType.statS,
+                        color = wloExtendedColors.textTertiary,
+                        modifier = Modifier.testTag("f06-history-weight"),
+                    )
+                } else {
+                    Text(
+                        text = bucket.weightLabel,
+                        style = wloType.statS,
+                        modifier = Modifier.testTag("f06-history-weight"),
+                    )
+                }
+            }
+        },
         modifier =
             Modifier
-                .fillMaxWidth()
-                .heightIn(min = WloSpacing.ROW_MIN)
                 .clickable(onClickLabel = "open the full logbook") { onClick() }
                 .testTag("f06-history-row"),
-        horizontalArrangement = Arrangement.spacedBy(WloSpacing.TIGHT),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Column(modifier = Modifier.weight(1f)) {
-            Text(text = bucket.label, style = wloType.body)
-            bucket.countLabel?.let { count ->
-                Text(text = count, style = wloType.caption, color = wloExtendedColors.textTertiary)
-            }
-        }
-        bucket.deltaLabel?.let { delta ->
-            Text(text = delta, style = wloType.caption, color = wloExtendedColors.textTertiary)
-        }
-        if (bucket.weightLabel == null) {
-            Text(
-                text = "—",
-                style = wloType.statS,
-                color = wloExtendedColors.textTertiary,
-                modifier = Modifier.testTag("f06-history-weight"),
-            )
-        } else {
-            Text(
-                text = bucket.weightLabel,
-                style = wloType.statS,
-                modifier = Modifier.testTag("f06-history-weight"),
-            )
-        }
-    }
+    )
 }
 
 /**

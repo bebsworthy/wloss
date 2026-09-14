@@ -2,18 +2,17 @@ package app.wlo.feature.f12.consent.ui
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.ListItem
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -168,25 +167,22 @@ private fun ReceiptRow(line: ReceiptLine) {
         Instant
             .fromEpochMilliseconds(line.atEpochMs)
             .toLocalDateTime(TimeZone.currentSystemDefault())
-    Column(Modifier.fillMaxWidth().padding(vertical = WloSpacing.TIGHT).testTag("f12-receipt-${line.seq}")) {
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(WloSpacing.TIGHT),
-        ) {
-            WloBadge(text = purposeLabel(line.purposeWire), tone = WloBadgeTone.Neutral)
-            Text(
-                text = line.host,
-                style = wloType.statS,
-                modifier = Modifier.weight(1f),
-            )
-        }
-        Text(
-            text =
-                "#${line.seq} · ${line.operation} · ${outcomeLabel(line.outcomeWire)} · ${formatBytes(
-                    line.bytes,
-                )} · ${at.date} ${at.time.toString().substringBefore('.')}",
-            style = wloType.receipt,
-            color = wloExtendedColors.textTertiary,
+    Column(Modifier.fillMaxWidth().testTag("f12-receipt-${line.seq}")) {
+        ListItem(
+            leadingContent = {
+                WloBadge(text = purposeLabel(line.purposeWire), tone = WloBadgeTone.Neutral)
+            },
+            headlineContent = { Text(text = line.host, style = wloType.statS) },
+            supportingContent = {
+                Text(
+                    text =
+                        "#${line.seq} · ${line.operation} · ${outcomeLabel(line.outcomeWire)} · ${formatBytes(
+                            line.bytes,
+                        )} · ${at.date} ${at.time.toString().substringBefore('.')}",
+                    style = wloType.receipt,
+                    color = wloExtendedColors.textTertiary,
+                )
+            },
         )
         HorizontalDivider(
             Modifier.padding(top = WloSpacing.TIGHT),

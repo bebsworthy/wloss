@@ -28,6 +28,7 @@ import app.wlo.core.designsystem.WloBadgeTone
 import app.wlo.core.designsystem.WloButton
 import app.wlo.core.designsystem.WloCard
 import app.wlo.core.designsystem.WloCardHeader
+import app.wlo.core.designsystem.WloListRow
 import app.wlo.core.designsystem.WloProgress
 import app.wlo.core.designsystem.WloScreenTitle
 import app.wlo.core.designsystem.WloSpacing
@@ -208,10 +209,9 @@ public fun BackupControlsScreen(viewModel: BackupControlsViewModel) {
                     .sortedByDescending { it.name }
                     .take(7)
                     .forEach { file ->
-                        Text(
-                            text = "${file.name} · ${formatBytes(file.sizeBytes)}",
-                            style = wloType.receipt,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        WloListRow(
+                            label = file.name,
+                            secondary = formatBytes(file.sizeBytes),
                         )
                     }
                 if (state.files.isEmpty()) {

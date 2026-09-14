@@ -30,6 +30,7 @@ import app.wlo.core.designsystem.WloButton
 import app.wlo.core.designsystem.WloCard
 import app.wlo.core.designsystem.WloCardAccent
 import app.wlo.core.designsystem.WloCardHeader
+import app.wlo.core.designsystem.WloListRow
 import app.wlo.core.designsystem.WloProgress
 import app.wlo.core.designsystem.WloScreenTitle
 import app.wlo.core.designsystem.WloSecondaryButton
@@ -184,14 +185,11 @@ public fun RestoreWizardScreen(
                         )
                         HorizontalDivider()
                         staged?.sections?.forEach { section ->
-                            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                                Text(text = section.name, style = wloType.receipt)
-                                Text(
-                                    text = "${section.rows} rows",
-                                    style = wloType.receipt,
-                                    modifier = Modifier.testTag("f13-restore-section-${section.name}"),
-                                )
-                            }
+                            WloListRow(
+                                label = section.name,
+                                value = { Text(text = "${section.rows} rows", style = wloType.receipt) },
+                                modifier = Modifier.testTag("f13-restore-section-${section.name}"),
+                            )
                         }
                         HorizontalDivider()
                         Text(

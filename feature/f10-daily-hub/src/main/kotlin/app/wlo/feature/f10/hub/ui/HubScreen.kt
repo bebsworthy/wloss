@@ -41,6 +41,7 @@ import app.wlo.core.designsystem.WloForecastCard
 import app.wlo.core.designsystem.WloHeroStat
 import app.wlo.core.designsystem.WloIconAction
 import app.wlo.core.designsystem.WloIcons
+import app.wlo.core.designsystem.WloListRow
 import app.wlo.core.designsystem.WloProvenanceGlyphs
 import app.wlo.core.designsystem.WloRailButton
 import app.wlo.core.designsystem.WloRing
@@ -200,21 +201,10 @@ public fun HubScreen(
                     WloCard {
                         explainer.rows.forEachIndexed { index, (label, value) ->
                             if (index > 0) WloStatDivider()
-                            Row(
-                                modifier =
-                                    Modifier
-                                        .fillMaxWidth()
-                                        .height(WloSpacing.ROW_MIN),
-                                verticalAlignment = Alignment.CenterVertically,
-                            ) {
-                                Text(
-                                    text = label,
-                                    style = wloType.caption,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                    modifier = Modifier.weight(1f),
-                                )
-                                Text(text = value, style = wloType.receipt)
-                            }
+                            WloListRow(
+                                label = label,
+                                value = { Text(text = value, style = wloType.receipt) },
+                            )
                         }
                     }
                     Text(
