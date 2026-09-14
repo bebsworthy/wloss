@@ -1,13 +1,13 @@
 ---
 id: WLO-0036
 title: 'Demo run: just demo — debug DemoSeedReceiver (lifted from SeedingRobot) + justfile boot/demo recipes'
-status: todo
+status: doing
 theme:
 release:
 created: 2026-09-14T13:18:03Z
-modified: 2026-09-14T13:30:37Z
+modified: 2026-09-14T13:59:09Z
 closed:
-revision: 5543a280e53a71c1
+revision: f65eaa1548dc7d5a
 blocks: []
 related: []
 ---
@@ -46,6 +46,30 @@ claiming "resets the seeded demo data" is stale — nothing seeds).
   the wlo-demo logcat line (timeout) → resolve launcher → launch.
   Fix the `fresh` comment (clear only; pair with `just demo` to reseed).
   Update the header comment.
+
+## References (spec + mockup contracts the dataset implements)
+
+- **Mockup (visual contract):** `docs/design/flows/01-day-loop-f10.html` —
+  the seeded Hub reproduces the day-loop frames: weigh-in/trend cards with
+  the 45-day series, calories ring, meals-today row with "Log as planned",
+  diary card, streak chip in the header (pins 1–7).
+- **F01 onboarding** (`docs/features/F01-onboarding-diet-plans.md`) — the
+  seeder replays the wizard's Start write programmatically (profile + Targets
+  v1 via DietTemplateApplier, completion flag) instead of driving the UI.
+- **F02 food logging** (`docs/features/F02-food-logging.md`) — the seeded
+  week comes from `core/testing` DiarySeeder through the real diary door
+  (EntryVia.MANUAL_SEARCH / QUICK_ADD, computed macros).
+- **F03 meal planning** (`docs/features/F03-meal-planning.md`) —
+  `dealWeekPlan` deals a deterministic 7-day plan through `generateWeek`
+  (seed 42) so today has open slots for the meals card + log-as-planned.
+- **F06 weight** (`docs/features/F06-weight-body-metrics.md`) — the 45-day
+  weigh-in series encodes the spec's semantics: daily morning readings,
+  one double-weigh-in day (evening re-weigh HIGHER so lowest-of-day keeps
+  the morning value, ruling R-B8 in `docs/features/FEATURES.md` §3), and a
+  trend within ~0.5 kg of the latest raw reading.
+- **Demo clock** — `app/src/main/.../di/FixedClock.kt` (`DEMO_NOW`,
+  2026-09-08T07:12Z): every seeded write anchors to it, which is why the
+  demo renders the canonical "Tuesday 8 sep" state consistently.
 
 ## Gates
 

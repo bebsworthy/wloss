@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Debug-build-only manifest (merged into the debug APK only): the demo seeder
+  receiver (WLO-0036). `just demo` broadcasts ACTION_SEED at the explicit
+  component after `pm clear`; the receiver seeds the demo dataset and logs the
+  `wlo-demo` line the recipe waits on. Exported so the adb shell can trigger it.
+-->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <application>
+        <receiver
+            android:name=".demo.DemoSeedReceiver"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="app.wlo.demo.SEED" />
+            </intent-filter>
+        </receiver>
+    </application>
+</manifest>

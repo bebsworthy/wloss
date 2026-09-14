@@ -77,6 +77,9 @@ dependencies {
     // M3 perf harness: the instrumented FoodSearchPerfTest seeds through
     // DiarySeeder (:core:testing is otherwise test-only per ARCHITECTURE §2.2).
     androidTestImplementation(project(":core:testing"))
+    // Demo dataset (WLO-0036): the debug source set's DemoSeed shares the same
+    // seeding core the instrumented robot uses (`just demo`'s DemoSeedReceiver).
+    debugImplementation(project(":core:testing"))
 
     // UiDevice shell commands (am force-stop) in instrumented tests.
     androidTestImplementation(libs.androidx.test.uiautomator)

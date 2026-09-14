@@ -1,5 +1,6 @@
 # WLO dev shortcuts. `just` = build, `just drop` = dogfood APK via AirDrop,
-# `just run` = boot emulator + install + launch.
+# `just run` = boot emulator + install + launch, `just demo` = the same with
+# the demo dataset seeded, `just fresh` = clear app data.
 
 sdk := `echo "${ANDROID_HOME:-$HOME/Library/Android/sdk}"`
 adb := sdk + "/platform-tools/adb"
@@ -25,8 +26,8 @@ build-release:
 drop: build-release
     airdrop {{absolute_path(apk_release)}}
 
-# Build, boot the wlo-api29 emulator (headed), install and launch the app
-run: build
+# Boot the wlo-api29 emulator (headed); creates the AVD on first use
+boot:
     #!/usr/bin/env bash
     set -euo pipefail
     adb="{{adb}}"
@@ -73,6 +74,12 @@ run: build
         sleep 1
     done
 
+# Build, boot the wlo-api29 emulator (headed), install and launch the app
+run: build boot
+    #!/usr/bin/env bash
+    set -euo pipefail
+    adb="{{adb}}"
+
     "$adb" -e install -r {{apk_debug}}
     # Resolve the launcher activity at runtime (the activity lives under the
     # app.wlo.app namespace, and `monkey` is broken on the api29 image).
@@ -80,9 +87,38 @@ run: build
         -c android.intent.category.LAUNCHER {{pkg}} | tail -1 | tr -d '\r')"
     "$adb" -e shell am start -n "$launcher"
 
-# Clear app data on the emulator (resets the seeded demo data) and relaunch
-fresh:
-    {{adb}} -e shell pm clear {{pkg}}
-    launcher="$({{adb}} -e shell cmd package resolve-activity --brief \
+# Build, boot the emulator, install, seed the demo dataset and launch
+demo: build boot
+    #!/usr/bin/env bash
+    set -euo pipefail
+    adb="{{adb}}"
+
+    "$adb" -e install -r {{apk_debug}}
+    "$adb" -e shell pm clear {{pkg}}
+    # The receiver seeds on a worker thread and announces via logcat; clear the
+    # buffer first so a previous run's wlo-demo line can't be mistaken for ours.
+    "$adb" -e logcat -c
+    "$adb" -e shell am broadcast -a app.wlo.demo.SEED \
+        -n {{pkg}}/app.wlo.app.demo.DemoSeedReceiver >/dev/null
+    for i in $(seq 1 60); do
+        line="$("$adb" -e logcat -d -s wlo-demo | grep -E 'seeded|skipped' | tail -1)"
+        [ -n "$line" ] && { echo "$line"; break; }
+        [ "$i" = 60 ] && { echo "Demo seed timed out — no wlo-demo line in logcat"; exit 1; }
+        sleep 1
+    done
+    # `monkey` is broken on the api29 image — resolve the launcher explicitly.
+    launcher="$("$adb" -e shell cmd package resolve-activity --brief \
         -c android.intent.category.LAUNCHER {{pkg}} | tail -1 | tr -d '\r')"
-    {{adb}} -e shell am start -n "$launcher"
+    "$adb" -e shell am start -n "$launcher"
+
+# Clear app data on the emulator; pair with `just demo` to reseed the demo data
+fresh:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    adb="{{adb}}"
+
+    "$adb" -e shell pm clear {{pkg}}
+    # `monkey` is broken on the api29 image — resolve the launcher explicitly.
+    launcher="$("$adb" -e shell cmd package resolve-activity --brief \
+        -c android.intent.category.LAUNCHER {{pkg}} | tail -1 | tr -d '\r')"
+    "$adb" -e shell am start -n "$launcher"
