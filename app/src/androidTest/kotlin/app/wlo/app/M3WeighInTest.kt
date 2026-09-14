@@ -7,10 +7,13 @@ import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onFirst
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performSemanticsAction
 import androidx.compose.ui.test.performTextClearance
 import androidx.compose.ui.test.performTextInput
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import androidx.test.platform.app.InstrumentationRegistry
+import androidx.test.uiautomator.UiDevice
 import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertTrue
 import org.junit.Before
@@ -125,7 +128,12 @@ public class M3WeighInTest {
     @Test
     public fun mathDocScreen_opensFromTheChart() {
         awaitWeightSurface()
-        rule.onNodeWithTag("f06-open-math").performClick()
+        // The f06 quick action lands with the weigh-in sheet open (wlo://weight/log);
+        // the chart card lives beneath it — dismiss first, as a user would.
+        UiDevice.getInstance(InstrumentationRegistry.getInstrumentation()).pressBack()
+        // The window selector + segment row grew the surface — the math button
+        // sits below the fold now; scroll to it like a user would.
+        rule.onNodeWithTag("f06-open-math").performScrollTo().performClick()
         TestNav.awaitTag(rule, "f06-math-title")
         // The formula version rides the doc card's provenance chip; the new
         // chip anatomy speaks the value via its content description (the chip

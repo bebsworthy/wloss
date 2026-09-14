@@ -16,7 +16,12 @@ import androidx.test.rule.GrantPermissionRule
 import androidx.test.uiautomator.UiDevice
 import app.wlo.app.di.FixedClock
 import app.wlo.core.common.ClockPort
-import kotlinx.datetime.Instant
+import kotlinx.datetime.Clock
+import kotlinx.datetime.LocalDateTime
+import kotlinx.datetime.LocalTime
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.toInstant
+import kotlinx.datetime.toLocalDateTime
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
@@ -139,12 +144,20 @@ public class M3ScreensTest {
     @Test
     public fun captureEveningHub() {
         SeedingRobot.onboardAndSeedWeek()
-        // The demo clock is frozen at 07:12 (M1 seam); the evening phase is
-        // captured by overriding the bound clock BEFORE the Hub composes —
-        // the Day Model rules themselves are unchanged and engine-golden-tested.
+        // The evening phase is captured by overriding the bound clock BEFORE
+        // the Hub composes — pinned to TODAY 19:30 local so the seeded week
+        // (authored relative to the real clock, WLO-0049) stays coherent. The
+        // Day Model rules themselves are unchanged and engine-golden-tested.
+        val zone = TimeZone.currentSystemDefault()
+        val today =
+            kotlin.time.Clock.System
+                .now()
+                .toLocalDateTime(zone)
+                .date
+        val evening = LocalDateTime(today, LocalTime.fromSecondOfDay(19 * 3600 + 30 * 60)).toInstant(zone)
         loadKoinModules(
             module {
-                single<ClockPort> { FixedClock(Instant.parse("2026-09-08T19:30:00Z")) }
+                single<ClockPort> { FixedClock(evening) }
             },
         )
         TestNav.awaitTag(rule, "hub-close-card")

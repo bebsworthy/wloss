@@ -93,7 +93,9 @@ private fun documentsPath(context: Context): Path = File(context.filesDir, DOCUM
  */
 public val appModule: Module =
     module {
-        single<ClockPort> { FixedClock(FixedClock.DEMO_NOW) }
+        // The device's real clock (WLO-0049) — the M1 frozen pin blocked
+        // dogfooding: every write was stamped 2026-09-08 forever.
+        single<ClockPort> { app.wlo.core.common.SystemClock }
         factory { ShellViewModel(profiles = get(), targets = get(), documents = get()) }
         // The Settings surface's app-lock state (M6 PART B).
         viewModel {

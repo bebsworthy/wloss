@@ -1,13 +1,13 @@
 ---
 id: WLO-0035
 title: 'F06 measurement + targets flow rethink: logbook with edit/void, back-dating, full-depth chart windows, body-fat as a series, goals/profile editor after onboarding'
-status: doing
+status: done
 theme:
 release:
 created: 2026-09-14T12:57:04Z
-modified: 2026-09-14T13:52:36Z
-closed:
-revision: 4f6fa2c41e55db65
+modified: 2026-09-14T15:03:09Z
+closed: 2026-09-14T15:03:09Z
+revision: a952243640a47213
 blocks: []
 related: []
 ---

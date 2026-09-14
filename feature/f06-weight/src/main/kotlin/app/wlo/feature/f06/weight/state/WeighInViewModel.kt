@@ -257,7 +257,7 @@ public class WeighInViewModel(
     private val alpha = MutableStateFlow(ConstantsRegistry.EWMA_ALPHA_DEFAULT)
     private val window = MutableStateFlow(ChartWindowUi.D90)
     private val section = MutableStateFlow(initialSection)
-    private val sheet = MutableStateFlow<SheetUi?>(initialSheetOpen.takeIf { it }?.let { openSheet(prefillKg = null) })
+    private val sheet = MutableStateFlow<SheetUi?>(initialSheetOpen.takeIf { it }?.let { freshSheet() })
     private val verdict = MutableStateFlow<VerdictUi?>(null)
     private val deleted = MutableStateFlow<DeletedUi?>(null)
     private var undoSnapshot: DeletedWeighIn? = null
@@ -329,14 +329,22 @@ public class WeighInViewModel(
         }
     }
 
-    private fun openSheet(prefillKg: Double?): SheetUi {
+    /**
+     * The sheet's date/time defaults, WITHOUT touching [uiState] — safe in
+     * field initializers (the deep-link cold start composes the sheet open
+     * before the first reload lands).
+     */
+    private fun freshSheet(weightText: String = ""): SheetUi {
         val now = clock.now().toLocalDateTime(zone)
         return SheetUi(
-            weightText = prefillKg?.let(::formatWeightInput) ?: lastWeightInput().orEmpty(),
+            weightText = weightText,
             dayText = now.date.toString(),
             timeText = "%02d:%02d".format(now.hour, now.minute),
         )
     }
+
+    private fun openSheet(prefillKg: Double?): SheetUi =
+        freshSheet(weightText = prefillKg?.let(::formatWeightInput) ?: lastWeightInput().orEmpty())
 
     private fun step(delta: Double) {
         val current =

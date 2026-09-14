@@ -11,6 +11,9 @@ import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performTextClearance
 import androidx.compose.ui.test.performTextInput
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.isoDayNumber
+import kotlinx.datetime.toLocalDateTime
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Before
@@ -53,7 +56,11 @@ public class M3DiaryHubTest {
                 .onAllNodesWithContentDescription("— logged", substring = true, useUnmergedTree = true)
                 .fetchSemanticsNodes()
                 .size
-        assertEquals("one filled dot per logged day of the current week", LOGGED_WEEK_DAYS, loggedDots)
+        assertEquals(
+            "one filled dot per logged day of the current week",
+            loggedDaysInCurrentWeek(),
+            loggedDots,
+        )
 
         rule.onNodeWithTag("hub-open-diary").performScrollTo().performClick()
         TestNav.awaitTag(rule, "f02-diary-title")
@@ -100,7 +107,21 @@ public class M3DiaryHubTest {
     }
 
     private companion object {
-        /** The seeded week runs Sep 2–8; only Sep 7 + Sep 8 sit in the current week (Mon Sep 7–Sun Sep 13). */
-        const val LOGGED_WEEK_DAYS: Int = 2
+        /**
+         * The seeded week ends TODAY (relative dates, WLO-0049): how many of
+         * the last 7 seeded days fall in the current Mon–Sun week depends on
+         * today's weekday — Mon: 1 (just today), Tue: 2, … Sun: all 7.
+         */
+        fun loggedDaysInCurrentWeek(): Int {
+            val zone = TimeZone.currentSystemDefault()
+            val isoWeekday =
+                kotlin.time.Clock.System
+                    .now()
+                    .toLocalDateTime(zone)
+                    .date
+                    .dayOfWeek
+                    .isoDayNumber
+            return isoWeekday
+        }
     }
 }

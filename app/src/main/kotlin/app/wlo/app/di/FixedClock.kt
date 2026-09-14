@@ -4,8 +4,9 @@ import app.wlo.core.common.ClockPort
 import kotlinx.datetime.Instant
 
 /**
- * Fixed demo clock — M1 has no scheduler yet; time moves in a later milestone.
- * Engines never see this (D7): they take [Instant] parameters.
+ * A frozen [ClockPort] for tests that genuinely need determinism (per-test
+ * graph overrides — never bound in the main graph, WLO-0049). Engines never
+ * see any clock (D7): they take [Instant] parameters.
  */
 public class FixedClock(
     private val fixed: Instant,
