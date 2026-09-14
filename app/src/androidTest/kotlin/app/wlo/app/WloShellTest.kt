@@ -63,17 +63,18 @@ public class WloShellTest {
         composeTestRule.driveToHub()
 
         // Trend + budget arrive provenance-chipped from the day projection
-        // (derived); the R-A5 cold-start forecast is estimated until ≥ 14 days
-        // of real data exist. WLO-0033 wave 2: the budget's chip is the mock's
-        // ⓘ on the "of N kcal" target line — its merged description carries
-        // the provenance word (the header never does, R-D12 round 8).
+        // (derived); the R-A5 cold-start forecast is estimated until the F07
+        // quality gate goes UPDATING. WLO-0034: the card carries ONE provenance
+        // pill — the standard chip in its header slot (the hand-built
+        // ESTIMATED stamp is gone). WLO-0033 wave 2: the budget's chip is the
+        // mock's ⓘ on the "of N kcal" target line — its merged description
+        // carries the provenance word (the header never does, R-D12 round 8).
         composeTestRule.onNodeWithTag("hub-trend-card").assertIsDisplayed()
         composeTestRule
             .onAllNodesWithContentDescription("derived", substring = true, useUnmergedTree = true)
             .onFirst()
             .assertExists()
         composeTestRule.onAllNodesWithText("estimated").onFirst().assertExists()
-        composeTestRule.onAllNodesWithText("ESTIMATED").onFirst().assertExists()
         // WloCardHeader uppercases the source string; the hero numeral renders
         // WITHOUT the unit (defect 14) — the start weight stands in alone.
         composeTestRule.onAllNodesWithText("WEIGHT TREND").onFirst().assertExists()

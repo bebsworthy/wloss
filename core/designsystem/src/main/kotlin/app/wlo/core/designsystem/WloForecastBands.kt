@@ -1,7 +1,5 @@
 package app.wlo.core.designsystem
 
-import app.wlo.core.model.Provenance
-
 /**
  * The neutral band model behind the forecast cone (DESIGN-SYSTEM.md §6): three
  * integrated trajectories + per-band finish days, decoupled from
@@ -19,7 +17,10 @@ public data class WloForecastBands(
     public val optimisticFinishEpochDay: Long?,
     public val expectedFinishEpochDay: Long?,
     public val pessimisticFinishEpochDay: Long?,
+    /**
+     * The expected band's starting weekly rate (kg/week), engine sign
+     * (positive = losing) — powers the arrival row's pace fact when the goal
+     * is not reached inside the horizon. Null when the caller has none.
+     */
+    public val expectedPaceKgPerWeek: Double? = null,
 )
-
-/** True when the forecast's provenance is an estimate — drives the ESTIMATED stamp. */
-public fun isEstimated(provenance: Provenance): Boolean = provenance is Provenance.Estimated

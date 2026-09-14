@@ -41,7 +41,9 @@ public class OnboardingFlowTest {
             elapsedMs < THREE_MINUTES_MS,
         )
 
-        // Hub after onboarding: trend, budget, forecast + the ESTIMATED chips (R-A5).
+        // Hub after onboarding: trend, budget, forecast + the provenance pill
+        // (R-A5; WLO-0034 — one chip, the header's, lowercase per the chip
+        // vocabulary; the hand-built ESTIMATED stamp is gone).
         rule.onNodeWithTag("hub-trend-card").assertIsDisplayed()
         val forecastRendered =
             rule
@@ -50,7 +52,6 @@ public class OnboardingFlowTest {
                 .isNotEmpty()
         assertTrue("the cold-start forecast card must render on the fresh Hub", forecastRendered)
         rule.onAllNodesWithText("estimated").onFirst().assertExists()
-        rule.onAllNodesWithText("ESTIMATED").onFirst().assertExists()
     }
 
     @Test

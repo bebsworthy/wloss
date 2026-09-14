@@ -20,4 +20,7 @@ dependencies {
     // D6: the provenance-chip components are the only sanctioned rendering
     // path for DerivedValue, so the domain type is part of this module's API.
     api(project(":core:model"))
+
+    // JVM tests for the pure forecast window/tick geometry.
+    testImplementation(libs.kotlin.test.junit)
 }

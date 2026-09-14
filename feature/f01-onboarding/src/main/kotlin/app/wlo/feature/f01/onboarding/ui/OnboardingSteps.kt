@@ -332,6 +332,7 @@ internal fun ForecastStep(
                     Provenance.Measured(at = state.now, instrument = "user-entered"),
                 ),
             estimate = DerivedValue(forecast.tdeeEstimateKcal, forecast.provenance),
+            plannedIntakeKcal = state.budgetKcal,
             formatWeight = { MassUnit.DEFAULT.format(it) },
             formatKcal = ::formatKcal,
             onExplain = onExplain,
@@ -1019,6 +1020,7 @@ private fun toUiBands(
         optimisticFinishEpochDay = forecast.optimistic.finishEpochDay,
         expectedFinishEpochDay = forecast.expected.finishEpochDay,
         pessimisticFinishEpochDay = forecast.pessimistic.finishEpochDay,
+        expectedPaceKgPerWeek = forecast.expected.weeklyRatesKg.firstOrNull(),
     )
 
 @Composable

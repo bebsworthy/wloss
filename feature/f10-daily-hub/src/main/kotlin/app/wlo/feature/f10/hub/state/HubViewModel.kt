@@ -24,8 +24,13 @@ import app.wlo.core.engines.DayModel
 import app.wlo.core.engines.DayModelEngine
 import app.wlo.core.engines.DayModelInput
 import app.wlo.core.engines.DayPhase
+import app.wlo.core.engines.EnergyDay
+import app.wlo.core.engines.EnergyEngine
+import app.wlo.core.engines.EngineState
 import app.wlo.core.engines.ForecastBands
 import app.wlo.core.engines.ForecastEngine
+import app.wlo.core.engines.ForecastMode
+import app.wlo.core.engines.MeasuredInput
 import app.wlo.core.engines.StreakMetrics
 import app.wlo.core.model.ConstantsRegistry
 import app.wlo.core.model.DerivedValue
@@ -172,6 +177,8 @@ public data class HubForecast(
     public val bands: HubForecastBandsUi,
     public val goalWeight: DerivedValue<Double>,
     public val estimate: DerivedValue<Double>,
+    /** The planned daily intake the path integrates (the arrival row's fact). */
+    public val plannedIntakeKcal: Double,
     public val explainer: ExplainerUi,
 )
 
@@ -186,6 +193,8 @@ public data class HubForecastBandsUi(
     public val optimisticFinishEpochDay: Long?,
     public val expectedFinishEpochDay: Long?,
     public val pessimisticFinishEpochDay: Long?,
+    /** The expected band's starting pace (kg/week, loss-positive). */
+    public val expectedPaceKgPerWeek: Double?,
 )
 
 /** One "how we got here" sheet's content. */
@@ -345,7 +354,7 @@ public class HubViewModel(
         val budget = day?.budgetKcal
         val burn =
             day?.burnKcal?.takeIf { it.value > 0.0 }?.let { DerivedValue(formatKcal(it.value), it.provenance) }
-        val forecast = current?.let { coldStartForecast(profile, it, heroTrend.value, day?.budgetKcal?.value, unit) }
+        val forecast = current?.let { forecast(profile, it, heroTrend.value, day?.budgetKcal?.value, unit) }
 
         val diarySlice = renderDiarySlice(profile.id)
 
@@ -632,10 +641,20 @@ public class HubViewModel(
             .orEmpty()
             .size
 
-    // --- forecast (R-A5 cold start) ---
+    // --- forecast (R-A5 cold start; measured once the adaptive engine is live) ---
 
-    /** R-A5 cold-start forecast (mandatory v1): visible before any weigh-in. */
-    private fun coldStartForecast(
+    /**
+     * The Hub's forecast: measured mode ([ForecastEngine.measured]) once the
+     * adaptive engine is live, the mandatory cold-start (R-A5) otherwise.
+     * "Live" is the F07 §4 frozen quality table: the forecast runs only while
+     * UPDATING — DEVELOPING means the estimate is still forming, HELD means
+     * it is frozen — and the measured TDEE is the closed-form solve
+     * ([EnergyEngine.measuredTdee]) over the trailing window of the SAME day
+     * projections the Hub already renders (A.3). TargetsRecord carries no
+     * persisted adaptive term (it flows through the F07 Apply ledger only),
+     * so the solve runs here, purely, on read.
+     */
+    private suspend fun forecast(
         profile: Profile,
         record: TargetsRecord,
         startTrendKg: Double,
@@ -647,26 +666,29 @@ public class HubViewModel(
         if (goal.targetWeightKg >= startTrend) return null
         val intake = plannedIntakeKcal ?: DietTemplateApplier.DEFAULT_BUDGET_KCAL
         val bands: ForecastBands =
-            ForecastEngine.coldStart(
-                input =
-                    ColdStartInput(
-                        sex = profile.sex,
-                        ageYears = profile.ageAtYear(now.toLocalDateTime(zone).year),
-                        heightCm = profile.heightCm,
-                        startTrendKg = startTrend,
-                        goalWeightKg = goal.targetWeightKg,
-                        activityLevel = profile.activityLevel,
-                        intakeKcal = intake,
-                        startEpochDay = today,
-                        startInstant = now,
-                    ),
-            )
+            measuredForecast(profile, startTrend, goal.targetWeightKg, intake)
+                ?: ForecastEngine.coldStart(
+                    input =
+                        ColdStartInput(
+                            sex = profile.sex,
+                            ageYears = profile.ageAtYear(now.toLocalDateTime(zone).year),
+                            heightCm = profile.heightCm,
+                            startTrendKg = startTrend,
+                            goalWeightKg = goal.targetWeightKg,
+                            activityLevel = profile.activityLevel,
+                            intakeKcal = intake,
+                            startEpochDay = today,
+                            startInstant = now,
+                        ),
+                )
+        val measuredMode = bands.mode == ForecastMode.MEASURED
         return HubForecast(
             goalWeight =
                 DerivedValue(
                     goal.targetWeightKg,
                     Provenance.Measured(at = now, instrument = "goal entry"),
                 ),
+            plannedIntakeKcal = intake,
             bands =
                 HubForecastBandsUi(
                     startWeightKg = startTrend,
@@ -678,22 +700,78 @@ public class HubViewModel(
                     optimisticFinishEpochDay = bands.optimistic.finishEpochDay,
                     expectedFinishEpochDay = bands.expected.finishEpochDay,
                     pessimisticFinishEpochDay = bands.pessimistic.finishEpochDay,
+                    expectedPaceKgPerWeek = bands.expected.weeklyRatesKg.firstOrNull(),
                 ),
             estimate = DerivedValue(bands.tdeeEstimateKcal, bands.provenance),
             explainer =
                 ExplainerUi(
                     headline = "How we got here",
                     rows =
-                        listOf(
-                            "forecast model" to bands.modelVersion,
-                            "burn formula" to bands.bmrVersion,
-                            "energy rule" to "${ConstantsRegistry.KCAL_PER_KG_FAT.toInt()} kcal per kg",
-                            "start" to unit.format(startTrend),
-                            "goal" to unit.format(goal.targetWeightKg),
-                            "planned intake" to formatKcal(intake),
-                            "a normal day" to profile.activityLevel.wireName,
-                        ),
+                        buildList {
+                            add("forecast model" to bands.modelVersion)
+                            add(
+                                "mode" to
+                                    if (measuredMode) {
+                                        "measured — from your logged days"
+                                    } else {
+                                        "formula estimate — sharpens as you log"
+                                    },
+                            )
+                            add("burn" to formatKcal(bands.tdeeEstimateKcal))
+                            if (!measuredMode) add("burn formula" to bands.bmrVersion)
+                            add("energy rule" to "${ConstantsRegistry.KCAL_PER_KG_FAT.toInt()} kcal per kg")
+                            add("start" to unit.format(startTrend))
+                            add("goal" to unit.format(goal.targetWeightKg))
+                            add("planned intake" to formatKcal(intake))
+                            if (!measuredMode) add("a normal day" to profile.activityLevel.wireName)
+                        },
                     note = "Computed on your device — it sharpens as you log.",
+                ),
+        )
+    }
+
+    /**
+     * The measured-mode bands, or null while the data doesn't support them:
+     * quality not UPDATING (F07 §4) or no solvable TDEE window yet. Trailing
+     * pace percentiles and a steps baseline have no spine door in v1 — null,
+     * so the engine falls back to the cold-start band factors.
+     */
+    private suspend fun measuredForecast(
+        profile: Profile,
+        startTrendKg: Double,
+        goalWeightKg: Double,
+        intakeKcal: Double,
+    ): ForecastBands? {
+        val window =
+            dayProjection
+                .range(profile.id, today - ConstantsRegistry.QUALITY_WINDOW_DAYS + 1, today)
+                .getOrNull()
+                .orEmpty()
+        if (window.isEmpty()) return null
+        val energyDays =
+            window.map { view ->
+                EnergyDay(
+                    epochDay = view.dayEpochDay,
+                    intakeKcal = view.intakeKcal?.value,
+                    trendWeightKg = view.trendWeightKg?.value,
+                )
+            }
+        if (EnergyEngine.quality(energyDays, today) !is EngineState.Updating) return null
+        val solveWindow =
+            energyDays.filter { it.epochDay >= today - ConstantsRegistry.TDEE_WINDOW_DAYS + 1 }
+        val solved = EnergyEngine.measuredTdee(solveWindow) ?: return null
+        return ForecastEngine.measured(
+            input =
+                MeasuredInput(
+                    sex = profile.sex,
+                    ageYears = profile.ageAtYear(now.toLocalDateTime(zone).year),
+                    heightCm = profile.heightCm,
+                    startTrendKg = startTrendKg,
+                    goalWeightKg = goalWeightKg,
+                    intakeKcal = intakeKcal,
+                    measuredTdeeKcal = solved.tdeeKcal,
+                    startEpochDay = today,
+                    startInstant = now,
                 ),
         )
     }
