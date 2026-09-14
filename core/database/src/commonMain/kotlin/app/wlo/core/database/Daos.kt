@@ -105,6 +105,18 @@ public interface MeasurementEventDao {
     @Query("SELECT COUNT(*) FROM measurement_events WHERE profileId = :profileId")
     public suspend fun count(profileId: String): Int
 
+    /** One kind's event count in a day range — the logbook's "N more" (WLO-0055). */
+    @Query(
+        "SELECT COUNT(*) FROM measurement_events " +
+            "WHERE profileId = :profileId AND kind = :kind AND dayEpochDay BETWEEN :fromDay AND :toDay",
+    )
+    public suspend fun countOfKind(
+        profileId: String,
+        kind: String,
+        fromDay: Long,
+        toDay: Long,
+    ): Int
+
     /** F13 backup snapshot (M6). */
     @Query("SELECT * FROM measurement_events ORDER BY capturedAtEpochMs ASC")
     public suspend fun all(): List<MeasurementEventEntity>

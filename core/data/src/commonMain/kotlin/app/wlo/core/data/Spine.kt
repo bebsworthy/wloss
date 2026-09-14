@@ -105,6 +105,29 @@ public interface MeasurementRepository {
         toDay: Long,
     ): WloResult<List<MeasurementEvent>>
 
+    /**
+     * One kind's events in a day range, oldest first — the bounded reads the
+     * history card and the logbook feed are built on (WLO-0055): windows, not
+     * whole-table sweeps.
+     */
+    public suspend fun rangeOfKind(
+        profileId: String,
+        kind: MeasurementKind,
+        fromDay: Long,
+        toDay: Long,
+    ): WloResult<List<MeasurementEvent>>
+
+    /**
+     * How many events of one kind sit in a day range — the logbook footer's
+     * "N more" stays a stated fact, not a guess (WLO-0055).
+     */
+    public suspend fun countOfKind(
+        profileId: String,
+        kind: MeasurementKind,
+        fromDay: Long,
+        toDay: Long,
+    ): WloResult<Int>
+
     /** One event by id (the weigh-in door snapshots before delete). */
     public suspend fun byId(eventId: String): WloResult<MeasurementEvent?>
 

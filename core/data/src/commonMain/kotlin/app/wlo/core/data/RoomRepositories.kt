@@ -225,6 +225,26 @@ public class RoomMeasurementRepository public constructor(
         toDay: Long,
     ): WloResult<List<MeasurementEvent>> = storageGuard("measurement.range") { dao.range(profileId, fromDay, toDay).map { it.toDomain() } }
 
+    override suspend fun rangeOfKind(
+        profileId: String,
+        kind: MeasurementKind,
+        fromDay: Long,
+        toDay: Long,
+    ): WloResult<List<MeasurementEvent>> =
+        storageGuard("measurement.rangeOfKind") {
+            dao.rangeOfKind(profileId, kind.wireName, fromDay, toDay).map { it.toDomain() }
+        }
+
+    override suspend fun countOfKind(
+        profileId: String,
+        kind: MeasurementKind,
+        fromDay: Long,
+        toDay: Long,
+    ): WloResult<Int> =
+        storageGuard("measurement.countOfKind") {
+            dao.countOfKind(profileId, kind.wireName, fromDay, toDay)
+        }
+
     override suspend fun byId(eventId: String): WloResult<MeasurementEvent?> =
         storageGuard("measurement.byId") { dao.byId(eventId)?.toDomain() }
 

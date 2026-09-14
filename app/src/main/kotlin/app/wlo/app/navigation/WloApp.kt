@@ -61,6 +61,7 @@ import app.wlo.feature.f04.shopping.ui.PantryScreen
 import app.wlo.feature.f06.weight.F06Routes
 import app.wlo.feature.f06.weight.state.BodySectionUi
 import app.wlo.feature.f06.weight.ui.BodyFatScreen
+import app.wlo.feature.f06.weight.ui.LogbookScreen
 import app.wlo.feature.f06.weight.ui.MathDocsScreen
 import app.wlo.feature.f06.weight.ui.WeightScreen
 import app.wlo.feature.f10.hub.ui.HubActions
@@ -172,6 +173,7 @@ public fun WloApp(
             // Internal surfaces without registry URIs (reached from their owners).
             composable(route = F06Routes.MATH) { MathDocsScreen() }
             composable(route = F06Routes.BODY_FAT) { BodyFatScreen(viewModel = koinViewModel()) }
+            composable(route = F06Routes.LOGBOOK) { LogbookScreen(viewModel = koinViewModel()) }
             // M6 internal surfaces: Settings' children (the F12 consent demo)
             // and the F13 vault wizards have no wlo:// URIs of their own — they
             // are visited deliberately from their parent surfaces (IA §6). The
@@ -476,6 +478,7 @@ private fun RouteSurface(
                 viewModel = koinViewModel(parameters = { parametersOf(false, BodySectionUi.WEIGHT) }),
                 bodyFatViewModel = koinViewModel(),
                 onOpenMath = { navController.navigate(F06Routes.MATH) },
+                onOpenLogbook = { navController.navigate(F06Routes.LOGBOOK) },
             )
 
         "f06/log" ->
@@ -483,10 +486,12 @@ private fun RouteSurface(
                 viewModel = koinViewModel(parameters = { parametersOf(true, BodySectionUi.WEIGHT) }),
                 bodyFatViewModel = koinViewModel(),
                 onOpenMath = { navController.navigate(F06Routes.MATH) },
+                onOpenLogbook = { navController.navigate(F06Routes.LOGBOOK) },
             )
 
         F06Routes.MATH -> MathDocsScreen()
         F06Routes.BODY_FAT -> BodyFatScreen(viewModel = koinViewModel())
+        F06Routes.LOGBOOK -> LogbookScreen(viewModel = koinViewModel())
 
         // Debug diagnostics (M4): the egress monitor — debug builds render the
         // persisted receipt ledger; release builds get an honest note instead.

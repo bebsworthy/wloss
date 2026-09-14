@@ -7,10 +7,8 @@ import app.wlo.core.common.DayBoundary
 import app.wlo.core.common.MassUnit
 import app.wlo.core.common.WloResult
 import app.wlo.core.common.getOrNull
-import app.wlo.core.data.DeletedWeighIn
 import app.wlo.core.data.MeasurementRepository
 import app.wlo.core.data.ProfileRepository
-import app.wlo.core.data.RoomWeighInRepository
 import app.wlo.core.data.WeighInRepository
 import app.wlo.core.designsystem.ChartPoint
 import app.wlo.core.engines.BmiEngine
@@ -31,7 +29,6 @@ import kotlinx.datetime.LocalDate
 import kotlinx.datetime.LocalDateTime
 import kotlinx.datetime.LocalTime
 import kotlinx.datetime.TimeZone
-import kotlinx.datetime.isoDayNumber
 import kotlinx.datetime.toInstant
 import kotlinx.datetime.toLocalDateTime
 import kotlin.math.abs
@@ -85,17 +82,6 @@ public sealed interface WeighInEvent {
      */
     public data object DeleteFlagged : WeighInEvent
 
-    /** Logbook delete: one weigh-in goes; the UI keeps an in-memory undo. */
-    public data class DeleteWeighIn(
-        public val eventId: String,
-    ) : WeighInEvent
-
-    /** Puts the last deleted weigh-in back (re-appends the snapshot). */
-    public data object UndoDelete : WeighInEvent
-
-    /** Lets the undo notice go without undoing. */
-    public data object DismissDelete : WeighInEvent
-
     public data class MethodChange(
         public val method: TrendMethod,
     ) : WeighInEvent
@@ -129,21 +115,13 @@ public enum class ChartWindowUi(
     ALL("all", null),
 }
 
-/** One logbook row: a raw weigh-in with its provenance marks (F06 §5). */
-public data class LogbookRowUi(
-    public val id: String,
-    public val timeLabel: String,
-    public val weightLabel: String,
-    public val isLowest: Boolean,
-    public val flagged: Boolean,
-)
-
-/** One day of the logbook, newest first — the raw ground truth beneath the trend. */
-public data class LogbookDayUi(
-    public val dayEpochDay: Long,
-    public val dayLabel: String,
-    public val isToday: Boolean,
-    public val rows: List<LogbookRowUi>,
+/** One compressed-history bucket, presentation-ready (WLO-0055). */
+public data class HistoryBucketUi(
+    public val tier: HistoryTier,
+    public val label: String,
+    public val countLabel: String?,
+    public val deltaLabel: String?,
+    public val weightLabel: String?,
 )
 
 /** The trend chart + its provenance (D6: the current value is a DerivedValue). */
@@ -173,18 +151,6 @@ public data class VerdictUi(
     public val residualLabel: String,
 )
 
-/**
- * The just-deleted weigh-in, offered back inline — rendered inside the
- * deleted row's day group (WLO-0050), never as a page-level banner. The day
- * fields let the UI keep the day's label on screen even when the delete
- * emptied the group entirely.
- */
-public data class DeletedUi(
-    public val label: String,
-    public val dayEpochDay: Long,
-    public val dayLabel: String,
-)
-
 /** The open weigh-in sheet. */
 public data class SheetUi(
     public val weightText: String,
@@ -194,7 +160,7 @@ public data class SheetUi(
 
 /** The weight surface's data state (sheet/verdict/notice are separate flows). */
 public data class WeighInUiState(
-    public val logbook: List<LogbookDayUi>,
+    public val history: List<HistoryBucketUi>,
     public val window: ChartWindowUi,
     public val section: BodySectionUi,
     public val bodyFatPoints: List<ChartPoint>,
@@ -212,7 +178,7 @@ public data class WeighInUiState(
 
         public val LOADING: WeighInUiState =
             WeighInUiState(
-                logbook = emptyList(),
+                history = emptyList(),
                 window = ChartWindowUi.D90,
                 section = BodySectionUi.WEIGHT,
                 bodyFatPoints = emptyList(),
@@ -277,8 +243,6 @@ public class WeighInViewModel(
     private val section = MutableStateFlow(initialSection)
     private val sheet = MutableStateFlow<SheetUi?>(initialSheetOpen.takeIf { it }?.let { freshSheet() })
     private val verdict = MutableStateFlow<VerdictUi?>(null)
-    private val deleted = MutableStateFlow<DeletedUi?>(null)
-    private var undoSnapshot: DeletedWeighIn? = null
     private val notice = MutableStateFlow<String?>(null)
     private val data = MutableStateFlow(WeighInUiState.LOADING)
 
@@ -290,9 +254,6 @@ public class WeighInViewModel(
 
     /** The outlier guard's live verdict, cleared by keep/correct. */
     public val verdictState: StateFlow<VerdictUi?> = verdict
-
-    /** The last deleted weigh-in, offered back until dismissed or undone. */
-    public val deletedState: StateFlow<DeletedUi?> = deleted
 
     /** Session notices. */
     public val noticeState: StateFlow<String?> = notice
@@ -323,15 +284,8 @@ public class WeighInViewModel(
             WeighInEvent.DeleteFlagged ->
                 verdict.value?.let { flagged ->
                     verdict.value = null
-                    deleteWeighIn(flagged.eventId, reopenSheet = true)
+                    deleteFlagged(flagged.eventId)
                 }
-
-            is WeighInEvent.DeleteWeighIn -> deleteWeighIn(event.eventId, reopenSheet = false)
-            WeighInEvent.UndoDelete -> undoDelete()
-            WeighInEvent.DismissDelete -> {
-                undoSnapshot = null
-                deleted.value = null
-            }
 
             is WeighInEvent.MethodChange ->
                 viewModelScope.launch {
@@ -412,64 +366,21 @@ public class WeighInViewModel(
     }
 
     /**
-     * R-B8 amendment (WLO-0035): the user's delete is an explicit act. The
-     * snapshot rides in memory for a one-tap undo; the day's trend scalar is
-     * the store's to recompute (the door handles it).
+     * R-B8 amendment (WLO-0035): the flagged entry's delete is an explicit
+     * act confirmed from the banner. The correction path is the sheet that
+     * reopens prefilled from the day that remains — never the deleted value.
+     * The logbook's swipe-delete undo lives on the logbook screen (WLO-0055).
      */
-    private fun deleteWeighIn(
-        eventId: String,
-        reopenSheet: Boolean,
-    ) {
+    private fun deleteFlagged(eventId: String) {
         val id = profileId ?: return
         viewModelScope.launch {
-            when (val outcome = weighIns.deleteWeighIn(eventId, clock.now())) {
+            when (weighIns.deleteWeighIn(eventId, clock.now())) {
                 is WloResult.Ok -> {
-                    val event = outcome.value.event
-                    undoSnapshot = outcome.value
-                    deleted.value =
-                        DeletedUi(
-                            label = "${formatWeightInput(event.valueReal)} kg · ${timeLabel(event.capturedAt)}",
-                            dayEpochDay = event.dayEpochDay,
-                            dayLabel = dayLabel(event.dayEpochDay, DayBoundary.epochDay(clock.now(), zone)),
-                        )
+                    sheet.value = SheetUi(lastWeightInput().orEmpty())
                     reload()
-                    if (reopenSheet) {
-                        // Prefill from the day that remains — never the deleted value.
-                        sheet.value = SheetUi(lastWeightInput().orEmpty())
-                    }
-                    Unit
                 }
 
                 is WloResult.Err -> notice.value = "that didn't delete — nothing changed"
-            }
-        }
-    }
-
-    private fun undoDelete() {
-        val id = profileId ?: return
-        val snapshot = undoSnapshot ?: return
-        viewModelScope.launch {
-            val event = snapshot.event
-            val reappended =
-                weighIns.appendWeighIn(
-                    profileId = id,
-                    dayEpochDay = event.dayEpochDay,
-                    weightKg = event.valueReal,
-                    capturedAt = event.capturedAt,
-                    source = event.source,
-                    note = event.note,
-                )
-            when (reappended) {
-                is WloResult.Ok -> {
-                    if (snapshot.attrs.isNotEmpty()) {
-                        measurements.attachAttrs(reappended.value.event.id, snapshot.attrs)
-                    }
-                    undoSnapshot = null
-                    deleted.value = null
-                    reload()
-                }
-
-                is WloResult.Err -> notice.value = "that didn't come back — it stays deleted"
             }
         }
     }
@@ -482,41 +393,26 @@ public class WeighInViewModel(
         val from = window.value.days?.let { today - it + 1 } ?: 0L
 
         val dayEvents = weighIns.dayWeighIns(id, today).getOrNull().orEmpty()
-        val flaggedIds =
-            measurements
-                .attrsInRange(id, 0, today)
-                .getOrNull()
-                .orEmpty()
-                .filter { it.attr == RoomWeighInRepository.OUTLIER_ATTR }
-                .map { it.eventId }
-                .toSet()
 
-        // The logbook (F06 §5): every raw weigh-in, day-grouped, newest first —
-        // the geek's ground truth beneath every smoothed view.
-        val logbook =
+        // The compressed history (WLO-0055): one row per bucket, coarser with
+        // distance — the weight surface's summary of the same store. The
+        // verbatim feed is the logbook screen's; the bounded window keeps
+        // this read cheap no matter how many years pile up.
+        val floor = WeightHistory.floorDay(today, WeightHistory.QUARTERLY_QUARTERS)
+        val history =
             measurements
-                .range(id, 0, today)
+                .rangeOfKind(id, MeasurementKind.WEIGHT, floor, today)
                 .getOrNull()
                 .orEmpty()
-                .filter { it.kind == MeasurementKind.WEIGHT }
-                .groupBy { it.dayEpochDay }
-                .toSortedMap(compareByDescending { it })
-                .map { (day, events) ->
-                    val lowestId = events.minByOrNull { it.valueReal }?.id
-                    LogbookDayUi(
-                        dayEpochDay = day,
-                        dayLabel = dayLabel(day, today),
-                        isToday = day == today,
-                        rows =
-                            events.map { event ->
-                                LogbookRowUi(
-                                    id = event.id,
-                                    timeLabel = timeLabel(event.capturedAt),
-                                    weightLabel = unit.format(event.valueReal),
-                                    isLowest = event.id == lowestId && events.size > 1,
-                                    flagged = event.id in flaggedIds,
-                                )
-                            },
+                .map { WeightSample(it.dayEpochDay, it.valueReal) }
+                .let { WeightHistory.build(it, today) }
+                .map { bucket ->
+                    HistoryBucketUi(
+                        tier = bucket.tier,
+                        label = HistoryLabels.bucketLabel(bucket, today),
+                        countLabel = bucket.count.takeIf { it > 1 }?.let { "$it weigh-ins" },
+                        deltaLabel = bucket.deltaKg?.let { delta -> signedKg(delta) },
+                        weightLabel = bucket.endValueKg?.let { kg -> "${formatWeightInput(kg)} kg" },
                     )
                 }
 
@@ -618,7 +514,7 @@ public class WeighInViewModel(
 
         data.value =
             WeighInUiState(
-                logbook = logbook,
+                history = history,
                 window = window.value,
                 section = section.value,
                 bodyFatPoints = bodyFatPoints,
@@ -666,18 +562,10 @@ public class WeighInViewModel(
         return "${local.hour.toString().padStart(2, '0')}:${local.minute.toString().padStart(2, '0')}"
     }
 
-    private fun dayLabel(
-        day: Long,
-        today: Long,
-    ): String =
-        when (day) {
-            today -> "Today"
-            today - 1L -> "Yesterday"
-            else -> {
-                val date = LocalDate.fromEpochDays(day)
-                "${WEEKDAYS[date.dayOfWeek.isoDayNumber - 1]} ${date.dayOfMonth} ${MONTHS[date.monthNumber - 1]}"
-            }
-        }
+    private fun signedKg(kg: Double): String {
+        val sign = if (kg < 0) "−" else "+"
+        return "$sign${formatWeightInput(abs(kg))} kg"
+    }
 
     private fun formatWeightInput(kg: Double): String {
         val tenths = (kg * 10).toLong()
@@ -701,11 +589,6 @@ public class WeighInViewModel(
     public companion object {
         /** The chart window (days) — a season at a glance; zooming is F11's. */
         public const val CHART_WINDOW_DAYS: Long = 90
-
-        private val WEEKDAYS = listOf("Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun")
-
-        private val MONTHS =
-            listOf("Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec")
 
         /** Trend-line gate (F06 §4: ≥3 points in the trailing 7 days). */
         public const val TREND_GATE_POINTS: Int = 3

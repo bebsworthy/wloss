@@ -2,6 +2,7 @@ package app.wlo.feature.f06.weight.di
 
 import app.wlo.feature.f06.weight.state.BodyFatViewModel
 import app.wlo.feature.f06.weight.state.BodySectionUi
+import app.wlo.feature.f06.weight.state.LogbookViewModel
 import app.wlo.feature.f06.weight.state.WeighInViewModel
 import org.koin.androidx.viewmodel.dsl.viewModel
 import org.koin.core.module.Module
@@ -25,4 +26,5 @@ public val f06WeightModule: Module =
             )
         }
         viewModel { BodyFatViewModel(clock = get(), profiles = get(), measurements = get(), settings = get()) }
+        viewModel { LogbookViewModel(clock = get(), profiles = get(), weighIns = get(), measurements = get()) }
     }

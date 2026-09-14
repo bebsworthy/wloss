@@ -1,40 +1,28 @@
 package app.wlo.feature.f06.weight.ui
 
-import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Slider
 import androidx.compose.material3.SliderDefaults
-import androidx.compose.material3.SwipeToDismissBox
-import androidx.compose.material3.SwipeToDismissBoxValue
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
-import androidx.compose.material3.rememberSwipeToDismissBoxState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.platform.testTag
-import androidx.compose.ui.semantics.CustomAccessibilityAction
-import androidx.compose.ui.semantics.customActions
-import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import app.wlo.core.designsystem.ProvenanceChip
@@ -45,25 +33,20 @@ import app.wlo.core.designsystem.WloButton
 import app.wlo.core.designsystem.WloCard
 import app.wlo.core.designsystem.WloCardHeader
 import app.wlo.core.designsystem.WloDeltaChip
-import app.wlo.core.designsystem.WloHaptic
 import app.wlo.core.designsystem.WloHeroStat
-import app.wlo.core.designsystem.WloIcons
 import app.wlo.core.designsystem.WloScreenTitle
 import app.wlo.core.designsystem.WloSecondaryButton
 import app.wlo.core.designsystem.WloSheet
 import app.wlo.core.designsystem.WloSpacing
-import app.wlo.core.designsystem.WloStatDivider
 import app.wlo.core.designsystem.WloTrendChart
-import app.wlo.core.designsystem.rememberWloHaptics
 import app.wlo.core.designsystem.wloExtendedColors
 import app.wlo.core.designsystem.wloType
 import app.wlo.core.model.TrendMethod
 import app.wlo.feature.f06.weight.state.BodyFatViewModel
 import app.wlo.feature.f06.weight.state.BodySectionUi
 import app.wlo.feature.f06.weight.state.ChartWindowUi
-import app.wlo.feature.f06.weight.state.DeletedUi
-import app.wlo.feature.f06.weight.state.LogbookDayUi
-import app.wlo.feature.f06.weight.state.LogbookRowUi
+import app.wlo.feature.f06.weight.state.HistoryBucketUi
+import app.wlo.feature.f06.weight.state.HistoryTier
 import app.wlo.feature.f06.weight.state.RatiosUi
 import app.wlo.feature.f06.weight.state.SheetUi
 import app.wlo.feature.f06.weight.state.VerdictUi
@@ -74,30 +57,30 @@ import app.wlo.feature.f06.weight.state.WeighInViewModel
 /**
  * The F06 weight surface (owner review WLO-0030): trend-first hero — one
  * "Weight" card header, the hero numeral + small unit + weekly delta, the
- * last raw reading line, a real weigh-in button — then the verbatim day log
- * (both re-weighs listed; lowest-of-day marked and explained; every entry
- * deletable in place — the M3 swipe-to-dismiss: a full swipe past the
- * threshold deletes, partial swipes spring back, and the undo lives inline
- * where the row was; R-B8 amendment, WLO-0035 + WLO-0050),
- * the trend
- * chart with its smoother tuner (α visible, R-A2 default 0.15; a non-default
- * selection is a labeled PREVIEW — the saved trend keeps the default), and
- * the outlier guard's one-line keep-or-delete. The weigh-in sheet opens over
- * this surface (wlo://weight/log) — the typed path is first-class, R-U15.
- * One screen, two segments (R2, WLO-0035): Weight (this) and Body fat
- * (per-method series + tape + calculator) — never a separate route.
+ * last raw reading line, a real weigh-in button — then the compressed
+ * history (WLO-0055: one row per bucket, coarser with distance — days,
+ * weeks, months, quarters; rows tap through), the trend chart with its
+ * smoother tuner (α visible, R-A2 default 0.15; a non-default selection is
+ * a labeled PREVIEW — the saved trend keeps the default), and the outlier
+ * guard's one-line keep-or-delete. Every verbatim entry — and the
+ * swipe-to-reveal delete with its inline undo (R-B8 amendment, WLO-0035 +
+ * WLO-0050) — lives on the full logbook screen this card opens. The
+ * weigh-in sheet opens over this surface (wlo://weight/log) — the typed
+ * path is first-class, R-U15. One screen, two segments (R2, WLO-0035):
+ * Weight (this) and Body fat (per-method series + tape + calculator) —
+ * never a separate route.
  */
 @Composable
 public fun WeightScreen(
     viewModel: WeighInViewModel,
     bodyFatViewModel: BodyFatViewModel,
     onOpenMath: () -> Unit,
+    onOpenLogbook: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val state: WeighInUiState by viewModel.uiState.collectAsStateWithLifecycle()
     val sheet: SheetUi? by viewModel.sheetState.collectAsStateWithLifecycle()
     val verdict: VerdictUi? by viewModel.verdictState.collectAsStateWithLifecycle()
-    val deleted: DeletedUi? by viewModel.deletedState.collectAsStateWithLifecycle()
     val notice: String? by viewModel.noticeState.collectAsStateWithLifecycle()
 
     Column(
@@ -269,47 +252,39 @@ public fun WeightScreen(
                 }
             }
 
-            WloCard(modifier = Modifier.testTag("f06-logbook-card")) {
-                WloCardHeader(title = "Logbook")
-                if (state.logbook.isEmpty()) {
+            WloCard(modifier = Modifier.testTag("f06-history-card")) {
+                WloCardHeader(title = "History")
+                if (state.history.isEmpty()) {
                     Text(
-                        text = "None yet — the morning window reads steadiest, whenever you get to it.",
+                        text = "No weigh-ins yet — the morning window reads steadiest, whenever you get to it.",
                         style = wloType.caption,
                         color = wloExtendedColors.textTertiary,
                     )
                 }
-                // Days newest-first, with the pending delete's undo rendered
-                // where the row was (WLO-0050) — never as a page-level banner.
-                mergedLogbook(state.logbook, deleted).forEachIndexed { dayIndex, (day, pending) ->
-                    if (dayIndex > 0) WloStatDivider()
-                    Text(
-                        text = day.dayLabel,
-                        style = wloType.label,
-                        color = wloExtendedColors.textTertiary,
-                    )
-                    day.rows.forEach { row ->
-                        key(row.id) {
-                            LogbookRow(
-                                row = row,
-                                onDelete = { viewModel.onEvent(WeighInEvent.DeleteWeighIn(row.id)) },
-                            )
-                        }
-                    }
-                    pending?.let { current ->
-                        InlineUndoRow(
-                            deleted = current,
-                            onUndo = { viewModel.onEvent(WeighInEvent.UndoDelete) },
-                            onDismiss = { viewModel.onEvent(WeighInEvent.DismissDelete) },
-                        )
-                    }
-                    if (day.isToday && day.rows.size > 1) {
+                // One row per bucket, coarser with distance (WLO-0055): the
+                // tier captions mark the compression, and every row taps
+                // through to the verbatim feed — delete lives there, on the
+                // raw rows, never on an aggregate.
+                var previousTier: HistoryTier? = null
+                state.history.forEach { bucket ->
+                    if (bucket.tier != previousTier) {
+                        previousTier = bucket.tier
                         Text(
-                            text = WeighInUiState.LOWEST_COPY,
-                            style = wloType.caption,
+                            text = bucket.tier.label,
+                            style = wloType.label,
                             color = wloExtendedColors.textTertiary,
                         )
                     }
+                    HistoryRow(
+                        bucket = bucket,
+                        onClick = onOpenLogbook,
+                    )
                 }
+                WloSecondaryButton(
+                    label = "Full logbook",
+                    onClick = onOpenLogbook,
+                    modifier = Modifier.fillMaxWidth().testTag("f06-open-logbook"),
+                )
             }
 
             notice?.let {
@@ -381,167 +356,49 @@ private fun SmootherTuner(
     }
 
 /**
- * One verbatim entry (F06 §5), on the M3 [SwipeToDismissBox] pattern
- * (WLO-0050): swiping the row reveals the delete surface behind it; a full
- * swipe past the component's threshold fires the delete from
- * [rememberSwipeToDismissBoxState]'s confirmValueChange — the deliberate
- * gesture is the confirmation, and the inline undo that appears where the
- * row was is the safety. Partial swipes spring back on their own; no dialog,
- * no page-level banner. TalkBack gets the same door as a custom row action.
+ * One compressed-history bucket row (WLO-0055): the range, how many
+ * weigh-ins it holds, the change vs the bucket before it, and the closing
+ * day's weight. An empty bucket keeps its row — gaps are data. Tapping any
+ * row opens the full logbook, where the individual entries live.
  */
 @Composable
-private fun LogbookRow(
-    row: LogbookRowUi,
-    onDelete: () -> Unit,
-) {
-    val haptics = rememberWloHaptics()
-    val dismissState =
-        rememberSwipeToDismissBoxState(
-            confirmValueChange = { value ->
-                when (value) {
-                    SwipeToDismissBoxValue.EndToStart -> {
-                        haptics.perform(WloHaptic.Settle)
-                        onDelete()
-                        true
-                    }
-
-                    else -> false
-                }
-            },
-        )
-    SwipeToDismissBox(
-        state = dismissState,
-        modifier = Modifier.clipToBounds(),
-        enableDismissFromStartToEnd = false,
-        backgroundContent = {
-            // Nothing painted — the action is revealed in the space the item
-            // vacates, never as a color fill (WLO-0050 owner review).
-            when (dismissState.dismissDirection) {
-                SwipeToDismissBoxValue.EndToStart -> {
-                    Box(
-                        modifier = Modifier.fillMaxSize().testTag("f06-row-delete"),
-                        contentAlignment = Alignment.CenterEnd,
-                    ) {
-                        Row(
-                            modifier = Modifier.padding(horizontal = WloSpacing.SCREEN),
-                            horizontalArrangement = Arrangement.spacedBy(WloSpacing.TIGHT),
-                            verticalAlignment = Alignment.CenterVertically,
-                        ) {
-                            Icon(
-                                imageVector = WloIcons.Close,
-                                contentDescription = null,
-                                tint = MaterialTheme.colorScheme.error,
-                            )
-                            Text(
-                                text = "Delete",
-                                style = wloType.label,
-                                color = MaterialTheme.colorScheme.error,
-                            )
-                        }
-                    }
-                }
-
-                else -> Unit
-            }
-        },
-    ) {
-        Row(
-            modifier =
-                Modifier
-                    .fillMaxWidth()
-                    .heightIn(min = WloSpacing.ROW_MIN)
-                    // Opaque in the card's own color: the item reads as one
-                    // sliding piece and masks the action until its space is
-                    // vacated — no overlap, no fill showing through.
-                    .background(MaterialTheme.colorScheme.surface)
-                    .semantics {
-                        customActions =
-                            listOf(
-                                CustomAccessibilityAction("Delete ${row.weightLabel} at ${row.timeLabel}") {
-                                    onDelete()
-                                    true
-                                },
-                            )
-                    }.testTag("f06-row"),
-            horizontalArrangement = Arrangement.spacedBy(WloSpacing.CARD),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Text(
-                text = row.timeLabel,
-                style = wloType.receipt,
-                color = wloExtendedColors.textTertiary,
-                modifier = Modifier.weight(1f),
-            )
-            if (row.isLowest) {
-                Text(
-                    text = "day's weight",
-                    style = wloType.label,
-                    color = MaterialTheme.colorScheme.primary,
-                )
-            }
-            if (row.flagged) {
-                Text(
-                    text = "flagged — kept",
-                    style = wloType.label,
-                    color = wloExtendedColors.held,
-                )
-            }
-            Text(
-                text = row.weightLabel,
-                style = wloType.statS,
-                modifier = Modifier.testTag("f06-row-weight"),
-            )
-        }
-    }
-}
-
-/** The undo notice, rendered inline at the deleted row's position (R-B8 amendment). */
-@Composable
-private fun InlineUndoRow(
-    deleted: DeletedUi,
-    onUndo: () -> Unit,
-    onDismiss: () -> Unit,
+private fun HistoryRow(
+    bucket: HistoryBucketUi,
+    onClick: () -> Unit,
 ) {
     Row(
-        modifier = Modifier.fillMaxWidth().testTag("f06-deleted-banner"),
-        verticalAlignment = Alignment.CenterVertically,
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .heightIn(min = WloSpacing.ROW_MIN)
+                .clickable(onClickLabel = "open the full logbook") { onClick() }
+                .testTag("f06-history-row"),
         horizontalArrangement = Arrangement.spacedBy(WloSpacing.TIGHT),
+        verticalAlignment = Alignment.CenterVertically,
     ) {
-        Text(
-            text = "Deleted ${deleted.label} — the day reads without it.",
-            style = wloType.caption,
-            color = wloExtendedColors.textTertiary,
-            modifier = Modifier.weight(1f),
-        )
-        TextButton(onClick = onUndo, modifier = Modifier.testTag("f06-undo-delete")) { Text("Undo") }
-        TextButton(onClick = onDismiss, modifier = Modifier.testTag("f06-dismiss-delete")) { Text("Dismiss") }
-    }
-}
-
-/**
- * Day groups with the pending delete attached to its own day; a synthetic
- * label-only group keeps the day's name on screen when the delete emptied
- * the day entirely (the common case — most days carry one weigh-in).
- */
-private fun mergedLogbook(
-    logbook: List<LogbookDayUi>,
-    deleted: DeletedUi?,
-): List<Pair<LogbookDayUi, DeletedUi?>> {
-    val pending = deleted ?: return logbook.map { day -> day to null }
-    val groups = logbook.map { day -> day to pending.takeIf { it.dayEpochDay == day.dayEpochDay } }
-    if (groups.any { it.first.dayEpochDay == pending.dayEpochDay }) return groups
-    val synthetic =
-        LogbookDayUi(
-            dayEpochDay = pending.dayEpochDay,
-            dayLabel = pending.dayLabel,
-            isToday = false,
-            rows = emptyList(),
-        )
-    val index = groups.indexOfFirst { it.first.dayEpochDay < pending.dayEpochDay }
-    return if (index < 0) {
-        groups + (synthetic to pending)
-    } else {
-        groups.toMutableList().apply { add(index, synthetic to pending) }
+        Column(modifier = Modifier.weight(1f)) {
+            Text(text = bucket.label, style = wloType.body)
+            bucket.countLabel?.let { count ->
+                Text(text = count, style = wloType.caption, color = wloExtendedColors.textTertiary)
+            }
+        }
+        bucket.deltaLabel?.let { delta ->
+            Text(text = delta, style = wloType.caption, color = wloExtendedColors.textTertiary)
+        }
+        if (bucket.weightLabel == null) {
+            Text(
+                text = "—",
+                style = wloType.statS,
+                color = wloExtendedColors.textTertiary,
+                modifier = Modifier.testTag("f06-history-weight"),
+            )
+        } else {
+            Text(
+                text = bucket.weightLabel,
+                style = wloType.statS,
+                modifier = Modifier.testTag("f06-history-weight"),
+            )
+        }
     }
 }
 

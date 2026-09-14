@@ -1,6 +1,7 @@
 package app.wlo.app
 
 import androidx.compose.ui.semantics.SemanticsActions
+import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onAllNodesWithContentDescription
@@ -63,9 +64,18 @@ public class M3WeighInTest {
         rule.onNodeWithTag("f06-weight-field").performTextClearance()
         rule.onNodeWithTag("f06-weight-field").performTextInput("77.6")
         rule.onNodeWithTag("f06-save-weighin").performClick()
-        pollText("77.6 kg")
 
-        // Both events stay listed verbatim; the lowest is marked as the day's weight.
+        // The hero equals a hand-rolled EWMA over the canonical 30-day window
+        // (the shared read — Hub and Weight page show the same number);
+        // today's lowest (76.8) REPLACES the seeded reading — same calendar day.
+        val canonicalWindow = SEEDED_SCALARS.takeLast(CANONICAL_WINDOW_DAYS).dropLast(1) + 76.8
+        pollTrend(trailingEwmaLast(canonicalWindow, ALPHA))
+
+        // Both events stay listed verbatim in the full logbook (WLO-0055) —
+        // the weight surface's history card compresses the day to its
+        // canonical closing weight, the feed keeps every reading.
+        rule.onNodeWithTag("f06-open-logbook").performScrollTo().performClick()
+        TestNav.awaitTag(rule, "f06-logbook-title")
         assertTrue(
             "both weigh-ins are listed",
             rule.onAllNodesWithText("76.8 kg").fetchSemanticsNodes().isNotEmpty() &&
@@ -75,12 +85,6 @@ public class M3WeighInTest {
             "the lowest-of-day is marked",
             rule.onAllNodesWithText("day's weight").fetchSemanticsNodes().isNotEmpty(),
         )
-
-        // The hero equals a hand-rolled EWMA over the canonical 30-day window
-        // (the shared read — Hub and Weight page show the same number);
-        // today's lowest (76.8) REPLACES the seeded reading — same calendar day.
-        val canonicalWindow = SEEDED_SCALARS.takeLast(CANONICAL_WINDOW_DAYS).dropLast(1) + 76.8
-        pollTrend(trailingEwmaLast(canonicalWindow, ALPHA))
     }
 
     @Test
@@ -156,32 +160,57 @@ public class M3WeighInTest {
     @Test
     public fun logbookDelete_fullSwipeFires_thenUndoInline() {
         awaitWeightSurface()
-        // The sheet rides the quick action; dismiss it to reach the logbook.
+        // The sheet rides the quick action; dismiss it, then open the full
+        // logbook — the verbatim feed owns the delete door (WLO-0055).
         UiDevice.getInstance(InstrumentationRegistry.getInstrumentation()).pressBack()
+        rule.onNodeWithTag("f06-open-logbook").performScrollTo().performClick()
+        TestNav.awaitTag(rule, "f06-logbook-title")
 
-        val rowsBefore = rule.onAllNodesWithTag("f06-row-weight").fetchSemanticsNodes().size
+        // The top row is the one under the finger; its value must come back.
+        val deletedValue = firstRowWeight()
 
-        // One full swipe past the threshold IS the delete (M3 SwipeToDismissBox,
-        // WLO-0050) — no dialog, no parked-open row, no page-level banner.
-        rule.onAllNodesWithTag("f06-row").onFirst().performScrollTo()
+        // One full swipe past the trigger IS the delete (WLO-0050) — no
+        // dialog, no parked-open row, no page-level banner.
         rule.onAllNodesWithTag("f06-row").onFirst().performTouchInput { swipe(centerRight, centerLeft) }
 
-        // The undo notice lives in the logbook, where the row was.
+        // The undo notice lives in the feed, where the row was.
         TestNav.awaitTag(rule, "f06-deleted-banner")
-        pollRows(rowsBefore - 1)
+        pollFirstRowChanged(deletedValue)
         rule.onNodeWithTag("f06-undo-delete").performClick()
-        pollRows(rowsBefore)
+        pollFirstRow(deletedValue)
     }
 
-    private fun pollRows(expected: Int) {
+    private fun firstRowWeight(): String =
+        rule
+            .onAllNodesWithTag("f06-row-weight")
+            .onFirst()
+            .fetchSemanticsNode()
+            .config[SemanticsProperties.Text]
+            .first()
+            .toString()
+
+    private fun pollFirstRow(expected: String) {
         val deadline = System.currentTimeMillis() + TIMEOUT_MS
         while (System.currentTimeMillis() < deadline) {
-            if (rule.onAllNodesWithTag("f06-row-weight").fetchSemanticsNodes().size == expected) {
+            val nodes = rule.onAllNodesWithTag("f06-row-weight").fetchSemanticsNodes()
+            if (nodes.isNotEmpty() && nodes.first().config[SemanticsProperties.Text].first().toString() == expected) {
                 return
             }
             Thread.sleep(POLL_MS)
         }
-        error("logbook never settled at $expected rows")
+        error("logbook first row never returned to \"$expected\"")
+    }
+
+    private fun pollFirstRowChanged(unexpected: String) {
+        val deadline = System.currentTimeMillis() + TIMEOUT_MS
+        while (System.currentTimeMillis() < deadline) {
+            val nodes = rule.onAllNodesWithTag("f06-row-weight").fetchSemanticsNodes()
+            if (nodes.isNotEmpty() && nodes.first().config[SemanticsProperties.Text].first().toString() != unexpected) {
+                return
+            }
+            Thread.sleep(POLL_MS)
+        }
+        error("deleted row \"$unexpected\" never left the top of the feed")
     }
 
     // --- helpers ---

@@ -17,4 +17,7 @@ public object F06Routes {
 
     /** The body-fat method registry (Navy / RFM) with provenance. */
     public const val BODY_FAT: String = "f06/bodyfat"
+
+    /** The full-page logbook (WLO-0055): every verbatim entry, month sections. */
+    public const val LOGBOOK: String = "f06/logbook"
 }
