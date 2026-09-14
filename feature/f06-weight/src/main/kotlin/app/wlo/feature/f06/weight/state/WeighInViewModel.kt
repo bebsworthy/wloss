@@ -17,6 +17,7 @@ import app.wlo.core.engines.OutlierVerdict
 import app.wlo.core.engines.SmoothingEngine
 import app.wlo.core.model.ConstantsRegistry
 import app.wlo.core.model.DerivedValue
+import app.wlo.core.model.MeasurementKind
 import app.wlo.core.model.MeasurementSource
 import app.wlo.core.model.Provenance
 import app.wlo.core.model.TrendMethod
@@ -24,7 +25,12 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import kotlinx.datetime.Instant
+import kotlinx.datetime.LocalDate
+import kotlinx.datetime.LocalDateTime
+import kotlinx.datetime.LocalTime
 import kotlinx.datetime.TimeZone
+import kotlinx.datetime.isoDayNumber
+import kotlinx.datetime.toInstant
 import kotlinx.datetime.toLocalDateTime
 import kotlin.math.abs
 
@@ -39,6 +45,21 @@ public sealed interface WeighInEvent {
 
     public data class WeightChange(
         public val text: String,
+    ) : WeighInEvent
+
+    /** The sheet's date field, ISO YYYY-MM-DD — the back-datable pad (F06 §4). */
+    public data class SheetDayChange(
+        public val text: String,
+    ) : WeighInEvent
+
+    /** The sheet's time field, HH:MM; blank means noon (the R-B5 normalization). */
+    public data class SheetTimeChange(
+        public val text: String,
+    ) : WeighInEvent
+
+    /** The chart window (F06 §5: 30d/90d/1y/all). */
+    public data class WindowChange(
+        public val window: ChartWindowUi,
     ) : WeighInEvent
 
     public data object StepperUp : WeighInEvent
@@ -77,13 +98,32 @@ public sealed interface WeighInEvent {
     ) : WeighInEvent
 }
 
-/** One verbatim weigh-in of the day (R-B8: re-weighs are normal data). */
-public data class WeighInRowUi(
+/** The chart window (F06 §5); `days = null` means "all". */
+public enum class ChartWindowUi(
+    public val label: String,
+    public val days: Long?,
+) {
+    D30("30 d", 30),
+    D90("90 d", 90),
+    Y1("1 y", 365),
+    ALL("all", null),
+}
+
+/** One logbook row: a raw weigh-in with its provenance marks (F06 §5). */
+public data class LogbookRowUi(
     public val id: String,
     public val timeLabel: String,
     public val weightLabel: String,
     public val isLowest: Boolean,
     public val flagged: Boolean,
+)
+
+/** One day of the logbook, newest first — the raw ground truth beneath the trend. */
+public data class LogbookDayUi(
+    public val dayEpochDay: Long,
+    public val dayLabel: String,
+    public val isToday: Boolean,
+    public val rows: List<LogbookRowUi>,
 )
 
 /** The trend chart + its provenance (D6: the current value is a DerivedValue). */
@@ -121,11 +161,14 @@ public data class DeletedUi(
 /** The open weigh-in sheet. */
 public data class SheetUi(
     public val weightText: String,
+    public val dayText: String = "",
+    public val timeText: String = "",
 )
 
 /** The weight surface's data state (sheet/verdict/notice are separate flows). */
 public data class WeighInUiState(
-    public val rows: List<WeighInRowUi>,
+    public val logbook: List<LogbookDayUi>,
+    public val window: ChartWindowUi,
     public val trend: TrendUi?,
     public val method: TrendMethod,
     public val alpha: Double,
@@ -138,13 +181,42 @@ public data class WeighInUiState(
 
         public val LOADING: WeighInUiState =
             WeighInUiState(
-                rows = emptyList(),
+                logbook = emptyList(),
+                window = ChartWindowUi.D90,
                 trend = null,
                 method = TrendMethod.EWMA,
                 alpha = ConstantsRegistry.EWMA_ALPHA_DEFAULT,
                 lastWeighInLabel = null,
             )
     }
+}
+
+/**
+ * The back-datable pad's parser (F06 §4): ISO date, optional HH:MM time —
+ * blank means noon, the R-B5 scalar normalization, an honest choice for a
+ * reading whose time is forgotten. The past only: the future is refused.
+ */
+internal object SheetWhenParser {
+    public fun parse(
+        dayText: String,
+        timeText: String,
+        zone: TimeZone,
+        now: Instant,
+    ): Pair<Long, Instant>? {
+        val date = runCatching { LocalDate.parse(dayText.trim()) }.getOrNull() ?: return null
+        val trimmed = timeText.trim()
+        val time =
+            if (trimmed.isEmpty()) {
+                LocalTime.fromSecondOfDay(NOON_SECONDS)
+            } else {
+                runCatching { LocalTime.parse(trimmed) }.getOrNull() ?: return null
+            }
+        val at = LocalDateTime(date, time).toInstant(zone)
+        if (at > now) return null
+        return date.toEpochDays() to at
+    }
+
+    private const val NOON_SECONDS: Int = 12 * 60 * 60
 }
 
 /**
@@ -165,7 +237,8 @@ public class WeighInViewModel(
 
     private val method = MutableStateFlow(TrendMethod.EWMA)
     private val alpha = MutableStateFlow(ConstantsRegistry.EWMA_ALPHA_DEFAULT)
-    private val sheet = MutableStateFlow<SheetUi?>(initialSheetOpen.takeIf { it }?.let { SheetUi("") })
+    private val window = MutableStateFlow(ChartWindowUi.D90)
+    private val sheet = MutableStateFlow<SheetUi?>(initialSheetOpen.takeIf { it }?.let { openSheet(prefillKg = null) })
     private val verdict = MutableStateFlow<VerdictUi?>(null)
     private val deleted = MutableStateFlow<DeletedUi?>(null)
     private var undoSnapshot: DeletedWeighIn? = null
@@ -194,10 +267,16 @@ public class WeighInViewModel(
     /** MVI-lite intent entry point. */
     public fun onEvent(event: WeighInEvent) {
         when (event) {
-            is WeighInEvent.OpenSheet ->
-                sheet.value = SheetUi(event.prefillKg?.let(::formatWeightInput) ?: lastWeightInput().orEmpty())
+            is WeighInEvent.OpenSheet -> sheet.value = openSheet(event.prefillKg)
             WeighInEvent.DismissSheet -> sheet.value = null
             is WeighInEvent.WeightChange -> sheet.value = sheet.value?.copy(weightText = event.text)
+            is WeighInEvent.SheetDayChange -> sheet.value = sheet.value?.copy(dayText = event.text)
+            is WeighInEvent.SheetTimeChange -> sheet.value = sheet.value?.copy(timeText = event.text)
+            is WeighInEvent.WindowChange ->
+                viewModelScope.launch {
+                    window.value = event.window
+                    reload()
+                }
             WeighInEvent.StepperUp -> step(STEP_KG)
             WeighInEvent.StepperDown -> step(-STEP_KG)
             WeighInEvent.Save -> save()
@@ -229,6 +308,15 @@ public class WeighInViewModel(
         }
     }
 
+    private fun openSheet(prefillKg: Double?): SheetUi {
+        val now = clock.now().toLocalDateTime(zone)
+        return SheetUi(
+            weightText = prefillKg?.let(::formatWeightInput) ?: lastWeightInput().orEmpty(),
+            dayText = now.date.toString(),
+            timeText = "%02d:%02d".format(now.hour, now.minute),
+        )
+    }
+
     private fun step(delta: Double) {
         val current =
             sheet.value?.weightText?.toDoubleOrNull()
@@ -239,14 +327,22 @@ public class WeighInViewModel(
 
     private fun save() {
         val id = profileId ?: return
-        val kg = sheet.value?.weightText?.toDoubleOrNull() ?: return
+        val current = sheet.value ?: return
+        val kg = current.weightText.toDoubleOrNull() ?: return
+        val whenLogged =
+            SheetWhenParser.parse(current.dayText, current.timeText, zone, clock.now())
+        if (whenLogged == null) {
+            notice.value = "check the date and time — YYYY-MM-DD and HH:MM, today or earlier"
+            return
+        }
+        val (day, at) = whenLogged
         viewModelScope.launch {
             val outcome =
                 weighIns.appendWeighIn(
                     profileId = id,
-                    dayEpochDay = DayBoundary.epochDay(clock.now(), zone),
+                    dayEpochDay = day,
                     weightKg = kg,
-                    capturedAt = clock.now(),
+                    capturedAt = at,
                     source = MeasurementSource.MANUAL,
                 )
             when (outcome) {
@@ -332,15 +428,46 @@ public class WeighInViewModel(
         profileId = id
         val unit = MassUnit.KILOGRAM
         val today = DayBoundary.epochDay(clock.now(), zone)
-        val from = today - CHART_WINDOW_DAYS + 1
+        val from = window.value.days?.let { today - it + 1 } ?: 0L
 
         val dayEvents = weighIns.dayWeighIns(id, today).getOrNull().orEmpty()
-        val lowest = weighIns.lowestOfDay(id, today).getOrNull()
-        val flaggedIds = mutableSetOf<String>()
-        for (event in dayEvents) {
-            val attrs = measurements.attrsOf(event.id).getOrNull().orEmpty()
-            if (attrs.any { it.attr == RoomWeighInRepository.OUTLIER_ATTR }) flaggedIds += event.id
-        }
+        val flaggedIds =
+            measurements
+                .attrsInRange(id, 0, today)
+                .getOrNull()
+                .orEmpty()
+                .filter { it.attr == RoomWeighInRepository.OUTLIER_ATTR }
+                .map { it.eventId }
+                .toSet()
+
+        // The logbook (F06 §5): every raw weigh-in, day-grouped, newest first —
+        // the geek's ground truth beneath every smoothed view.
+        val logbook =
+            measurements
+                .range(id, 0, today)
+                .getOrNull()
+                .orEmpty()
+                .filter { it.kind == MeasurementKind.WEIGHT }
+                .groupBy { it.dayEpochDay }
+                .toSortedMap(compareByDescending { it })
+                .map { (day, events) ->
+                    val lowestId = events.minByOrNull { it.valueReal }?.id
+                    LogbookDayUi(
+                        dayEpochDay = day,
+                        dayLabel = dayLabel(day, today),
+                        isToday = day == today,
+                        rows =
+                            events.map { event ->
+                                LogbookRowUi(
+                                    id = event.id,
+                                    timeLabel = timeLabel(event.capturedAt),
+                                    weightLabel = unit.format(event.valueReal),
+                                    isLowest = event.id == lowestId && events.size > 1,
+                                    flagged = event.id in flaggedIds,
+                                )
+                            },
+                    )
+                }
 
         val samples = weighIns.dailyScalars(id, from, today).getOrNull().orEmpty()
         val series = weighIns.trend(id, from, today, method.value, alpha.value).getOrNull()
@@ -379,16 +506,8 @@ public class WeighInViewModel(
 
         data.value =
             WeighInUiState(
-                rows =
-                    dayEvents.map { event ->
-                        WeighInRowUi(
-                            id = event.id,
-                            timeLabel = timeLabel(event.capturedAt),
-                            weightLabel = unit.format(event.valueReal),
-                            isLowest = lowest?.id == event.id && dayEvents.size > 1,
-                            flagged = event.id in flaggedIds,
-                        )
-                    },
+                logbook = logbook,
+                window = window.value,
                 trend =
                     TrendUi(
                         samples = samples.map { ChartPoint(it.epochDay, it.weightKg) },
@@ -431,6 +550,19 @@ public class WeighInViewModel(
         return "${local.hour.toString().padStart(2, '0')}:${local.minute.toString().padStart(2, '0')}"
     }
 
+    private fun dayLabel(
+        day: Long,
+        today: Long,
+    ): String =
+        when (day) {
+            today -> "Today"
+            today - 1L -> "Yesterday"
+            else -> {
+                val date = LocalDate.fromEpochDays(day)
+                "${WEEKDAYS[date.dayOfWeek.isoDayNumber - 1]} ${date.dayOfMonth} ${MONTHS[date.monthNumber - 1]}"
+            }
+        }
+
     private fun formatWeightInput(kg: Double): String {
         val tenths = (kg * 10).toLong()
         val whole = tenths / 10
@@ -453,6 +585,11 @@ public class WeighInViewModel(
     public companion object {
         /** The chart window (days) — a season at a glance; zooming is F11's. */
         public const val CHART_WINDOW_DAYS: Long = 90
+
+        private val WEEKDAYS = listOf("Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun")
+
+        private val MONTHS =
+            listOf("Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec")
 
         /** Trend-line gate (F06 §4: ≥3 points in the trailing 7 days). */
         public const val TREND_GATE_POINTS: Int = 3

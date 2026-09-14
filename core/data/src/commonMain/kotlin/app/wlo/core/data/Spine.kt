@@ -120,4 +120,11 @@ public interface MeasurementRepository {
     ): WloResult<Unit>
 
     public suspend fun attrsOf(eventId: String): WloResult<List<MeasurementAttr>>
+
+    /** Every sidecar row of a profile's events in the day range (logbook flags, EAV). */
+    public suspend fun attrsInRange(
+        profileId: String,
+        fromDay: Long,
+        toDay: Long,
+    ): WloResult<List<MeasurementAttr>>
 }

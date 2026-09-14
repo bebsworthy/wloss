@@ -140,6 +140,18 @@ public interface MeasurementEventAttrDao {
     @Query("SELECT * FROM measurement_event_attrs WHERE eventId = :eventId")
     public suspend fun forEvent(eventId: String): List<MeasurementEventAttrEntity>
 
+    /** Sidecar rows of one profile's events in a day range (logbook flags, EAV metrics). */
+    @Query(
+        "SELECT attr.* FROM measurement_event_attrs attr " +
+            "JOIN measurement_events e ON e.id = attr.eventId " +
+            "WHERE e.profileId = :profileId AND e.dayEpochDay BETWEEN :fromDay AND :toDay",
+    )
+    public suspend fun forRange(
+        profileId: String,
+        fromDay: Long,
+        toDay: Long,
+    ): List<MeasurementEventAttrEntity>
+
     /** R-B8 amendment (WLO-0035): the sidecar goes with its event. */
     @Query("DELETE FROM measurement_event_attrs WHERE eventId = :eventId")
     public suspend fun deleteForEvent(eventId: String)

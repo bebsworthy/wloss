@@ -244,6 +244,17 @@ public class RoomMeasurementRepository public constructor(
         storageGuard("measurement.attrsOf") {
             attrDao.forEvent(eventId).map { MeasurementAttr(it.eventId, it.attr, it.valueText, it.valueReal) }
         }
+
+    override suspend fun attrsInRange(
+        profileId: String,
+        fromDay: Long,
+        toDay: Long,
+    ): WloResult<List<MeasurementAttr>> =
+        storageGuard("measurement.attrsInRange") {
+            attrDao
+                .forRange(profileId, fromDay, toDay)
+                .map { MeasurementAttr(it.eventId, it.attr, it.valueText, it.valueReal) }
+        }
 }
 
 // --- day projection (Appendix A.3 — the only door, the only writer) --------

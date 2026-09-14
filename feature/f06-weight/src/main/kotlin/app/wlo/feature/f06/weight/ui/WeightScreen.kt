@@ -9,7 +9,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Slider
@@ -21,7 +20,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import app.wlo.core.designsystem.ProvenanceChip
 import app.wlo.core.designsystem.SelectChip
@@ -43,11 +41,12 @@ import app.wlo.core.designsystem.WloTrendChart
 import app.wlo.core.designsystem.wloExtendedColors
 import app.wlo.core.designsystem.wloType
 import app.wlo.core.model.TrendMethod
+import app.wlo.feature.f06.weight.state.ChartWindowUi
 import app.wlo.feature.f06.weight.state.DeletedUi
+import app.wlo.feature.f06.weight.state.LogbookRowUi
 import app.wlo.feature.f06.weight.state.SheetUi
 import app.wlo.feature.f06.weight.state.VerdictUi
 import app.wlo.feature.f06.weight.state.WeighInEvent
-import app.wlo.feature.f06.weight.state.WeighInRowUi
 import app.wlo.feature.f06.weight.state.WeighInUiState
 import app.wlo.feature.f06.weight.state.WeighInViewModel
 
@@ -196,7 +195,17 @@ public fun WeightScreen(
 
         state.trend?.let { trend ->
             WloCard(modifier = Modifier.testTag("f06-trend-card")) {
-                WloCardHeader(title = "90 days")
+                WloCardHeader(title = "Trend")
+                Row(horizontalArrangement = Arrangement.spacedBy(WloSpacing.TIGHT)) {
+                    for (candidate in ChartWindowUi.entries) {
+                        SelectChip(
+                            label = candidate.label,
+                            selected = candidate == state.window,
+                            onClick = { viewModel.onEvent(WeighInEvent.WindowChange(candidate)) },
+                            modifier = Modifier.testTag("f06-window-${candidate.name.lowercase()}"),
+                        )
+                    }
+                }
                 WloTrendChart(
                     samples = trend.samples,
                     trend = trend.trend,
@@ -233,29 +242,35 @@ public fun WeightScreen(
             }
         }
 
-        WloCard(modifier = Modifier.testTag("f06-day-card")) {
-            WloCardHeader(title = "Today's weigh-ins")
-            if (state.rows.isEmpty()) {
+        WloCard(modifier = Modifier.testTag("f06-logbook-card")) {
+            WloCardHeader(title = "Logbook")
+            if (state.logbook.isEmpty()) {
                 Text(
                     text = "None yet — the morning window reads steadiest, whenever you get to it.",
                     style = wloType.caption,
                     color = wloExtendedColors.textTertiary,
                 )
             }
-            state.rows.forEachIndexed { index, row ->
-                if (index > 0) WloStatDivider()
-                DayRow(
-                    row = row,
-                    onDelete = { viewModel.onEvent(WeighInEvent.DeleteWeighIn(row.id)) },
-                )
-            }
-            if (state.rows.size > 1) {
-                HorizontalDivider(color = MaterialTheme.colorScheme.outline, thickness = 1.dp)
+            state.logbook.forEachIndexed { dayIndex, day ->
+                if (dayIndex > 0) WloStatDivider()
                 Text(
-                    text = WeighInUiState.LOWEST_COPY,
-                    style = wloType.caption,
+                    text = day.dayLabel,
+                    style = wloType.label,
                     color = wloExtendedColors.textTertiary,
                 )
+                day.rows.forEach { row ->
+                    LogbookRow(
+                        row = row,
+                        onDelete = { viewModel.onEvent(WeighInEvent.DeleteWeighIn(row.id)) },
+                    )
+                }
+                if (day.isToday && day.rows.size > 1) {
+                    Text(
+                        text = WeighInUiState.LOWEST_COPY,
+                        style = wloType.caption,
+                        color = wloExtendedColors.textTertiary,
+                    )
+                }
             }
             WloSecondaryButton(
                 label = "Body-fat methods",
@@ -280,7 +295,11 @@ public fun WeightScreen(
         ) {
             WeighInSheetContent(
                 weightText = current.weightText,
+                dayText = current.dayText,
+                timeText = current.timeText,
                 onChange = { viewModel.onEvent(WeighInEvent.WeightChange(it)) },
+                onDayChange = { viewModel.onEvent(WeighInEvent.SheetDayChange(it)) },
+                onTimeChange = { viewModel.onEvent(WeighInEvent.SheetTimeChange(it)) },
                 onStepUp = { viewModel.onEvent(WeighInEvent.StepperUp) },
                 onStepDown = { viewModel.onEvent(WeighInEvent.StepperDown) },
                 onSave = { viewModel.onEvent(WeighInEvent.Save) },
@@ -328,8 +347,8 @@ private fun SmootherTuner(
     }
 
 @Composable
-private fun DayRow(
-    row: WeighInRowUi,
+private fun LogbookRow(
+    row: LogbookRowUi,
     onDelete: () -> Unit,
 ): Unit =
     Row(
@@ -368,20 +387,26 @@ private fun DayRow(
     }
 
 /**
- * The typed weigh-in path (R-U15): first-class, never a fallback. Children
- * land in [WloSheet]'s padded, spaced column.
+ * The typed weigh-in path (R-U15): first-class, never a fallback, and
+ * back-datable (F06 §4) — an ISO date plus an optional HH:MM (blank reads
+ * as noon, the R-B5 normalization). Children land in [WloSheet]'s padded,
+ * spaced column.
  */
 @Composable
 private fun WeighInSheetContent(
     weightText: String,
+    dayText: String,
+    timeText: String,
     onChange: (String) -> Unit,
+    onDayChange: (String) -> Unit,
+    onTimeChange: (String) -> Unit,
     onStepUp: () -> Unit,
     onStepDown: () -> Unit,
     onSave: () -> Unit,
 ) {
     Text(text = "Weigh in", style = wloType.title)
     Text(
-        text = "Same conditions help the trend read true.",
+        text = "Same conditions help the trend read true. Missed a day? Enter it below — blank time reads as noon.",
         style = wloType.caption,
         color = wloExtendedColors.textTertiary,
     )
@@ -394,6 +419,24 @@ private fun WeighInSheetContent(
         textStyle = wloType.statL,
         placeholder = { Text("kg", style = wloType.body, color = wloExtendedColors.textTertiary) },
     )
+    Row(horizontalArrangement = Arrangement.spacedBy(WloSpacing.TIGHT)) {
+        OutlinedTextField(
+            value = dayText,
+            onValueChange = onDayChange,
+            modifier = Modifier.weight(1f).testTag("f06-day-field"),
+            singleLine = true,
+            textStyle = wloType.body,
+            placeholder = { Text("YYYY-MM-DD", style = wloType.caption, color = wloExtendedColors.textTertiary) },
+        )
+        OutlinedTextField(
+            value = timeText,
+            onValueChange = onTimeChange,
+            modifier = Modifier.weight(1f).testTag("f06-time-field"),
+            singleLine = true,
+            textStyle = wloType.body,
+            placeholder = { Text("HH:MM", style = wloType.caption, color = wloExtendedColors.textTertiary) },
+        )
+    }
     Row(horizontalArrangement = Arrangement.spacedBy(WloSpacing.CARD)) {
         WloSecondaryButton(
             label = "−0.1",
