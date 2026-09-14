@@ -80,6 +80,21 @@ frozen cross-feature decisions — do not contradict them in feature docs or
 code; amend the master doc instead. `docs/tasks/` is the ticket CLI's mirror
 (see below); never hand-edit task state there.
 
+## UI rule: standard Material 3 first (owner ruling 2026-09-15)
+
+Compose UI always uses the standard Material 3 component for the job —
+`ListItem`, `Button`, `Chip`, `TopAppBar`, `Scaffold`, … — through its
+documented slots and metrics, styled via M3's parameters and the tokens in
+`docs/design/DESIGN-SYSTEM.md`. Hand-rolling a lookalike is a defect, even
+when the custom version "works".
+
+A custom component is allowed only when a standard M3 component genuinely
+cannot do the job (a justified impossibility — e.g. `WloSwipeRevealRow`: the
+stock swipe-to-dismiss cannot be made release-gated/velocity-blind). The
+justification must live where the component lives — KDoc citing the M3
+limitation, plus the ticket — and the custom piece must wrap or compose
+standard M3 components inside rather than re-create their layout.
+
 <!-- ticket:skill:begin (v1) -->
 ## Ticket — task tracker
 
