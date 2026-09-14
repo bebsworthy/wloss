@@ -180,6 +180,26 @@ public class M3WeighInTest {
         pollFirstRow(deletedValue)
     }
 
+    @Test
+    public fun logbookEdit_tapOpensSheet_saveReplacesTheEntry() {
+        awaitWeightSurface()
+        UiDevice.getInstance(InstrumentationRegistry.getInstrumentation()).pressBack()
+        rule.onNodeWithTag("f06-open-logbook").performScrollTo().performClick()
+        TestNav.awaitTag(rule, "f06-logbook-title")
+
+        // The tap door (F06 §5 inline edit) carries the same feedback as
+        // every other list row: tap opens the prefilled sheet.
+        rule.onAllNodesWithTag("f06-row").onFirst().performClick()
+        TestNav.awaitTag(rule, "f06-edit-sheet")
+        rule.onNodeWithTag("f06-edit-weight").performTextClearance()
+        rule.onNodeWithTag("f06-edit-weight").performTextInput("80.4")
+        rule.onNodeWithTag("f06-edit-save").performClick()
+
+        // The entry is replaced in place, and the log says so.
+        pollFirstRow("80.4 kg")
+        pollText("edited", substring = true)
+    }
+
     private fun firstRowWeight(): String =
         rule
             .onAllNodesWithTag("f06-row-weight")
@@ -198,7 +218,15 @@ public class M3WeighInTest {
             }
             Thread.sleep(POLL_MS)
         }
-        error("logbook first row never returned to \"$expected\"")
+        val notice =
+            runCatching {
+                rule
+                    .onNodeWithTag("f06-logbook-notice", useUnmergedTree = true)
+                    .fetchSemanticsNode()
+                    .config[SemanticsProperties.Text]
+                    .first()
+            }.getOrNull()
+        error("logbook first row never became \"$expected\"; session notice: $notice")
     }
 
     private fun pollFirstRowChanged(unexpected: String) {

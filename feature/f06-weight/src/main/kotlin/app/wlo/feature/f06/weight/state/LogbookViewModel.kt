@@ -12,6 +12,7 @@ import app.wlo.core.data.MeasurementRepository
 import app.wlo.core.data.ProfileRepository
 import app.wlo.core.data.RoomWeighInRepository
 import app.wlo.core.data.WeighInRepository
+import app.wlo.core.model.MeasurementAttr
 import app.wlo.core.model.MeasurementEvent
 import app.wlo.core.model.MeasurementKind
 import kotlinx.coroutines.delay
@@ -38,6 +39,30 @@ public sealed interface LogbookEvent {
 
     /** Extends the loaded window one chunk further into the past. */
     public data object LoadEarlier : LogbookEvent
+
+    /** Opens the edit sheet for one entry (F06 §5's inline edit). */
+    public data class BeginEdit(
+        public val eventId: String,
+    ) : LogbookEvent
+
+    public data class EditWeightChange(
+        public val text: String,
+    ) : LogbookEvent
+
+    /** The edit sheet's date field, ISO YYYY-MM-DD; the past only. */
+    public data class EditDayChange(
+        public val text: String,
+    ) : LogbookEvent
+
+    /** The edit sheet's time field, HH:MM; blank means noon (R-B5). */
+    public data class EditTimeChange(
+        public val text: String,
+    ) : LogbookEvent
+
+    public data object CancelEdit : LogbookEvent
+
+    /** Replaces the entry: append the corrected reading, retire the original. */
+    public data object SaveEdit : LogbookEvent
 }
 
 /** One verbatim logbook row: a raw weigh-in with its provenance marks (F06 §5). */
@@ -48,6 +73,7 @@ public data class LogbookRowUi(
     public val weightLabel: String,
     public val isLowest: Boolean,
     public val flagged: Boolean,
+    public val edited: Boolean,
 )
 
 /** One month of the logbook — the sticky header carries the month the rows omit. */
@@ -84,6 +110,14 @@ public data class DeletedUi(
     public val dayEpochDay: Long,
 )
 
+/** The open edit sheet, prefilled from the entry being corrected (F06 §5). */
+public data class EditSheetUi(
+    public val eventId: String,
+    public val weightText: String,
+    public val dayText: String,
+    public val timeText: String,
+)
+
 /**
  * The full-page logbook (WLO-0055): every raw weigh-in, newest first, grouped
  * under sticky month headers. The feed is windowed — the latest
@@ -106,6 +140,7 @@ public class LogbookViewModel(
 
     private val data = MutableStateFlow(LogbookUiState.LOADING)
     private val deleted = MutableStateFlow<DeletedUi?>(null)
+    private val edit = MutableStateFlow<EditSheetUi?>(null)
     private var undoSnapshot: DeletedWeighIn? = null
 
     /** Bumped per delete/undo so stale auto-clear timers no-op. */
@@ -117,6 +152,9 @@ public class LogbookViewModel(
 
     /** The last deleted weigh-in, offered back until the window empties. */
     public val deletedState: StateFlow<DeletedUi?> = deleted
+
+    /** The open edit sheet, prefilled from the entry being corrected. */
+    public val editState: StateFlow<EditSheetUi?> = edit
 
     /** Session notices. */
     public val noticeState: StateFlow<String?> = notice
@@ -142,6 +180,13 @@ public class LogbookViewModel(
                             .toEpochDays()
                     reload()
                 }
+
+            is LogbookEvent.BeginEdit -> beginEdit(event.eventId)
+            is LogbookEvent.EditWeightChange -> edit.value = edit.value?.copy(weightText = event.text)
+            is LogbookEvent.EditDayChange -> edit.value = edit.value?.copy(dayText = event.text)
+            is LogbookEvent.EditTimeChange -> edit.value = edit.value?.copy(timeText = event.text)
+            LogbookEvent.CancelEdit -> edit.value = null
+            LogbookEvent.SaveEdit -> saveEdit()
         }
     }
 
@@ -156,9 +201,10 @@ public class LogbookViewModel(
                 .attrsInRange(id, windowStart, today)
                 .getOrNull()
                 .orEmpty()
-                .filter { it.attr == RoomWeighInRepository.OUTLIER_ATTR }
-                .map { it.eventId }
-                .toSet()
+                .filter { it.attr == RoomWeighInRepository.OUTLIER_ATTR || it.attr == EDITED_ATTR }
+                .toList()
+        val flaggedSet = flaggedIds.filter { it.attr == RoomWeighInRepository.OUTLIER_ATTR }.map { it.eventId }.toSet()
+        val editedSet = flaggedIds.filter { it.attr == EDITED_ATTR }.map { it.eventId }.toSet()
         val events =
             measurements
                 .rangeOfKind(id, MeasurementKind.WEIGHT, windowStart, today)
@@ -207,7 +253,8 @@ public class LogbookViewModel(
                                     timeLabel = timeLabel(event.capturedAt),
                                     weightLabel = unit.format(event.valueReal),
                                     isLowest = event.id == lowestId && dayEvents.size > 1,
-                                    flagged = event.id in flaggedIds,
+                                    flagged = event.id in flaggedSet,
+                                    edited = event.id in editedSet,
                                 )
                             }
                         },
@@ -230,6 +277,90 @@ public class LogbookViewModel(
                 totalEntries = total,
                 loadedEntries = events.size,
             )
+    }
+
+    /**
+     * F06 §5's inline edit: the sheet opens prefilled from the stored event,
+     * the user corrects value and/or when, and saving REPLACES the entry —
+     * append the corrected reading, carry the original's sidecar attrs, mark
+     * the replacement as edited, retire the original (R-B8: the user's own
+     * explicit acts).
+     */
+    private fun beginEdit(eventId: String) {
+        viewModelScope.launch {
+            val id = profileId ?: profiles.active().getOrNull()?.id ?: return@launch
+            profileId = id
+            val event = measurements.byId(eventId).getOrNull() ?: return@launch
+            val local = event.capturedAt.toLocalDateTime(zone)
+            edit.value =
+                EditSheetUi(
+                    eventId = event.id,
+                    weightText = formatKg(event.valueReal),
+                    dayText = LocalDate.fromEpochDays(event.dayEpochDay).toString(),
+                    timeText = timeLabel(event.capturedAt),
+                )
+        }
+    }
+
+    private fun saveEdit() {
+        val id = profileId ?: return
+        val current = edit.value ?: return
+        val kg = current.weightText.toDoubleOrNull()
+        if (kg == null || kg <= 0.0) {
+            notice.value = "enter the weight the scale showed"
+            return
+        }
+        val parsed = SheetWhenParser.parse(current.dayText, current.timeText, zone, clock.now())
+        if (parsed == null) {
+            notice.value = "check the date and time — YYYY-MM-DD and HH:MM, today or earlier"
+            return
+        }
+        val (day, at) = parsed
+        viewModelScope.launch {
+            val original = measurements.byId(current.eventId).getOrNull()
+            if (original == null) {
+                edit.value = null
+                return@launch
+            }
+            val appended =
+                weighIns.appendWeighIn(
+                    profileId = id,
+                    dayEpochDay = day,
+                    weightKg = kg,
+                    capturedAt = at,
+                    source = original.source,
+                    note = original.note,
+                )
+            when (appended) {
+                is WloResult.Ok -> {
+                    val replacement = appended.value.event
+                    val carried =
+                        measurements
+                            .attrsInRange(id, original.dayEpochDay, original.dayEpochDay)
+                            .getOrNull()
+                            .orEmpty()
+                            .filter { it.eventId == original.id && it.attr != EDITED_ATTR }
+                            .map { MeasurementAttr(replacement.id, it.attr, it.valueText, it.valueReal) }
+                    measurements.attachAttrs(
+                        replacement.id,
+                        carried +
+                            MeasurementAttr(
+                                eventId = replacement.id,
+                                attr = EDITED_ATTR,
+                                valueText =
+                                    "was ${MassUnit.KILOGRAM.format(original.valueReal)} · " +
+                                        timeLabel(original.capturedAt),
+                            ),
+                    )
+                    measurements.delete(original.id)
+                    edit.value = null
+                    reload()
+                }
+
+                is WloResult.Err ->
+                    notice.value = "that didn't save — ${appended.error.debugMessage.lowercase()}"
+            }
+        }
     }
 
     /**
@@ -317,5 +448,8 @@ public class LogbookViewModel(
 
         /** The undo notice's visible countdown, then it slides away (WLO-0050). */
         public const val UNDO_WINDOW_MS: Long = 4_500L
+
+        /** EAV sidecar mark on a weigh-in that replaced an earlier reading. */
+        public const val EDITED_ATTR: String = "edited"
     }
 }

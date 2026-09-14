@@ -22,8 +22,10 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -40,14 +42,17 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.CustomAccessibilityAction
 import androidx.compose.ui.semantics.customActions
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import app.wlo.core.designsystem.WloButton
 import app.wlo.core.designsystem.WloHaptic
 import app.wlo.core.designsystem.WloIcons
 import app.wlo.core.designsystem.WloListRow
 import app.wlo.core.designsystem.WloMotion
 import app.wlo.core.designsystem.WloScreenTitle
 import app.wlo.core.designsystem.WloSecondaryButton
+import app.wlo.core.designsystem.WloSheet
 import app.wlo.core.designsystem.WloSpacing
 import app.wlo.core.designsystem.WloStatDivider
 import app.wlo.core.designsystem.WloSwipeRevealRow
@@ -55,6 +60,7 @@ import app.wlo.core.designsystem.rememberWloHaptics
 import app.wlo.core.designsystem.wloExtendedColors
 import app.wlo.core.designsystem.wloType
 import app.wlo.feature.f06.weight.state.DeletedUi
+import app.wlo.feature.f06.weight.state.EditSheetUi
 import app.wlo.feature.f06.weight.state.LogbookEvent
 import app.wlo.feature.f06.weight.state.LogbookMonthUi
 import app.wlo.feature.f06.weight.state.LogbookRowUi
@@ -77,6 +83,7 @@ import kotlinx.coroutines.delay
 public fun LogbookScreen(viewModel: LogbookViewModel) {
     val state: LogbookUiState by viewModel.uiState.collectAsStateWithLifecycle()
     val deleted: DeletedUi? by viewModel.deletedState.collectAsStateWithLifecycle()
+    val edit: EditSheetUi? by viewModel.editState.collectAsStateWithLifecycle()
     val notice: String? by viewModel.noticeState.collectAsStateWithLifecycle()
 
     // Rendering mirror of the pending delete: it holds the notice through
@@ -149,6 +156,7 @@ public fun LogbookScreen(viewModel: LogbookViewModel) {
                     item(key = row.id) {
                         LogbookRow(
                             row = row,
+                            onOpen = { viewModel.onEvent(LogbookEvent.BeginEdit(row.id)) },
                             onDelete = { viewModel.onEvent(LogbookEvent.Delete(row.id)) },
                         )
                     }
@@ -176,9 +184,82 @@ public fun LogbookScreen(viewModel: LogbookViewModel) {
                 text = it,
                 style = wloType.caption,
                 color = wloExtendedColors.held,
+                modifier = Modifier.testTag("f06-logbook-notice"),
             )
         }
     }
+
+    edit?.let { current ->
+        WloSheet(
+            onDismissRequest = { viewModel.onEvent(LogbookEvent.CancelEdit) },
+            modifier = Modifier.testTag("f06-edit-sheet"),
+        ) {
+            EditSheetContent(
+                weightText = current.weightText,
+                dayText = current.dayText,
+                timeText = current.timeText,
+                onChange = { viewModel.onEvent(LogbookEvent.EditWeightChange(it)) },
+                onDayChange = { viewModel.onEvent(LogbookEvent.EditDayChange(it)) },
+                onTimeChange = { viewModel.onEvent(LogbookEvent.EditTimeChange(it)) },
+                onSave = { viewModel.onEvent(LogbookEvent.SaveEdit) },
+            )
+        }
+    }
+}
+
+/**
+ * F06 §5's inline edit (R-U15's typed path, pointed at an existing entry):
+ * correct the value and/or when; saving replaces the entry and the log says
+ * so — the supporting line reads "edited". Blank time reads as noon (R-B5).
+ */
+@Composable
+private fun EditSheetContent(
+    weightText: String,
+    dayText: String,
+    timeText: String,
+    onChange: (String) -> Unit,
+    onDayChange: (String) -> Unit,
+    onTimeChange: (String) -> Unit,
+    onSave: () -> Unit,
+) {
+    Text(text = "Edit weigh-in", style = wloType.title)
+    Text(
+        text = "Saving replaces this reading with the corrected one — the row keeps an edited mark.",
+        style = wloType.caption,
+        color = wloExtendedColors.textTertiary,
+    )
+    OutlinedTextField(
+        value = weightText,
+        onValueChange = onChange,
+        modifier = Modifier.fillMaxWidth().testTag("f06-edit-weight"),
+        singleLine = true,
+        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+        textStyle = wloType.statL,
+        placeholder = { Text("kg", style = wloType.body, color = wloExtendedColors.textTertiary) },
+    )
+    Row(horizontalArrangement = Arrangement.spacedBy(WloSpacing.TIGHT)) {
+        OutlinedTextField(
+            value = dayText,
+            onValueChange = onDayChange,
+            modifier = Modifier.weight(1f).testTag("f06-edit-day"),
+            singleLine = true,
+            textStyle = wloType.body,
+            placeholder = { Text("YYYY-MM-DD", style = wloType.caption, color = wloExtendedColors.textTertiary) },
+        )
+        OutlinedTextField(
+            value = timeText,
+            onValueChange = onTimeChange,
+            modifier = Modifier.weight(1f).testTag("f06-edit-time"),
+            singleLine = true,
+            textStyle = wloType.body,
+            placeholder = { Text("HH:MM", style = wloType.caption, color = wloExtendedColors.textTertiary) },
+        )
+    }
+    WloButton(
+        label = "Save changes",
+        onClick = onSave,
+        modifier = Modifier.fillMaxWidth().testTag("f06-edit-save"),
+    )
 }
 
 /** The sticky month header — it carries the month so the rows can omit it. */
@@ -220,6 +301,7 @@ private fun MonthHeader(month: LogbookMonthUi) {
 @Composable
 private fun LogbookRow(
     row: LogbookRowUi,
+    onOpen: () -> Unit,
     onDelete: () -> Unit,
 ) {
     val haptics = rememberWloHaptics()
@@ -271,16 +353,19 @@ private fun LogbookRow(
     ) {
         // The design system's standard row anatomy (WLO-0031) — headline
         // date, supporting time + provenance marks, the weight in the value
-        // slot — so every list in the app reads the same. The wrapper only
-        // adds the reveal mechanics; the box masks the action with the
-        // page's own color until the row's space is vacated (WloListRow
-        // itself renders on a transparent container).
+        // slot — so every list in the app reads the same. Tap opens the edit
+        // sheet (F06 §5 inline edit), the same ripple every actionable row
+        // in the app carries; the swipe wrapper adds only the delete reveal.
+        // The box masks the action with the page's own color until the row's
+        // space is vacated (WloListRow itself renders on a transparent
+        // container).
         Box(modifier = Modifier.background(MaterialTheme.colorScheme.background)) {
             val meta =
                 buildString {
                     append(row.timeLabel)
                     if (row.isLowest) append(" · day's weight")
                     if (row.flagged) append(" · flagged — kept")
+                    if (row.edited) append(" · edited")
                 }
             WloListRow(
                 label = row.dateLabel,
@@ -292,6 +377,7 @@ private fun LogbookRow(
                         modifier = Modifier.testTag("f06-row-weight"),
                     )
                 },
+                onClick = onOpen,
                 modifier =
                     Modifier
                         .semantics {
