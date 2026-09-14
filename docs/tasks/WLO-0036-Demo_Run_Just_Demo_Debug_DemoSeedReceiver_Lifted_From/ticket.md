@@ -1,13 +1,13 @@
 ---
 id: WLO-0036
 title: 'Demo run: just demo — debug DemoSeedReceiver (lifted from SeedingRobot) + justfile boot/demo recipes'
-status: doing
+status: done
 theme:
 release:
 created: 2026-09-14T13:18:03Z
-modified: 2026-09-14T13:59:09Z
-closed:
-revision: f65eaa1548dc7d5a
+modified: 2026-09-14T14:00:27Z
+closed: 2026-09-14T14:00:27Z
+revision: 7e047526c7e59f8c
 blocks: []
 related: []
 ---
