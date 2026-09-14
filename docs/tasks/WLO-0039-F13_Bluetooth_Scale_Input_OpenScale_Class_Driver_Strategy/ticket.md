@@ -1,13 +1,13 @@
 ---
 id: WLO-0039
 title: 'F13 Bluetooth scale input: openScale-class driver strategy spike + first-driver decision'
-status: backlog
+status: idea
 theme:
 release:
 created: 2026-09-14T13:37:55Z
-modified: 2026-09-14T13:52:36Z
+modified: 2026-09-14T14:02:46Z
 closed:
-revision: 6020f328edbb653d
+revision: d5a6271238240eef
 blocks: []
 related: []
 ---

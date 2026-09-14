@@ -1,13 +1,13 @@
 ---
 id: WLO-0046
 title: 'F01/F10 Fresh Start trigger: >=14-day gap offer wired to F13 hide-not-delete (R-B7)'
-status: backlog
+status: idea
 theme:
 release:
 created: 2026-09-14T13:38:55Z
-modified: 2026-09-14T13:53:08Z
+modified: 2026-09-14T14:02:50Z
 closed:
-revision: bdc0a89a16e5cdf9
+revision: dc8e642ba9307428
 blocks: []
 related: []
 ---

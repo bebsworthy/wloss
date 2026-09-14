@@ -1,13 +1,13 @@
 ---
 id: WLO-0047
 title: 'F06 discreet mode: hero body numbers hidden until tapped'
-status: backlog
+status: idea
 theme:
 release:
 created: 2026-09-14T13:38:55Z
-modified: 2026-09-14T13:53:08Z
+modified: 2026-09-14T14:02:52Z
 closed:
-revision: f64559060c132168
+revision: 917c4a2154dcf953
 blocks: []
 related: []
 ---

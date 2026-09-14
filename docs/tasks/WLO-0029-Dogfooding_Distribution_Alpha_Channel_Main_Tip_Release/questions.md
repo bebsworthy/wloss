@@ -2,25 +2,25 @@
 
 # Questions · WLO-0029
 
-## q-000028 · open
+## q-000028 · answered
 
 Repo has no git remote. Push to GitHub now — public (FOSS anyway, makes Releases/Obtainium/in-app updates simplest) or private until v1?
 
-- [ ] Public now
+- [x] Public now
 - [ ] Private until v1
 
-## q-000029 · open
+## q-000029 · answered
 
 Phone-side update mechanism to start with?
 
-- [ ] Obtainium against GitHub Releases (zero app code)
+- [x] Obtainium against GitHub Releases (zero app code)
 - [ ] Build the in-app self-updater now (PackageInstaller via NetworkDispatcher, consent-gated)
 - [ ] Play Console internal testing track ($25, AAB)
 - [ ] Manual GitHub Releases download only
 
-## q-000030 · open
+## q-000030 · answered
 
 Channel layout: same applicationId (alpha rides ahead, stable replaces it in place — dogfood data continuity) or parallel install via .alpha applicationId suffix (test alongside stable, but splits your real data)?
 
-- [ ] Same applicationId (recommended)
+- [x] Same applicationId (recommended)
 - [ ] Parallel .alpha suffix

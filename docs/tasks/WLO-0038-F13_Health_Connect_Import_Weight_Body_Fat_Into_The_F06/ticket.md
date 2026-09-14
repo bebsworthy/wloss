@@ -1,13 +1,13 @@
 ---
 id: WLO-0038
 title: 'F13 Health Connect import: weight + body-fat into the F06 store with dedup + visible import log'
-status: backlog
+status: idea
 theme:
 release:
 created: 2026-09-14T13:37:55Z
-modified: 2026-09-14T13:52:36Z
+modified: 2026-09-14T14:02:44Z
 closed:
-revision: 4589454048c567ac
+revision: 99c290d8f8d877b9
 blocks: []
 related: []
 ---
