@@ -91,12 +91,19 @@ public class M6RestoreWizardTest {
             BackupContainer.encrypt(json, BackupKdf.argon2idDefaults(salt), M6E2eSpec.PASSPHRASE.toCharArray())
         }
 
-    /** Clicks the first visible object whose text contains [text]. */
+    /**
+     * Clicks the first visible object whose text equals [text], falling back
+     * to a contains-match. Exact-first matters since the wizard's step header
+     * ("Step 1 of 4 — Pick a file") contains the button's label — clicking
+     * the inert header would never open the picker.
+     */
     private fun clickText(
         ui: UiDevice,
         text: String,
     ): Boolean {
-        val target = ui.findObjects(By.textContains(text)).firstOrNull()
+        val target =
+            ui.findObjects(By.text(text)).firstOrNull()
+                ?: ui.findObjects(By.textContains(text)).firstOrNull()
         if (target != null) {
             target.click()
             Thread.sleep(900)
@@ -108,8 +115,10 @@ public class M6RestoreWizardTest {
     /**
      * Drives the system document picker: roots drawer → Downloads root →
      * file. The picker may open on RECENT — never assume the Downloads
-     * listing is in front of us. The drawer covers the file list and eats
-     * taps, so it is closed before any file click.
+     * listing is in front of us. The drawer's "Open from" header (and the
+     * toolbar title, which can carry the same string) is handled BOUNDEDLY:
+     * aim it at Downloads at most three times, then close it with back and
+     * hunt for the file whatever the chrome says.
      */
     private fun pickInDocumentsUi(
         ui: UiDevice,
@@ -118,11 +127,27 @@ public class M6RestoreWizardTest {
         val deadline = System.currentTimeMillis() + 60_000
         var picked = false
         var inDownloads = false
+        var drawerActions = 0
         while (System.currentTimeMillis() < deadline && !picked) {
-            if (ui.hasObject(By.text("Open from"))) {
+            val drawerOpen = ui.hasObject(By.text("Open from"))
+            if (drawerOpen && drawerActions < 3) {
+                drawerActions++
+                val entry =
+                    ui.findObjects(By.text("Downloads")).firstOrNull { it.visibleCenter.x < 500 }
+                if (entry != null) {
+                    entry.click()
+                    inDownloads = true
+                    Thread.sleep(1_000)
+                    continue
+                }
                 ui.findObject(By.desc("Show roots"))?.click()
                 Thread.sleep(900)
                 continue
+            }
+            if (drawerOpen) {
+                // Stuck drawer: close it and hunt for the file anyway.
+                ui.pressBack()
+                Thread.sleep(900)
             }
             val file: UiObject2? = ui.findObjects(By.textContains(fileName)).firstOrNull()
             if (file != null) {
@@ -133,6 +158,7 @@ public class M6RestoreWizardTest {
             if (!inDownloads) {
                 ui.findObject(By.desc("Show roots"))?.click()
                 Thread.sleep(1_000)
+                drawerActions++
                 val entry =
                     ui.findObjects(By.text("Downloads")).firstOrNull { it.visibleCenter.x < 500 }
                 if (entry != null) {
@@ -150,7 +176,7 @@ public class M6RestoreWizardTest {
         check(picked) {
             val onScreen =
                 ui
-                    .findObjects(By.textContains(" "))
+                    .findObjects(By.textContains("e"))
                     .mapNotNull { it.text }
                     .filter { it.length in 2..40 }
                     .distinct()
@@ -207,8 +233,8 @@ public class M6RestoreWizardTest {
         Thread.sleep(2_000)
         waitUntilUi(ui, "Restore from a backup file")
         clickText(ui, "Restore from a backup file")
-        waitUntilUi(ui, "Choose backup file")
-        clickText(ui, "Choose backup file")
+        waitUntilUi(ui, "Pick a file")
+        clickText(ui, "Pick a file")
         pickInDocumentsUi(ui, publishedFixture)
 
         // Passphrase → validate → the staged report.
@@ -250,8 +276,8 @@ public class M6RestoreWizardTest {
         val ui = device()
         waitUntilUi(ui, "Restore from a backup file")
         clickText(ui, "Restore from a backup file")
-        waitUntilUi(ui, "Choose backup file")
-        clickText(ui, "Choose backup file")
+        waitUntilUi(ui, "Pick a file")
+        clickText(ui, "Pick a file")
         pickInDocumentsUi(ui, publishedHostile)
 
         waitUntilUi(ui, "Backup passphrase")

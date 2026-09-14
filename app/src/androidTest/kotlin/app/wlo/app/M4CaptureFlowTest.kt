@@ -5,6 +5,7 @@ import android.net.Uri
 import android.os.SystemClock
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onAllNodesWithTag
+import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
@@ -271,7 +272,7 @@ public class M4CaptureFlowTest {
 
         // R-U15 twin: TYPE the barcode (equal-status path), REAL OFF lookup.
         rule.onNodeWithTag("f02-capture-barcode-field").performTextInput("3017620422003")
-        rule.onNodeWithText("look up").performClick()
+        rule.onNodeWithContentDescription("Look up").performClick()
         rule.waitUntil(30_000) { rule.onAllNodesWithTag("f02-capture-product").fetchSemanticsNodes().isNotEmpty() }
         rule.onNodeWithTag("f02-capture-product-attribution").assertExists()
 
@@ -281,7 +282,7 @@ public class M4CaptureFlowTest {
         rule.onNodeWithTag("f02-capture-again").performScrollTo().performClick()
         rule.waitUntil(10_000) { rule.onAllNodesWithTag("f02-capture-barcode-field").fetchSemanticsNodes().isNotEmpty() }
         rule.onNodeWithTag("f02-capture-barcode-field").performTextInput("3017620422003")
-        rule.onNodeWithText("look up").performClick()
+        rule.onNodeWithContentDescription("Look up").performClick()
         rule.waitUntil(30_000) { rule.onAllNodesWithTag("f02-capture-product").fetchSemanticsNodes().isNotEmpty() }
         rule.onNodeWithTag("f02-capture-product-cached").assertExists()
     }

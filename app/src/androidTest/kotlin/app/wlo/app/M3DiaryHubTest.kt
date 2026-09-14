@@ -60,9 +60,10 @@ public class M3DiaryHubTest {
         // Day total is hand-computable from the seeder: oats 223.2 + salmon
         // 270.4 + rye 150 + the even-day apple snack 46.8 + water 0 = 690.4.
         TestNav.awaitText(rule, "690 kcal")
-        // Meal slots render (content-rendered, no empty states).
-        rule.onAllNodesWithText("breakfast").onFirst().assertExists()
-        rule.onAllNodesWithText("drinks").onFirst().assertExists()
+        // Meal slots render (content-rendered, no empty states) — the slot
+        // headers are WloCardHeaders, rendered uppercase; match case-blind.
+        rule.onAllNodesWithText("breakfast", ignoreCase = true).onFirst().assertExists()
+        rule.onAllNodesWithText("drinks", ignoreCase = true).onFirst().assertExists()
         // The day-status marker defaults to logged once entries exist.
         rule.onNodeWithTag("f02-day-status", useUnmergedTree = true).assertIsDisplayed()
     }

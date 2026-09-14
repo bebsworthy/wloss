@@ -129,10 +129,10 @@ public class M5PlanShopTest {
         deliver(scenario, "wlo://plan")
         TestNav.awaitRoute(scenario, "plan")
         val startedAt = SystemClock.elapsedRealtime()
-        awaitText(scenario, "generate week", timeoutMs = 10_000)
-        device().findObjects(By.text("generate week")).firstOrNull()?.click()
-        // The week header (with "deal again") only renders once the plan exists.
-        awaitText(scenario, "deal again")
+        awaitText(scenario, "Deal a week of meals", timeoutMs = 10_000)
+        device().findObjects(By.text("Deal a week of meals")).firstOrNull()?.click()
+        // The week header (with "Deal again") only renders once the plan exists.
+        awaitText(scenario, "Deal again")
         awaitText(scenario, "Why this plan")
         val elapsedMs = SystemClock.elapsedRealtime() - startedAt
         scenario.onActivity { it.finish() }
@@ -284,7 +284,7 @@ public class M5PlanShopTest {
         runBlocking { planner().swapSlot(target.id, suggestion.id, now) }
 
         device()
-            .findObjects(By.textContains("build list"))
+            .findObjects(By.textContains("Build list"))
             .firstOrNull()
             ?.click()
             ?: error("the build button never rendered")
@@ -482,8 +482,8 @@ public class M5PlanShopTest {
         TestNav.awaitSurface(scenario, "hub")
         deliver(scenario, "wlo://pantry")
         TestNav.awaitRoute(scenario, "f04/pantry")
-        awaitText(scenario, "inventory")
-        awaitText(scenario, "deduction on")
+        awaitText(scenario, "INVENTORY")
+        awaitText(scenario, "deduction is on")
         scenario.onActivity { it.finish() }
         SystemClock.sleep(500)
     }

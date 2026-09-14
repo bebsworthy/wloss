@@ -22,6 +22,7 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.input.KeyboardType
 import app.wlo.core.designsystem.SelectChip
 import app.wlo.core.designsystem.WloCard
+import app.wlo.core.designsystem.WloScreenTitle
 import app.wlo.core.designsystem.WloSpacing
 import app.wlo.core.designsystem.wloExtendedColors
 import app.wlo.core.designsystem.wloType
@@ -58,10 +59,9 @@ public fun RecipeEditScreen(
                 .padding(bottom = WloSpacing.SCREEN),
         verticalArrangement = Arrangement.spacedBy(WloSpacing.SCREEN),
     ) {
-        Text(
-            text = if (recipeId == null) "New recipe" else "Edit recipe",
-            style = wloType.title.copy(fontSize = wloType.title.fontSize * 1.5f),
-            modifier = Modifier.padding(top = WloSpacing.SCREEN).testTag("f03-recipe-edit-title"),
+        WloScreenTitle(
+            title = if (recipeId == null) "New recipe" else "Edit recipe",
+            modifier = Modifier.testTag("f03-recipe-edit-title"),
         )
 
         WloCard {
@@ -80,7 +80,7 @@ public fun RecipeEditScreen(
                 label = { Text("servings the recipe makes", style = wloType.label) },
                 singleLine = true,
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
-                textStyle = wloType.body.copy(fontFeatureSettings = "tnum"),
+                textStyle = wloType.statS,
             )
             Text(
                 text = "suits",
@@ -134,14 +134,14 @@ public fun RecipeEditScreen(
                 textStyle = wloType.body,
             )
             Text(
-                text = "provenance: manual entry · nutrition estimated",
-                style = wloType.receipt,
+                text = "Manual entry — nutrition estimated",
+                style = wloType.caption,
                 color = wloExtendedColors.textTertiary,
             )
         }
 
         PrimaryRow(
-            label = if (recipeId == null) "save to library" else "save as new version",
+            label = if (recipeId == null) "Save to library" else "Save as new version",
             modifier = Modifier.testTag("f03-recipe-save"),
             onClick = {
                 viewModel.onEvent(PlanEvent.SaveRecipe(form))
@@ -149,7 +149,7 @@ public fun RecipeEditScreen(
             },
         )
         PrimaryRow(
-            label = "discard",
+            label = "Discard",
             modifier = Modifier.testTag("f03-recipe-discard"),
             onClick = onDone,
         )
@@ -171,5 +171,5 @@ private fun MacroField(
         label = { Text(label, style = wloType.label) },
         singleLine = true,
         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
-        textStyle = wloType.body.copy(fontFeatureSettings = "tnum"),
+        textStyle = wloType.statS,
     )

@@ -1,27 +1,20 @@
 @file:OptIn(
     androidx.compose.foundation.layout.ExperimentalLayoutApi::class,
-    androidx.compose.material3.ExperimentalMaterial3Api::class,
 )
 
 package app.wlo.feature.f01.onboarding.ui
 
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
-import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Slider
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -31,25 +24,38 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.StrokeJoin
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.graphics.vector.path
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import app.wlo.core.common.LengthUnit
 import app.wlo.core.common.MassUnit
 import app.wlo.core.designsystem.ProvenanceChip
+import app.wlo.core.designsystem.SelectChip
+import app.wlo.core.designsystem.WloBanner
+import app.wlo.core.designsystem.WloBannerTone
+import app.wlo.core.designsystem.WloButton
+import app.wlo.core.designsystem.WloCard
+import app.wlo.core.designsystem.WloCardHeader
 import app.wlo.core.designsystem.WloDeltaChip
 import app.wlo.core.designsystem.WloForecastBands
 import app.wlo.core.designsystem.WloForecastCard
 import app.wlo.core.designsystem.WloHaptic
 import app.wlo.core.designsystem.WloHaptics
+import app.wlo.core.designsystem.WloIconAction
 import app.wlo.core.designsystem.WloMacroDot
 import app.wlo.core.designsystem.WloScheduleBarChart
-import app.wlo.core.designsystem.WloShape
+import app.wlo.core.designsystem.WloSecondaryButton
+import app.wlo.core.designsystem.WloSheet
 import app.wlo.core.designsystem.WloSpacing
 import app.wlo.core.designsystem.WloStat
 import app.wlo.core.designsystem.WloStatDivider
 import app.wlo.core.designsystem.WloStatRow
+import app.wlo.core.designsystem.WloTag
 import app.wlo.core.designsystem.WloTemplateCard
 import app.wlo.core.designsystem.formatDay
 import app.wlo.core.designsystem.wloExtendedColors
@@ -79,15 +85,12 @@ import kotlin.math.roundToInt
 internal fun WelcomeStep(state: OnboardingUiState) {
     var showImportNote by rememberSaveable { mutableStateOf(false) }
     Column(verticalArrangement = Arrangement.spacedBy(WloSpacing.CARD)) {
-        Text(
-            text = "WLO.",
-            style = wloType.hero.copy(fontSize = wloType.hero.fontSize * 0.72f),
-        )
+        Text(text = "WLO.", style = wloType.statL)
         Text(
             text =
                 "Set a goal and watch an honest forecast bloom around it — " +
                     "a plan you own, versioned like a document.",
-            style = wloType.title.copy(fontSize = 19.sp),
+            style = wloType.titleL,
         )
         Text(
             text = "No account, no server, no ads — every number is computed and kept on this device.",
@@ -98,12 +101,12 @@ internal fun WelcomeStep(state: OnboardingUiState) {
             horizontalArrangement = Arrangement.spacedBy(WloSpacing.TIGHT),
             verticalArrangement = Arrangement.spacedBy(WloSpacing.TIGHT),
         ) {
-            listOf("no email", "no sign-up", "airplane-mode safe", "free forever · GPLv3").forEach { chip ->
-                WloSmallChip(text = chip)
+            listOf("Free, no account", "Airplane-mode safe", "Open source").forEach { chip ->
+                WloTag(text = chip)
             }
         }
 
-        WloGhostButton(
+        WloSecondaryButton(
             label = "I'm coming from another app",
             modifier = Modifier.testTag("onboarding-import"),
             onClick = { showImportNote = !showImportNote },
@@ -113,17 +116,12 @@ internal fun WelcomeStep(state: OnboardingUiState) {
                 text =
                     "History import travels with the data vault — start now, " +
                         "bring it in any time. Nothing waits on it.",
-                style = wloType.body.copy(fontSize = wloType.receipt.fontSize),
+                style = wloType.caption,
                 color = wloExtendedColors.textTertiary,
             )
         }
 
-        WloCard {
-            Text(
-                text = "The next 7 steps",
-                style = wloType.title.copy(fontSize = wloType.title.fontSize * 0.94f),
-            )
-            Spacer(Modifier.height(WloSpacing.TIGHT))
+        WloCard(header = { WloCardHeader(title = "The next 7 steps") }) {
             StepHintRow("Goal & pace", "two numbers · one slider")
             StepHintRow("Forecast", "three bands · an honest range")
             StepHintRow("Diet template", "${state.templates.size} cards · one pick")
@@ -131,8 +129,8 @@ internal fun WelcomeStep(state: OnboardingUiState) {
             StepHintRow("Schedule · review", "both optional, both yours")
         }
         Text(
-            text = "takes about 3 minutes · every step skippable — “later”, never “incomplete”",
-            style = wloType.receipt,
+            text = "Takes about 3 minutes · every step skippable",
+            style = wloType.caption,
             color = wloExtendedColors.textTertiary,
         )
     }
@@ -146,35 +144,48 @@ internal fun GoalStep(
 ) {
     val unit = MassUnit.DEFAULT.symbol
     Column(verticalArrangement = Arrangement.spacedBy(WloSpacing.SCREEN)) {
-        WloCard {
-            Text(text = "About you", style = wloType.title)
-            Spacer(Modifier.height(WloSpacing.CARD))
+        WloCard(header = { WloCardHeader(title = "About you") }) {
             FlowRow(
                 horizontalArrangement = Arrangement.spacedBy(WloSpacing.TIGHT),
                 verticalArrangement = Arrangement.spacedBy(WloSpacing.TIGHT),
             ) {
-                WloToggleChip(
+                SelectChip(
                     label = "female",
                     selected = state.sex == Sex.FEMALE,
-                    testTag = "onboarding-sex-female",
-                ) { viewModel.onEvent(OnboardingEvent.SetSex(if (state.sex == Sex.FEMALE) null else Sex.FEMALE)) }
-                WloToggleChip(
+                    modifier = Modifier.testTag("onboarding-sex-female"),
+                    onClick = {
+                        viewModel.onEvent(
+                            OnboardingEvent.SetSex(if (state.sex == Sex.FEMALE) null else Sex.FEMALE),
+                        )
+                    },
+                )
+                SelectChip(
                     label = "male",
                     selected = state.sex == Sex.MALE,
-                    testTag = "onboarding-sex-male",
-                ) { viewModel.onEvent(OnboardingEvent.SetSex(if (state.sex == Sex.MALE) null else Sex.MALE)) }
-                WloToggleChip(
+                    modifier = Modifier.testTag("onboarding-sex-male"),
+                    onClick = {
+                        viewModel.onEvent(
+                            OnboardingEvent.SetSex(if (state.sex == Sex.MALE) null else Sex.MALE),
+                        )
+                    },
+                )
+                SelectChip(
                     label = "other",
                     selected = state.sex == Sex.OTHER,
-                    testTag = "onboarding-sex-other",
-                ) { viewModel.onEvent(OnboardingEvent.SetSex(if (state.sex == Sex.OTHER) null else Sex.OTHER)) }
-                WloToggleChip(
+                    modifier = Modifier.testTag("onboarding-sex-other"),
+                    onClick = {
+                        viewModel.onEvent(
+                            OnboardingEvent.SetSex(if (state.sex == Sex.OTHER) null else Sex.OTHER),
+                        )
+                    },
+                )
+                SelectChip(
                     label = "not shared",
                     selected = state.sex == null,
-                    testTag = "onboarding-sex-unset",
-                ) { viewModel.onEvent(OnboardingEvent.SetSex(null)) }
+                    modifier = Modifier.testTag("onboarding-sex-unset"),
+                    onClick = { viewModel.onEvent(OnboardingEvent.SetSex(null)) },
+                )
             }
-            Spacer(Modifier.height(WloSpacing.CARD))
             StepperRow(
                 label = "born in",
                 value = state.birthYear.toString(),
@@ -189,25 +200,23 @@ internal fun GoalStep(
                 onMinus = { viewModel.onEvent(OnboardingEvent.SetHeightCm(state.heightCm - 1.0)) },
                 onPlus = { viewModel.onEvent(OnboardingEvent.SetHeightCm(state.heightCm + 1.0)) },
             )
-            Spacer(Modifier.height(WloSpacing.CARD))
-            Text(text = "a normal day moves…", style = wloType.label, color = wloExtendedColors.textTertiary)
+            Text(text = "A normal day moves…", style = wloType.label, color = wloExtendedColors.textTertiary)
             FlowRow(
                 horizontalArrangement = Arrangement.spacedBy(WloSpacing.TIGHT),
                 verticalArrangement = Arrangement.spacedBy(WloSpacing.TIGHT),
             ) {
                 ActivityChoice.entries.forEach { choice ->
-                    WloToggleChip(
+                    SelectChip(
                         label = choice.label,
                         selected = state.activityLevel.wireName == choice.wire,
-                        testTag = "onboarding-activity-${choice.wire}",
-                    ) { viewModel.onEvent(OnboardingEvent.SetActivity(choice.level)) }
+                        modifier = Modifier.testTag("onboarding-activity-${choice.wire}"),
+                        onClick = { viewModel.onEvent(OnboardingEvent.SetActivity(choice.level)) },
+                    )
                 }
             }
         }
 
-        WloCard {
-            Text(text = "Goal", style = wloType.title)
-            Spacer(Modifier.height(WloSpacing.CARD))
+        WloCard(header = { WloCardHeader(title = "Goal") }) {
             StepperRow(
                 label = "current weight",
                 value = "${state.currentWeightKg} $unit",
@@ -222,7 +231,6 @@ internal fun GoalStep(
                 onMinus = { viewModel.onEvent(OnboardingEvent.SetGoalWeightKg(state.goalWeightKg - 0.5)) },
                 onPlus = { viewModel.onEvent(OnboardingEvent.SetGoalWeightKg(state.goalWeightKg + 0.5)) },
             )
-            Spacer(Modifier.height(WloSpacing.TIGHT))
             WloDeltaChip(
                 value =
                     DerivedValue(
@@ -233,13 +241,11 @@ internal fun GoalStep(
                         ),
                     ),
                 format = { MassUnit.DEFAULT.format(it) },
-                context = "goal distance",
+                context = "to goal",
             )
         }
 
-        WloCard {
-            Text(text = "Pace", style = wloType.title)
-            Spacer(Modifier.height(WloSpacing.TIGHT))
+        WloCard(header = { WloCardHeader(title = "Pace") }) {
             if (state.paceWallPctPerWeek > 0.0) {
                 Slider(
                     value = state.pacePctPerWeek.toFloat(),
@@ -259,7 +265,7 @@ internal fun GoalStep(
                     modifier = Modifier.testTag("onboarding-pace-slider"),
                 )
                 WloStatRow(
-                    label = "pace",
+                    label = "rate",
                     value =
                         DerivedValue(
                             state.pacePctPerWeek,
@@ -287,17 +293,17 @@ internal fun GoalStep(
                 }
             } else {
                 Text(
-                    text = "At these stats the plan stays at maintenance — the floor comes first.",
-                    style = wloType.body.copy(fontSize = wloType.receipt.fontSize),
+                    text = "At these stats the plan stays at maintenance.",
+                    style = wloType.caption,
                     color = wloExtendedColors.textTertiary,
                 )
             }
             if (state.paceAtWall && state.paceWallPctPerWeek > 0.0) {
-                Spacer(Modifier.height(WloSpacing.TIGHT))
-                WloWallCard(
+                WloBanner(
                     text =
                         "The wall — the fastest we'll suggest at your stats. " +
                             "The plan uses a sustainable pace; dates stay an estimate, not a promise.",
+                    tone = WloBannerTone.Warning,
                 )
             }
         }
@@ -311,9 +317,7 @@ internal fun ForecastStep(
 ) {
     val forecast = state.forecast
     if (forecast == null) {
-        WloCard {
-            Text(text = "Forecast", style = wloType.title)
-            Spacer(Modifier.height(WloSpacing.TIGHT))
+        WloCard(header = { WloCardHeader(title = "Forecast") }) {
             Text(
                 text =
                     "This plan starts at maintenance — set a target below your " +
@@ -339,9 +343,7 @@ internal fun ForecastStep(
         )
         val rates = forecast.expected.weeklyRatesKg
         if (rates.size >= 2) {
-            WloCard {
-                Text(text = "Why the curve bends", style = wloType.title)
-                Spacer(Modifier.height(WloSpacing.TIGHT))
+            WloCard(header = { WloCardHeader(title = "Why the curve bends") }) {
                 WloStatRow(
                     label = "start of the path",
                     value =
@@ -367,10 +369,9 @@ internal fun ForecastStep(
                         ),
                     format = ::formatKgPerWeek,
                 )
-                Spacer(Modifier.height(WloSpacing.TIGHT))
                 Text(
-                    text = "deceleration is modeled, not drawn — the last kilos honestly take longer",
-                    style = wloType.receipt,
+                    text = "The last kilos take longer — that's expected, not failure.",
+                    style = wloType.caption,
                     color = wloExtendedColors.textTertiary,
                 )
             }
@@ -400,8 +401,8 @@ internal fun TemplateStep(
             )
         }
         Text(
-            text = "every template is plain data — editable in the plan studio, forever",
-            style = wloType.receipt,
+            text = "Templates are a starting point — edit everything.",
+            style = wloType.caption,
             color = wloExtendedColors.textTertiary,
         )
     }
@@ -415,30 +416,25 @@ internal fun AdaptStep(
 ) {
     var text by rememberSaveable { mutableStateOf("") }
     Column(verticalArrangement = Arrangement.spacedBy(WloSpacing.CARD)) {
-        WloCard {
-            Text(text = "Adjust in plain words", style = wloType.title)
-            Spacer(Modifier.height(WloSpacing.TIGHT))
+        WloCard(header = { WloCardHeader(title = "Adjust in plain words") }) {
             Text(
                 text = "Say what should change — what we can map lands in the plan; the rest is held, never guessed.",
-                style = wloType.body.copy(fontSize = wloType.receipt.fontSize),
+                style = wloType.caption,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
-            Spacer(Modifier.height(WloSpacing.CARD))
             FlowRow(
                 horizontalArrangement = Arrangement.spacedBy(WloSpacing.TIGHT),
                 verticalArrangement = Arrangement.spacedBy(WloSpacing.TIGHT),
             ) {
                 listOf("~120 g protein", "no cooking wednesday", "household of 4").forEach { suggestion ->
-                    WloToggleChip(
+                    SelectChip(
                         label = suggestion,
                         selected = false,
-                        testTag = "onboarding-suggestion",
-                    ) {
-                        viewModel.onEvent(OnboardingEvent.AddConstraint(suggestion))
-                    }
+                        modifier = Modifier.testTag("onboarding-suggestion"),
+                        onClick = { viewModel.onEvent(OnboardingEvent.AddConstraint(suggestion)) },
+                    )
                 }
             }
-            Spacer(Modifier.height(WloSpacing.CARD))
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(WloSpacing.TIGHT),
@@ -457,10 +453,10 @@ internal fun AdaptStep(
                         )
                     },
                 )
-                WloPrimaryButton(
+                WloButton(
                     label = "Add",
                     enabled = text.isNotBlank(),
-                    modifier = Modifier.testTag("onboarding-constraint-add").width(96.dp),
+                    modifier = Modifier.testTag("onboarding-constraint-add"),
                     onClick = {
                         haptics.perform(WloHaptic.Tick)
                         viewModel.onEvent(OnboardingEvent.AddConstraint(text))
@@ -471,12 +467,10 @@ internal fun AdaptStep(
         }
 
         if (state.constraints.isNotEmpty()) {
-            WloCard {
-                Text(text = "Constraints", style = wloType.title)
-                Spacer(Modifier.height(WloSpacing.TIGHT))
+            WloCard(header = { WloCardHeader(title = "Constraints") }) {
                 state.constraints.forEachIndexed { index, constraint ->
                     Row(
-                        modifier = Modifier.fillMaxWidth().height(WloSpacing.ROW_INTERACTIVE),
+                        modifier = Modifier.fillMaxWidth().heightIn(min = WloSpacing.ROW_INTERACTIVE),
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
                         Text(
@@ -486,23 +480,22 @@ internal fun AdaptStep(
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis,
                         )
-                        WloGhostButton(
-                            label = "×",
-                            modifier = Modifier.testTag("onboarding-constraint-remove-$index").width(56.dp),
+                        WloIconAction(
+                            imageVector = WizardIcons.Close,
+                            contentDescription = "Remove constraint",
                             onClick = { viewModel.onEvent(OnboardingEvent.RemoveConstraint(index)) },
+                            modifier = Modifier.testTag("onboarding-constraint-remove-$index"),
                         )
                     }
                 }
             }
         }
 
-        WloCard {
-            Text(text = "What landed in the plan", style = wloType.title)
-            Spacer(Modifier.height(WloSpacing.TIGHT))
+        WloCard(header = { WloCardHeader(title = "What landed in the plan") }) {
             if (state.constraints.isEmpty()) {
                 Text(
                     text = "Nothing yet — the template stands as authored.",
-                    style = wloType.body.copy(fontSize = wloType.receipt.fontSize),
+                    style = wloType.caption,
                     color = wloExtendedColors.textTertiary,
                 )
             } else {
@@ -606,9 +599,7 @@ internal fun PreferencesStep(
     haptics: WloHaptics,
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(WloSpacing.SCREEN)) {
-        WloCard {
-            Text(text = "Allergies — hard filters", style = wloType.title)
-            Spacer(Modifier.height(WloSpacing.TIGHT))
+        WloCard(header = { WloCardHeader(title = "Allergies — hard filters") }) {
             ChipGrid(
                 items = ALLERGENS,
                 selected = state.preferences.allergies.toSet(),
@@ -619,9 +610,7 @@ internal fun PreferencesStep(
                 },
             )
         }
-        WloCard {
-            Text(text = "Won't suggest", style = wloType.title)
-            Spacer(Modifier.height(WloSpacing.TIGHT))
+        WloCard(header = { WloCardHeader(title = "Won't suggest") }) {
             ChipGrid(
                 items = DISLIKES,
                 selected = state.preferences.dislikes.toSet(),
@@ -631,34 +620,30 @@ internal fun PreferencesStep(
                     viewModel.onEvent(OnboardingEvent.SetQuizDislike(item, on))
                 },
             )
-            Spacer(Modifier.height(WloSpacing.TIGHT))
             Text(
-                text = "the long list lives in the plan studio — these few tune tonight",
-                style = wloType.receipt,
+                text = "Tune the essentials now.",
+                style = wloType.caption,
                 color = wloExtendedColors.textTertiary,
             )
         }
-        WloCard {
-            Text(text = "Household & kitchen", style = wloType.title)
-            Spacer(Modifier.height(WloSpacing.TIGHT))
-            Text(text = "cooking for", style = wloType.label, color = wloExtendedColors.textTertiary)
-            Spacer(Modifier.height(WloSpacing.TIGHT))
+        WloCard(header = { WloCardHeader(title = "Household & kitchen") }) {
+            Text(text = "Cooking for", style = wloType.label, color = wloExtendedColors.textTertiary)
             FlowRow(
                 horizontalArrangement = Arrangement.spacedBy(WloSpacing.TIGHT),
                 verticalArrangement = Arrangement.spacedBy(WloSpacing.TIGHT),
             ) {
                 for (size in 1..5) {
-                    WloToggleChip(
+                    SelectChip(
                         label = if (size == 5) "5+" else size.toString(),
                         selected = state.preferences.householdSize == size,
-                        testTag = "onboarding-household-$size",
-                    ) {
-                        haptics.perform(WloHaptic.SegmentTick)
-                        viewModel.onEvent(OnboardingEvent.SetHouseholdSize(size))
-                    }
+                        modifier = Modifier.testTag("onboarding-household-$size"),
+                        onClick = {
+                            haptics.perform(WloHaptic.SegmentTick)
+                            viewModel.onEvent(OnboardingEvent.SetHouseholdSize(size))
+                        },
+                    )
                 }
             }
-            Spacer(Modifier.height(WloSpacing.CARD))
             ChoiceGrid(
                 items = COOKING_FREQUENCY,
                 selected = setOf(state.preferences.cookingFrequency),
@@ -668,7 +653,6 @@ internal fun PreferencesStep(
                     viewModel.onEvent(OnboardingEvent.SetCookingFrequency(wire))
                 },
             )
-            Spacer(Modifier.height(WloSpacing.TIGHT))
             ChoiceGrid(
                 items = COOKING_SKILL,
                 selected = setOf(state.preferences.cookingSkill),
@@ -678,7 +662,6 @@ internal fun PreferencesStep(
                     viewModel.onEvent(OnboardingEvent.SetCookingSkill(wire))
                 },
             )
-            Spacer(Modifier.height(WloSpacing.TIGHT))
             ChoiceGrid(
                 items = BUDGET_BAND,
                 selected = setOf(state.preferences.budgetBand),
@@ -702,9 +685,7 @@ internal fun ScheduleStep(
     val schedule = state.schedule ?: List(7) { flat }
     val floor = ConstantsRegistry.floorKcal(state.sex).toDouble()
     Column(verticalArrangement = Arrangement.spacedBy(WloSpacing.CARD)) {
-        WloCard {
-            Text(text = "Week shape", style = wloType.title)
-            Spacer(Modifier.height(WloSpacing.CARD))
+        WloCard(header = { WloCardHeader(title = "Week shape") }) {
             WloScheduleBarChart(
                 scheduleKcal = schedule,
                 flatKcal = flat,
@@ -722,20 +703,17 @@ internal fun ScheduleStep(
                 onDetent = { haptics.perform(WloHaptic.SegmentFrequentTick) },
                 modifier = Modifier.testTag("onboarding-schedule-chart"),
             )
-            Spacer(Modifier.height(WloSpacing.TIGHT))
             Text(
-                text =
-                    "drag a bar — its six siblings compensate, the weekly " +
-                        "total stays pinned: same week, different shape",
-                style = wloType.body.copy(fontSize = wloType.receipt.fontSize),
+                text = "Drag a bar — same week, different shape.",
+                style = wloType.caption,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
         Text(
             text =
-                "optional — flat by default (${formatKcal(flat)} × 7). " +
+                "Optional — flat by default (${formatKcal(flat)} × 7). " +
                     "“Later” keeps it flat; the studio re-shapes it any week.",
-            style = wloType.receipt,
+            style = wloType.caption,
             color = wloExtendedColors.textTertiary,
         )
     }
@@ -745,9 +723,7 @@ internal fun ScheduleStep(
 internal fun ReviewStep(state: OnboardingUiState) {
     val template = state.selectedTemplate
     Column(verticalArrangement = Arrangement.spacedBy(WloSpacing.SCREEN)) {
-        WloCard {
-            Text(text = "Plan v1 preview", style = wloType.title)
-            Spacer(Modifier.height(WloSpacing.TIGHT))
+        WloCard(header = { WloCardHeader(title = "Plan preview") }) {
             WloStatRow(
                 label = "budget",
                 value =
@@ -826,29 +802,23 @@ internal fun ReviewStep(state: OnboardingUiState) {
         }
 
         if (state.milestones.isNotEmpty()) {
-            WloCard {
+            WloCard(header = { WloCardHeader(title = "Milestones") }) {
                 Text(
-                    text = "Milestones",
-                    style = wloType.title,
-                )
-                Text(
-                    text = "ranges, never a single promised date",
-                    style = wloType.receipt,
+                    text = "Ranges, never a single promised date.",
+                    style = wloType.caption,
                     color = wloExtendedColors.textTertiary,
                 )
-                Spacer(Modifier.height(WloSpacing.TIGHT))
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(WloSpacing.CARD),
                 ) {
-                    WloSmallChip(text = "you are here")
+                    WloTag(text = "You are here")
                     Text(
                         text = MassUnit.DEFAULT.format(state.currentWeightKg),
                         style = wloType.receipt,
                         color = wloExtendedColors.textTertiary,
                     )
                 }
-                Spacer(Modifier.height(WloSpacing.TIGHT))
                 state.milestones.forEach { rung ->
                     RungRow(rung)
                 }
@@ -871,14 +841,15 @@ private fun RungRow(rung: Milestones.Rung) {
                 } else {
                     MassUnit.DEFAULT.format(rung.weightKg)
                 },
-            style = if (rung.isGoal) wloType.statS.copy(color = MaterialTheme.colorScheme.primary) else wloType.statS,
+            style = wloType.statS,
+            color = if (rung.isGoal) MaterialTheme.colorScheme.primary else Color.Unspecified,
             modifier = Modifier.weight(1f),
         )
         Text(
             text =
                 rung.rangeEpochDays
                     ?.let { (fast, slow) -> "~ ${formatDay(fast)} – ${formatDay(slow)}" }
-                    ?: "beyond the horizon, for now",
+                    ?: "Beyond the horizon, for now.",
             style = wloType.receipt,
             color = wloExtendedColors.textTertiary,
         )
@@ -886,41 +857,35 @@ private fun RungRow(rung: Milestones.Rung) {
 }
 
 /** The forecast "how we got here" sheet (lean M2): versions + inputs + locality. */
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 internal fun ForecastExplainerSheet(
     state: OnboardingUiState,
     onDismiss: () -> Unit,
 ) {
     val forecast = state.forecast ?: return
-    androidx.compose.material3.ModalBottomSheet(onDismissRequest = onDismiss, shape = WloShape.SheetTop) {
-        Column(
-            modifier = Modifier.padding(horizontal = WloSpacing.SCREEN).padding(bottom = WloSpacing.SCREEN),
-            verticalArrangement = Arrangement.spacedBy(WloSpacing.CARD),
-        ) {
-            Text(text = "How we got here", style = wloType.title)
-            WloStat(
-                label = "estimated burn, today",
-                value = DerivedValue(forecast.tdeeEstimateKcal, forecast.provenance),
-                format = ::formatKcal,
-            )
-            WloCard {
-                ExplainerRow("formula", forecast.modelVersion)
-                ExplainerRow("burn formula", forecast.bmrVersion)
-                ExplainerRow("energy rule", "${ConstantsRegistry.KCAL_PER_KG_FAT.toInt()} kcal per kg")
-                ExplainerRow("start", MassUnit.DEFAULT.format(state.currentWeightKg))
-                ExplainerRow("goal", MassUnit.DEFAULT.format(state.goalWeightKg))
-                ExplainerRow("planned intake", formatKcal(state.budgetKcal ?: DietTemplateApplier.DEFAULT_BUDGET_KCAL))
-                ExplainerRow("a normal day", state.activityLevel.wireName)
-            }
-            Text(
-                text =
-                    "Computed on your device. The bands are wide because we know " +
-                        "nothing about you yet — they sharpen as you log.",
-                style = wloType.body.copy(fontSize = wloType.receipt.fontSize),
-                color = wloExtendedColors.textTertiary,
-            )
+    WloSheet(onDismissRequest = onDismiss) {
+        Text(text = "How we got here", style = wloType.titleL)
+        WloStat(
+            label = "estimated burn, today",
+            value = DerivedValue(forecast.tdeeEstimateKcal, forecast.provenance),
+            format = ::formatKcal,
+        )
+        WloCard {
+            ExplainerRow("formula", forecast.modelVersion)
+            ExplainerRow("burn formula", forecast.bmrVersion)
+            ExplainerRow("energy rule", "${ConstantsRegistry.KCAL_PER_KG_FAT.toInt()} kcal per kg")
+            ExplainerRow("start", MassUnit.DEFAULT.format(state.currentWeightKg))
+            ExplainerRow("goal", MassUnit.DEFAULT.format(state.goalWeightKg))
+            ExplainerRow("planned intake", formatKcal(state.budgetKcal ?: DietTemplateApplier.DEFAULT_BUDGET_KCAL))
+            ExplainerRow("a normal day", state.activityLevel.wireName)
         }
+        Text(
+            text =
+                "Computed on your device. The bands are wide because we know " +
+                    "nothing about you yet — they sharpen as you log.",
+            style = wloType.caption,
+            color = wloExtendedColors.textTertiary,
+        )
     }
 }
 
@@ -935,7 +900,7 @@ private fun ExplainerRow(
     ) {
         Text(
             text = label,
-            style = wloType.body.copy(fontSize = wloType.receipt.fontSize),
+            style = wloType.caption,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.weight(1f),
         )
@@ -943,52 +908,74 @@ private fun ExplainerRow(
     }
 }
 
-// --- shared atoms (wizard-local) -------------------------------------------
+// --- wizard glyphs ----------------------------------------------------------
+// Hand-built marks, the WloIcons idiom from :core:designsystem (no icon-font
+// dependency): painted black so Icon(tint) recolors them. f01 needs only the
+// stepper and remove marks, which WloIcons does not carry yet.
 
-@Composable
-internal fun WloCard(content: @Composable () -> Unit) {
-    Surface(
-        modifier = Modifier.fillMaxWidth(),
-        shape = WloShape.Card,
-        color = MaterialTheme.colorScheme.surface,
-        contentColor = MaterialTheme.colorScheme.onSurface,
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
-    ) {
-        Column(Modifier.padding(WloSpacing.PAD_CARD)) { content() }
-    }
-}
+private object WizardIcons {
+    /** Paint source for all glyph paths; `Icon(tint = ...)` recolors at render. */
+    private val Black: SolidColor = SolidColor(Color.Black)
 
-@Composable
-private fun WloWallCard(text: String) {
-    Surface(
-        modifier = Modifier.fillMaxWidth(),
-        shape = WloShape.Chip,
-        color = wloExtendedColors.held.copy(alpha = 0.10f),
-        contentColor = MaterialTheme.colorScheme.onSurface,
-        border = BorderStroke(1.dp, wloExtendedColors.held.copy(alpha = 0.45f)),
-    ) {
-        Text(
-            text = text,
-            style = wloType.body.copy(fontSize = wloType.receipt.fontSize),
-            modifier = Modifier.padding(horizontal = WloSpacing.CARD, vertical = WloSpacing.TIGHT),
-        )
-    }
-}
+    /** Stepper decrease. */
+    val Minus: ImageVector =
+        mark("WloMinus") {
+            path(
+                stroke = Black,
+                strokeLineWidth = 2f,
+                strokeLineCap = StrokeCap.Round,
+                strokeLineJoin = StrokeJoin.Round,
+            ) {
+                moveTo(5f, 12f)
+                lineTo(19f, 12f)
+            }
+        }
 
-@Composable
-internal fun WloSmallChip(text: String) {
-    Surface(
-        shape = WloShape.Chip,
-        color = MaterialTheme.colorScheme.surfaceVariant,
-        contentColor = MaterialTheme.colorScheme.onSurfaceVariant,
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
-    ) {
-        Text(
-            text = text,
-            style = wloType.label,
-            modifier = Modifier.padding(horizontal = 7.dp, vertical = 3.dp),
-        )
-    }
+    /** Stepper increase. */
+    val Plus: ImageVector =
+        mark("WloPlus") {
+            path(
+                stroke = Black,
+                strokeLineWidth = 2f,
+                strokeLineCap = StrokeCap.Round,
+                strokeLineJoin = StrokeJoin.Round,
+            ) {
+                moveTo(12f, 5f)
+                lineTo(12f, 19f)
+                moveTo(5f, 12f)
+                lineTo(19f, 12f)
+            }
+        }
+
+    /** Remove a constraint. */
+    val Close: ImageVector =
+        mark("WloClose") {
+            path(
+                stroke = Black,
+                strokeLineWidth = 2f,
+                strokeLineCap = StrokeCap.Round,
+                strokeLineJoin = StrokeJoin.Round,
+            ) {
+                moveTo(6f, 6f)
+                lineTo(18f, 18f)
+                moveTo(18f, 6f)
+                lineTo(6f, 18f)
+            }
+        }
+
+    private inline fun mark(
+        name: String,
+        builder: ImageVector.Builder.() -> ImageVector.Builder,
+    ): ImageVector =
+        ImageVector
+            .Builder(
+                name = name,
+                defaultWidth = 24.dp,
+                defaultHeight = 24.dp,
+                viewportWidth = 24f,
+                viewportHeight = 24f,
+            ).builder()
+            .build()
 }
 
 @OptIn(ExperimentalLayoutApi::class)
@@ -1004,11 +991,12 @@ private fun ChoiceGrid(
         verticalArrangement = Arrangement.spacedBy(WloSpacing.TIGHT),
     ) {
         items.forEach { choice ->
-            WloToggleChip(
+            SelectChip(
                 label = choice.label,
                 selected = choice.wire in selected,
-                testTag = "$tagPrefix-${choice.wire}",
-            ) { onToggle(choice.wire) }
+                modifier = Modifier.testTag("$tagPrefix-${choice.wire}"),
+                onClick = { onToggle(choice.wire) },
+            )
         }
     }
 }
@@ -1026,43 +1014,13 @@ private fun ChipGrid(
         verticalArrangement = Arrangement.spacedBy(WloSpacing.TIGHT),
     ) {
         items.forEach { item ->
-            WloToggleChip(
+            SelectChip(
                 label = item,
                 selected = item in selected,
-                testTag = "$tagPrefix-$item",
-            ) { onToggle(item, item !in selected) }
+                modifier = Modifier.testTag("$tagPrefix-$item"),
+                onClick = { onToggle(item, item !in selected) },
+            )
         }
-    }
-}
-
-@Composable
-internal fun WloToggleChip(
-    label: String,
-    selected: Boolean,
-    testTag: String,
-    onClick: () -> Unit,
-) {
-    Surface(
-        onClick = onClick,
-        shape = WloShape.Chip,
-        color = if (selected) MaterialTheme.colorScheme.primary.copy(alpha = 0.16f) else Color.Transparent,
-        contentColor = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
-        border =
-            BorderStroke(
-                1.dp,
-                if (selected) {
-                    MaterialTheme.colorScheme.primary.copy(alpha = 0.6f)
-                } else {
-                    MaterialTheme.colorScheme.outline
-                },
-            ),
-        modifier = Modifier.testTag(testTag),
-    ) {
-        Text(
-            text = label,
-            style = wloType.label,
-            modifier = Modifier.padding(horizontal = 10.dp, vertical = 7.dp),
-        )
     }
 }
 
@@ -1075,39 +1033,29 @@ private fun StepperRow(
     onPlus: () -> Unit,
 ) {
     Row(
-        modifier = Modifier.fillMaxWidth().height(WloSpacing.ROW_INTERACTIVE),
+        modifier = Modifier.fillMaxWidth().heightIn(min = WloSpacing.ROW_INTERACTIVE),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(WloSpacing.CARD),
     ) {
         Text(
             text = label,
-            style = wloType.body.copy(fontSize = wloType.receipt.fontSize),
+            style = wloType.caption,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.weight(1f),
         )
         Text(text = value, style = wloType.statS, modifier = Modifier.testTag("onboarding-$testTag"))
-        StepperButton("−", "onboarding-$testTag-minus", onMinus)
-        StepperButton("+", "onboarding-$testTag-plus", onPlus)
-    }
-}
-
-@Composable
-private fun StepperButton(
-    glyph: String,
-    testTag: String,
-    onClick: () -> Unit,
-) {
-    Surface(
-        onClick = onClick,
-        shape = WloShape.Chip,
-        color = MaterialTheme.colorScheme.surfaceVariant,
-        contentColor = MaterialTheme.colorScheme.onSurface,
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
-        modifier = Modifier.size(WloSpacing.ROW_MIN).testTag(testTag),
-    ) {
-        Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
-            Text(text = glyph, style = wloType.statS)
-        }
+        WloIconAction(
+            imageVector = WizardIcons.Minus,
+            contentDescription = "Decrease",
+            onClick = onMinus,
+            modifier = Modifier.testTag("onboarding-$testTag-minus"),
+        )
+        WloIconAction(
+            imageVector = WizardIcons.Plus,
+            contentDescription = "Increase",
+            onClick = onPlus,
+            modifier = Modifier.testTag("onboarding-$testTag-plus"),
+        )
     }
 }
 
@@ -1122,11 +1070,11 @@ private fun StepHintRow(
     ) {
         Text(
             text = label,
-            style = wloType.body.copy(fontSize = wloType.receipt.fontSize),
+            style = wloType.caption,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.weight(1f),
         )
-        Text(text = value, style = wloType.receipt, color = wloExtendedColors.textTertiary)
+        Text(text = value, style = wloType.caption, color = wloExtendedColors.textTertiary)
     }
 }
 

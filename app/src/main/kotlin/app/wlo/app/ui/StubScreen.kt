@@ -9,6 +9,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
+import app.wlo.core.designsystem.WloScreenTitle
 import app.wlo.core.designsystem.WloSpacing
 import app.wlo.core.designsystem.wloExtendedColors
 import app.wlo.core.designsystem.wloType
@@ -30,13 +31,9 @@ public fun StubScreen(
                 .padding(horizontal = WloSpacing.SCREEN),
         verticalArrangement = Arrangement.spacedBy(WloSpacing.CARD),
     ) {
-        Text(
-            text = title,
-            style = wloType.title.copy(fontSize = wloType.title.fontSize * 1.5f),
-            modifier =
-                Modifier
-                    .padding(top = WloSpacing.SCREEN)
-                    .testTag("title-stub"),
+        WloScreenTitle(
+            title = title,
+            modifier = Modifier.testTag("title-stub"),
         )
         Text(
             text = "This surface lands in a later milestone — the link already routes here.",
@@ -45,7 +42,7 @@ public fun StubScreen(
         )
         Text(
             text = "Everything logged so far stays on this device and feeds it when it arrives.",
-            style = wloType.body.copy(fontSize = wloType.receipt.fontSize),
+            style = wloType.caption,
             color = wloExtendedColors.textTertiary,
         )
     }

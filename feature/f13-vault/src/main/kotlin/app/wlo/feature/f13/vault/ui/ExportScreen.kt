@@ -2,28 +2,28 @@ package app.wlo.feature.f13.vault.ui
 
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
-import androidx.compose.ui.text.font.FontFamily
-import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import app.wlo.core.designsystem.WloShape
+import app.wlo.core.designsystem.WloBadge
+import app.wlo.core.designsystem.WloBadgeTone
+import app.wlo.core.designsystem.WloButton
+import app.wlo.core.designsystem.WloCard
+import app.wlo.core.designsystem.WloCardAccent
+import app.wlo.core.designsystem.WloCardHeader
+import app.wlo.core.designsystem.WloScreenTitle
 import app.wlo.core.designsystem.WloSpacing
 import app.wlo.core.designsystem.wloExtendedColors
 import app.wlo.core.designsystem.wloType
@@ -65,11 +65,7 @@ public fun ExportScreen(
                 .testTag("f13-export"),
         verticalArrangement = Arrangement.spacedBy(WloSpacing.CARD),
     ) {
-        Text(
-            text = "Export",
-            style = wloType.title.copy(fontSize = wloType.title.fontSize * 1.5f),
-            modifier = Modifier.padding(top = WloSpacing.SCREEN).testTag("f13-export-title"),
-        )
+        WloScreenTitle(title = "Export", modifier = Modifier.testTag("f13-export-title"))
         Text(
             text =
                 "Formats that outlive the app: both are documented in the repo so third-party tooling " +
@@ -97,7 +93,7 @@ public fun ExportScreen(
                         "One RFC-4180 grid, one row per event: ${it.dataRows} data rows, " +
                             "built-in columns plus any custom metrics."
                     if (it.warnings.isNotEmpty()) {
-                        base + " ${it.warnings.size} event(s) skipped — see the receipt lines."
+                        base + " ${it.warnings.size} rows skipped — the report lists each one."
                     } else {
                         base
                     }
@@ -105,46 +101,39 @@ public fun ExportScreen(
             onClick = { viewModel.pickFormat(ExportUiState.FORMAT_CSV) },
         )
 
-        Surface(
-            shape = WloShape.Card,
-            color = wloExtendedColors.surfaceSunken,
-            modifier = Modifier.fillMaxWidth().testTag("f13-export-notes"),
-        ) {
-            Column(
-                Modifier.padding(WloSpacing.PAD_CARD),
-                verticalArrangement = Arrangement.spacedBy(WloSpacing.TIGHT),
-            ) {
-                Text(
-                    "✓ Secrets are blanked — BYOK keys live in the keystore, never in an export.",
-                    style = wloType.receipt,
-                )
-                Text(
-                    "✓ Plaintext is your explicit choice here — backups (.wlo) stay passphrase-encrypted.",
-                    style = wloType.receipt,
-                )
-                Text(
-                    "✓ Photo attachments are excluded from bundles (opt-in per bundle, later).",
-                    style = wloType.receipt,
-                )
-            }
+        WloCard(modifier = Modifier.fillMaxWidth().testTag("f13-export-notes")) {
+            Text(
+                "API keys stay in the keystore — they never enter an export.",
+                style = wloType.caption,
+                color = wloExtendedColors.textTertiary,
+            )
+            Text(
+                "Plaintext is your explicit choice here — backups (.wlo) stay passphrase-encrypted.",
+                style = wloType.caption,
+                color = wloExtendedColors.textTertiary,
+            )
+            Text(
+                "Photo attachments are not part of bundles.",
+                style = wloType.caption,
+                color = wloExtendedColors.textTertiary,
+            )
         }
 
-        Button(
+        WloButton(
+            label = "Choose destination & export",
             onClick = {
                 val suggestion =
                     if (state.format == ExportUiState.FORMAT_CSV) "wlo_metrics.csv" else "wlo_export.json"
                 createDocument.launch(suggestion)
             },
-            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
             modifier = Modifier.testTag("f13-export-write"),
-        ) { Text("Choose destination & export", style = wloType.label) }
+        )
 
         state.lastFileName?.let {
             Text(
-                text = "✓ wrote $it (${formatBytes(state.lastSizeBytes)})",
-                style = wloType.statS,
+                text = "Wrote $it (${formatBytes(state.lastSizeBytes)})",
+                style = wloType.receipt,
                 color = MaterialTheme.colorScheme.primary,
-                fontFamily = FontFamily.Monospace,
                 modifier = Modifier.testTag("f13-export-outcome"),
             )
         }
@@ -157,12 +146,9 @@ public fun ExportScreen(
             )
         }
         HorizontalDivider()
-        Button(
-            onClick = onDone,
-            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
-        ) { Text("Done", style = wloType.label) }
+        WloButton(label = "Done", onClick = onDone)
         Text(
-            text = "Exports ride the SAF picker: the file goes straight where you send it — WLO keeps no copy.",
+            text = "You pick the folder — the file is written there. WLO keeps no copy.",
             style = wloType.receipt,
             color = wloExtendedColors.textTertiary,
             modifier = Modifier.padding(bottom = WloSpacing.SCREEN),
@@ -170,6 +156,11 @@ public fun ExportScreen(
     }
 }
 
+/**
+ * One exclusive format choice: a clickable [WloCard], the primary hairline +
+ * a "Selected" badge carrying the radio state (the old text-glyph ● / ○
+ * radio is gone — state is words and the card accent, never glyphs).
+ */
 @Composable
 private fun FormatCard(
     tag: String,
@@ -178,20 +169,22 @@ private fun FormatCard(
     body: String,
     onClick: () -> Unit,
 ) {
-    Surface(
-        shape = WloShape.Card,
-        color = MaterialTheme.colorScheme.surface,
-        border =
-            BorderStroke(
-                1.dp,
-                if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline,
-            ),
-        modifier = Modifier.fillMaxWidth().testTag(tag),
+    WloCard(
         onClick = onClick,
+        accent = if (selected) WloCardAccent.Primary else WloCardAccent.None,
+        header = {
+            WloCardHeader(
+                title = title,
+                provenance =
+                    if (selected) {
+                        { WloBadge(text = "Selected", tone = WloBadgeTone.Accent) }
+                    } else {
+                        null
+                    },
+            )
+        },
+        modifier = Modifier.fillMaxWidth().testTag(tag),
     ) {
-        Column(Modifier.padding(WloSpacing.PAD_CARD), verticalArrangement = Arrangement.spacedBy(WloSpacing.TIGHT)) {
-            Text(text = if (selected) "● $title" else "○ $title", style = wloType.title)
-            Text(text = body, style = wloType.body, color = MaterialTheme.colorScheme.onSurfaceVariant)
-        }
+        Text(text = body, style = wloType.body, color = MaterialTheme.colorScheme.onSurfaceVariant)
     }
 }

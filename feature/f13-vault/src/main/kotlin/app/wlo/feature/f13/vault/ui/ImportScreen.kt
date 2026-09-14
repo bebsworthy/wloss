@@ -2,7 +2,6 @@ package app.wlo.feature.f13.vault.ui
 
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -10,23 +9,25 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
-import androidx.compose.ui.text.font.FontFamily
-import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import app.wlo.core.designsystem.SelectChip
-import app.wlo.core.designsystem.WloShape
+import app.wlo.core.designsystem.WloBadge
+import app.wlo.core.designsystem.WloBadgeTone
+import app.wlo.core.designsystem.WloButton
+import app.wlo.core.designsystem.WloCard
+import app.wlo.core.designsystem.WloCardAccent
+import app.wlo.core.designsystem.WloCardHeader
+import app.wlo.core.designsystem.WloProgress
+import app.wlo.core.designsystem.WloScreenTitle
+import app.wlo.core.designsystem.WloSecondaryButton
 import app.wlo.core.designsystem.WloSpacing
 import app.wlo.core.designsystem.wloExtendedColors
 import app.wlo.core.designsystem.wloType
@@ -74,11 +75,7 @@ public fun ImportScreen(
                 .testTag("f13-import"),
         verticalArrangement = Arrangement.spacedBy(WloSpacing.CARD),
     ) {
-        Text(
-            text = "Import",
-            style = wloType.title.copy(fontSize = wloType.title.fontSize * 1.5f),
-            modifier = Modifier.padding(top = WloSpacing.SCREEN).testTag("f13-import-title"),
-        )
+        WloScreenTitle(title = "Import", modifier = Modifier.testTag("f13-import-title"))
         Text(
             text =
                 "Bring data in from a WLO export bundle or any CSV. Everything lands in a staging " +
@@ -89,25 +86,27 @@ public fun ImportScreen(
 
         when (state.step) {
             ImportUiState.Step.Pick -> {
-                Button(
+                WloButton(
+                    label = "Choose a file",
                     onClick = {
                         filePicker.launch(
                             arrayOf("application/json", "text/csv", "text/comma-separated-values", "text/plain", "*/*"),
                         )
                     },
-                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
                     modifier = Modifier.testTag("f13-import-pick"),
-                ) { Text("Choose a file", style = wloType.label) }
+                )
             }
 
             ImportUiState.Step.Mapping ->
                 Column(verticalArrangement = Arrangement.spacedBy(WloSpacing.CARD)) {
                     Text(
-                        text =
-                            "File: ${state.fileName} · ${state.csvPreview?.rowCount ?: 0} data rows · " +
-                                "map each column (memory remembers your mapping next time)",
+                        text = "File: ${state.fileName} · ${state.csvPreview?.rowCount ?: 0} data rows",
                         style = wloType.receipt,
-                        fontFamily = FontFamily.Monospace,
+                    )
+                    Text(
+                        text = "Map each column — your column mapping is remembered for next time.",
+                        style = wloType.caption,
+                        color = wloExtendedColors.textTertiary,
                     )
                     state.mapping.forEach { row ->
                         MappingRowEditor(
@@ -128,139 +127,116 @@ public fun ImportScreen(
                             },
                         )
                     }
-                    Button(
+                    WloButton(
+                        label = "Validate rows",
                         onClick = viewModel::stage,
                         enabled = state.mapping.any { it.targetKind != null },
-                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
                         modifier = Modifier.testTag("f13-import-stage"),
-                    ) { Text("Validate rows", style = wloType.label) }
+                    )
                 }
 
             ImportUiState.Step.Report -> {
                 val staged = state.staged
-                Surface(
-                    shape = WloShape.Card,
-                    color = MaterialTheme.colorScheme.surface,
-                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary),
+                WloCard(
+                    accent = WloCardAccent.Primary,
                     modifier = Modifier.fillMaxWidth().testTag("f13-import-report"),
                 ) {
-                    Column(
-                        Modifier.padding(WloSpacing.PAD_CARD),
-                        verticalArrangement = Arrangement.spacedBy(WloSpacing.TIGHT),
-                    ) {
+                    WloCardHeader(
+                        title = "Nothing applied yet",
+                        provenance = { WloBadge(text = "Staged", tone = WloBadgeTone.Accent) },
+                    )
+                    Text(
+                        text =
+                            "${staged?.stagedRows ?: 0} row(s) parsed and ready" +
+                                (if (state.isBundle) " (bundle import)" else ""),
+                        style = wloType.body,
+                        modifier = Modifier.testTag("f13-import-staged-count"),
+                    )
+                    staged?.warnings?.takeIf { it.isNotEmpty() }?.forEach { warning ->
                         Text(
-                            "Staged ✓ — nothing applied yet",
-                            style = wloType.title,
-                            color = MaterialTheme.colorScheme.primary,
-                        )
-                        Text(
-                            text =
-                                "${staged?.stagedRows ?: 0} row(s) parsed and ready" +
-                                    (if (state.isBundle) " (bundle import)" else ""),
-                            style = wloType.body,
-                            modifier = Modifier.testTag("f13-import-staged-count"),
-                        )
-                        staged?.warnings?.takeIf { it.isNotEmpty() }?.forEach { warning ->
-                            Text(
-                                text = "⚠ $warning",
-                                style = wloType.receipt,
-                                color = MaterialTheme.colorScheme.error,
-                                modifier = Modifier.testTag("f13-import-warning"),
-                            )
-                        }
-                        Text(
-                            text = "Weak rows are skipped with reasons — never guessed, never fatal.",
+                            text = warning,
                             style = wloType.receipt,
-                            color = wloExtendedColors.textTertiary,
+                            color = MaterialTheme.colorScheme.error,
+                            modifier = Modifier.testTag("f13-import-warning"),
                         )
                     }
+                    Text(
+                        text = "Weak rows are skipped with reasons — never guessed, never fatal.",
+                        style = wloType.caption,
+                        color = wloExtendedColors.textTertiary,
+                    )
                 }
                 Row(horizontalArrangement = Arrangement.spacedBy(WloSpacing.TIGHT)) {
-                    OutlinedButton(
+                    WloSecondaryButton(
+                        label = "Back",
                         onClick = viewModel::reset,
                         modifier = Modifier.testTag("f13-import-back"),
-                    ) { Text("Back", style = wloType.label) }
-                    Button(
+                    )
+                    WloButton(
+                        label = "Apply ${state.staged?.stagedRows ?: 0} rows",
                         onClick = viewModel::commit,
-                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
                         modifier = Modifier.testTag("f13-import-commit"),
-                    ) { Text("Apply ${state.staged?.stagedRows ?: 0} rows", style = wloType.label) }
+                    )
                 }
             }
 
             ImportUiState.Step.Applying ->
-                Text(
-                    "Applying…",
-                    style = wloType.body,
+                WloProgress(
+                    progress = null,
+                    label = "Applying…",
                     modifier = Modifier.testTag("f13-import-applying"),
                 )
 
             ImportUiState.Step.Done ->
-                Surface(
-                    shape = WloShape.Card,
-                    color = MaterialTheme.colorScheme.surface,
-                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary),
+                WloCard(
+                    accent = WloCardAccent.Primary,
                     modifier = Modifier.fillMaxWidth().testTag("f13-import-done"),
                 ) {
-                    Column(
-                        Modifier.padding(WloSpacing.PAD_CARD),
-                        verticalArrangement = Arrangement.spacedBy(WloSpacing.TIGHT),
-                    ) {
-                        Text("Imported ✓", style = wloType.title, color = MaterialTheme.colorScheme.primary)
-                        Text(text = "${state.committedRows} row(s) merged into your data.", style = wloType.body)
-                        Button(
-                            onClick = onDone,
-                            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
-                        ) { Text("Done", style = wloType.label) }
-                    }
+                    WloCardHeader(
+                        title = "Import complete",
+                        provenance = { WloBadge(text = "Imported", tone = WloBadgeTone.Accent) },
+                    )
+                    Text(text = "${state.committedRows} row(s) merged into your data.", style = wloType.body)
+                    WloButton(label = "Done", onClick = onDone)
                 }
 
             ImportUiState.Step.Failed ->
-                Surface(
-                    shape = WloShape.Card,
-                    color = MaterialTheme.colorScheme.surface,
-                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.error),
+                WloCard(
+                    accent = WloCardAccent.Warning,
                     modifier = Modifier.fillMaxWidth().testTag("f13-import-failed"),
                 ) {
-                    Column(
-                        Modifier.padding(WloSpacing.PAD_CARD),
-                        verticalArrangement = Arrangement.spacedBy(WloSpacing.TIGHT),
-                    ) {
-                        Text("Import stopped", style = wloType.title, color = MaterialTheme.colorScheme.error)
+                    WloCardHeader(
+                        title = "Import stopped",
+                        provenance = { WloBadge(text = "Failed", tone = WloBadgeTone.Held) },
+                    )
+                    Text(
+                        text = "Nothing was changed. Your data on this device is exactly as it was.",
+                        style = wloType.body,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.testTag("f13-import-untouched"),
+                    )
+                    state.failure?.let {
                         Text(
-                            text = "Nothing was changed. Your data on this device is exactly as it was.",
-                            style = wloType.body,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.testTag("f13-import-untouched"),
+                            text = it,
+                            style = wloType.receipt,
+                            color = wloExtendedColors.textTertiary,
                         )
-                        state.failure?.let {
-                            Text(
-                                text = it,
-                                style = wloType.receipt,
-                                fontFamily = FontFamily.Monospace,
-                                color = wloExtendedColors.textTertiary,
-                            )
-                        }
-                        Row(horizontalArrangement = Arrangement.spacedBy(WloSpacing.TIGHT)) {
-                            OutlinedButton(
-                                onClick = viewModel::reset,
-                                modifier = Modifier.testTag("f13-import-retry"),
-                            ) { Text("Try another file", style = wloType.label) }
-                            OutlinedButton(onClick = onDone) { Text("Done", style = wloType.label) }
-                        }
+                    }
+                    Row(horizontalArrangement = Arrangement.spacedBy(WloSpacing.TIGHT)) {
+                        WloSecondaryButton(
+                            label = "Try another file",
+                            onClick = viewModel::reset,
+                            modifier = Modifier.testTag("f13-import-retry"),
+                        )
+                        WloSecondaryButton(label = "Done", onClick = onDone)
                     }
                 }
         }
 
         HorizontalDivider()
-        Button(
-            onClick = onDone,
-            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
-        ) { Text("Close", style = wloType.label) }
+        WloButton(label = "Close", onClick = onDone)
         Text(
-            text =
-                "Competitor converters (MFP, Lose It!, Paprika, Mealime) land in v1.x — generic " +
-                    "CSV already works today.",
+            text = "CSV imports need one date column — every other column is optional.",
             style = wloType.receipt,
             color = wloExtendedColors.textTertiary,
             modifier = Modifier.padding(bottom = WloSpacing.SCREEN),
@@ -275,7 +251,7 @@ private fun MappingRowEditor(
     onSelect: (String?, String?, String?) -> Unit,
 ) {
     Column(Modifier.fillMaxWidth().padding(vertical = WloSpacing.TIGHT).testTag("f13-map-${row.sourceColumn}")) {
-        Text(text = row.sourceColumn, style = wloType.statS, fontFamily = FontFamily.Monospace)
+        Text(text = row.sourceColumn, style = wloType.statS)
         Row(horizontalArrangement = Arrangement.spacedBy(WloSpacing.TIGHT)) {
             targets.forEach { (kind, label) ->
                 val selected =
@@ -286,7 +262,9 @@ private fun MappingRowEditor(
                     }
                 SelectChip(label = label, selected = selected, onClick = {
                     when (kind) {
-                        "custom" -> onSelect("custom", "unit", row.sourceColumn)
+                        // Custom metrics have no known unit yet — a blank unit
+                        // stores the metric bare (no unit suffix in its name).
+                        "custom" -> onSelect("custom", null, row.sourceColumn)
                         else -> onSelect(kind, kind?.let { defaultUnitFor(it) }, null)
                     }
                 })

@@ -9,6 +9,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
+import app.wlo.core.designsystem.WloScreenTitle
 import app.wlo.core.designsystem.WloSpacing
 import app.wlo.core.designsystem.wloType
 
@@ -29,13 +30,9 @@ public fun PlaceholderScreen(
                 .padding(horizontal = WloSpacing.SCREEN),
         verticalArrangement = Arrangement.spacedBy(WloSpacing.SCREEN),
     ) {
-        Text(
-            text = title,
-            style = wloType.title.copy(fontSize = wloType.title.fontSize * 1.5f),
-            modifier =
-                Modifier
-                    .padding(top = WloSpacing.SCREEN)
-                    .testTag("title-${title.lowercase()}"),
+        WloScreenTitle(
+            title = title,
+            modifier = Modifier.testTag("title-${title.lowercase()}"),
         )
         Text(
             text = body,

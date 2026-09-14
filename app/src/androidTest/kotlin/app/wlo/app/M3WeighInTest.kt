@@ -94,7 +94,7 @@ public class M3WeighInTest {
             .onNodeWithTag("f06-alpha-slider")
             .performSemanticsAction(SemanticsActions.SetProgress) { action -> checkNotNull(action)(ALPHA_MAX.toFloat()) }
         pollTrend(snappyLast)
-        pollText("preview — the saved trend keeps the default smoother", substring = true)
+        pollText("Preview — the saved trend keeps the default smoother", substring = true)
 
         // The method switch: zero-phase differs from the EWMA at older points,
         // so the weekly delta the preview chip shows changes. Both smoothers

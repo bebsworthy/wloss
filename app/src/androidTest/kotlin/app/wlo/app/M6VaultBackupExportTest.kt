@@ -143,12 +143,13 @@ public class M6VaultBackupExportTest {
         val settings = koin().get<SettingsStore>()
         waitUntil { runBlocking { settings.backupFolderUriOnce() != null } }
 
-        // 2. Passphrase (armed auto-backup key rides it).
+        // 2. Passphrase (armed auto-backup key rides it). The state renders as
+        // the header's status pill — sentence case "Set" (never "Not set").
         rule.onNodeWithTag("f13-passphrase-field", useUnmergedTree = true).performTextInput(M6E2eSpec.PASSPHRASE)
         rule.onNodeWithTag("f13-set-passphrase", useUnmergedTree = true).performClick()
         waitUntil {
             rule
-                .onAllNodesWithText("Passphrase: set", substring = true)
+                .onAllNodesWithText("Set")
                 .fetchSemanticsNodes()
                 .isNotEmpty()
         }

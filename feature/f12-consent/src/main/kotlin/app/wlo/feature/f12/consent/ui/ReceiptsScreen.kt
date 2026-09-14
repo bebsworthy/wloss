@@ -1,6 +1,5 @@
 package app.wlo.feature.f12.consent.ui
 
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -9,21 +8,21 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
-import androidx.compose.ui.text.font.FontFamily
-import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import app.wlo.core.designsystem.WloShape
+import app.wlo.core.designsystem.WloBadge
+import app.wlo.core.designsystem.WloBadgeTone
+import app.wlo.core.designsystem.WloButton
+import app.wlo.core.designsystem.WloCard
+import app.wlo.core.designsystem.WloCardAccent
+import app.wlo.core.designsystem.WloScreenTitle
 import app.wlo.core.designsystem.WloSpacing
 import app.wlo.core.designsystem.wloExtendedColors
 import app.wlo.core.designsystem.wloType
@@ -36,9 +35,9 @@ import kotlinx.datetime.toLocalDateTime
 /**
  * The AI receipt log (F12 §3.6) — the user-facing sibling of the debug egress
  * monitor: one ledger line per departure (purpose, host, bytes, time,
- * outcome), a running byte total ("38 KB left your phone this month"), and
- * the "verify chain" action: the hash-chain walk that proves nothing was
- * edited after the fact. Zero receipts is rendered as the GOOD state it is.
+ * outcome), a running total ("N receipts left this device"), and the "verify
+ * chain" action: the hash-chain walk that proves nothing was edited after the
+ * fact. Zero receipts is rendered as the GOOD state it is.
  */
 @Composable
 public fun ReceiptsScreen(viewModel: ReceiptsViewModel) {
@@ -52,11 +51,8 @@ public fun ReceiptsScreen(viewModel: ReceiptsViewModel) {
         verticalArrangement = Arrangement.spacedBy(WloSpacing.TIGHT),
     ) {
         item(key = "header") {
-            Column(Modifier.padding(top = WloSpacing.SCREEN)) {
-                Text(
-                    text = "AI receipts",
-                    style = wloType.title.copy(fontSize = wloType.title.fontSize * 1.5f),
-                )
+            Column {
+                WloScreenTitle(title = "AI receipts")
                 Text(
                     text = "Every byte's paperwork. Summaries only — the payloads themselves never enter this log.",
                     style = wloType.body,
@@ -67,7 +63,7 @@ public fun ReceiptsScreen(viewModel: ReceiptsViewModel) {
         item(key = "totals") {
             Column(Modifier.padding(top = WloSpacing.TIGHT).testTag("f12-receipts-totals")) {
                 Text(
-                    text = "${formatBytes(state.totalBytes)} left this device · ${state.lines.size} receipt(s) shown",
+                    text = "${state.lines.size} receipts left this device",
                     style = wloType.statS,
                 )
                 if (state.countByPurpose.isNotEmpty()) {
@@ -75,10 +71,9 @@ public fun ReceiptsScreen(viewModel: ReceiptsViewModel) {
                         text =
                             state.countByPurpose.entries
                                 .sortedBy { it.key }
-                                .joinToString(" · ") { "${it.key}: ${it.value}" },
+                                .joinToString(" · ") { "${purposeLabel(it.key)}: ${it.value}" },
                         style = wloType.receipt,
                         color = wloExtendedColors.textTertiary,
-                        fontFamily = FontFamily.Monospace,
                     )
                 }
             }
@@ -88,65 +83,48 @@ public fun ReceiptsScreen(viewModel: ReceiptsViewModel) {
                 Modifier.padding(vertical = WloSpacing.CARD),
                 verticalArrangement = Arrangement.spacedBy(WloSpacing.TIGHT),
             ) {
-                Button(
+                WloButton(
+                    label = if (state.verifying) "Verifying…" else "Verify chain",
                     onClick = viewModel::verifyChain,
                     enabled = !state.verifying,
-                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
                     modifier = Modifier.testTag("f12-verify-chain"),
-                ) {
-                    Text(text = if (state.verifying) "Verifying…" else "Verify chain", style = wloType.label)
-                }
+                )
                 val verdict = state.chainVerdict
                 if (verdict != null) {
-                    Surface(
-                        shape = WloShape.Card,
-                        color = MaterialTheme.colorScheme.surface,
-                        border =
-                            BorderStroke(
-                                1.dp,
+                    WloCard(
+                        modifier = Modifier.testTag("f12-chain-verdict"),
+                        accent = if (verdict.intact) WloCardAccent.Primary else WloCardAccent.Warning,
+                    ) {
+                        Text(
+                            text =
+                                if (verdict.intact) {
+                                    "Chain intact — all ${verdict.checked} receipt(s) verified"
+                                } else {
+                                    "Chain broken at receipt #${verdict.brokenAtSeq ?: "?"} — " +
+                                        "this log was edited or corrupted"
+                                },
+                            style = wloType.title,
+                            color =
                                 if (verdict.intact) {
                                     MaterialTheme.colorScheme.primary
                                 } else {
-                                    MaterialTheme.colorScheme.error
+                                    wloExtendedColors.held
                                 },
-                            ),
-                        modifier = Modifier.fillMaxWidth().testTag("f12-chain-verdict"),
-                    ) {
-                        Column(
-                            Modifier.padding(WloSpacing.PAD_CARD),
-                            verticalArrangement = Arrangement.spacedBy(WloSpacing.TIGHT),
-                        ) {
-                            Text(
-                                text =
-                                    if (verdict.intact) {
-                                        "Chain intact — all ${verdict.checked} receipt(s) verified"
-                                    } else {
-                                        "Chain BROKEN at receipt #${verdict.brokenAtSeq ?: "?"} — " +
-                                            "this log was edited or corrupted"
-                                    },
-                                style = wloType.title,
-                                color =
-                                    if (verdict.intact) {
-                                        MaterialTheme.colorScheme.primary
-                                    } else {
-                                        MaterialTheme.colorScheme.error
-                                    },
-                            )
-                            Text(
-                                text =
-                                    if (verdict.intact) {
-                                        "Each receipt embeds the previous one's hash back to the very first " +
-                                            "entry. Recomputing every hash reproduces the chain exactly, so " +
-                                            "nothing in this ledger was changed after the fact."
-                                    } else {
-                                        "A link or hash failed to reproduce. Either the file was tampered " +
-                                            "with, or storage corrupted a row. Treat everything after the " +
-                                            "break as unproven."
-                                    },
-                                style = wloType.body,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            )
-                        }
+                        )
+                        Text(
+                            text =
+                                if (verdict.intact) {
+                                    "Each receipt embeds the previous one's hash back to the very first " +
+                                        "entry. Recomputing every hash reproduces the chain exactly, so " +
+                                        "nothing in this ledger was changed after the fact."
+                                } else {
+                                    "A link or hash failed to reproduce. Either the file was tampered " +
+                                        "with, or storage corrupted a row. Treat everything after the " +
+                                        "break as unproven."
+                                },
+                            style = wloType.body,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
                     }
                 }
             }
@@ -194,28 +172,20 @@ private fun ReceiptRow(line: ReceiptLine) {
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(WloSpacing.TIGHT),
         ) {
-            Surface(shape = WloShape.Chip, color = wloExtendedColors.surfaceSunken) {
-                Text(
-                    text = line.purposeWire,
-                    style = wloType.label,
-                    fontFamily = FontFamily.Monospace,
-                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp),
-                )
-            }
+            WloBadge(text = purposeLabel(line.purposeWire), tone = WloBadgeTone.Neutral)
             Text(
                 text = line.host,
                 style = wloType.statS,
-                fontFamily = FontFamily.Monospace,
                 modifier = Modifier.weight(1f),
             )
         }
         Text(
-            text = "#${line.seq} · ${line.operation} · ${line.outcomeWire} · ${formatBytes(
-                line.bytes,
-            )} · ${at.date} ${at.time.toString().substringBefore('.')}",
+            text =
+                "#${line.seq} · ${line.operation} · ${outcomeLabel(line.outcomeWire)} · ${formatBytes(
+                    line.bytes,
+                )} · ${at.date} ${at.time.toString().substringBefore('.')}",
             style = wloType.receipt,
             color = wloExtendedColors.textTertiary,
-            fontFamily = FontFamily.Monospace,
         )
         HorizontalDivider(
             Modifier.padding(top = WloSpacing.TIGHT),
@@ -223,6 +193,37 @@ private fun ReceiptRow(line: ReceiptLine) {
         )
     }
 }
+
+/** Wire purpose → user words (F12 §3.6: paperwork reads like sentences, not wire). */
+internal fun purposeLabel(purposeWire: String): String =
+    when (purposeWire) {
+        "zoo-download" -> "Model download"
+        "off-lookup" -> "Address lookup"
+        "diagnostics" -> "Crash report"
+        else ->
+            if (purposeWire.startsWith("future-cloud-")) {
+                "Cloud " + wireWords(purposeWire.removePrefix("future-cloud-"))
+            } else {
+                wireWords(purposeWire)
+            }
+    }
+
+/** Wire outcome → user words; "ok" keeps the geek's OK. */
+internal fun outcomeLabel(outcomeWire: String): String =
+    when (outcomeWire) {
+        "ok" -> "OK"
+        "denied" -> "Denied"
+        "failed" -> "Failed"
+        "cache-hit" -> "Cached"
+        else -> wireWords(outcomeWire)
+    }
+
+/** `hash-pinned-url` → "Hash Pinned Url" — the fallback for unseen wire values. */
+private fun wireWords(wire: String): String =
+    wire
+        .split('-', '_', ' ')
+        .filter { it.isNotBlank() }
+        .joinToString(" ") { word -> word.replaceFirstChar { it.uppercaseChar() } }
 
 /** Byte counts the way a geek reads them (B → KB → MB, one decimal under 10). */
 internal fun formatBytes(bytes: Long): String =

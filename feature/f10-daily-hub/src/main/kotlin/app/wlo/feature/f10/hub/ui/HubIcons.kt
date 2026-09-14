@@ -10,9 +10,10 @@ import androidx.compose.ui.graphics.vector.path
 import androidx.compose.ui.unit.dp
 
 /**
- * Quick-action rail glyphs (F10 §5: photo · weigh · gut · workout), hairline
- * strokes matching the WLO 1 dp outline language. The gut glyph is the neutral
- * leaf (F09); the workout glyph is a barbell, numbers-first.
+ * F10 glyphs: the quick-action rail (F10 §5: photo · weigh · gut · workout)
+ * and the header settings mark, hairline strokes matching the WLO 1 dp
+ * outline language. The gut glyph is the neutral leaf (F09); the workout
+ * glyph is a barbell, numbers-first.
  */
 public object HubIcons {
     private const val VIEWPORT: Float = 24f
@@ -96,5 +97,22 @@ public object HubIcons {
             verticalLineTo(15f)
             moveTo(6.5f, 12f)
             horizontalLineTo(17.5f)
+        }
+
+    /** Settings — three rails with a stop each (the tune/sliders mark). */
+    public val Settings: ImageVector =
+        stroke {
+            moveTo(4f, 7f)
+            horizontalLineTo(20f)
+            moveTo(4f, 12f)
+            horizontalLineTo(20f)
+            moveTo(4f, 17f)
+            horizontalLineTo(20f)
+            moveTo(9f, 5.2f)
+            verticalLineTo(8.8f)
+            moveTo(15f, 10.2f)
+            verticalLineTo(13.8f)
+            moveTo(11f, 15.2f)
+            verticalLineTo(18.8f)
         }
 }

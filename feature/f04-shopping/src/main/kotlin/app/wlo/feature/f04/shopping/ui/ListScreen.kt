@@ -4,7 +4,6 @@ import android.content.Context
 import android.content.Intent
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -15,11 +14,8 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -31,13 +27,20 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
-import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import app.wlo.core.designsystem.ProvenanceChip
+import app.wlo.core.designsystem.SelectChip
+import app.wlo.core.designsystem.WloBanner
+import app.wlo.core.designsystem.WloBannerTone
+import app.wlo.core.designsystem.WloButton
 import app.wlo.core.designsystem.WloCard
+import app.wlo.core.designsystem.WloCardHeader
 import app.wlo.core.designsystem.WloCheckRow
+import app.wlo.core.designsystem.WloListRow
 import app.wlo.core.designsystem.WloPrimaryRow
-import app.wlo.core.designsystem.WloShape
+import app.wlo.core.designsystem.WloScreenTitle
+import app.wlo.core.designsystem.WloSecondaryButton
+import app.wlo.core.designsystem.WloSheet
 import app.wlo.core.designsystem.WloSpacing
 import app.wlo.core.designsystem.wloExtendedColors
 import app.wlo.core.designsystem.wloType
@@ -53,7 +56,6 @@ import kotlinx.coroutines.launch
  * ("your checks are safe"), the R-S5 prompt, sweep-to-pantry, and the
  * text/CSV/JSON exports with the CSV round-trip. Offline, forever.
  */
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 public fun ListScreen(
     viewModel: ListViewModel,
@@ -90,11 +92,7 @@ public fun ListScreen(
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Column(Modifier.weight(1f)) {
-                Text(
-                    text = "Shopping",
-                    style = wloType.title.copy(fontSize = wloType.title.fontSize * 1.5f),
-                    modifier = Modifier.padding(top = WloSpacing.SCREEN).testTag("f04-list-title"),
-                )
+                WloScreenTitle(title = "Shopping", modifier = Modifier.testTag("f04-list-title"))
                 Text(
                     text = state.weekLabel?.let { "for the week of $it" } ?: "no plan behind the list yet",
                     style = wloType.receipt,
@@ -137,7 +135,7 @@ public fun ListScreen(
                     }
 
                     PrimaryRow(
-                        label = if (state.busy) "building…" else "build list · week pre-selected",
+                        label = if (state.busy) "Building…" else "Build list",
                         modifier = Modifier.testTag("f04-generate"),
                         enabled = !state.busy,
                         onClick = { viewModel.onEvent(ListEvent.Generate) },
@@ -145,38 +143,40 @@ public fun ListScreen(
 
                     RowCard(state)
 
+                    // Action hierarchy (§3): one filled primary, config/secondary
+                    // actions outlined behind it.
+                    WloButton(
+                        label = "Add item",
+                        onClick = { showAdd = true },
+                        modifier = Modifier.fillMaxWidth().testTag("f04-add-open"),
+                    )
                     Row(horizontalArrangement = Arrangement.spacedBy(WloSpacing.CARD)) {
-                        PrimaryRow(
-                            label = "+ add item",
-                            modifier = Modifier.weight(1f).testTag("f04-add-open"),
-                            onClick = { showAdd = true },
-                        )
-                        PrimaryRow(
-                            label = "import csv",
-                            modifier = Modifier.weight(1f).testTag("f04-import-open"),
+                        WloSecondaryButton(
+                            label = "Import CSV",
                             onClick = { showImport = true },
+                            modifier = Modifier.weight(1f).testTag("f04-import-open"),
                         )
-                    }
-                    Row(horizontalArrangement = Arrangement.spacedBy(WloSpacing.CARD)) {
-                        PrimaryRow(
-                            label = "share text",
-                            modifier = Modifier.weight(1f).testTag("f04-export-text"),
+                        WloSecondaryButton(
+                            label = "Share text",
                             onClick = {
                                 scope.launch {
                                     val text = viewModel.exportText() ?: return@launch
                                     shareText(context, "WLO shopping list", text)
                                 }
                             },
+                            modifier = Modifier.weight(1f).testTag("f04-export-text"),
                         )
-                        PrimaryRow(
-                            label = "export csv",
-                            modifier = Modifier.weight(1f).testTag("f04-export-csv"),
+                    }
+                    Row(horizontalArrangement = Arrangement.spacedBy(WloSpacing.CARD)) {
+                        WloSecondaryButton(
+                            label = "Export CSV",
                             onClick = { csvWriter.launch("wlo-shopping-list.csv") },
+                            modifier = Modifier.weight(1f).testTag("f04-export-csv"),
                         )
-                        PrimaryRow(
-                            label = "json",
-                            modifier = Modifier.weight(1f).testTag("f04-export-json"),
+                        WloSecondaryButton(
+                            label = "JSON",
                             onClick = { jsonWriter.launch("wlo-shopping-list.json") },
+                            modifier = Modifier.weight(1f).testTag("f04-export-json"),
                         )
                     }
                 }
@@ -184,11 +184,13 @@ public fun ListScreen(
 
             if (state.groups.isEmpty() && state.checked.isEmpty() && state.removed.isEmpty()) {
                 item {
-                    WloCard(modifier = Modifier.testTag("f04-empty")) {
-                        Text(text = "the list is empty", style = wloType.title)
+                    WloCard(
+                        modifier = Modifier.testTag("f04-empty"),
+                        header = { WloCardHeader(title = "The list is empty") },
+                    ) {
                         Text(
                             text = "build it from the week's plan, or add items by hand — both work offline.",
-                            style = wloType.body.copy(fontSize = wloType.receipt.fontSize),
+                            style = wloType.caption,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                     }
@@ -235,7 +237,7 @@ public fun ListScreen(
                             )
                         }
                         PrimaryRow(
-                            label = "sweep ${state.checkedCount} to pantry",
+                            label = "Sweep ${state.checkedCount} to pantry",
                             modifier = Modifier.testTag("f04-sweep"),
                             onClick = { viewModel.onEvent(ListEvent.SweepChecked) },
                         )
@@ -260,35 +262,7 @@ public fun ListScreen(
                             color = wloExtendedColors.textTertiary,
                         )
                         for (row in state.removed) {
-                            Surface(
-                                modifier =
-                                    Modifier
-                                        .fillMaxWidth()
-                                        .testTag("f04-restore-${row.id}"),
-                                shape = WloShape.Chip,
-                                color = MaterialTheme.colorScheme.surface,
-                                contentColor = MaterialTheme.colorScheme.onSurface,
-                                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
-                                onClick = { viewModel.onEvent(ListEvent.Restore(row.id)) },
-                            ) {
-                                Row(
-                                    Modifier.padding(horizontal = WloSpacing.CARD, vertical = WloSpacing.TIGHT),
-                                    verticalAlignment = Alignment.CenterVertically,
-                                ) {
-                                    Column(Modifier.weight(1f)) {
-                                        Text(
-                                            text = row.name,
-                                            style = wloType.body,
-                                            textDecoration = androidx.compose.ui.text.style.TextDecoration.LineThrough,
-                                        )
-                                        Text(
-                                            text = "${row.qtyLabel} · tap to put it back",
-                                            style = wloType.receipt,
-                                            color = wloExtendedColors.textTertiary,
-                                        )
-                                    }
-                                }
-                            }
+                            RemovedRow(row) { viewModel.onEvent(ListEvent.Restore(row.id)) }
                         }
                     }
                 }
@@ -331,25 +305,47 @@ private fun CheckableRow(
         modifier = Modifier.testTag("f04-item-${row.name}"),
     )
 
+/** One struck row: the strike reads as words, the whole row puts it back. */
+@Composable
+private fun RemovedRow(
+    row: ListItemUi,
+    onRestore: () -> Unit,
+): Unit =
+    WloListRow(
+        label = row.name,
+        secondary = "${row.qtyLabel} · struck by the plan",
+        trailing = {
+            Text(
+                text = "Put back",
+                style = wloType.label,
+                color = MaterialTheme.colorScheme.primary,
+            )
+        },
+        onClick = onRestore,
+        modifier = Modifier.testTag("f04-restore-${row.id}"),
+    )
+
 @Composable
 private fun RowCard(state: ListUiState): Unit =
-    WloCard(modifier = Modifier.testTag("f04-counts-card")) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Text(
-                text = "to buy · ${state.toBuyCount}",
-                style = wloType.body,
-                modifier = Modifier.weight(1f),
+    WloCard(
+        modifier = Modifier.testTag("f04-counts-card"),
+        header = {
+            WloCardHeader(
+                title = "To buy",
+                provenance = {
+                    Text(
+                        text = "${state.toBuyCount}",
+                        style = wloType.receipt,
+                        color = wloExtendedColors.textTertiary,
+                    )
+                },
             )
-            Text(
-                text = "in the trolley · ${state.checkedCount}",
-                style = wloType.receipt,
-                color = wloExtendedColors.textTertiary,
-            )
-        }
+        },
+    ) {
         if (state.deductionEnabled) {
             Text(
                 text = "pantry deduction on — staples you already have come off the totals",
-                style = wloType.receipt,
+                style = wloType.caption,
                 color = wloExtendedColors.textTertiary,
             )
         }
@@ -360,30 +356,16 @@ private fun ReconciliationBanner(
     banner: app.wlo.feature.f04.shopping.state.ReconciliationUi,
     onDismiss: () -> Unit,
 ): Unit =
-    Surface(
-        modifier = Modifier.fillMaxWidth().testTag("f04-banner"),
-        shape = WloShape.Chip,
-        color = MaterialTheme.colorScheme.primary.copy(alpha = 0.10f),
-        contentColor = MaterialTheme.colorScheme.onSurface,
-        border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.5f)),
-    ) {
-        Column(Modifier.padding(WloSpacing.CARD), verticalArrangement = Arrangement.spacedBy(WloSpacing.TIGHT)) {
-            Text(
-                text = "Plan changed: ${banner.headline}. Your checks are safe.",
-                style = wloType.body,
-                modifier = Modifier.testTag("f04-banner-text"),
-            )
-            Text(
-                text =
-                    "${banner.checksKept} ticked item(s) stayed ticked — " +
-                        "the list reconciles by delta, never a reset.",
-                style = wloType.receipt,
-                color = wloExtendedColors.textTertiary,
-            )
-            Row(horizontalArrangement = Arrangement.spacedBy(WloSpacing.CARD)) {
-                PrimaryRow(label = "got it", modifier = Modifier.weight(1f), onClick = onDismiss)
-            }
-        }
+    Column(modifier = Modifier.testTag("f04-banner")) {
+        WloBanner(
+            text =
+                "Plan changed: ${banner.headline}. Your checks are safe — " +
+                    "${banner.checksKept} ticked item(s) stayed ticked, the list reconciled by delta.",
+            tone = WloBannerTone.Info,
+            actionLabel = "Got it",
+            action = onDismiss,
+            modifier = Modifier.testTag("f04-banner-text"),
+        )
     }
 
 /** The R-S5 one-time prompt: the default stays OFF; the choice is remembered. */
@@ -393,36 +375,37 @@ private fun DeductionPromptCard(
     enabled: Boolean,
     onAnswer: (Boolean) -> Unit,
 ): Unit =
-    WloCard(modifier = Modifier.testTag("f04-rs5-prompt")) {
-        Text(text = "Deduct what you have at home?", style = wloType.title)
+    WloCard(
+        modifier = Modifier.testTag("f04-rs5-prompt"),
+        header = { WloCardHeader(title = "Deduct what you have at home?") },
+    ) {
         Text(
             text =
                 "when on, staples in your pantry (${prompt.staplesWord}) come off every generated list — " +
                     "\"need 5 eggs, have 3 → buy 2\". Off by default so deductions never " +
                     "surprise; flip it in the pantry anytime.",
-            style = wloType.body.copy(fontSize = wloType.receipt.fontSize),
+            style = wloType.caption,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
         Row(horizontalArrangement = Arrangement.spacedBy(WloSpacing.CARD)) {
             PrimaryRow(
-                label = if (enabled) "on — keep it on" else "stay off",
+                label = if (enabled) "Keep it on" else "Keep it off",
                 modifier = Modifier.weight(1f).testTag("f04-rs5-stay-off"),
-                onClick = { onAnswer(false) },
+                onClick = { onAnswer(enabled) },
             )
             PrimaryRow(
-                label = "turn it on",
+                label = if (enabled) "Turn it off" else "Turn it on",
                 modifier = Modifier.weight(1f).testTag("f04-rs5-turn-on"),
-                onClick = { onAnswer(true) },
+                onClick = { onAnswer(!enabled) },
             )
         }
         Text(
             text = "your choice is remembered; this asks once.",
-            style = wloType.receipt,
+            style = wloType.caption,
             color = wloExtendedColors.textTertiary,
         )
     }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun AddItemSheet(
     onDismiss: () -> Unit,
@@ -432,102 +415,72 @@ private fun AddItemSheet(
     var qty by remember { mutableStateOf("1") }
     val units = listOf("x", "g", "kg", "ml", "l", "cup", "tbsp", "tsp")
     var unit by remember { mutableStateOf("x") }
-    ModalBottomSheet(
-        onDismissRequest = onDismiss,
-        shape = WloShape.SheetTop,
-        modifier = Modifier.testTag("f04-add-sheet"),
-    ) {
-        Column(
-            Modifier
-                .fillMaxWidth()
-                .padding(horizontal = WloSpacing.SCREEN)
-                .padding(bottom = WloSpacing.SCREEN),
-            verticalArrangement = Arrangement.spacedBy(WloSpacing.CARD),
+    WloSheet(onDismissRequest = onDismiss, modifier = Modifier.testTag("f04-add-sheet")) {
+        WloCardHeader(title = "Add item")
+        OutlinedTextField(
+            value = name,
+            onValueChange = { name = it },
+            modifier = Modifier.fillMaxWidth().testTag("f04-add-name"),
+            label = { Text("name", style = wloType.label) },
+            singleLine = true,
+            textStyle = wloType.body,
+        )
+        OutlinedTextField(
+            value = qty,
+            onValueChange = { qty = it },
+            modifier = Modifier.fillMaxWidth().testTag("f04-add-qty"),
+            label = { Text("how much", style = wloType.label) },
+            singleLine = true,
+            textStyle = wloType.statS,
+        )
+        androidx.compose.foundation.lazy.LazyRow(
+            horizontalArrangement = Arrangement.spacedBy(WloSpacing.TIGHT),
+            modifier = Modifier.testTag("f04-add-units"),
         ) {
-            Text(text = "Add item", style = wloType.title.copy(fontSize = wloType.title.fontSize * 1.12f))
-            OutlinedTextField(
-                value = name,
-                onValueChange = { name = it },
-                modifier = Modifier.fillMaxWidth().testTag("f04-add-name"),
-                label = { Text("name", style = wloType.label) },
-                singleLine = true,
-                textStyle = wloType.body,
-            )
-            OutlinedTextField(
-                value = qty,
-                onValueChange = { qty = it },
-                modifier = Modifier.fillMaxWidth().testTag("f04-add-qty"),
-                label = { Text("how much", style = wloType.label) },
-                singleLine = true,
-                textStyle = wloType.body.copy(fontFeatureSettings = "tnum"),
-            )
-            androidx.compose.foundation.lazy.LazyRow(
-                horizontalArrangement = Arrangement.spacedBy(WloSpacing.TIGHT),
-                modifier = Modifier.testTag("f04-add-units"),
-            ) {
-                items(units) { candidate ->
-                    app.wlo.core.designsystem.SelectChip(
-                        label = candidate,
-                        selected = candidate == unit,
-                        onClick = { unit = candidate },
-                    )
-                }
+            items(units) { candidate ->
+                SelectChip(
+                    label = candidate,
+                    selected = candidate == unit,
+                    onClick = { unit = candidate },
+                )
             }
-            PrimaryRow(
-                label = "add to the list",
-                modifier = Modifier.testTag("f04-add-save"),
-                onClick = { onAdd(name.trim(), qty.toDoubleOrNull() ?: 1.0, unit) },
-            )
-            Text(
-                text = "the aisle is guessed on add — one correction teaches it forever",
-                style = wloType.receipt,
-                color = wloExtendedColors.textTertiary,
-            )
-            Spacer(Modifier.height(WloSpacing.ROW_MIN))
         }
+        PrimaryRow(
+            label = "Add to the list",
+            modifier = Modifier.testTag("f04-add-save"),
+            onClick = { onAdd(name.trim(), qty.toDoubleOrNull() ?: 1.0, unit) },
+        )
+        Text(
+            text = "the aisle is guessed on add — one correction teaches it forever",
+            style = wloType.receipt,
+            color = wloExtendedColors.textTertiary,
+        )
+        Spacer(Modifier.height(WloSpacing.ROW_MIN))
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun ImportSheet(
     onDismiss: () -> Unit,
     onImport: (String) -> Unit,
 ) {
     var csv by remember { mutableStateOf("") }
-    ModalBottomSheet(
-        onDismissRequest = onDismiss,
-        shape = WloShape.SheetTop,
-        modifier = Modifier.testTag("f04-import-sheet"),
-    ) {
-        Column(
-            Modifier
-                .fillMaxWidth()
-                .padding(horizontal = WloSpacing.SCREEN)
-                .padding(bottom = WloSpacing.SCREEN),
-            verticalArrangement = Arrangement.spacedBy(WloSpacing.CARD),
-        ) {
-            Text(text = "Import CSV", style = wloType.title.copy(fontSize = wloType.title.fontSize * 1.12f))
-            Text(
-                text = "the app's own export format round-trips: item,qty,unit,aisle,state",
-                style = wloType.receipt,
-                color = wloExtendedColors.textTertiary,
-            )
-            OutlinedTextField(
-                value = csv,
-                onValueChange = { csv = it },
-                modifier = Modifier.fillMaxWidth().testTag("f04-import-text"),
-                label = { Text("paste the CSV", style = wloType.label) },
-                textStyle = wloType.receipt,
-                minLines = 4,
-            )
-            PrimaryRow(
-                label = "import",
-                modifier = Modifier.testTag("f04-import-run"),
-                onClick = { onImport(csv) },
-            )
-            Spacer(Modifier.height(WloSpacing.ROW_MIN))
-        }
+    WloSheet(onDismissRequest = onDismiss, modifier = Modifier.testTag("f04-import-sheet")) {
+        WloCardHeader(title = "Import CSV")
+        OutlinedTextField(
+            value = csv,
+            onValueChange = { csv = it },
+            modifier = Modifier.fillMaxWidth().testTag("f04-import-text"),
+            label = { Text("paste the CSV", style = wloType.label) },
+            textStyle = wloType.receipt,
+            minLines = 4,
+        )
+        PrimaryRow(
+            label = "Import",
+            modifier = Modifier.testTag("f04-import-run"),
+            onClick = { onImport(csv) },
+        )
+        Spacer(Modifier.height(WloSpacing.ROW_MIN))
     }
 }
 

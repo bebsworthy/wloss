@@ -134,21 +134,21 @@ public class M5ScreensTest {
         // --- the R-S5 one-time prompt + the reconciliation banner (list) ------
         deliver(scenario, "wlo://list")
         TestNav.awaitRoute(scenario, "f04/list")
-        awaitText("build list")
-        tapTextContaining("build list")
-        awaitText("Deduct what you have at home?")
+        awaitText("Build list")
+        tapTextContaining("Build list")
+        awaitText("DEDUCT WHAT YOU HAVE AT HOME?")
         shot("m5-rs5-prompt")
-        tapText("turn it on")
+        tapText("Turn it on")
         awaitText("Your checks are safe")
         shot("m5-reconciliation-banner")
-        tapText("got it")
+        tapText("Got it")
         SystemClock.sleep(300)
         shot("m5-shopping-list")
 
         // --- the plan tab: week grid, why-this-plan, adherence ---------------
         deliver(scenario, "wlo://plan")
         TestNav.awaitRoute(scenario, "plan")
-        awaitText("deal again")
+        awaitText("Deal again")
         SystemClock.sleep(700)
         shot("m5-week-grid")
 
@@ -160,7 +160,7 @@ public class M5ScreensTest {
             device().swipe(360, 1200, 360, 250, 15)
             SystemClock.sleep(350)
         }
-        awaitText("Adherence")
+        awaitText("ADHERENCE")
         shot("m5-adherence")
         device().swipe(360, 400, 360, 1300, 12)
         SystemClock.sleep(500)
@@ -175,7 +175,7 @@ public class M5ScreensTest {
         for (attempt in 0 until 4) {
             device().click(540, 1090)
             SystemClock.sleep(900)
-            if (device().findObjects(By.text("ate this")).isNotEmpty()) {
+            if (device().findObjects(By.text("Ate this")).isNotEmpty()) {
                 openedSlot = true
                 break
             }
@@ -187,7 +187,7 @@ public class M5ScreensTest {
             for (attempt in 0 until 5) {
                 val swapNode =
                     device()
-                        .findObjects(By.text("swap"))
+                        .findObjects(By.text("Swap"))
                         .firstOrNull { it.visibleCenter.y > device().displayHeight * 0.4 }
                 swapNode?.click()
                 SystemClock.sleep(900)
@@ -201,7 +201,7 @@ public class M5ScreensTest {
             // slot sheet when the swap sheet opened). Only go back when a
             // sheet exists — a bare back on the tab root would kill the
             // activity.
-            if (device().findObjects(By.text("ate this")).isNotEmpty() ||
+            if (device().findObjects(By.text("Ate this")).isNotEmpty() ||
                 device().findObjects(By.textContains("top swaps")).isNotEmpty()
             ) {
                 device().pressBack()
@@ -213,7 +213,7 @@ public class M5ScreensTest {
         var inRecipes = false
         for (attempt in 0 until 4) {
             if (tapText("Recipes")) {
-                awaitText("new recipe")
+                awaitText("New recipe")
                 inRecipes = true
                 break
             }
@@ -221,11 +221,11 @@ public class M5ScreensTest {
         }
         if (inRecipes) {
             shot("m5-recipes")
-            tapText("new recipe")
+            tapText("New recipe")
             awaitText("per-serving nutrition")
             SystemClock.sleep(700)
             shot("m5-recipe-create")
-            tapText("discard")
+            tapText("Discard")
             SystemClock.sleep(500)
         }
 
@@ -234,11 +234,11 @@ public class M5ScreensTest {
         SystemClock.sleep(800)
         if (currentRoute() != "f04/pantry") deliver(scenario, "wlo://pantry")
         TestNav.awaitRoute(scenario, "f04/pantry")
-        awaitText("inventory")
+        awaitText("INVENTORY")
         SystemClock.sleep(400)
         shot("m5-pantry")
-        if (tapTextContaining("add stock")) {
-            awaitText("Check in / stock-take")
+        if (tapTextContaining("Add stock")) {
+            awaitText("STOCK-TAKE")
             shot("m5-checkin")
             device().pressBack()
             SystemClock.sleep(300)
@@ -249,8 +249,8 @@ public class M5ScreensTest {
         SystemClock.sleep(800)
         if (currentRoute() != "f04/list") deliver(scenario, "wlo://list")
         TestNav.awaitRoute(scenario, "f04/list")
-        awaitText("share text")
-        if (tapText("share text")) {
+        awaitText("Share text")
+        if (tapText("Share text")) {
             SystemClock.sleep(1200)
             shot("m5-export-share")
             device().pressBack()

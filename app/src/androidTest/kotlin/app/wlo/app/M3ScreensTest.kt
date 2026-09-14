@@ -5,6 +5,7 @@ import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onFirst
+import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
@@ -90,7 +91,7 @@ public class M3ScreensTest {
             rule.onNodeWithTag("f02-custom-kcal", useUnmergedTree = true).performTextInput("1200")
             val deadline = System.currentTimeMillis() + 3_000
             while (System.currentTimeMillis() < deadline) {
-                if (rule.onAllNodesWithText("above the physical ceiling", substring = true).fetchSemanticsNodes().isNotEmpty()) {
+                if (rule.onAllNodesWithText("above any real food's ceiling", substring = true).fetchSemanticsNodes().isNotEmpty()) {
                     railVisible = true
                     break
                 }
@@ -125,12 +126,12 @@ public class M3ScreensTest {
 
         // Documented stubs — reached by rail taps only (deep links in a
         // rule-based test hang the rule's teardown; the M1 note's trap).
-        rule.onNodeWithTag("tab-hub").performClick()
+        rule.onNodeWithContentDescription("Hub", useUnmergedTree = true).performClick()
         TestNav.awaitTag(rule, "hub-quick-actions")
         rule.onAllNodesWithText("Digestion").onFirst().performClick()
         TestNav.awaitTag(rule, "title-stub")
         shot("m3-stub-gut")
-        rule.onNodeWithTag("tab-hub").performClick()
+        rule.onNodeWithContentDescription("Hub", useUnmergedTree = true).performClick()
         TestNav.awaitTag(rule, "hub-quick-actions")
         SystemClock.sleep(500)
     }
@@ -189,7 +190,7 @@ public class M3ScreensTest {
             if (rule.onAllNodesWithTag(hubTag, useUnmergedTree = true).fetchSemanticsNodes().isNotEmpty()) return
             Thread.sleep(POLL_MS)
         }
-        rule.onNodeWithTag("tab-hub").performClick()
+        rule.onNodeWithContentDescription("Hub", useUnmergedTree = true).performClick()
         TestNav.awaitTag(rule, hubTag)
     }
 

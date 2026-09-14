@@ -6,6 +6,7 @@ import androidx.compose.ui.test.captureToImage
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onFirst
+import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performClick
@@ -39,15 +40,19 @@ public class WloShellTest {
     @Test
     public fun afterOnboarding_showsFiveTabs_andTabSwitching() {
         composeTestRule.driveToHub()
-        for (tab in listOf("hub", "plan", "insights", "archive", "digestion")) {
-            composeTestRule.onNodeWithTag("tab-$tab").assertIsDisplayed()
+        // The bar is the WloBottomBar atom (M3 NavigationBar) — tabs carry no
+        // per-tab test tags; each item's icon is labelled with the tab name.
+        // The icon's description lives on the unmerged node (the NavigationBar
+        // item's merged semantics swallow it), so query that tree.
+        for (tab in listOf("Hub", "Plan", "Insights", "Archive", "Digestion")) {
+            composeTestRule.onNodeWithContentDescription(tab, useUnmergedTree = true).assertIsDisplayed()
         }
-        for (route in listOf("plan", "insights", "archive", "digestion")) {
-            composeTestRule.onNodeWithTag("tab-$route").performClick()
+        for (tab in listOf("Plan", "Insights", "Archive", "Digestion")) {
+            composeTestRule.onNodeWithContentDescription(tab, useUnmergedTree = true).performClick()
             composeTestRule.waitForIdle()
-            composeTestRule.onNodeWithTag("title-$route").assertIsDisplayed()
+            composeTestRule.onNodeWithTag("title-${tab.lowercase()}").assertIsDisplayed()
         }
-        composeTestRule.onNodeWithTag("tab-hub").performClick()
+        composeTestRule.onNodeWithContentDescription("Hub", useUnmergedTree = true).performClick()
         composeTestRule.waitForIdle()
         composeTestRule.onNodeWithTag("hub-trend-card").assertIsDisplayed()
     }

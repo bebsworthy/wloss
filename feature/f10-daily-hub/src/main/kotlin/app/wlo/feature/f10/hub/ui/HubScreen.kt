@@ -1,11 +1,7 @@
 package app.wlo.feature.f10.hub.ui
 
-import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -19,17 +15,12 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalBottomSheet
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
@@ -43,8 +34,10 @@ import app.wlo.core.designsystem.WloDeltaChip
 import app.wlo.core.designsystem.WloForecastBands
 import app.wlo.core.designsystem.WloForecastCard
 import app.wlo.core.designsystem.WloHeroStat
+import app.wlo.core.designsystem.WloIconAction
+import app.wlo.core.designsystem.WloRailButton
 import app.wlo.core.designsystem.WloSecondaryButton
-import app.wlo.core.designsystem.WloShape
+import app.wlo.core.designsystem.WloSheet
 import app.wlo.core.designsystem.WloSpacing
 import app.wlo.core.designsystem.WloStatDivider
 import app.wlo.core.designsystem.WloStatRow
@@ -73,7 +66,6 @@ import kotlinx.datetime.LocalDate
  * stated once, here. The user never types on the Hub (F10 §4).
  */
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 public fun HubScreen(
     viewModel: HubViewModel,
@@ -160,19 +152,44 @@ public fun HubScreen(
 
                 Text(
                     text = "Computed on your device — tap any chip for how we got here.",
-                    style = wloType.body.copy(fontSize = wloType.receipt.fontSize),
+                    style = wloType.caption,
                     color = wloExtendedColors.textTertiary,
                     modifier = Modifier.padding(bottom = WloSpacing.SCREEN),
                 )
             }
 
             current.explainer?.let { explainer ->
-                ModalBottomSheet(
+                WloSheet(
                     onDismissRequest = { viewModel.onEvent(HubEvent.DismissExplainer) },
-                    shape = WloShape.SheetTop,
                     modifier = Modifier.testTag("hub-explainer-sheet"),
                 ) {
-                    ExplainerSheetContent(explainer)
+                    Text(text = explainer.headline, style = wloType.title)
+                    WloCard {
+                        explainer.rows.forEachIndexed { index, (label, value) ->
+                            if (index > 0) WloStatDivider()
+                            Row(
+                                modifier =
+                                    Modifier
+                                        .fillMaxWidth()
+                                        .height(WloSpacing.ROW_MIN),
+                                verticalAlignment = Alignment.CenterVertically,
+                            ) {
+                                Text(
+                                    text = label,
+                                    style = wloType.caption,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    modifier = Modifier.weight(1f),
+                                )
+                                Text(text = value, style = wloType.receipt)
+                            }
+                        }
+                    }
+                    Text(
+                        text = explainer.note,
+                        style = wloType.caption,
+                        color = wloExtendedColors.textTertiary,
+                    )
+                    Spacer(Modifier.height(WloSpacing.ROW_MIN))
                 }
             }
         }
@@ -192,7 +209,9 @@ private fun HubHeader(
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Text(text = "WLO", style = wloType.title.copy(fontSize = wloType.title.fontSize * 1.06f))
+        // The app wordmark: plain `title` — a `titleL` here would outweigh the
+        // rest of the header row, and the ramp has no arithmetic escapes.
+        Text(text = "WLO", style = wloType.title)
         Row(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(WloSpacing.TIGHT),
@@ -202,15 +221,16 @@ private fun HubHeader(
                 style = wloType.label,
                 color = wloExtendedColors.textTertiary,
             )
-            Text(
-                text = "Settings",
-                style = wloType.label,
-                color = MaterialTheme.colorScheme.primary,
-                modifier =
-                    Modifier
-                        .clickable(onClick = onOpenSettings)
-                        .padding(horizontal = WloSpacing.TIGHT, vertical = WloSpacing.TIGHT)
-                        .testTag("hub-settings"),
+            // Real affordance, not a text clickable: the ghost 48 dp
+            // WloIconAction keeps the header quiet (a bordered
+            // WloSecondaryButton would fight the rail buttons right below);
+            // the tradeoff is icon-only discoverability, covered by the
+            // contentDescription.
+            WloIconAction(
+                imageVector = HubIcons.Settings,
+                contentDescription = "Settings",
+                onClick = onOpenSettings,
+                modifier = Modifier.testTag("hub-settings"),
             )
         }
     }
@@ -226,58 +246,37 @@ private fun QuickActionRail(
         horizontalArrangement = Arrangement.spacedBy(WloSpacing.CARD),
     ) {
         for (quick in quickActions) {
-            val item =
-                when (quick) {
-                    HubQuickAction.PHOTO_LOG ->
-                        RailItem("Log food", HubIcons.Photo, actions.onOpenCapture, actions.onQuickAddKcal)
-                    HubQuickAction.WEIGH_IN ->
-                        RailItem("Weigh in", HubIcons.Weigh, actions.onLogWeight)
-                    HubQuickAction.POOP_LOG ->
-                        RailItem("Digestion", HubIcons.Gut, actions.onGutLog)
-                    HubQuickAction.WORKOUT_START ->
-                        RailItem("Workout", HubIcons.Workout, actions.onWorkout)
-                }
-            RailButton(
-                item = item,
-                modifier = Modifier.weight(1f),
-            )
-        }
-    }
-
-private data class RailItem(
-    val label: String,
-    val icon: ImageVector,
-    val onClick: () -> Unit,
-    val onLongClick: (() -> Unit)? = null,
-)
-
-@OptIn(ExperimentalFoundationApi::class)
-@Composable
-private fun RailButton(
-    item: RailItem,
-    modifier: Modifier = Modifier,
-): Unit =
-    Surface(
-        modifier =
-            modifier.then(
-                if (item.onLongClick != null) {
-                    Modifier.combinedClickable(onClick = item.onClick, onLongClick = item.onLongClick)
-                } else {
-                    Modifier.clickable(onClick = item.onClick)
-                },
-            ),
-        shape = WloShape.Card,
-        color = MaterialTheme.colorScheme.surface,
-        contentColor = MaterialTheme.colorScheme.onSurface,
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
-    ) {
-        Column(
-            horizontalAlignment = Alignment.CenterHorizontally,
-            modifier = Modifier.fillMaxWidth().padding(vertical = WloSpacing.CARD),
-        ) {
-            Icon(imageVector = item.icon, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
-            Spacer(Modifier.height(WloSpacing.TIGHT))
-            Text(text = item.label, style = wloType.label, color = wloExtendedColors.textTertiary)
+            when (quick) {
+                HubQuickAction.PHOTO_LOG ->
+                    WloRailButton(
+                        icon = HubIcons.Photo,
+                        label = "Log food",
+                        onClick = actions.onOpenCapture,
+                        onLongClick = actions.onQuickAddKcal,
+                        modifier = Modifier.weight(1f),
+                    )
+                HubQuickAction.WEIGH_IN ->
+                    WloRailButton(
+                        icon = HubIcons.Weigh,
+                        label = "Weigh in",
+                        onClick = actions.onLogWeight,
+                        modifier = Modifier.weight(1f),
+                    )
+                HubQuickAction.POOP_LOG ->
+                    WloRailButton(
+                        icon = HubIcons.Gut,
+                        label = "Digestion",
+                        onClick = actions.onGutLog,
+                        modifier = Modifier.weight(1f),
+                    )
+                HubQuickAction.WORKOUT_START ->
+                    WloRailButton(
+                        icon = HubIcons.Workout,
+                        label = "Workout",
+                        onClick = actions.onWorkout,
+                        modifier = Modifier.weight(1f),
+                    )
+            }
         }
     }
 
@@ -292,12 +291,14 @@ private fun HubCardView(
 ) {
     when (card.card) {
         HubCard.WEIGH_IN ->
-            WloCard(modifier = Modifier.testTag("hub-weigh-card").clickable(onClick = actions.onLogWeight)) {
-                WloCardHeader(title = "Morning window")
-                Text(text = "Weigh in", style = wloType.title)
+            WloCard(
+                onClick = actions.onLogWeight,
+                modifier = Modifier.testTag("hub-weigh-card"),
+            ) {
+                WloCardHeader(title = "Weigh in")
                 Text(
-                    text = "one number — the trend does the reading",
-                    style = wloType.body.copy(fontSize = wloType.receipt.fontSize),
+                    text = "One number — the trend does the reading.",
+                    style = wloType.caption,
                     color = wloExtendedColors.textTertiary,
                 )
             }
@@ -308,9 +309,16 @@ private fun HubCardView(
         HubCard.CALORIE_RING -> BudgetCard(state = state, onExplain = onExplain)
 
         HubCard.CLOSE_DAY ->
-            WloCard(modifier = Modifier.testTag("hub-close-card").clickable(onClick = actions.onOpenDiary)) {
+            WloCard(
+                onClick = actions.onOpenDiary,
+                modifier = Modifier.testTag("hub-close-card"),
+            ) {
                 WloCardHeader(title = "Close the day")
-                Text(text = "See today's diary", style = wloType.title)
+                Text(
+                    text = "See today's diary.",
+                    style = wloType.caption,
+                    color = wloExtendedColors.textTertiary,
+                )
             }
 
         HubCard.RECAP ->
@@ -324,8 +332,8 @@ private fun HubCardView(
                         onExplain = state.diaryExplainer?.let { handler -> { onExplain(handler) } },
                     )
                 } ?: Text(
-                    text = "nothing logged yet today",
-                    style = wloType.body.copy(fontSize = wloType.receipt.fontSize),
+                    text = "Nothing logged yet today.",
+                    style = wloType.caption,
                     color = wloExtendedColors.textTertiary,
                 )
             }
@@ -335,12 +343,14 @@ private fun HubCardView(
         HubCard.MEALS_TODAY -> MealsTodayCard(state, onOpenPlan = actions.onOpenPlan)
 
         HubCard.PLAN_TOMORROW ->
-            WloCard(modifier = Modifier.testTag("hub-plan-tomorrow-card").clickable(onClick = actions.onPlanTomorrow)) {
-                WloCardHeader(title = "Tomorrow")
-                Text(text = "Plan tomorrow", style = wloType.title)
+            WloCard(
+                onClick = actions.onPlanTomorrow,
+                modifier = Modifier.testTag("hub-plan-tomorrow-card"),
+            ) {
+                WloCardHeader(title = "Plan tomorrow")
                 Text(
-                    text = "deal or check the week before the morning decides for you",
-                    style = wloType.body.copy(fontSize = wloType.receipt.fontSize),
+                    text = "Deal the week before the morning decides for you.",
+                    style = wloType.caption,
                     color = wloExtendedColors.textTertiary,
                 )
             }
@@ -355,7 +365,10 @@ private fun MealsTodayCard(
     state: HubUiState.Ready,
     onOpenPlan: () -> Unit,
 ): Unit =
-    WloCard(modifier = Modifier.testTag("hub-meals-card").clickable(onClick = onOpenPlan)) {
+    WloCard(
+        onClick = onOpenPlan,
+        modifier = Modifier.testTag("hub-meals-card"),
+    ) {
         WloCardHeader(title = "Meals · today")
         val open = state.plannedMealsOpen ?: 0
         Text(
@@ -363,8 +376,8 @@ private fun MealsTodayCard(
             style = wloType.title,
         )
         Text(
-            text = "tap to eat, swap, or skip — nothing owed either way",
-            style = wloType.body.copy(fontSize = wloType.receipt.fontSize),
+            text = "Tap to eat, swap, or skip — nothing owed either way.",
+            style = wloType.caption,
             color = wloExtendedColors.textTertiary,
         )
     }
@@ -384,10 +397,8 @@ private fun TrendCard(
     onExplain: (ExplainerUi) -> Unit,
 ): Unit =
     WloCard(
-        modifier =
-            Modifier
-                .testTag("hub-trend-card")
-                .clickable(onClick = onOpenWeight),
+        onClick = onOpenWeight,
+        modifier = Modifier.testTag("hub-trend-card"),
     ) {
         val trendExplainer = state.trendExplainer
         val heroDelta = state.heroDelta
@@ -432,7 +443,7 @@ private fun TrendCard(
         )
         Text(
             text = "Last 30 days · tap for history",
-            style = wloType.body.copy(fontSize = wloType.receipt.fontSize),
+            style = wloType.caption,
             color = wloExtendedColors.textTertiary,
         )
     }
@@ -521,34 +532,50 @@ private fun DiaryCard(
         )
     }
 
-/** The mock's week-dots row: current week M..S, filled when the day has logged food. */
+/**
+ * The mock's week-dots row: current week M..S, filled when the day has logged
+ * food — with an 11 sp legend (audit F7: the encoding must be readable, not
+ * only announced to screen readers).
+ */
 @Composable
 private fun WeekDotsRow(weekDots: List<WeekDotUi>): Unit =
-    Row(
-        modifier = Modifier.fillMaxWidth().testTag("hub-week-dots"),
-        horizontalArrangement = Arrangement.spacedBy(WloSpacing.CARD),
-    ) {
+    Column(verticalArrangement = Arrangement.spacedBy(WloSpacing.TIGHT)) {
         val outline = wloExtendedColors.textTertiary.copy(alpha = 0.45f)
-        for (dot in weekDots) {
-            val label = weekdayShort(dot.epochDay)
-            val description =
-                when {
-                    dot.logged -> "$label — logged"
-                    dot.isFuture -> "$label — not yet"
-                    else -> "$label — not logged"
-                }
-            Box(
-                modifier =
-                    Modifier
-                        .size(14.dp)
-                        .then(
-                            if (dot.logged) {
-                                Modifier.background(MaterialTheme.colorScheme.primary, CircleShape)
-                            } else {
-                                Modifier.border(1.dp, outline, CircleShape)
-                            },
-                        ).semantics { this.contentDescription = description },
-            )
+        Row(
+            modifier = Modifier.fillMaxWidth().testTag("hub-week-dots"),
+            horizontalArrangement = Arrangement.spacedBy(WloSpacing.CARD),
+        ) {
+            for (dot in weekDots) {
+                val label = weekdayShort(dot.epochDay)
+                val description =
+                    when {
+                        dot.logged -> "$label — logged"
+                        dot.isFuture -> "$label — not yet"
+                        else -> "$label — not logged"
+                    }
+                Box(
+                    modifier =
+                        Modifier
+                            .size(14.dp)
+                            .then(
+                                if (dot.logged) {
+                                    Modifier.background(MaterialTheme.colorScheme.primary, CircleShape)
+                                } else {
+                                    Modifier.border(1.dp, outline, CircleShape)
+                                },
+                            ).semantics { this.contentDescription = description },
+                )
+            }
+        }
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(WloSpacing.TIGHT),
+        ) {
+            Box(modifier = Modifier.size(8.dp).background(MaterialTheme.colorScheme.primary, CircleShape))
+            Text(text = "Logged", style = wloType.label, color = wloExtendedColors.textTertiary)
+            Spacer(Modifier.height(WloSpacing.TIGHT))
+            Box(modifier = Modifier.size(8.dp).border(1.dp, outline, CircleShape))
+            Text(text = "Not yet", style = wloType.label, color = wloExtendedColors.textTertiary)
         }
     }
 
@@ -560,46 +587,6 @@ private fun weekdayShort(epochDay: Long): String {
             .take(3)
             .replaceFirstChar { it.uppercase() }
     return "$weekday ${date.dayOfMonth}"
-}
-
-@Composable
-private fun ExplainerSheetContent(explainer: ExplainerUi) {
-    Column(
-        modifier =
-            Modifier
-                .fillMaxWidth()
-                .padding(horizontal = WloSpacing.SCREEN)
-                .padding(bottom = WloSpacing.SCREEN),
-        verticalArrangement = Arrangement.spacedBy(WloSpacing.CARD),
-    ) {
-        Text(text = explainer.headline, style = wloType.title)
-        WloCard {
-            explainer.rows.forEachIndexed { index, (label, value) ->
-                if (index > 0) WloStatDivider()
-                Row(
-                    modifier =
-                        Modifier
-                            .fillMaxWidth()
-                            .height(WloSpacing.ROW_MIN),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Text(
-                        text = label,
-                        style = wloType.body.copy(fontSize = wloType.receipt.fontSize),
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.weight(1f),
-                    )
-                    Text(text = value, style = wloType.receipt)
-                }
-            }
-        }
-        Text(
-            text = explainer.note,
-            style = wloType.body.copy(fontSize = wloType.receipt.fontSize),
-            color = wloExtendedColors.textTertiary,
-        )
-        Spacer(Modifier.height(WloSpacing.ROW_MIN))
-    }
 }
 
 /** Identity formatter for display-ready strings (chips already carry units). */

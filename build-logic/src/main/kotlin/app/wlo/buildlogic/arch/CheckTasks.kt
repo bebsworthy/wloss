@@ -16,22 +16,22 @@ import java.nio.file.Paths
  * `wlo.architecture-check`; inputs are captured after all projects evaluate as
  * plain strings, so the action never touches a live Project (config-cache safe).
  *
- * uiAtoms (WLO-0031 P2) runs in the same action with a two-step severity
- * model: `-Pwlo.uiAtoms=warn` (default) prints counts + files per module and
- * NEVER fails — the P3 migration waves run under it; `-Pwlo.uiAtoms=enforce`
- * fails the build, making conformance mandatory once the waves land.
+ * uiAtoms (WLO-0031) runs in the same action with a two-step severity
+ * model: `-Pwlo.uiAtoms=enforce` (default since the P3 waves landed) fails
+ * the build, making conformance mandatory; `-Pwlo.uiAtoms=warn` prints
+ * counts + files per module and NEVER fails — the diagnostics baseline.
  */
 public open class CheckArchitectureTask : DefaultTask() {
 
-    /** Severity for the uiAtoms rule: "warn" (default) or "enforce". */
+    /** Severity for the uiAtoms rule: "enforce" (default) or "warn". */
     @get:Input
-    public var uiAtomsMode: String = MODE_WARN
+    public var uiAtomsMode: String = MODE_ENFORCE
 
     public companion object {
-        /** `-Pwlo.uiAtoms=warn` (default): print, never fail. */
+        /** `-Pwlo.uiAtoms=warn`: print, never fail (diagnostics baseline). */
         public const val MODE_WARN: String = "warn"
 
-        /** `-Pwlo.uiAtoms=enforce`: fail the build on any uiAtoms hit. */
+        /** `-Pwlo.uiAtoms=enforce` (default): fail the build on any uiAtoms hit. */
         public const val MODE_ENFORCE: String = "enforce"
     }
 

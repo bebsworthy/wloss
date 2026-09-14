@@ -1,17 +1,16 @@
 package app.wlo.app
 
-import androidx.compose.ui.test.assertIsEnabled
-import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onAllNodesWithTag
-import androidx.compose.ui.test.onFirst
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performClick
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import app.wlo.core.database.WloDatabase
+import app.wlo.core.datastore.SettingsStore
 import app.wlo.core.ports.EgressDeniedException
 import app.wlo.core.ports.EgressPurpose
 import app.wlo.core.ports.EgressRequest
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import org.junit.Rule
 import org.junit.Test
@@ -100,14 +99,25 @@ public class M6ConsentStudioTest {
             )
         }
 
-        // Kill switch ON → every row disabled + ledger untouched.
+        // Kill switch ON → the toggle can no longer mutate the ledger (the
+        // studio VM refuses writes while Cloud: OFF — the WloSwitchRow control
+        // no longer carries a disabled rendering; the contract lives in the
+        // ledger, not the switch's enabled flag), and the gate denies.
+        val settings = koin().get<SettingsStore>()
         rule.onNodeWithTag("f12-kill-switch", useUnmergedTree = true).performClick()
-        rule.waitForIdle()
+        waitUntil { runBlocking { settings.aiCloudKillSwitch.first() } }
         rule
-            .onAllNodesWithTag("f12-toggle-food-photo", useUnmergedTree = true)
-            .onFirst()
-            .assertIsNotEnabled()
-        runBlocking { assertEquals(2, db.consentLedger().all().size) }
+            .onNodeWithTag("f12-toggle-food-photo", useUnmergedTree = true)
+            .performClick()
+        rule.waitForIdle()
+        Thread.sleep(600) // a refused write never lands; a raced one would
+        runBlocking {
+            assertEquals(
+                2,
+                db.consentLedger().all().size,
+                "the kill switch must refuse further consent writes",
+            )
+        }
 
         // ENFORCEMENT: the gate reads the kill switch — Cloud: OFF denies.
         val gate = koin().get<app.wlo.core.consent.ConsentGate>()
@@ -118,13 +128,24 @@ public class M6ConsentStudioTest {
             )
         }
 
-        // Rows re-enable when the switch goes back off (grants stay revoked).
+        // Rows work again once the switch goes back off: the same toggle lands
+        // its grant (the ledger grows) — revocations from before stay history.
         rule.onNodeWithTag("f12-kill-switch", useUnmergedTree = true).performClick()
-        rule.waitForIdle()
+        waitUntil { runBlocking { !settings.aiCloudKillSwitch.first() } }
         rule
-            .onAllNodesWithTag("f12-toggle-food-photo", useUnmergedTree = true)
-            .onFirst()
-            .assertIsEnabled()
+            .onNodeWithTag("f12-toggle-food-photo", useUnmergedTree = true)
+            .performClick()
+        waitUntil { runBlocking { db.consentLedger().all().size == 3 } }
+        runBlocking {
+            assertEquals(
+                "grant",
+                db
+                    .consentLedger()
+                    .all()
+                    .last()
+                    .decision,
+            )
+        }
     }
 
     @Test

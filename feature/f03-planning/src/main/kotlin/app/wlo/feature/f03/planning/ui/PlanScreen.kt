@@ -1,27 +1,18 @@
 package app.wlo.feature.f03.planning.ui
 
-import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -30,17 +21,23 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import app.wlo.core.designsystem.WloAdherenceCell
 import app.wlo.core.designsystem.WloAdherenceCellState
 import app.wlo.core.designsystem.WloAdherenceStrip
+import app.wlo.core.designsystem.WloBanner
+import app.wlo.core.designsystem.WloBannerTone
 import app.wlo.core.designsystem.WloCard
+import app.wlo.core.designsystem.WloCardHeader
+import app.wlo.core.designsystem.WloEmptyState
 import app.wlo.core.designsystem.WloFitBadge
+import app.wlo.core.designsystem.WloListRow
 import app.wlo.core.designsystem.WloPrimaryRow
+import app.wlo.core.designsystem.WloScreenTitle
 import app.wlo.core.designsystem.WloSegmentedBar
-import app.wlo.core.designsystem.WloShape
+import app.wlo.core.designsystem.WloSheet
 import app.wlo.core.designsystem.WloSpacing
+import app.wlo.core.designsystem.WloTag
 import app.wlo.core.designsystem.wloExtendedColors
 import app.wlo.core.designsystem.wloType
 import app.wlo.core.model.PlannedSlotState
@@ -58,7 +55,6 @@ import app.wlo.feature.f03.planning.state.WhyPlanUi
  * Pantry. This composable owns the PLAN and RECIPES segments; List and Pantry
  * are F04 destinations the :app nav graph wires in (D2).
  */
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 public fun PlanScreen(
     viewModel: PlanViewModel,
@@ -79,14 +75,7 @@ public fun PlanScreen(
                     .padding(horizontal = WloSpacing.SCREEN),
             verticalArrangement = Arrangement.spacedBy(WloSpacing.CARD),
         ) {
-            Text(
-                text = "Plan",
-                style = wloType.title.copy(fontSize = wloType.title.fontSize * 1.5f),
-                modifier =
-                    Modifier
-                        .padding(top = WloSpacing.SCREEN)
-                        .testTag("title-plan"),
-            )
+            WloScreenTitle(title = "Plan", modifier = Modifier.testTag("title-plan"))
             WloSegmentedBar(
                 segments = SEGMENT_LABELS,
                 selected = segment.ordinal,
@@ -106,15 +95,14 @@ public fun PlanScreen(
 
             PlanSegment.RECIPES -> RecipesSegment(state, viewModel::onEvent, onEditRecipe)
 
-            PlanSegment.LIST -> PipelineJump("open the shopping list", "f03-open-list", onOpenList)
+            PlanSegment.LIST -> PipelineJump("Open the shopping list", "f03-open-list", onOpenList)
 
-            PlanSegment.PANTRY -> PipelineJump("open the pantry", "f03-open-pantry", onOpenPantry)
+            PlanSegment.PANTRY -> PipelineJump("Open the pantry", "f03-open-pantry", onOpenPantry)
         }
 
         state.slotSheet?.let { sheet ->
-            ModalBottomSheet(
+            WloSheet(
                 onDismissRequest = { viewModel.onEvent(PlanEvent.DismissSlotSheet) },
-                shape = WloShape.SheetTop,
                 modifier = Modifier.testTag("f03-slot-sheet"),
             ) {
                 SlotSheetContent(
@@ -128,9 +116,8 @@ public fun PlanScreen(
         }
 
         state.swapSheet?.let { sheet ->
-            ModalBottomSheet(
+            WloSheet(
                 onDismissRequest = { viewModel.onEvent(PlanEvent.DismissSwapSheet) },
-                shape = WloShape.SheetTop,
                 modifier = Modifier.testTag("f03-swap-sheet"),
             ) {
                 SwapSheetContent(
@@ -190,15 +177,9 @@ private fun PlanSegmentContent(
             state.adherence?.let { adherence -> AdherenceCard(adherence) }
 
             PrimaryRow(
-                label = "build list · week pre-selected",
+                label = "Build list",
                 modifier = Modifier.testTag("f03-build-list"),
                 onClick = onOpenList,
-            )
-            Text(
-                text = "builds in under a second, offline · your aisle order will be yours",
-                style = wloType.receipt,
-                color = wloExtendedColors.textTertiary,
-                modifier = Modifier.padding(horizontal = WloSpacing.TIGHT),
             )
         }
     }
@@ -206,19 +187,7 @@ private fun PlanSegmentContent(
 
 @Composable
 private fun NoticeBanner(notice: String): Unit =
-    Surface(
-        modifier = Modifier.fillMaxWidth().testTag("f03-notice"),
-        shape = WloShape.Chip,
-        color = MaterialTheme.colorScheme.surface,
-        contentColor = MaterialTheme.colorScheme.onSurface,
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
-    ) {
-        Text(
-            text = notice,
-            style = wloType.body.copy(fontSize = wloType.receipt.fontSize),
-            modifier = Modifier.padding(WloSpacing.CARD),
-        )
-    }
+    WloBanner(text = notice, tone = WloBannerTone.Info, modifier = Modifier.testTag("f03-notice"))
 
 @Composable
 private fun EmptyPlanCard(
@@ -226,29 +195,22 @@ private fun EmptyPlanCard(
     onEvent: (PlanEvent) -> Unit,
 ): Unit =
     WloCard(modifier = Modifier.testTag("f03-empty-card")) {
-        Text(
-            text = "the week ahead",
-            style = wloType.label,
-            color = wloExtendedColors.textTertiary,
-        )
-        Text(text = "Deal a week of meals", style = wloType.title)
-        Text(
-            text =
-                "the on-device engine fills breakfast · lunch · dinner from your library " +
-                    "against this week's budget — deterministic, offline, re-dealt in seconds.",
-            style = wloType.body.copy(fontSize = wloType.receipt.fontSize),
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        WloEmptyState(
+            title = "The week ahead",
+            body =
+                "Breakfast, lunch and dinner dealt from your recipe library against " +
+                    "this week's budget — re-dealt in seconds.",
         )
         if (generating) {
             Text(
-                text = "dealing…",
+                text = "Dealing…",
                 style = wloType.label,
                 color = MaterialTheme.colorScheme.primary,
                 modifier = Modifier.testTag("f03-generating"),
             )
         } else {
             PrimaryRow(
-                label = "generate week",
+                label = "Deal a week of meals",
                 modifier = Modifier.testTag("f03-generate"),
                 onClick = { onEvent(PlanEvent.Generate()) },
             )
@@ -261,26 +223,22 @@ private fun WeekHeaderCard(
     onEvent: (PlanEvent) -> Unit,
     onOpenRecipes: () -> Unit,
 ): Unit =
-    WloCard(modifier = Modifier.testTag("f03-week-card")) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Column(Modifier.weight(1f)) {
-                Text(text = "Week of ${state.weekLabel.orEmpty()}", style = wloType.title)
-                val today = state.days.firstOrNull { it.isToday }
-                if (today?.budgetKcal != null) {
-                    Text(
-                        text = "%,d kcal/day".format(today.budgetKcal.value.toInt()),
-                        style = wloType.receipt,
-                        color = wloExtendedColors.textTertiary,
-                    )
-                }
-            }
-            state.planVersion?.let { version ->
-                Text(
-                    text = "deal v$version",
-                    style = wloType.receipt,
-                    color = wloExtendedColors.textTertiary,
-                )
-            }
+    WloCard(
+        modifier = Modifier.testTag("f03-week-card"),
+        header = {
+            WloCardHeader(
+                title = "Week of ${state.weekLabel.orEmpty()}",
+                provenance = weekProvenance(state),
+            )
+        },
+    ) {
+        val today = state.days.firstOrNull { it.isToday }
+        if (today?.budgetKcal != null) {
+            Text(
+                text = "%,d kcal/day".format(today.budgetKcal.value.toInt()),
+                style = wloType.receipt,
+                color = wloExtendedColors.textTertiary,
+            )
         }
 
         // "Why this plan" — visible reasoning (F03 §8 [v1]): report numbers and
@@ -289,18 +247,31 @@ private fun WeekHeaderCard(
 
         Row(horizontalArrangement = Arrangement.spacedBy(WloSpacing.CARD)) {
             PrimaryRow(
-                label = if (state.generating) "dealing…" else "deal again",
+                label = if (state.generating) "Dealing…" else "Deal again",
                 modifier = Modifier.weight(1f).testTag("f03-deal-again"),
                 enabled = !state.generating,
                 onClick = { onEvent(PlanEvent.DealAgain) },
             )
             PrimaryRow(
-                label = "recipes",
+                label = "Recipes",
                 modifier = Modifier.weight(1f).testTag("f03-open-recipes"),
                 onClick = onOpenRecipes,
             )
         }
     }
+
+/** The plan version word, in the header's provenance slot when a deal exists. */
+@Composable
+private fun weekProvenance(state: PlanUiState): (@Composable () -> Unit)? {
+    val version = state.planVersion ?: return null
+    return {
+        Text(
+            text = "deal v$version",
+            style = wloType.receipt,
+            color = wloExtendedColors.textTertiary,
+        )
+    }
+}
 
 @Composable
 private fun WhyThisPlan(why: WhyPlanUi): Unit =
@@ -308,7 +279,7 @@ private fun WhyThisPlan(why: WhyPlanUi): Unit =
         HorizontalDivider(color = MaterialTheme.colorScheme.outline, thickness = 1.dp)
         Text(
             text = "Why this plan",
-            style = wloType.body.copy(fontSize = wloType.receipt.fontSize),
+            style = wloType.caption,
             modifier = Modifier.testTag("f03-why-title"),
         )
         Text(
@@ -343,11 +314,6 @@ private fun WhyThisPlan(why: WhyPlanUi): Unit =
                 color = wloExtendedColors.textTertiary,
             )
         }
-        Text(
-            text = "generated on-device · deterministic for its seed",
-            style = wloType.receipt,
-            color = wloExtendedColors.textTertiary,
-        )
     }
 
 @Composable
@@ -361,29 +327,34 @@ private fun DaySection(
     // Past days without open slots collapse to one line (the prototype's rule);
     // today, focused days and days still owing decisions stay expanded.
     val collapsed = day.isPast && !isFocusDay && day.openCount == 0
-    WloCard(modifier = modifier) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Text(
-                text = day.label + if (day.isToday) " · today" else "",
-                style = wloType.body.copy(fontSize = 13.sp),
-                modifier = Modifier.weight(1f),
+    WloCard(
+        modifier = modifier,
+        header = {
+            WloCardHeader(
+                title = if (day.isToday) "${day.label} — today" else day.label,
+                provenance = {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(WloSpacing.TIGHT),
+                    ) {
+                        day.fit?.let { fit ->
+                            WloFitBadge(
+                                kcalDeltaPct = fit.kcalDeltaPct,
+                                proteinDeltaG = fit.proteinDeltaG,
+                                withinTolerance = fit.withinTolerance,
+                                modifier = Modifier.testTag("f03-fit-${day.dayEpochDay}"),
+                            )
+                        }
+                        Text(
+                            text = if (day.openCount == 0) "all set" else "${day.openCount} open",
+                            style = wloType.receipt,
+                            color = wloExtendedColors.textTertiary,
+                        )
+                    }
+                },
             )
-            day.fit?.let { fit ->
-                WloFitBadge(
-                    kcalDeltaPct = fit.kcalDeltaPct,
-                    proteinDeltaG = fit.proteinDeltaG,
-                    withinTolerance = fit.withinTolerance,
-                    modifier = Modifier.testTag("f03-fit-${day.dayEpochDay}"),
-                )
-            }
-            Spacer(Modifier.width(WloSpacing.TIGHT))
-            Text(
-                text = if (day.openCount == 0) "✓ all set" else "${day.openCount} open",
-                style = wloType.receipt,
-                color = wloExtendedColors.textTertiary,
-            )
-        }
-
+        },
+    ) {
         if (collapsed) {
             val summary = day.slots.mapNotNull { it.recipeName }.joinToString(" · ")
             if (summary.isNotEmpty()) {
@@ -413,70 +384,50 @@ private fun SlotRow(
     focused: Boolean,
     onOpen: () -> Unit,
 ): Unit =
-    Row(
-        modifier =
-            Modifier
-                .fillMaxWidth()
-                .heightIn(min = WloSpacing.ROW_INTERACTIVE)
-                .clickable(onClick = onOpen)
-                .testTag("f03-slot-${slot.id}")
-                .padding(vertical = WloSpacing.TIGHT),
-        horizontalArrangement = Arrangement.spacedBy(WloSpacing.TIGHT),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Box(modifier = Modifier.widthIn(min = 18.dp)) {
-            Text(
-                text = slotInitial(slot.mealSlot),
-                style = wloType.label,
-                color = if (focused) MaterialTheme.colorScheme.primary else wloExtendedColors.textTertiary,
-            )
-        }
-        Column(Modifier.weight(1f)) {
-            Text(
-                text = slot.recipeName ?: "add anything",
-                style = wloType.body,
-                color =
-                    if (slot.recipeName == null) {
-                        wloExtendedColors.textTertiary
-                    } else {
-                        MaterialTheme.colorScheme.onSurface
-                    },
-            )
-            val words =
-                buildList {
-                    slot.kcalPerServing?.let { add("${it.toInt()} kcal/serv") }
-                    if (slot.isCookEvent) add("cook" + (slot.batchServings?.let { " ×${trim1(it)}" } ?: ""))
-                    if (slot.isLeftover) add("leftover of the batch")
-                    add(stateWord(slot))
+    WloListRow(
+        label = slot.recipeName ?: "Add anything",
+        secondary = slotSecondaryLine(slot),
+        leading = {
+            Box(modifier = Modifier.widthIn(min = 18.dp)) {
+                Text(
+                    text = slotInitial(slot.mealSlot),
+                    style = wloType.label,
+                    color =
+                        if (focused) {
+                            MaterialTheme.colorScheme.primary
+                        } else {
+                            wloExtendedColors.textTertiary
+                        },
+                )
+            }
+        },
+        value =
+            if (slot.state == PlannedSlotState.CONFIRMED) {
+                {
+                    Text(
+                        text = "Eaten",
+                        style = wloType.label,
+                        color = MaterialTheme.colorScheme.primary,
+                    )
                 }
-            Text(
-                text = words.joinToString(" · "),
-                style = wloType.receipt,
-                color = wloExtendedColors.textTertiary,
-            )
-            slot.unfillableReason?.let {
-                Text(
-                    text = it,
-                    style = wloType.receipt,
-                    color = wloExtendedColors.textTertiary,
-                )
-            }
-            if (slot.state == PlannedSlotState.SKIPPED) {
-                Text(
-                    text = "the plan met real life — replanned. Nothing owed.",
-                    style = wloType.receipt,
-                    color = wloExtendedColors.textTertiary,
-                )
-            }
-        }
-        if (slot.state == PlannedSlotState.CONFIRMED) {
-            Text(
-                text = "eaten ✓",
-                style = wloType.label,
-                color = MaterialTheme.colorScheme.primary,
-            )
-        }
-    }
+            } else {
+                null
+            },
+        chevron = true,
+        onClick = onOpen,
+        modifier = Modifier.testTag("f03-slot-${slot.id}"),
+    )
+
+/** The slot's supporting line: per-serving words, then any open questions. */
+private fun slotSecondaryLine(slot: PlannedSlotUi): String =
+    buildList {
+        slot.kcalPerServing?.let { add("${it.toInt()} kcal/serv") }
+        if (slot.isCookEvent) add("cook" + (slot.batchServings?.let { " ×${trim1(it)}" } ?: ""))
+        if (slot.isLeftover) add("leftover of the batch")
+        add(stateWord(slot))
+        slot.unfillableReason?.let { add(it) }
+        if (slot.state == PlannedSlotState.SKIPPED) add("the plan met real life — replanned. Nothing owed.")
+    }.joinToString(" · ")
 
 private fun slotInitial(mealSlot: String): String =
     when (mealSlot) {
@@ -497,26 +448,27 @@ internal fun stateWord(slot: PlannedSlotUi): String =
 
 @Composable
 private fun AdherenceCard(adherence: AdherenceUi): Unit =
-    WloCard(modifier = Modifier.testTag("f03-adherence")) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Text(
-                text = "Adherence",
-                style = wloType.label,
-                color = wloExtendedColors.textTertiary,
-                modifier = Modifier.weight(1f),
+    WloCard(
+        modifier = Modifier.testTag("f03-adherence"),
+        header = {
+            WloCardHeader(
+                title = "Adherence",
+                provenance = {
+                    Text(
+                        text =
+                            if (adherence.meaningful) {
+                                adherence.planCoveragePct?.let { coverage -> "coverage ${trim1(coverage)}%" }
+                                    ?: "Fallback plan"
+                            } else {
+                                adherence.gateReason ?: "not yet meaningful"
+                            },
+                        style = wloType.receipt,
+                        color = wloExtendedColors.textTertiary,
+                    )
+                },
             )
-            Text(
-                text =
-                    if (adherence.meaningful) {
-                        adherence.planCoveragePct?.let { coverage -> "coverage ${trim1(coverage)}%" }
-                            ?: "plans that survive contact with Tuesdays"
-                    } else {
-                        adherence.gateReason ?: "not yet meaningful"
-                    },
-                style = wloType.receipt,
-                color = wloExtendedColors.textTertiary,
-            )
-        }
+        },
+    ) {
         if (adherence.cells.isNotEmpty()) {
             WloAdherenceStrip(
                 cells =
@@ -540,11 +492,6 @@ private fun AdherenceCard(adherence: AdherenceUi): Unit =
                 color = wloExtendedColors.textTertiary,
             )
         }
-        Text(
-            text = "open slots stay open, never penalized — the strip reads the planning, not the person.",
-            style = wloType.receipt,
-            color = wloExtendedColors.textTertiary,
-        )
     }
 
 @Composable
@@ -571,21 +518,16 @@ private fun RecipesSegment(
             textStyle = wloType.body,
         )
         PrimaryRow(
-            label = "new recipe",
+            label = "New recipe",
             modifier = Modifier.testTag("f03-recipe-new"),
             onClick = { onEditRecipe(null) },
         )
         if (state.recipes.isEmpty()) {
-            WloCard {
-                Text(
-                    text = "your library",
-                    style = wloType.label,
-                    color = wloExtendedColors.textTertiary,
-                )
+            WloCard(header = { WloCardHeader(title = "Your library") }) {
                 Text(
                     text =
                         "no recipes match yet — the shipped seeds arrive with the first deal, all editable.",
-                    style = wloType.body.copy(fontSize = wloType.receipt.fontSize),
+                    style = wloType.caption,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
@@ -601,10 +543,8 @@ private fun RecipeLibraryRow(
     onClick: () -> Unit,
 ): Unit =
     WloCard(
-        modifier =
-            Modifier
-                .clickable(onClick = onClick)
-                .testTag("f03-recipe-row"),
+        onClick = onClick,
+        modifier = Modifier.testTag("f03-recipe-row"),
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Column(Modifier.weight(1f)) {
@@ -626,15 +566,7 @@ private fun RecipeLibraryRow(
         if (recipe.tags.isNotEmpty()) {
             Row(horizontalArrangement = Arrangement.spacedBy(WloSpacing.TIGHT)) {
                 recipe.tags.take(4).forEach { tag ->
-                    Text(
-                        text = tag,
-                        style = wloType.label,
-                        color = wloExtendedColors.textTertiary,
-                        modifier =
-                            Modifier
-                                .background(wloExtendedColors.surfaceRaised, WloShape.Chip)
-                                .padding(horizontal = 6.dp, vertical = 2.dp),
-                    )
+                    WloTag(text = tag)
                 }
             }
         }

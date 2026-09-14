@@ -1,17 +1,12 @@
 package app.wlo.feature.f12.consent.ui
 
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -19,6 +14,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
+import app.wlo.core.designsystem.WloButton
+import app.wlo.core.designsystem.WloSecondaryButton
 import app.wlo.core.designsystem.WloShape
 import app.wlo.core.designsystem.WloSpacing
 import app.wlo.core.designsystem.wloExtendedColors
@@ -76,7 +73,6 @@ public fun PointOfUseConsentSheet(
         shape = WloShape.SheetTop,
         color = MaterialTheme.colorScheme.surface,
         contentColor = MaterialTheme.colorScheme.onSurface,
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
         modifier = modifier.fillMaxWidth().testTag("f12-consent-sheet"),
     ) {
         Column(
@@ -102,26 +98,22 @@ public fun PointOfUseConsentSheet(
                 color = wloExtendedColors.textTertiary,
             )
             Column(verticalArrangement = Arrangement.spacedBy(WloSpacing.TIGHT)) {
-                OutlinedButton(
+                WloSecondaryButton(
+                    label = "Just this once (10 minutes)",
                     onClick = { onDecision(ConsentSheetDecision.JUST_ONCE) },
-                    modifier = Modifier.fillMaxWidth().height(48.dp).testTag("f12-consent-once"),
-                ) {
-                    Text("Just this once (10 minutes)", style = wloType.label)
-                }
-                OutlinedButton(
+                    modifier = Modifier.fillMaxWidth().testTag("f12-consent-once"),
+                )
+                WloSecondaryButton(
+                    label = "Always for ${payload.categoryTitle}",
                     onClick = { onDecision(ConsentSheetDecision.ALWAYS) },
-                    modifier = Modifier.fillMaxWidth().height(48.dp).testTag("f12-consent-always"),
-                ) {
-                    Text("Always for ${payload.categoryTitle}", style = wloType.label)
-                }
+                    modifier = Modifier.fillMaxWidth().testTag("f12-consent-always"),
+                )
                 // The default-highlighted answer: keep it local (F12 §3.5).
-                Button(
+                WloButton(
+                    label = "Keep it on-device",
                     onClick = { onDecision(ConsentSheetDecision.ON_DEVICE) },
-                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
-                    modifier = Modifier.fillMaxWidth().height(48.dp).testTag("f12-consent-ondevice"),
-                ) {
-                    Text("Keep it on-device", style = wloType.label)
-                }
+                    modifier = Modifier.fillMaxWidth().testTag("f12-consent-ondevice"),
+                )
             }
         }
     }
@@ -131,7 +123,7 @@ public fun PointOfUseConsentSheet(
 @Composable
 private fun PayloadPreview(bytes: ByteArray?) {
     Surface(
-        shape = RoundedCornerShape(12.dp),
+        shape = WloShape.Chip,
         color = wloExtendedColors.surfaceSunken,
         modifier = Modifier.fillMaxWidth().height(140.dp).testTag("f12-consent-preview"),
     ) {

@@ -7,10 +7,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.rememberCoroutineScope
@@ -19,6 +16,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.fragment.app.FragmentActivity
+import app.wlo.core.designsystem.WloButton
+import app.wlo.core.designsystem.WloScreenTitle
+import app.wlo.core.designsystem.WloSecondaryButton
 import app.wlo.core.designsystem.WloSpacing
 import app.wlo.core.designsystem.wloExtendedColors
 import app.wlo.core.designsystem.wloType
@@ -61,7 +61,7 @@ public fun LockGateScreen(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center,
     ) {
-        Text(text = "WLO is locked", style = wloType.title.copy(fontSize = wloType.title.fontSize * 1.5f))
+        WloScreenTitle(title = "WLO is locked")
         Text(
             text = "Your data is on this device, encrypted. Confirm it's you to open it.",
             style = wloType.body,
@@ -69,7 +69,8 @@ public fun LockGateScreen(
             modifier = Modifier.padding(top = WloSpacing.TIGHT, bottom = WloSpacing.CARD),
         )
         if (canPrompt) {
-            Button(
+            WloButton(
+                label = "Unlock",
                 onClick = {
                     if (activity != null) {
                         scope.launch {
@@ -82,11 +83,8 @@ public fun LockGateScreen(
                         }
                     }
                 },
-                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
                 modifier = Modifier.testTag("applock-unlock"),
-            ) {
-                Text("Unlock", style = wloType.label)
-            }
+            )
         } else {
             Text(
                 text =
@@ -97,15 +95,17 @@ public fun LockGateScreen(
                 modifier = Modifier.testTag("applock-no-credential"),
             )
             Spacer(Modifier.height(WloSpacing.CARD))
-            OutlinedButton(
+            WloSecondaryButton(
+                label = "Open security settings",
                 onClick = {
                     val intent = Intent("android.settings.SECURITY_SETTINGS")
                     intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                     context.startActivity(intent)
                 },
                 modifier = Modifier.testTag("applock-open-security"),
-            ) { Text("Open security settings", style = wloType.label) }
-            OutlinedButton(
+            )
+            WloSecondaryButton(
+                label = "Turn app lock off",
                 onClick = {
                     val koin =
                         org.koin.core.context.GlobalContext
@@ -119,7 +119,7 @@ public fun LockGateScreen(
                     }
                 },
                 modifier = Modifier.testTag("applock-turn-off"),
-            ) { Text("Turn app lock off", style = wloType.label) }
+            )
         }
     }
 }

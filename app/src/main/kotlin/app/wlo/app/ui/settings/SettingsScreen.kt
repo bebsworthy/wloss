@@ -1,33 +1,31 @@
 package app.wlo.app.ui.settings
 
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
-import androidx.compose.material3.Switch
-import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
-import androidx.compose.ui.unit.dp
 import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewModelScope
 import app.wlo.core.datastore.SettingsStore
-import app.wlo.core.designsystem.WloShape
+import app.wlo.core.designsystem.SelectChip
+import app.wlo.core.designsystem.WloCard
+import app.wlo.core.designsystem.WloCardHeader
+import app.wlo.core.designsystem.WloListRow
+import app.wlo.core.designsystem.WloScreenTitle
 import app.wlo.core.designsystem.WloSpacing
+import app.wlo.core.designsystem.WloSwitchRow
 import app.wlo.core.designsystem.wloExtendedColors
 import app.wlo.core.designsystem.wloType
 import app.wlo.core.vault.AppLockController
@@ -65,94 +63,77 @@ public fun SettingsScreen(
                 .testTag("settings"),
         verticalArrangement = Arrangement.spacedBy(WloSpacing.CARD),
     ) {
-        Text(
-            text = "Settings",
-            style = wloType.title.copy(fontSize = wloType.title.fontSize * 1.5f),
-            modifier = Modifier.padding(top = WloSpacing.SCREEN).testTag("settings-title"),
-        )
+        WloScreenTitle(title = "Settings", modifier = Modifier.testTag("settings-title"))
         Text(
             text = "One screen, then the two deep surfaces. Everything here lives on this device.",
             style = wloType.body,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
 
-        SettingsRow(
-            tag = "settings-open-ai",
+        WloListRow(
             label = "AI Studio",
-            sub = "Consent, receipts, models, kill switch",
+            secondary = "Consent, receipts, models, kill switch",
+            chevron = true,
             onClick = onOpenAiStudio,
+            modifier = Modifier.testTag("settings-open-ai"),
         )
-        SettingsRow(
-            tag = "settings-open-vault",
+        WloListRow(
             label = "Data Vault",
-            sub = "Backups, restore, export, storage",
+            secondary = "Backups, restore, export, storage",
+            chevron = true,
             onClick = onOpenVault,
+            modifier = Modifier.testTag("settings-open-vault"),
         )
 
         // --- App lock (F13 §3) ------------------------------------------------
-        Surface(
-            shape = WloShape.Card,
-            color = MaterialTheme.colorScheme.surface,
-            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
-            modifier = Modifier.fillMaxWidth().testTag("settings-applock"),
+        WloCard(
+            modifier = Modifier.testTag("settings-applock"),
+            header = { WloCardHeader(title = "App lock") },
         ) {
-            Column(Modifier.padding(WloSpacing.PAD_CARD), verticalArrangement = Arrangement.spacedBy(WloSpacing.CARD)) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Column(Modifier.weight(1f)) {
-                        Text(text = "App lock", style = wloType.title)
-                        Text(
-                            text =
-                                if (canPrompt) {
-                                    "Ask for your screen lock (biometric or PIN) when you come back."
-                                } else {
-                                    "This device has no screen lock configured, so there is nothing to " +
-                                        "verify against. Set one in Android's security settings first."
-                                },
-                            style = wloType.body,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.testTag("settings-applock-availability"),
+            if (canPrompt) {
+                WloSwitchRow(
+                    label = "Ask for your screen lock (biometric or PIN) when you come back",
+                    checked = state.appLockEnabled,
+                    onCheckedChange = viewModel::setAppLock,
+                    modifier = Modifier.testTag("settings-applock-toggle"),
+                )
+            } else {
+                Text(
+                    text =
+                        "This device has no screen lock configured, so there is nothing to " +
+                            "verify against. Set one in Android's security settings first.",
+                    style = wloType.body,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.testTag("settings-applock-availability"),
+                )
+            }
+            if (state.appLockEnabled) {
+                Text(text = "Lock when I've been away for…", style = wloType.statS)
+                Row(horizontalArrangement = Arrangement.spacedBy(WloSpacing.TIGHT)) {
+                    for (timeout in LockTimeout.entries) {
+                        SelectChip(
+                            label = timeoutLabel(timeout),
+                            selected = state.lockTimeout == timeout,
+                            onClick = { viewModel.setLockTimeout(timeout) },
+                            modifier = Modifier.testTag("settings-lock-timeout-${timeout.wireName}"),
                         )
                     }
-                    Switch(
-                        checked = state.appLockEnabled,
-                        onCheckedChange = viewModel::setAppLock,
-                        enabled = canPrompt,
-                        colors =
-                            SwitchDefaults.colors(
-                                checkedTrackColor = MaterialTheme.colorScheme.primary,
-                                checkedThumbColor = wloExtendedColors.surfaceSunken,
-                            ),
-                        modifier = Modifier.testTag("settings-applock-toggle"),
-                    )
                 }
-                if (state.appLockEnabled) {
-                    Text(text = "Lock when I've been away for…", style = wloType.statS)
-                    Row(horizontalArrangement = Arrangement.spacedBy(WloSpacing.TIGHT)) {
-                        for (timeout in LockTimeout.entries) {
-                            app.wlo.core.designsystem.SelectChip(
-                                label = timeoutLabel(timeout),
-                                selected = state.lockTimeout == timeout,
-                                onClick = { viewModel.setLockTimeout(timeout) },
-                                modifier = Modifier.testTag("settings-lock-timeout-${timeout.wireName}"),
-                            )
-                        }
-                    }
-                    Text(
-                        text =
-                            "The lock is a convenience screen — your data is already encrypted at rest, " +
-                                "and a weigh-in glance-away shouldn't relock everything. One minute is the default.",
-                        style = wloType.receipt,
-                        color = wloExtendedColors.textTertiary,
-                    )
-                }
-                if (!canPrompt) {
-                    Text(
-                        text = "Open Android → Security to set a screen lock, then come back.",
-                        style = wloType.receipt,
-                        color = wloExtendedColors.textTertiary,
-                        modifier = Modifier.testTag("settings-applock-no-lock"),
-                    )
-                }
+                Text(
+                    text =
+                        "The lock is a convenience screen — your data is already encrypted at rest, " +
+                            "and a weigh-in glance-away shouldn't relock everything. One minute is the default.",
+                    style = wloType.receipt,
+                    color = wloExtendedColors.textTertiary,
+                )
+            }
+            if (!canPrompt) {
+                Text(
+                    text = "Open Android → Security to set a screen lock, then come back.",
+                    style = wloType.receipt,
+                    color = wloExtendedColors.textTertiary,
+                    modifier = Modifier.testTag("settings-applock-no-lock"),
+                )
             }
         }
 
@@ -164,32 +145,6 @@ public fun SettingsScreen(
             color = wloExtendedColors.textTertiary,
             modifier = Modifier.padding(bottom = WloSpacing.SCREEN),
         )
-    }
-}
-
-@Composable
-private fun SettingsRow(
-    tag: String,
-    label: String,
-    sub: String,
-    onClick: () -> Unit,
-) {
-    Surface(
-        shape = WloShape.Card,
-        color = MaterialTheme.colorScheme.surface,
-        contentColor = MaterialTheme.colorScheme.onSurface,
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
-        modifier =
-            Modifier
-                .fillMaxWidth()
-                .heightIn(min = 56.dp)
-                .testTag(tag),
-        onClick = onClick,
-    ) {
-        Column(Modifier.padding(WloSpacing.PAD_CARD)) {
-            Text(text = label, style = wloType.title)
-            Text(text = sub, style = wloType.receipt, color = wloExtendedColors.textTertiary)
-        }
     }
 }
 

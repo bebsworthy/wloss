@@ -354,7 +354,8 @@ class ArchitectureCheckSelfTest {
     }
 
     // ------------------------------------------------------------------
-    // uiAtoms (WLO-0031 P2) — design-system enforcement, warn-by-default.
+    // uiAtoms (WLO-0031) — design-system enforcement, enforce-by-default
+    // since the P3 migration landed; `-Pwlo.uiAtoms=warn` is the opt-out.
 
     /** A feature screen committing every banned uiAtoms pattern at once. */
     private val uiAtomsBadSource: String =
@@ -381,8 +382,8 @@ class ArchitectureCheckSelfTest {
         """.trimIndent()
 
     @Test
-    fun uiAtoms_warnIsTheDefaultAndNeverFails() {
-        val result = run(
+    fun uiAtoms_enforceIsTheDefault_andFailsTheBuild() {
+        val result = runFailing(
             fixture(
                 mapOf(
                     "settings.gradle.kts" to settings(":feature:f99-ui"),
@@ -392,10 +393,30 @@ class ArchitectureCheckSelfTest {
                 ),
             ),
         )
+        assertTrue("mode=enforce" in result.output, "must name the mode:\n${result.output}")
+        assertTrue(
+            "uiAtoms [banned-import material3.Button]:" in result.output,
+            "must print the violation line format:\n${result.output}",
+        )
+    }
+
+    @Test
+    fun uiAtoms_warnOptOut_neverFails() {
+        val result = run(
+            fixture(
+                mapOf(
+                    "settings.gradle.kts" to settings(":feature:f99-ui"),
+                    rootBuild.first to rootBuild.second,
+                    "feature/f99-ui/build.gradle.kts" to "",
+                    "feature/f99-ui/src/main/kotlin/Bad.kt" to uiAtomsBadSource,
+                ),
+            ),
+            extraArguments = listOf("-Pwlo.uiAtoms=warn"),
+        )
         assertEquals(
             TaskOutcome.SUCCESS,
             result.task(":checkArchitecture")?.outcome,
-            "warn mode must NEVER fail (migration baseline):\n${result.output}",
+            "warn mode must NEVER fail (diagnostics baseline):\n${result.output}",
         )
         assertTrue("uiAtoms: WARN mode" in result.output, "must announce warn mode:\n${result.output}")
         assertTrue(

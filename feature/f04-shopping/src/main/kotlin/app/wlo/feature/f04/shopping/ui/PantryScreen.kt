@@ -1,40 +1,48 @@
 package app.wlo.feature.f04.shopping.ui
 
-import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.StrokeJoin
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.graphics.vector.PathBuilder
+import androidx.compose.ui.graphics.vector.path
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import app.wlo.core.designsystem.SelectChip
+import app.wlo.core.designsystem.WloBadge
+import app.wlo.core.designsystem.WloBadgeTone
 import app.wlo.core.designsystem.WloCard
-import app.wlo.core.designsystem.WloShape
+import app.wlo.core.designsystem.WloCardHeader
+import app.wlo.core.designsystem.WloIconAction
+import app.wlo.core.designsystem.WloScreenTitle
+import app.wlo.core.designsystem.WloSecondaryButton
+import app.wlo.core.designsystem.WloSheet
 import app.wlo.core.designsystem.WloSpacing
 import app.wlo.core.designsystem.WloStatusDot
+import app.wlo.core.designsystem.WloSwitchRow
 import app.wlo.core.designsystem.wloExtendedColors
 import app.wlo.core.designsystem.wloType
 import app.wlo.feature.f04.shopping.state.PantryEvent
@@ -49,7 +57,6 @@ import app.wlo.feature.f04.shopping.state.PantryViewModel
  * through the shared food-db door, typed-name fallback — the camera is never
  * required), the manual "mark used" deduction, and the R-S5 toggle.
  */
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 public fun PantryScreen(
     viewModel: PantryViewModel,
@@ -62,28 +69,17 @@ public fun PantryScreen(
     var deducting by remember { mutableStateOf<PantryRowUi?>(null) }
 
     Column(modifier = modifier.fillMaxSize()) {
-        Row(
+        Column(
             modifier =
                 Modifier
                     .fillMaxWidth()
                     .padding(horizontal = WloSpacing.SCREEN),
-            verticalAlignment = Alignment.CenterVertically,
         ) {
-            Column(Modifier.weight(1f)) {
-                Text(
-                    text = "Pantry",
-                    style = wloType.title.copy(fontSize = wloType.title.fontSize * 1.5f),
-                    modifier = Modifier.padding(top = WloSpacing.SCREEN).testTag("f04-pantry-title"),
-                )
-                Text(
-                    text = "what's in the house",
-                    style = wloType.receipt,
-                    color = wloExtendedColors.textTertiary,
-                )
-            }
-            DeductionToggle(
-                enabled = state.deductionEnabled,
-                onToggle = { viewModel.onEvent(PantryEvent.ToggleDeduction(it)) },
+            WloScreenTitle(title = "Pantry", modifier = Modifier.testTag("f04-pantry-title"))
+            Text(
+                text = "what's in the house",
+                style = wloType.receipt,
+                color = wloExtendedColors.textTertiary,
             )
         }
 
@@ -104,8 +100,18 @@ public fun PantryScreen(
                             modifier = Modifier.testTag("f04-pantry-notice"),
                         )
                     }
+                    // R-S5: the switch IS the setting — the row reports the
+                    // persisted boolean directly (set semantics, not flip).
+                    WloCard {
+                        WloSwitchRow(
+                            label = "Auto-deduct from the list",
+                            checked = state.deductionEnabled,
+                            onCheckedChange = { viewModel.onEvent(PantryEvent.ToggleDeduction(it)) },
+                            modifier = Modifier.testTag("f04-deduction-toggle"),
+                        )
+                    }
                     PrimaryRow(
-                        label = "+ add stock / check in",
+                        label = "Add stock",
                         modifier = Modifier.testTag("f04-pantry-add"),
                         onClick = { showAdd = true },
                     )
@@ -122,20 +128,21 @@ public fun PantryScreen(
 
             if (state.useSoon.isNotEmpty()) {
                 item(key = "use-soon") {
-                    WloCard(modifier = Modifier.testTag("f04-use-soon")) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Text(
-                                text = "use soon",
-                                style = wloType.label,
-                                color = wloExtendedColors.textTertiary,
-                                modifier = Modifier.weight(1f),
+                    WloCard(
+                        modifier = Modifier.testTag("f04-use-soon"),
+                        header = {
+                            WloCardHeader(
+                                title = "Use soon",
+                                provenance = {
+                                    Text(
+                                        text = "${state.useSoon.size}",
+                                        style = wloType.receipt,
+                                        color = wloExtendedColors.textTertiary,
+                                    )
+                                },
                             )
-                            Text(
-                                text = "${state.useSoon.size}",
-                                style = wloType.receipt,
-                                color = wloExtendedColors.textTertiary,
-                            )
-                        }
+                        },
+                    ) {
                         for (row in state.useSoon) {
                             PantryRow(
                                 row = row,
@@ -162,12 +169,10 @@ public fun PantryScreen(
 
             if (state.low.isNotEmpty()) {
                 item(key = "low") {
-                    WloCard(modifier = Modifier.testTag("f04-low")) {
-                        Text(
-                            text = "running low",
-                            style = wloType.label,
-                            color = wloExtendedColors.textTertiary,
-                        )
+                    WloCard(
+                        modifier = Modifier.testTag("f04-low"),
+                        header = { WloCardHeader(title = "Running low") },
+                    ) {
                         for (row in state.low) {
                             PantryRow(
                                 row = row,
@@ -188,24 +193,26 @@ public fun PantryScreen(
             }
 
             item(key = "inventory") {
-                WloCard(modifier = Modifier.testTag("f04-inventory")) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text(
-                            text = "inventory",
-                            style = wloType.label,
-                            color = wloExtendedColors.textTertiary,
-                            modifier = Modifier.weight(1f),
+                WloCard(
+                    modifier = Modifier.testTag("f04-inventory"),
+                    header = {
+                        WloCardHeader(
+                            title = "Inventory",
+                            provenance = {
+                                val count = state.stock.size + state.useSoon.size + state.low.size
+                                Text(
+                                    text = if (count == 1) "1 item" else "$count items",
+                                    style = wloType.receipt,
+                                    color = wloExtendedColors.textTertiary,
+                                )
+                            },
                         )
-                        Text(
-                            text = "${state.stock.size + state.useSoon.size + state.low.size} item(s)",
-                            style = wloType.receipt,
-                            color = wloExtendedColors.textTertiary,
-                        )
-                    }
+                    },
+                ) {
                     if (state.stock.isEmpty() && state.useSoon.isEmpty() && state.low.isEmpty()) {
                         Text(
-                            text = "nothing on the shelves yet — add stock by hand or sweep it in from the list.",
-                            style = wloType.body.copy(fontSize = wloType.receipt.fontSize),
+                            text = "Nothing on the shelves yet — add stock by hand or sweep it in from the list.",
+                            style = wloType.caption,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                     }
@@ -227,8 +234,8 @@ public fun PantryScreen(
                     if (state.deductionEnabled) {
                         Text(
                             text =
-                                "partial-stock deduction is on — staples come off generated lists " +
-                                    "(\"need 5, have 3 → buy 2\")",
+                                "Partial-stock deduction is on — staples come off generated lists " +
+                                    "(\"need 5, have 3 → buy 2\").",
                             style = wloType.receipt,
                             color = wloExtendedColors.textTertiary,
                             modifier = Modifier.testTag("f04-deduction-on-word"),
@@ -236,8 +243,8 @@ public fun PantryScreen(
                     } else {
                         Text(
                             text =
-                                "partial-stock deduction is off " +
-                                    "(the default) — generated lists assume empty shelves",
+                                "Partial-stock deduction is off " +
+                                    "(the default) — generated lists assume empty shelves.",
                             style = wloType.receipt,
                             color = wloExtendedColors.textTertiary,
                             modifier = Modifier.testTag("f04-deduction-off-word"),
@@ -279,31 +286,6 @@ public fun PantryScreen(
 }
 
 @Composable
-private fun DeductionToggle(
-    enabled: Boolean,
-    onToggle: (Boolean) -> Unit,
-): Unit =
-    Surface(
-        onClick = { onToggle(!enabled) },
-        modifier = Modifier.testTag("f04-deduction-toggle"),
-        shape = WloShape.Chip,
-        color =
-            if (enabled) {
-                MaterialTheme.colorScheme.primary.copy(alpha = 0.14f)
-            } else {
-                MaterialTheme.colorScheme.surface
-            },
-        contentColor = if (enabled) MaterialTheme.colorScheme.primary else wloExtendedColors.textTertiary,
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
-    ) {
-        Text(
-            text = if (enabled) "deduction on" else "deduction off",
-            style = wloType.label,
-            modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
-        )
-    }
-
-@Composable
 private fun PantryRow(
     row: PantryRowUi,
     onDeduct: () -> Unit,
@@ -335,15 +317,7 @@ private fun PantryRow(
                 modifier = Modifier.weight(1f),
             )
             if (row.staple) {
-                Text(
-                    text = "staple",
-                    style = wloType.label,
-                    color = MaterialTheme.colorScheme.primary,
-                    modifier =
-                        Modifier
-                            .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.12f), WloShape.Chip)
-                            .padding(horizontal = 6.dp, vertical = 2.dp),
-                )
+                WloBadge(text = "Staple", tone = WloBadgeTone.Accent)
             }
             Text(
                 text = row.qtyLabel,
@@ -362,36 +336,148 @@ private fun PantryRow(
                 )
             }
             Spacer(Modifier.weight(1f))
-            Text(
-                text = "mark used",
-                style = wloType.label,
-                color = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.clickableRow(onDeduct, "f04-deduct-${row.name}"),
+            WloIconAction(
+                imageVector = PantryRowGlyphs.Used,
+                contentDescription = "Mark used",
+                onClick = onDeduct,
+                modifier = Modifier.testTag("f04-deduct-${row.name}"),
             )
-            Text(
-                text = if (row.staple) "unmark staple" else "staple",
-                style = wloType.label,
-                color = wloExtendedColors.textTertiary,
-                modifier = Modifier.clickableRow(onStaple, null),
+            WloIconAction(
+                imageVector = if (row.staple) PantryRowGlyphs.Stapled else PantryRowGlyphs.Staple,
+                contentDescription = if (row.staple) "Unmark staple" else "Mark as staple",
+                onClick = onStaple,
             )
-            Text(
-                text = if (row.outOfStock) "back in stock" else "out of stock",
-                style = wloType.label,
-                color = wloExtendedColors.textTertiary,
-                modifier = Modifier.clickableRow(onOutOfStock, null),
+            WloIconAction(
+                imageVector = if (row.outOfStock) PantryRowGlyphs.StockIn else PantryRowGlyphs.StockOut,
+                contentDescription = if (row.outOfStock) "Back in stock" else "Out of stock",
+                onClick = onOutOfStock,
             )
         }
     }
 
-private fun Modifier.clickableRow(
-    onClick: () -> Unit,
-    tag: String?,
-): Modifier =
-    this
-        .clickable(onClick = onClick)
-        .let { state -> if (tag != null) state.testTag(tag) else state }
+/** Row-action glyphs — hand-built vectors, the [app.wlo.core.designsystem.WloIcons] idiom (no icon font). */
+private object PantryRowGlyphs {
+    /** Paint source for all glyph paths; `Icon(tint = ...)` recolors at render. */
+    private val Ink: SolidColor = SolidColor(Color.Black)
 
-@OptIn(ExperimentalMaterial3Api::class)
+    private inline fun glyph(
+        name: String,
+        builder: ImageVector.Builder.() -> ImageVector.Builder,
+    ): ImageVector =
+        ImageVector
+            .Builder(
+                name = name,
+                defaultWidth = 24.dp,
+                defaultHeight = 24.dp,
+                viewportWidth = 12f,
+                viewportHeight = 12f,
+            ).builder()
+            .build()
+
+    private fun PathBuilder.star(): PathBuilder =
+        apply {
+            moveTo(6f, 1.6f)
+            lineTo(7.5f, 4.7f)
+            lineTo(10.9f, 5.1f)
+            lineTo(8.4f, 7.4f)
+            lineTo(9f, 10.8f)
+            lineTo(6f, 9.2f)
+            lineTo(3f, 10.8f)
+            lineTo(3.6f, 7.4f)
+            lineTo(1.1f, 5.1f)
+            lineTo(4.5f, 4.7f)
+            close()
+        }
+
+    /** A stroked circle, four arcs (r 4.4 about the 12×12 center). */
+    private fun PathBuilder.circle(): PathBuilder =
+        apply {
+            moveTo(6f, 1.6f)
+            curveTo(8.43f, 1.6f, 10.4f, 3.57f, 10.4f, 6f)
+            curveTo(10.4f, 8.43f, 8.43f, 10.4f, 6f, 10.4f)
+            curveTo(3.57f, 10.4f, 1.6f, 8.43f, 1.6f, 6f)
+            curveTo(1.6f, 3.57f, 3.57f, 1.6f, 6f, 1.6f)
+            close()
+        }
+
+    /** Mark used — a check. */
+    public val Used: ImageVector =
+        glyph("PantryUsed") {
+            path(
+                stroke = Ink,
+                strokeLineWidth = 1.6f,
+                strokeLineCap = StrokeCap.Round,
+                strokeLineJoin = StrokeJoin.Round,
+            ) {
+                moveTo(2.6f, 6.5f)
+                lineTo(5.1f, 9f)
+                lineTo(9.4f, 3.4f)
+            }
+        }
+
+    /** Not a staple — the outline star. */
+    public val Staple: ImageVector =
+        glyph("PantryStaple") {
+            path(
+                stroke = Ink,
+                strokeLineWidth = 1.2f,
+                strokeLineJoin = StrokeJoin.Round,
+            ) {
+                star()
+            }
+        }
+
+    /** A staple — the filled star. */
+    public val Stapled: ImageVector =
+        glyph("PantryStapled") {
+            path(fill = Ink) {
+                star()
+            }
+        }
+
+    /** Out of stock — the slashed circle. */
+    public val StockOut: ImageVector =
+        glyph("PantryStockOut") {
+            path(
+                stroke = Ink,
+                strokeLineWidth = 1.2f,
+                strokeLineJoin = StrokeJoin.Round,
+            ) {
+                circle()
+            }
+            path(
+                stroke = Ink,
+                strokeLineWidth = 1.2f,
+                strokeLineCap = StrokeCap.Round,
+            ) {
+                moveTo(3.2f, 8.8f)
+                lineTo(8.8f, 3.2f)
+            }
+        }
+
+    /** Back in stock — the checked circle. */
+    public val StockIn: ImageVector =
+        glyph("PantryStockIn") {
+            path(
+                stroke = Ink,
+                strokeLineWidth = 1.2f,
+                strokeLineJoin = StrokeJoin.Round,
+            ) {
+                circle()
+            }
+            path(
+                stroke = Ink,
+                strokeLineWidth = 1.2f,
+                strokeLineCap = StrokeCap.Round,
+                strokeLineJoin = StrokeJoin.Round,
+            ) {
+                moveTo(4.1f, 6.2f)
+                lineTo(5.5f, 7.6f)
+                lineTo(8f, 4.6f)
+            }
+        }
+}
+
 @Composable
 private fun CheckInSheet(
     match: PantryViewModel.CheckInMatch?,
@@ -403,7 +489,7 @@ private fun CheckInSheet(
 ) {
     var barcode by remember { mutableStateOf("") }
     var name by remember { mutableStateOf(match?.name.orEmpty()) }
-    androidx.compose.runtime.LaunchedEffect(match) {
+    LaunchedEffect(match) {
         match?.name?.takeIf { it.isNotBlank() }?.let { matched -> name = matched }
     }
     var qty by remember { mutableStateOf("1") }
@@ -412,117 +498,88 @@ private fun CheckInSheet(
     var staple by remember { mutableStateOf(false) }
     val units = listOf("x", "g", "kg", "ml", "l")
 
-    ModalBottomSheet(
-        onDismissRequest = onDismiss,
-        shape = WloShape.SheetTop,
-        modifier = Modifier.testTag("f04-checkin-sheet"),
-    ) {
-        Column(
-            Modifier
-                .fillMaxWidth()
-                .padding(horizontal = WloSpacing.SCREEN)
-                .padding(bottom = WloSpacing.SCREEN),
-            verticalArrangement = Arrangement.spacedBy(WloSpacing.CARD),
+    WloSheet(onDismissRequest = onDismiss, modifier = Modifier.testTag("f04-checkin-sheet")) {
+        WloCardHeader(title = "Stock-take")
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(WloSpacing.CARD),
+            verticalAlignment = Alignment.CenterVertically,
         ) {
-            Text(text = "Check in / stock-take", style = wloType.title.copy(fontSize = wloType.title.fontSize * 1.12f))
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(WloSpacing.CARD),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                OutlinedTextField(
-                    value = barcode,
-                    onValueChange = { barcode = it },
-                    modifier = Modifier.weight(1f).testTag("f04-checkin-barcode"),
-                    label = { Text("barcode (typed — the camera path lives in capture)", style = wloType.label) },
-                    singleLine = true,
-                    textStyle = wloType.body.copy(fontFeatureSettings = "tnum"),
-                )
-                Surface(
-                    onClick = { onBarcode(barcode) },
-                    modifier = Modifier.testTag("f04-checkin-match-btn"),
-                    shape = WloShape.Chip,
-                    color = MaterialTheme.colorScheme.surface,
-                    contentColor = MaterialTheme.colorScheme.primary,
-                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
-                ) {
-                    Text(
-                        text = "match",
-                        style = wloType.label,
-                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp),
-                    )
-                }
-            }
             OutlinedTextField(
-                value = name,
-                onValueChange = { name = it },
-                modifier = Modifier.fillMaxWidth().testTag("f04-checkin-name"),
-                label = { Text("item name", style = wloType.label) },
+                value = barcode,
+                onValueChange = { barcode = it },
+                modifier = Modifier.weight(1f).testTag("f04-checkin-barcode"),
+                label = { Text("Barcode", style = wloType.label) },
                 singleLine = true,
-                textStyle = wloType.body,
+                textStyle = wloType.statS,
             )
-            if (suggestions.isNotEmpty()) {
-                Row(horizontalArrangement = Arrangement.spacedBy(WloSpacing.TIGHT)) {
-                    suggestions.take(3).forEach { candidate ->
-                        SelectChip(label = candidate, selected = false, onClick = { name = candidate })
-                    }
+            WloSecondaryButton(
+                label = "Match",
+                onClick = { onBarcode(barcode) },
+                modifier = Modifier.testTag("f04-checkin-match-btn"),
+            )
+        }
+        OutlinedTextField(
+            value = name,
+            onValueChange = { name = it },
+            modifier = Modifier.fillMaxWidth().testTag("f04-checkin-name"),
+            label = { Text("item name", style = wloType.label) },
+            singleLine = true,
+            textStyle = wloType.body,
+        )
+        if (suggestions.isNotEmpty()) {
+            Row(horizontalArrangement = Arrangement.spacedBy(WloSpacing.TIGHT)) {
+                suggestions.take(3).forEach { candidate ->
+                    SelectChip(label = candidate, selected = false, onClick = { name = candidate })
                 }
             }
-            Row(horizontalArrangement = Arrangement.spacedBy(WloSpacing.CARD)) {
-                OutlinedTextField(
-                    value = qty,
-                    onValueChange = { qty = it },
-                    modifier = Modifier.weight(1f).testTag("f04-checkin-qty"),
-                    label = { Text("how much", style = wloType.label) },
-                    singleLine = true,
-                    textStyle = wloType.body.copy(fontFeatureSettings = "tnum"),
-                )
+        }
+        OutlinedTextField(
+            value = qty,
+            onValueChange = { qty = it },
+            modifier = Modifier.fillMaxWidth().testTag("f04-checkin-qty"),
+            label = { Text("how much", style = wloType.label) },
+            singleLine = true,
+            textStyle = wloType.statS,
+        )
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(WloSpacing.TIGHT),
+            modifier = Modifier.testTag("f04-checkin-units"),
+        ) {
+            units.forEach { candidate ->
+                SelectChip(label = candidate, selected = candidate == unit, onClick = { unit = candidate })
             }
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(WloSpacing.TIGHT),
-                modifier = Modifier.testTag("f04-checkin-units"),
-            ) {
-                units.forEach { candidate ->
-                    SelectChip(label = candidate, selected = candidate == unit, onClick = { unit = candidate })
-                }
-            }
-            Text(text = "expiry (fresh items)", style = wloType.label, color = wloExtendedColors.textTertiary)
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(WloSpacing.TIGHT),
-                modifier = Modifier.testTag("f04-checkin-expiry"),
-            ) {
-                SelectChip(label = "no date", selected = expiry == null, onClick = { expiry = null })
-                SelectChip(label = "+3 d", selected = expiry == today + 3, onClick = { expiry = today + 3 })
-                SelectChip(label = "+7 d", selected = expiry == today + 7, onClick = { expiry = today + 7 })
-            }
-            SelectChip(
-                label = "staple",
-                selected = staple,
-                onClick = { staple = !staple },
-                modifier = Modifier.testTag("f04-checkin-staple"),
-            )
-            PrimaryRow(
-                label = "save to the pantry",
-                modifier = Modifier.testTag("f04-checkin-save"),
-                onClick = { onSave(name.trim(), qty.toDoubleOrNull() ?: 0.0, unit, expiry, staple) },
-            )
-            match?.let {
-                Text(
-                    text = it.source,
-                    style = wloType.receipt,
-                    color = wloExtendedColors.textTertiary,
-                )
-            }
+        }
+        Text(text = "expiry (fresh items)", style = wloType.label, color = wloExtendedColors.textTertiary)
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(WloSpacing.TIGHT),
+            modifier = Modifier.testTag("f04-checkin-expiry"),
+        ) {
+            SelectChip(label = "no date", selected = expiry == null, onClick = { expiry = null })
+            SelectChip(label = "+3 d", selected = expiry == today + 3, onClick = { expiry = today + 3 })
+            SelectChip(label = "+7 d", selected = expiry == today + 7, onClick = { expiry = today + 7 })
+        }
+        SelectChip(
+            label = "staple",
+            selected = staple,
+            onClick = { staple = !staple },
+            modifier = Modifier.testTag("f04-checkin-staple"),
+        )
+        PrimaryRow(
+            label = "Save to the pantry",
+            modifier = Modifier.testTag("f04-checkin-save"),
+            onClick = { onSave(name.trim(), qty.toDoubleOrNull() ?: 0.0, unit, expiry, staple) },
+        )
+        match?.let {
             Text(
-                text = "the typed path is first-class — the scanner rides the shared capture stack when you want it",
+                text = it.source,
                 style = wloType.receipt,
                 color = wloExtendedColors.textTertiary,
             )
-            Spacer(Modifier.height(WloSpacing.ROW_MIN))
         }
+        Spacer(Modifier.heightIn(WloSpacing.ROW_MIN))
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun DeductSheet(
     row: PantryRowUi,
@@ -530,41 +587,26 @@ private fun DeductSheet(
     onDeduct: (Double) -> Unit,
 ) {
     var qty by remember { mutableStateOf("1") }
-    ModalBottomSheet(
-        onDismissRequest = onDismiss,
-        shape = WloShape.SheetTop,
-        modifier = Modifier.testTag("f04-deduct-sheet"),
-    ) {
-        Column(
-            Modifier
-                .fillMaxWidth()
-                .padding(horizontal = WloSpacing.SCREEN)
-                .padding(bottom = WloSpacing.SCREEN),
-            verticalArrangement = Arrangement.spacedBy(WloSpacing.CARD),
-        ) {
-            Text(
-                text = "Mark used · ${row.name}",
-                style = wloType.title.copy(fontSize = wloType.title.fontSize * 1.12f),
-            )
-            Text(
-                text = "takes ${row.qtyLabel} off the shelf — never below zero, never a guess across units",
-                style = wloType.receipt,
-                color = wloExtendedColors.textTertiary,
-            )
-            OutlinedTextField(
-                value = qty,
-                onValueChange = { qty = it },
-                modifier = Modifier.fillMaxWidth().testTag("f04-deduct-qty"),
-                label = { Text("how much", style = wloType.label) },
-                singleLine = true,
-                textStyle = wloType.body.copy(fontFeatureSettings = "tnum"),
-            )
-            PrimaryRow(
-                label = "used",
-                modifier = Modifier.testTag("f04-deduct-run"),
-                onClick = { onDeduct(qty.toDoubleOrNull() ?: 0.0) },
-            )
-            Spacer(Modifier.height(WloSpacing.ROW_MIN))
-        }
+    WloSheet(onDismissRequest = onDismiss, modifier = Modifier.testTag("f04-deduct-sheet")) {
+        WloCardHeader(title = "Mark used · ${row.name}")
+        Text(
+            text = "Takes ${row.qtyLabel} off the shelf.",
+            style = wloType.caption,
+            color = wloExtendedColors.textTertiary,
+        )
+        OutlinedTextField(
+            value = qty,
+            onValueChange = { qty = it },
+            modifier = Modifier.fillMaxWidth().testTag("f04-deduct-qty"),
+            label = { Text("how much", style = wloType.label) },
+            singleLine = true,
+            textStyle = wloType.statS,
+        )
+        PrimaryRow(
+            label = "Used",
+            modifier = Modifier.testTag("f04-deduct-run"),
+            onClick = { onDeduct(qty.toDoubleOrNull() ?: 0.0) },
+        )
+        Spacer(Modifier.heightIn(WloSpacing.ROW_MIN))
     }
 }

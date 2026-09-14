@@ -17,8 +17,8 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
-import androidx.compose.ui.text.font.FontFamily
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import app.wlo.core.designsystem.WloScreenTitle
 import app.wlo.core.designsystem.WloSpacing
 import app.wlo.core.designsystem.wloExtendedColors
 import app.wlo.core.designsystem.wloType
@@ -54,11 +54,8 @@ public fun EgressMonitorScreen(viewModel: EgressMonitorViewModel = koinViewModel
         verticalArrangement = Arrangement.spacedBy(WloSpacing.TIGHT),
     ) {
         item(key = "header") {
-            Column(Modifier.padding(top = WloSpacing.SCREEN)) {
-                Text(
-                    text = "Egress monitor",
-                    style = wloType.title.copy(fontSize = wloType.title.fontSize * 1.5f),
-                )
+            Column {
+                WloScreenTitle(title = "Egress monitor")
                 Text(
                     text = "Every packet's paperwork, read from the on-device receipt ledger.",
                     style = wloType.body,
@@ -114,8 +111,7 @@ private fun CounterRow(
         Text(text = label, style = wloType.label)
         Text(
             text = count.toString(),
-            style = wloType.label,
-            fontFamily = FontFamily.Monospace,
+            style = wloType.receipt,
             modifier = Modifier.testTag(tag),
         )
     }
@@ -127,8 +123,7 @@ private fun ReceiptRow(receipt: EgressReceipt) {
         Column {
             Text(
                 text = "#${receipt.seq} ${receipt.purpose.wireName} → ${receipt.host}",
-                style = wloType.label,
-                fontFamily = FontFamily.Monospace,
+                style = wloType.receipt,
             )
             Text(
                 text =
@@ -136,7 +131,6 @@ private fun ReceiptRow(receipt: EgressReceipt) {
                         "${receipt.atEpochMs} · hash ${receipt.hashHex.take(12)}…",
                 style = wloType.receipt,
                 color = wloExtendedColors.textTertiary,
-                fontFamily = FontFamily.Monospace,
             )
         }
     }

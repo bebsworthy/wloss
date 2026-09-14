@@ -9,10 +9,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Slider
 import androidx.compose.material3.SliderDefaults
@@ -27,13 +25,16 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import app.wlo.core.designsystem.ProvenanceChip
 import app.wlo.core.designsystem.SelectChip
+import app.wlo.core.designsystem.WloBanner
+import app.wlo.core.designsystem.WloBannerTone
 import app.wlo.core.designsystem.WloButton
 import app.wlo.core.designsystem.WloCard
 import app.wlo.core.designsystem.WloCardHeader
 import app.wlo.core.designsystem.WloDeltaChip
 import app.wlo.core.designsystem.WloHeroStat
+import app.wlo.core.designsystem.WloScreenTitle
 import app.wlo.core.designsystem.WloSecondaryButton
-import app.wlo.core.designsystem.WloShape
+import app.wlo.core.designsystem.WloSheet
 import app.wlo.core.designsystem.WloSpacing
 import app.wlo.core.designsystem.WloStatDivider
 import app.wlo.core.designsystem.WloTrendChart
@@ -57,7 +58,6 @@ import app.wlo.feature.f06.weight.state.WeighInViewModel
  * the outlier guard's one-line keep-or-correct. The weigh-in sheet opens over
  * this surface (wlo://weight/log) — the typed path is first-class, R-U15.
  */
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 public fun WeightScreen(
     viewModel: WeighInViewModel,
@@ -79,45 +79,31 @@ public fun WeightScreen(
                 .padding(bottom = WloSpacing.SCREEN),
         verticalArrangement = Arrangement.spacedBy(WloSpacing.SCREEN),
     ) {
-        Text(
-            text = "Weight",
-            style = wloType.title.copy(fontSize = wloType.title.fontSize * 1.5f),
-            modifier = Modifier.padding(top = WloSpacing.SCREEN).testTag("f06-title"),
+        WloScreenTitle(
+            title = "Weight",
+            modifier = Modifier.testTag("f06-title"),
         )
 
         verdict?.let { current ->
             // The outlier guard's one line (F06 §4): describe, offer both taps,
             // never judge. The event is already stored — this only confirms.
-            androidx.compose.material3.Surface(
-                modifier =
-                    Modifier
-                        .fillMaxWidth()
-                        .testTag("f06-outlier-banner"),
-                shape = WloShape.Chip,
-                color = wloExtendedColors.held.copy(alpha = 0.14f),
-                contentColor = wloExtendedColors.held,
-                border = androidx.compose.foundation.BorderStroke(1.dp, wloExtendedColors.held.copy(alpha = 0.45f)),
-            ) {
-                Column(
-                    Modifier.padding(WloSpacing.CARD),
-                    verticalArrangement = Arrangement.spacedBy(WloSpacing.TIGHT),
-                ) {
-                    Text(
-                        text = "${current.weightLabel} is ${current.residualLabel} vs your trend — keep or correct?",
-                        style = wloType.body,
+            Column(verticalArrangement = Arrangement.spacedBy(WloSpacing.TIGHT)) {
+                WloBanner(
+                    text = "${current.weightLabel} is ${current.residualLabel} vs your trend — keep or correct?",
+                    tone = WloBannerTone.Warning,
+                    modifier = Modifier.testTag("f06-outlier-banner"),
+                )
+                Row(horizontalArrangement = Arrangement.spacedBy(WloSpacing.CARD)) {
+                    WloSecondaryButton(
+                        label = "Keep",
+                        onClick = { viewModel.onEvent(WeighInEvent.KeepFlagged) },
+                        modifier = Modifier.weight(1f).testTag("f06-outlier-keep"),
                     )
-                    Row(horizontalArrangement = Arrangement.spacedBy(WloSpacing.CARD)) {
-                        WloSecondaryButton(
-                            label = "Keep",
-                            onClick = { viewModel.onEvent(WeighInEvent.KeepFlagged) },
-                            modifier = Modifier.weight(1f).testTag("f06-outlier-keep"),
-                        )
-                        WloButton(
-                            label = "Correct",
-                            onClick = { viewModel.onEvent(WeighInEvent.CorrectFlagged) },
-                            modifier = Modifier.weight(1f).testTag("f06-outlier-correct"),
-                        )
-                    }
+                    WloButton(
+                        label = "Correct",
+                        onClick = { viewModel.onEvent(WeighInEvent.CorrectFlagged) },
+                        modifier = Modifier.weight(1f).testTag("f06-outlier-correct"),
+                    )
                 }
             }
         }
@@ -193,8 +179,8 @@ public fun WeightScreen(
                 )
                 if (!trend.trendLineVisible) {
                     Text(
-                        text = "keep weighing — the trend forms in a few days",
-                        style = wloType.body.copy(fontSize = wloType.receipt.fontSize),
+                        text = "Keep weighing — the trend forms in a few days.",
+                        style = wloType.caption,
                         color = wloExtendedColors.textTertiary,
                     )
                 }
@@ -206,8 +192,8 @@ public fun WeightScreen(
                 )
                 if (trend.preview) {
                     Text(
-                        text = "preview — the saved trend keeps the default smoother",
-                        style = wloType.body.copy(fontSize = wloType.receipt.fontSize),
+                        text = "Preview — the saved trend keeps the default smoother.",
+                        style = wloType.caption,
                         color = wloExtendedColors.held,
                     )
                 }
@@ -223,8 +209,8 @@ public fun WeightScreen(
             WloCardHeader(title = "Today's weigh-ins")
             if (state.rows.isEmpty()) {
                 Text(
-                    text = "none yet — the morning window reads steadiest, whenever you get to it",
-                    style = wloType.body.copy(fontSize = wloType.receipt.fontSize),
+                    text = "None yet — the morning window reads steadiest, whenever you get to it.",
+                    style = wloType.caption,
                     color = wloExtendedColors.textTertiary,
                 )
             }
@@ -236,7 +222,7 @@ public fun WeightScreen(
                 HorizontalDivider(color = MaterialTheme.colorScheme.outline, thickness = 1.dp)
                 Text(
                     text = WeighInUiState.LOWEST_COPY,
-                    style = wloType.body.copy(fontSize = wloType.receipt.fontSize),
+                    style = wloType.caption,
                     color = wloExtendedColors.textTertiary,
                 )
             }
@@ -250,16 +236,15 @@ public fun WeightScreen(
         notice?.let {
             Text(
                 text = it,
-                style = wloType.body.copy(fontSize = wloType.receipt.fontSize),
+                style = wloType.caption,
                 color = wloExtendedColors.held,
             )
         }
     }
 
     sheet?.let { current ->
-        ModalBottomSheet(
+        WloSheet(
             onDismissRequest = { viewModel.onEvent(WeighInEvent.DismissSheet) },
-            shape = WloShape.SheetTop,
             modifier = Modifier.testTag("f06-weighin-sheet"),
         ) {
             WeighInSheetContent(
@@ -341,6 +326,10 @@ private fun DayRow(row: WeighInRowUi): Unit =
         Text(text = row.weightLabel, style = wloType.statS)
     }
 
+/**
+ * The typed weigh-in path (R-U15): first-class, never a fallback. Children
+ * land in [WloSheet]'s padded, spaced column.
+ */
 @Composable
 private fun WeighInSheetContent(
     weightText: String,
@@ -348,48 +337,40 @@ private fun WeighInSheetContent(
     onStepUp: () -> Unit,
     onStepDown: () -> Unit,
     onSave: () -> Unit,
-): Unit =
-    Column(
-        modifier =
-            Modifier
-                .fillMaxWidth()
-                .padding(horizontal = WloSpacing.SCREEN)
-                .padding(bottom = WloSpacing.SCREEN),
-        verticalArrangement = Arrangement.spacedBy(WloSpacing.CARD),
-    ) {
-        Text(text = "Weigh in", style = wloType.title)
-        Text(
-            text = "same conditions help the trend read true — never demanded",
-            style = wloType.body.copy(fontSize = wloType.receipt.fontSize),
-            color = wloExtendedColors.textTertiary,
+) {
+    Text(text = "Weigh in", style = wloType.title)
+    Text(
+        text = "Same conditions help the trend read true.",
+        style = wloType.caption,
+        color = wloExtendedColors.textTertiary,
+    )
+    OutlinedTextField(
+        value = weightText,
+        onValueChange = onChange,
+        modifier = Modifier.fillMaxWidth().testTag("f06-weight-field"),
+        singleLine = true,
+        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+        textStyle = wloType.statL,
+        placeholder = { Text("kg", style = wloType.body, color = wloExtendedColors.textTertiary) },
+    )
+    Row(horizontalArrangement = Arrangement.spacedBy(WloSpacing.CARD)) {
+        WloSecondaryButton(
+            label = "−0.1",
+            onClick = onStepDown,
+            modifier = Modifier.weight(1f).testTag("f06-step-down"),
         )
-        OutlinedTextField(
-            value = weightText,
-            onValueChange = onChange,
-            modifier = Modifier.fillMaxWidth().testTag("f06-weight-field"),
-            singleLine = true,
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
-            textStyle = wloType.statL,
-            placeholder = { Text("kg", style = wloType.body, color = wloExtendedColors.textTertiary) },
-        )
-        Row(horizontalArrangement = Arrangement.spacedBy(WloSpacing.CARD)) {
-            WloSecondaryButton(
-                label = "−0.1",
-                onClick = onStepDown,
-                modifier = Modifier.weight(1f).testTag("f06-step-down"),
-            )
-            WloSecondaryButton(
-                label = "+0.1",
-                onClick = onStepUp,
-                modifier = Modifier.weight(1f).testTag("f06-step-up"),
-            )
-        }
-        WloButton(
-            label = "Save weigh-in",
-            onClick = onSave,
-            modifier = Modifier.fillMaxWidth().testTag("f06-save-weighin"),
+        WloSecondaryButton(
+            label = "+0.1",
+            onClick = onStepUp,
+            modifier = Modifier.weight(1f).testTag("f06-step-up"),
         )
     }
+    WloButton(
+        label = "Save weigh-in",
+        onClick = onSave,
+        modifier = Modifier.fillMaxWidth().testTag("f06-save-weighin"),
+    )
+}
 
 private fun methodLabel(method: TrendMethod): String =
     when (method) {

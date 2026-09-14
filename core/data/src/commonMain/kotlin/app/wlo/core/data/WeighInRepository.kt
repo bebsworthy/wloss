@@ -270,7 +270,12 @@ public class RoomWeighInRepository public constructor(
 
     /** The series' formula version from its points' provenance (EWMA default). */
     private fun seriesFormulaVersion(series: app.wlo.core.engines.TrendSeries): String =
-        (series.points.lastOrNull()?.trendKg?.provenance as? Provenance.Derived)?.formulaVersion
+        (
+            series.points
+                .lastOrNull()
+                ?.trendKg
+                ?.provenance as? Provenance.Derived
+        )?.formulaVersion
             ?: ConstantsRegistry.EWMA_FORMULA_VERSION
 
     public companion object {

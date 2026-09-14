@@ -4,27 +4,25 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.HorizontalDivider
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import app.wlo.core.designsystem.ProvenanceChip
 import app.wlo.core.designsystem.SelectChip
 import app.wlo.core.designsystem.WloButton
 import app.wlo.core.designsystem.WloCard
+import app.wlo.core.designsystem.WloCardHeader
+import app.wlo.core.designsystem.WloListRow
+import app.wlo.core.designsystem.WloScreenTitle
 import app.wlo.core.designsystem.WloSecondaryButton
 import app.wlo.core.designsystem.WloSpacing
 import app.wlo.core.designsystem.wloExtendedColors
@@ -56,16 +54,15 @@ public fun BodyFatScreen(
                 .padding(bottom = WloSpacing.SCREEN),
         verticalArrangement = Arrangement.spacedBy(WloSpacing.SCREEN),
     ) {
-        Text(
-            text = "Body fat",
-            style = wloType.title.copy(fontSize = wloType.title.fontSize * 1.5f),
-            modifier = Modifier.padding(top = WloSpacing.SCREEN).testTag("f06-bodyfat-title"),
+        WloScreenTitle(
+            title = "Body fat",
+            modifier = Modifier.testTag("f06-bodyfat-title"),
         )
         Text(
             text =
-                "every method is an estimate — ±3–4 % is typical, and each method keeps its " +
-                    "own series so they can disagree in the open",
-            style = wloType.body.copy(fontSize = wloType.receipt.fontSize),
+                "Every method is an estimate — ±3–4 % is typical, and each method keeps its " +
+                    "own series so they can disagree in the open.",
+            style = wloType.caption,
             color = wloExtendedColors.textTertiary,
         )
 
@@ -83,7 +80,7 @@ public fun BodyFatScreen(
 
             state.heightCm?.let { height ->
                 Text(
-                    text = "height ${BodyFatViewModel.format1(height)} cm (from your profile)",
+                    text = "Height ${BodyFatViewModel.format1(height)} cm (from your profile)",
                     style = wloType.label,
                     color = wloExtendedColors.textTertiary,
                 )
@@ -91,19 +88,19 @@ public fun BodyFatScreen(
 
             Row(horizontalArrangement = Arrangement.spacedBy(WloSpacing.TIGHT)) {
                 NumberField(
-                    label = "waist cm",
+                    label = "Waist cm",
                     value = state.waistText,
                     modifier = Modifier.weight(1f).testTag("f06-bf-waist"),
                 ) { viewModel.onEvent(BodyFatEvent.WaistChange(it)) }
                 if (state.method == BodyFatMethod.NAVY_TAPE) {
                     NumberField(
-                        label = "neck cm",
+                        label = "Neck cm",
                         value = state.neckText,
                         modifier = Modifier.weight(1f).testTag("f06-bf-neck"),
                     ) { viewModel.onEvent(BodyFatEvent.NeckChange(it)) }
                     if (state.sex == app.wlo.core.model.Sex.FEMALE) {
                         NumberField(
-                            label = "hip cm",
+                            label = "Hip cm",
                             value = state.hipText,
                             modifier = Modifier.weight(1f).testTag("f06-bf-hip"),
                         ) { viewModel.onEvent(BodyFatEvent.HipChange(it)) }
@@ -120,6 +117,7 @@ public fun BodyFatScreen(
 
         state.estimate?.let { estimate ->
             WloCard(modifier = Modifier.testTag("f06-bf-result")) {
+                WloCardHeader(title = "${methodLabel(state.method)} estimate")
                 Text(
                     text = estimate.percentLabel,
                     style = wloType.statL,
@@ -129,26 +127,14 @@ public fun BodyFatScreen(
                     value = estimate.value,
                     format = { "${BodyFatViewModel.format1(it)} %" },
                 )
-                WloCard {
-                    estimate.rows.forEachIndexed { index, (label, value) ->
-                        if (index > 0) HorizontalDivider(color = MaterialTheme.colorScheme.outline, thickness = 1.dp)
-                        Row(
-                            modifier = Modifier.fillMaxWidth().heightIn(min = WloSpacing.ROW_MIN),
-                            horizontalArrangement = Arrangement.spacedBy(WloSpacing.CARD),
-                            verticalAlignment = Alignment.CenterVertically,
-                        ) {
-                            Text(
-                                text = label,
-                                style = wloType.body.copy(fontSize = wloType.receipt.fontSize),
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                modifier = Modifier.weight(1f),
-                            )
-                            Text(text = value, style = wloType.receipt)
-                        }
-                    }
+                estimate.rows.forEach { (label, value) ->
+                    WloListRow(
+                        label = label,
+                        value = { Text(text = value, style = wloType.receipt) },
+                    )
                 }
                 WloSecondaryButton(
-                    label = "Save to its series",
+                    label = "Save measurement",
                     onClick = { viewModel.onEvent(BodyFatEvent.SaveToLogbook) },
                     modifier = Modifier.fillMaxWidth().testTag("f06-bf-save"),
                 )
@@ -158,7 +144,7 @@ public fun BodyFatScreen(
         state.notice?.let {
             Text(
                 text = it,
-                style = wloType.body.copy(fontSize = wloType.receipt.fontSize),
+                style = wloType.caption,
                 color = wloExtendedColors.held,
             )
         }
@@ -179,11 +165,11 @@ private fun NumberField(
         singleLine = true,
         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
         textStyle = wloType.statS,
-        placeholder = { Text(label, style = wloType.body.copy(fontSize = wloType.receipt.fontSize)) },
+        placeholder = { Text(label, style = wloType.caption) },
     )
 
 private fun methodLabel(method: BodyFatMethod): String =
     when (method) {
-        BodyFatMethod.NAVY_TAPE -> "navy tape"
-        BodyFatMethod.RFM -> "rfm"
+        BodyFatMethod.NAVY_TAPE -> "Navy method"
+        BodyFatMethod.RFM -> "RFM"
     }

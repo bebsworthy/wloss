@@ -5,14 +5,9 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.Checkbox
-import androidx.compose.material3.CheckboxDefaults
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -23,7 +18,9 @@ import androidx.compose.ui.text.input.KeyboardType
 import app.wlo.core.data.RoomDiaryRepository
 import app.wlo.core.designsystem.ProvenanceChip
 import app.wlo.core.designsystem.SelectChip
+import app.wlo.core.designsystem.WloButton
 import app.wlo.core.designsystem.WloSpacing
+import app.wlo.core.designsystem.WloSwitchRow
 import app.wlo.core.designsystem.wloExtendedColors
 import app.wlo.core.designsystem.wloType
 import app.wlo.core.engines.FoodMath
@@ -37,6 +34,10 @@ import app.wlo.feature.f02.food.state.PortionSelection
  * R-D10), the kcal-only quick-add (F02 §4), and the custom-food form whose
  * energy-density rail is surfaced as copy before save (F02 §3/§8) — a typo
  * check, never a scolding.
+ *
+ * Sheet bodies render inside [WloSheet], which owns the screen-gutter
+ * padding and the between-children rhythm; the columns here only carry
+ * their own scroll.
  */
 
 /** Live kcal preview provenance (the diary math runs again at save). */
@@ -62,12 +63,7 @@ public fun PortionSheetContent(
     onPreset: (Int) -> Unit,
 ): Unit =
     Column(
-        modifier =
-            Modifier
-                .fillMaxWidth()
-                .verticalScroll(rememberScrollState())
-                .padding(horizontal = WloSpacing.SCREEN)
-                .padding(bottom = WloSpacing.SCREEN),
+        modifier = Modifier.fillMaxWidth().verticalScroll(rememberScrollState()),
         verticalArrangement = Arrangement.spacedBy(WloSpacing.CARD),
     ) {
         Text(text = selection.food.name, style = wloType.title)
@@ -123,8 +119,11 @@ public fun PortionSheetContent(
             )
         }
 
-        ActionRow(label = "save to diary", modifier = Modifier.fillMaxWidth().testTag("f02-portion-save")) { onSave() }
-        Spacer(Modifier.height(WloSpacing.TIGHT))
+        WloButton(
+            label = "Save to diary",
+            onClick = onSave,
+            modifier = Modifier.fillMaxWidth().testTag("f02-portion-save"),
+        )
     }
 
 @Composable
@@ -136,26 +135,17 @@ public fun QuickAddSheetContent(
     onSave: () -> Unit,
 ): Unit =
     Column(
-        modifier =
-            Modifier
-                .fillMaxWidth()
-                .padding(horizontal = WloSpacing.SCREEN)
-                .padding(bottom = WloSpacing.SCREEN),
+        modifier = Modifier.fillMaxWidth(),
         verticalArrangement = Arrangement.spacedBy(WloSpacing.CARD),
     ) {
         Text(text = "Quick-add calories", style = wloType.title)
-        Text(
-            text = "for stubborn cases — the number you know, nothing else implied",
-            style = wloType.body.copy(fontSize = wloType.receipt.fontSize),
-            color = wloExtendedColors.textTertiary,
-        )
         OutlinedTextField(
             value = kcalText,
             onValueChange = onKcal,
             modifier = Modifier.fillMaxWidth().testTag("f02-quick-add-kcal"),
             singleLine = true,
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-            textStyle = wloType.statL,
+            textStyle = wloType.statM,
             placeholder = { Text("kcal", style = wloType.body, color = wloExtendedColors.textTertiary) },
         )
         OutlinedTextField(
@@ -165,10 +155,11 @@ public fun QuickAddSheetContent(
             singleLine = true,
             placeholder = { Text("what it was (optional)", style = wloType.body) },
         )
-        ActionRow(
-            label = "save to diary",
+        WloButton(
+            label = "Save to diary",
+            onClick = onSave,
             modifier = Modifier.fillMaxWidth().testTag("f02-quick-add-save"),
-        ) { onSave() }
+        )
     }
 
 @Composable
@@ -178,12 +169,7 @@ public fun CustomFoodSheetContent(
     onSave: () -> Unit,
 ): Unit =
     Column(
-        modifier =
-            Modifier
-                .fillMaxWidth()
-                .verticalScroll(rememberScrollState())
-                .padding(horizontal = WloSpacing.SCREEN)
-                .padding(bottom = WloSpacing.SCREEN),
+        modifier = Modifier.fillMaxWidth().verticalScroll(rememberScrollState()),
         verticalArrangement = Arrangement.spacedBy(WloSpacing.CARD),
     ) {
         Text(text = if (draft.editId == null) "Create a food" else "Edit food", style = wloType.title)
@@ -225,31 +211,24 @@ public fun CustomFoodSheetContent(
         // bar cannot exist, even manually) — copy checks the label, never the person.
         if (draft.overRail) {
             Text(
-                text =
-                    "above the physical ceiling — pure fat is 900 kcal per 100 g, " +
-                        "so nothing real is denser. Worth re-reading the label.",
-                style = wloType.body.copy(fontSize = wloType.receipt.fontSize),
+                text = "That's above any real food's ceiling — double-check the label.",
+                style = wloType.caption,
                 color = wloExtendedColors.held,
                 modifier = Modifier.testTag("f02-custom-rail"),
             )
         }
 
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Checkbox(
-                checked = draft.macrosVerified,
-                onCheckedChange = { onChange(draft.copy(macrosVerified = it)) },
-                colors = CheckboxDefaults.colors(checkedColor = MaterialTheme.colorScheme.primary),
-            )
-            Text(
-                text = "I read the values off the label",
-                style = wloType.body.copy(fontSize = wloType.receipt.fontSize),
-            )
-        }
+        WloSwitchRow(
+            label = "I read the values off the label",
+            checked = draft.macrosVerified,
+            onCheckedChange = { onChange(draft.copy(macrosVerified = it)) },
+        )
 
-        ActionRow(
-            label = if (draft.editId == null) "add to my catalog" else "save changes",
+        WloButton(
+            label = if (draft.editId == null) "Add to my catalog" else "Save changes",
+            onClick = onSave,
             modifier = Modifier.fillMaxWidth().testTag("f02-custom-save"),
-        ) { onSave() }
+        )
     }
 
 @Composable
@@ -265,8 +244,8 @@ private fun NumberField(
         modifier = modifier,
         singleLine = true,
         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
-        textStyle = wloType.statS,
-        placeholder = { Text(label, style = wloType.body.copy(fontSize = wloType.receipt.fontSize)) },
+        textStyle = wloType.statM,
+        placeholder = { Text(label, style = wloType.caption) },
     )
 
 private val UNITS: List<String> = listOf("g", "ml", "serving")

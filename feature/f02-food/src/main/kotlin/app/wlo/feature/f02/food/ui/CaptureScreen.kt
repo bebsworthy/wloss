@@ -1,28 +1,22 @@
 package app.wlo.feature.f02.food.ui
 
-import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -32,6 +26,13 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.StrokeJoin
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.graphics.vector.PathBuilder
+import androidx.compose.ui.graphics.vector.path
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextOverflow
@@ -39,10 +40,18 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import app.wlo.core.designsystem.ProvenanceChip
 import app.wlo.core.designsystem.SelectChip
+import app.wlo.core.designsystem.WloBanner
+import app.wlo.core.designsystem.WloBannerTone
+import app.wlo.core.designsystem.WloButton
 import app.wlo.core.designsystem.WloCard
+import app.wlo.core.designsystem.WloCardHeader
 import app.wlo.core.designsystem.WloHaptic
 import app.wlo.core.designsystem.WloHaptics
-import app.wlo.core.designsystem.WloShape
+import app.wlo.core.designsystem.WloIconAction
+import app.wlo.core.designsystem.WloListRow
+import app.wlo.core.designsystem.WloScreenTitle
+import app.wlo.core.designsystem.WloSecondaryButton
+import app.wlo.core.designsystem.WloSheet
 import app.wlo.core.designsystem.WloSpacing
 import app.wlo.core.designsystem.rememberWloHaptics
 import app.wlo.core.designsystem.wloExtendedColors
@@ -61,7 +70,6 @@ import app.wlo.feature.f02.food.state.FoodHitUi
 import app.wlo.feature.f02.food.state.NoticeState
 import app.wlo.feature.f02.food.state.userCopy
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 public fun CaptureScreen(
     viewModel: CaptureViewModel,
@@ -93,14 +101,7 @@ public fun CaptureScreen(
                 .padding(bottom = WloSpacing.SCREEN),
         verticalArrangement = Arrangement.spacedBy(WloSpacing.CARD),
     ) {
-        Text(
-            text = "Capture",
-            style = wloType.title.copy(fontSize = wloType.title.fontSize * 1.5f),
-            modifier =
-                Modifier
-                    .padding(top = WloSpacing.SCREEN)
-                    .testTag("f02-capture-title"),
-        )
+        WloScreenTitle(title = "Capture", modifier = Modifier.testTag("f02-capture-title"))
 
         Row(horizontalArrangement = Arrangement.spacedBy(WloSpacing.TIGHT), modifier = Modifier.fillMaxWidth()) {
             for (mode in CaptureLensMode.entries) {
@@ -117,8 +118,10 @@ public fun CaptureScreen(
                 ViewfinderStage(state, viewModel, viewfinder, shutter, haptics, onOpenManualLadder)
 
             CaptureStage.Analyzing ->
-                WloCard(Modifier.testTag("f02-capture-analyzing")) {
-                    Text("reading it…", style = wloType.title)
+                WloCard(
+                    modifier = Modifier.testTag("f02-capture-analyzing"),
+                    header = { WloCardHeader(title = "Reading it…") },
+                ) {
                     Text(
                         "on-device, nothing leaves your phone",
                         style = wloType.label,
@@ -130,85 +133,96 @@ public fun CaptureScreen(
                 ResultStage(stage, viewModel, haptics, onOpenManualLadder)
 
             is CaptureStage.MissingModel ->
-                WloCard(Modifier.testTag("f02-capture-missing-model")) {
-                    Text("the food recognizer isn't on this device yet", style = wloType.title)
+                WloCard(
+                    modifier = Modifier.testTag("f02-capture-missing-model"),
+                    header = { WloCardHeader(title = "The food recognizer isn't on this device yet") },
+                ) {
                     Text(
                         stage.reason,
-                        style = wloType.body.copy(fontSize = wloType.receipt.fontSize),
+                        style = wloType.caption,
                         color = wloExtendedColors.textTertiary,
                     )
-                    ActionRow(
-                        label = "open the model manager",
+                    WloButton(
+                        label = "Open the model manager",
+                        onClick = onOpenModelManager,
                         modifier = Modifier.fillMaxWidth().testTag("f02-capture-open-zoo"),
-                    ) { onOpenModelManager() }
-                    ActionRow(
-                        label = "type it in instead",
+                    )
+                    WloSecondaryButton(
+                        label = "Type it instead",
+                        onClick = onOpenManualLadder,
                         modifier = Modifier.fillMaxWidth().testTag("f02-capture-manual"),
-                    ) { onOpenManualLadder() }
+                    )
                 }
 
             is CaptureStage.Product -> ProductStage(stage, viewModel)
 
             is CaptureStage.ProductMiss ->
-                WloCard(Modifier.testTag("f02-capture-product-miss")) {
-                    Text("no product under ${stage.barcode}", style = wloType.title)
+                WloCard(
+                    modifier = Modifier.testTag("f02-capture-product-miss"),
+                    header = { WloCardHeader(title = "No product under ${stage.barcode}") },
+                ) {
                     Text(
                         stage.reason.userCopy(),
-                        style = wloType.body.copy(fontSize = wloType.receipt.fontSize),
+                        style = wloType.caption,
                         color = wloExtendedColors.textTertiary,
                     )
                     ManualBarcodeField(viewModel)
-                    ActionRow(
-                        label = "search your catalog",
+                    WloButton(
+                        label = "Search your catalog",
+                        onClick = onOpenManualLadder,
                         modifier = Modifier.fillMaxWidth().testTag("f02-capture-manual"),
-                    ) { onOpenManualLadder() }
+                    )
                 }
 
             is CaptureStage.OcrDraft -> Unit // rendered as the sheet below
 
             CaptureStage.Saving ->
-                WloCard(Modifier.testTag("f02-capture-saving")) { Text("saving…", style = wloType.title) }
+                WloCard(
+                    modifier = Modifier.testTag("f02-capture-saving"),
+                    header = { WloCardHeader(title = "Saving…") },
+                ) {
+                }
 
             is CaptureStage.Saved ->
-                WloCard(Modifier.testTag("f02-capture-saved")) {
-                    Text("saved to the diary", style = wloType.title)
+                WloCard(
+                    modifier = Modifier.testTag("f02-capture-saved"),
+                    header = { WloCardHeader(title = "Saved to the diary") },
+                ) {
                     Text(
                         "${stage.entryCount} ${if (stage.entryCount == 1) "entry" else "entries"} · " +
                             "%,.0f kcal".format(stage.kcal),
                         style = wloType.statM,
                     )
-                    Text(
-                        "the photo stayed memory-only and is discarded at save (retention is opt-in, never default)",
-                        style = wloType.label,
-                        color = wloExtendedColors.textTertiary,
-                    )
                     Row(
                         horizontalArrangement = Arrangement.spacedBy(WloSpacing.TIGHT),
                         modifier = Modifier.fillMaxWidth(),
                     ) {
-                        ActionRow(
-                            label = "scan next",
+                        WloSecondaryButton(
+                            label = "Scan next",
+                            onClick = {
+                                haptics.perform(WloHaptic.Tick)
+                                viewModel.onEvent(CaptureEvent.Retake)
+                            },
                             modifier = Modifier.weight(1f).testTag("f02-capture-again"),
-                        ) {
-                            haptics.perform(WloHaptic.Tick)
-                            viewModel.onEvent(CaptureEvent.Retake)
-                        }
-                        ActionRow(
-                            label = "done",
+                        )
+                        WloButton(
+                            label = "Done",
+                            onClick = {
+                                haptics.perform(WloHaptic.Settle)
+                                onDone()
+                            },
                             modifier = Modifier.weight(1f).testTag("f02-capture-done"),
-                        ) {
-                            haptics.perform(WloHaptic.Settle)
-                            onDone()
-                        }
+                        )
                     }
                 }
         }
 
         state.notice?.let {
-            NoticeLine(
-                it.text,
-                rail = it.state == NoticeState.RAIL,
-                onDismiss = { viewModel.onEvent(CaptureEvent.DismissNotice) },
+            WloBanner(
+                text = it.text,
+                tone = if (it.state == NoticeState.RAIL) WloBannerTone.Warning else WloBannerTone.Info,
+                actionLabel = "Dismiss",
+                action = { viewModel.onEvent(CaptureEvent.DismissNotice) },
                 modifier = Modifier.testTag("f02-capture-notice"),
             )
         }
@@ -219,9 +233,8 @@ public fun CaptureScreen(
     // The OCR draft: the SAME custom-food form the manual twin uses, opened
     // as a sheet (prefilled, confirm-gated — nothing saves without the tap).
     (state.stage as? CaptureStage.OcrDraft)?.let { stage ->
-        ModalBottomSheet(
+        WloSheet(
             onDismissRequest = { viewModel.onEvent(CaptureEvent.Retake) },
-            shape = WloShape.SheetTop,
             modifier = Modifier.testTag("f02-capture-ocr-sheet"),
         ) {
             OcrDraftStage(stage, viewModel)
@@ -250,13 +263,7 @@ private fun ViewfinderStage(
     )
 
     when (state.mode) {
-        CaptureLensMode.PHOTO ->
-            ShutterButton(Modifier.testTag("f02-capture-shutter")) {
-                shutter.take { frame ->
-                    haptics.perform(WloHaptic.Tick)
-                    viewModel.onEvent(CaptureEvent.StillCaptured(frame))
-                }
-            }
+        CaptureLensMode.PHOTO -> ShutterAction(Modifier.testTag("f02-capture-shutter"), shutter, haptics, viewModel)
 
         CaptureLensMode.LABEL ->
             Column(
@@ -268,14 +275,14 @@ private fun ViewfinderStage(
                     style = wloType.label,
                     color = wloExtendedColors.textTertiary,
                 )
-                ShutterButton(Modifier.testTag("f02-capture-shutter")) {
-                    shutter.take { frame ->
-                        haptics.perform(WloHaptic.Tick)
-                        viewModel.onEvent(CaptureEvent.StillCaptured(frame))
-                    }
-                }
+                ShutterAction(
+                    Modifier.testTag("f02-capture-shutter"),
+                    shutter,
+                    haptics,
+                    viewModel,
+                )
                 Text(
-                    "values land in the SAME manual form — nothing saves until you confirm",
+                    "Nothing saves until you confirm.",
                     style = wloType.label,
                     color = wloExtendedColors.textTertiary,
                 )
@@ -284,30 +291,35 @@ private fun ViewfinderStage(
         CaptureLensMode.BARCODE -> ManualBarcodeField(viewModel)
     }
 
-    ActionRow(
-        label = "or type it in instead",
+    WloSecondaryButton(
+        label = "Type it instead",
+        onClick = onOpenManualLadder,
         modifier = Modifier.fillMaxWidth().testTag("f02-capture-manual"),
-    ) { onOpenManualLadder() }
+    )
 }
 
+/** The capture shutter: a filled 72 dp icon action — the flow's primary target. */
 @Composable
-private fun ShutterButton(
+private fun ShutterAction(
     modifier: Modifier = Modifier,
-    onShutter: () -> Unit,
-) {
-    Surface(
-        onClick = onShutter,
-        modifier = modifier.size(72.dp),
-        shape = CircleShape,
-        color = MaterialTheme.colorScheme.primary,
-        contentColor = MaterialTheme.colorScheme.onPrimary,
-        border = BorderStroke(3.dp, MaterialTheme.colorScheme.outline),
-    ) {
-        Box(contentAlignment = Alignment.Center) {
-            Text("scan", style = wloType.label)
-        }
-    }
-}
+    shutter: CaptureShutter,
+    haptics: WloHaptics,
+    viewModel: CaptureViewModel,
+): Unit =
+    WloIconAction(
+        imageVector = CaptureGlyphs.Scan,
+        contentDescription = "Scan",
+        onClick = {
+            shutter.take { frame ->
+                haptics.perform(WloHaptic.Tick)
+                viewModel.onEvent(CaptureEvent.StillCaptured(frame))
+            }
+        },
+        modifier = modifier,
+        filled = true,
+        size = 72.dp,
+        iconSize = 32.dp,
+    )
 
 /** R-U15 for barcodes: typing the number is an equal-status path. */
 @Composable
@@ -321,16 +333,16 @@ private fun ManualBarcodeField(viewModel: CaptureViewModel) {
         label = { Text("…or type the barcode") },
         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
         trailingIcon = {
-            Text(
-                "look up",
-                style = wloType.label,
-                color = MaterialTheme.colorScheme.primary,
-                modifier =
-                    Modifier
-                        .clickable(enabled = text.isNotBlank()) {
-                            viewModel.onEvent(CaptureEvent.ManualBarcode(text.trim()))
-                            text = ""
-                        }.padding(WloSpacing.TIGHT),
+            WloIconAction(
+                imageVector = CaptureGlyphs.Search,
+                contentDescription = "Look up",
+                onClick = {
+                    if (text.isNotBlank()) {
+                        viewModel.onEvent(CaptureEvent.ManualBarcode(text.trim()))
+                        text = ""
+                    }
+                },
+                size = 40.dp,
             )
         },
     )
@@ -345,39 +357,45 @@ private fun ResultStage(
 ) {
     // Scan-level confidence ring text + the amber strip (F02 §4: < 0.5).
     val scanConfidence = stage.scanConfidence
-    WloCard(Modifier.testTag("f02-capture-result")) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Text(text = "what we see", style = wloType.title, modifier = Modifier.weight(1f))
-            if (scanConfidence != null) {
-                val confidence =
-                    DerivedValue(
-                        value = scanConfidence,
-                        provenance =
-                            Provenance.Estimated(
-                                at = kotlinx.datetime.Instant.fromEpochMilliseconds(0),
-                                method = "on-device classifier",
-                                confidence = scanConfidence,
-                                modelId = stage.modelId,
-                                consentGranted = false,
-                            ),
-                    )
-                ProvenanceChip(
-                    value = confidence,
-                    format = { "confidence %.0f%%".format(it * 100) },
-                    modifier = Modifier.testTag("f02-capture-confidence"),
-                )
-            }
-        }
+    WloCard(
+        modifier = Modifier.testTag("f02-capture-result"),
+        header = {
+            WloCardHeader(
+                title = "What we see",
+                provenance = {
+                    if (scanConfidence != null) {
+                        val confidence =
+                            DerivedValue(
+                                value = scanConfidence,
+                                provenance =
+                                    Provenance.Estimated(
+                                        at = kotlinx.datetime.Instant.fromEpochMilliseconds(0),
+                                        method = "on-device classifier",
+                                        confidence = scanConfidence,
+                                        modelId = stage.modelId,
+                                        consentGranted = false,
+                                    ),
+                            )
+                        ProvenanceChip(
+                            value = confidence,
+                            format = { "confidence %.0f%%".format(it * 100) },
+                            modifier = Modifier.testTag("f02-capture-confidence"),
+                        )
+                    }
+                },
+            )
+        },
+    ) {
         if (stage.held) {
             Text(
                 "rough guess — adjust what's wrong",
-                style = wloType.body.copy(fontSize = wloType.receipt.fontSize),
+                style = wloType.caption,
                 color = wloExtendedColors.held,
                 modifier = Modifier.testTag("f02-capture-held-strip"),
             )
         }
         Text(
-            "estimates from food-classifier/1, on-device — tap a chip to fix it; nothing saves until you say so",
+            "On-device estimate — tap a chip to correct it.",
             style = wloType.label,
             color = wloExtendedColors.textTertiary,
         )
@@ -388,23 +406,27 @@ private fun ResultStage(
     }
 
     Row(horizontalArrangement = Arrangement.spacedBy(WloSpacing.TIGHT), modifier = Modifier.fillMaxWidth()) {
-        ActionRow(
-            label = "add missed item",
+        WloSecondaryButton(
+            label = "Add missed item",
+            onClick = { viewModel.onEvent(CaptureEvent.OpenSwap(itemId = null)) },
             modifier = Modifier.weight(1f).testTag("f02-capture-add-item"),
-        ) { viewModel.onEvent(CaptureEvent.OpenSwap(itemId = null)) }
-        ActionRow(
-            label = "type it instead",
+        )
+        WloSecondaryButton(
+            label = "Type it instead",
+            onClick = onOpenManualLadder,
             modifier = Modifier.weight(1f).testTag("f02-capture-manual"),
-        ) { onOpenManualLadder() }
+        )
     }
 
-    ActionRow(
-        label = "save ${stage.visibleItems.size} to diary",
+    WloButton(
+        label = "Save ${stage.visibleItems.size} to diary",
+        onClick = {
+            haptics.perform(WloHaptic.Settle)
+            viewModel.onEvent(CaptureEvent.Save)
+        },
         modifier = Modifier.fillMaxWidth().testTag("f02-capture-save"),
-    ) {
-        haptics.perform(WloHaptic.Settle)
-        viewModel.onEvent(CaptureEvent.Save)
-    }
+    )
+    // The retention disclosure lives ONCE, at the save decision point.
     Text(
         "the photo is discarded at save (opt-in retention is a setting you choose — never a default)",
         style = wloType.label,
@@ -465,14 +487,16 @@ private fun ScanItemCard(
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
                 textStyle = wloType.statM,
             )
-            ActionRow(
-                label = "swap",
+            WloSecondaryButton(
+                label = "Swap",
+                onClick = { viewModel.onEvent(CaptureEvent.OpenSwap(itemId = item.id)) },
                 modifier = Modifier.weight(1f).testTag("f02-capture-item-swap-${item.id}"),
-            ) { viewModel.onEvent(CaptureEvent.OpenSwap(itemId = item.id)) }
-            ActionRow(
-                label = "not this",
+            )
+            WloSecondaryButton(
+                label = "Not this",
+                onClick = { viewModel.onEvent(CaptureEvent.ItemRemove(item.id)) },
                 modifier = Modifier.weight(1f).testTag("f02-capture-item-remove-${item.id}"),
-            ) { viewModel.onEvent(CaptureEvent.ItemRemove(item.id)) }
+            )
         }
         if (item.railTripped || item.densityClamped) {
             val copy =
@@ -483,7 +507,7 @@ private fun ScanItemCard(
                 }
             Text(
                 copy,
-                style = wloType.body.copy(fontSize = wloType.receipt.fontSize),
+                style = wloType.caption,
                 color = wloExtendedColors.held,
                 modifier = Modifier.testTag("f02-capture-item-rail-${item.id}"),
             )
@@ -552,19 +576,22 @@ private fun ProductStage(
             modifier = Modifier.testTag("f02-capture-product-attribution"),
         )
         Row(horizontalArrangement = Arrangement.spacedBy(WloSpacing.TIGHT), modifier = Modifier.fillMaxWidth()) {
-            ActionRow(
-                label = "add to diary",
+            WloButton(
+                label = "Add to diary",
+                onClick = { viewModel.onEvent(CaptureEvent.ProductAddToDiary(product, grams)) },
                 modifier = Modifier.weight(1f).testTag("f02-capture-product-add"),
-            ) { viewModel.onEvent(CaptureEvent.ProductAddToDiary(product, grams)) }
-            ActionRow(
-                label = "save as food",
+            )
+            WloSecondaryButton(
+                label = "Save as food",
+                onClick = { viewModel.onEvent(CaptureEvent.ProductSaveAsFood(product)) },
                 modifier = Modifier.weight(1f).testTag("f02-capture-product-save-food"),
-            ) { viewModel.onEvent(CaptureEvent.ProductSaveAsFood(product)) }
+            )
         }
-        ActionRow(
-            label = "scan next",
+        WloSecondaryButton(
+            label = "Scan next",
+            onClick = { viewModel.onEvent(CaptureEvent.Retake) },
             modifier = Modifier.fillMaxWidth().testTag("f02-capture-again"),
-        ) { viewModel.onEvent(CaptureEvent.Retake) }
+        )
     }
 }
 
@@ -598,8 +625,10 @@ private fun OcrDraftStage(
 ) {
     // The SAME custom-food form as the manual twin (R-U15) — prefilled,
     // confirm-gated: nothing saved until this button.
-    WloCard(Modifier.testTag("f02-capture-ocr-draft")) {
-        Text("read from the label — a draft, never a save", style = wloType.title)
+    WloCard(
+        modifier = Modifier.testTag("f02-capture-ocr-draft"),
+        header = { WloCardHeader(title = "Read from the label — a draft") },
+    ) {
         Text(
             "fix anything; it lands in your catalog only when you confirm",
             style = wloType.label,
@@ -613,7 +642,7 @@ private fun OcrDraftStage(
     )
 }
 
-// --- shared bits -------------------------------------------------------------
+// --- shared bits ---------------------------------------------------------------
 
 private fun modeLabel(mode: CaptureLensMode): String =
     when (mode) {
@@ -623,21 +652,6 @@ private fun modeLabel(mode: CaptureLensMode): String =
     }
 
 // --- swap / add search sheet ---------------------------------------------------
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-private fun CaptureSearchSheetRoot(
-    viewModel: CaptureViewModel,
-    content: @Composable () -> Unit,
-) {
-    ModalBottomSheet(
-        onDismissRequest = { viewModel.onEvent(CaptureEvent.DismissSearch) },
-        shape = WloShape.SheetTop,
-        modifier = Modifier.testTag("f02-capture-search-sheet"),
-    ) {
-        content()
-    }
-}
 
 @Composable
 private fun SearchResultsList(
@@ -656,29 +670,33 @@ private fun SearchResultsList(
 private fun SearchHitRowSimple(
     hit: FoodHitUi,
     onClick: () -> Unit,
-) = Row(
-    modifier =
-        Modifier
-            .fillMaxWidth()
-            .heightIn(min = WloSpacing.ROW_INTERACTIVE)
-            .testTag("f02-capture-search-hit")
-            .clickable(onClick = onClick)
-            .padding(vertical = WloSpacing.TIGHT),
-    horizontalArrangement = Arrangement.spacedBy(WloSpacing.CARD),
-    verticalAlignment = Alignment.CenterVertically,
-) {
-    Column(Modifier.weight(1f)) {
-        Text(hit.food.name, style = wloType.body, maxLines = 1, overflow = TextOverflow.Ellipsis)
-        hit.food.brand?.let { Text(it, style = wloType.label, color = wloExtendedColors.textTertiary) }
+): Unit =
+    WloListRow(
+        label = hit.food.name,
+        secondary = hit.food.brand,
+        trailing = per100gTrailing(hit.food.kcalPer100g),
+        modifier = Modifier.testTag("f02-capture-search-hit"),
+        onClick = onClick,
+    )
+
+/** The per-100 g receipt line for a hit's trailing slot (null when unknown). */
+@Composable
+private fun per100gTrailing(per100: Double?): (@Composable () -> Unit)? =
+    if (per100 == null) {
+        null
+    } else {
+        {
+            Text(
+                "${format(per100)} / 100 g",
+                style = wloType.receipt,
+                color = wloExtendedColors.textTertiary,
+            )
+        }
     }
-    hit.food.kcalPer100g?.let { per100 ->
-        Text("${format(per100)} / 100 g", style = wloType.receipt, color = wloExtendedColors.textTertiary)
-    }
-}
 
 /**
- * The sheet that carries the swap/add search: one root composable keeps the
- * stage wiring in one place (the screen body calls this when a search is open).
+ * The sheet that carries the swap/add search: one composable keeps the stage
+ * wiring in one place (the screen body calls this when a search is open).
  */
 @Composable
 public fun CaptureSearchSheet(
@@ -686,34 +704,91 @@ public fun CaptureSearchSheet(
     viewModel: CaptureViewModel,
 ) {
     if (state.stage is CaptureStage.Result && state.swappingItemId != null) {
-        CaptureSearchSheetRoot(viewModel) {
-            Text(
-                text =
-                    if (state.swappingItemId == null) {
-                        "add an item from your catalog"
-                    } else {
-                        "swap the chip for a food you keep"
-                    },
-                style = wloType.title,
-                modifier = Modifier.padding(horizontal = WloSpacing.SCREEN),
-            )
+        WloSheet(
+            onDismissRequest = { viewModel.onEvent(CaptureEvent.DismissSearch) },
+            modifier = Modifier.testTag("f02-capture-search-sheet"),
+        ) {
+            Text(text = "Swap the chip for a food you keep", style = wloType.title)
             OutlinedTextField(
                 value = state.searchQuery,
                 onValueChange = { viewModel.onEvent(CaptureEvent.SwapQueryChange(it)) },
-                modifier =
-                    Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = WloSpacing.SCREEN)
-                        .testTag("f02-capture-search-field"),
+                modifier = Modifier.fillMaxWidth().testTag("f02-capture-search-field"),
                 singleLine = true,
                 placeholder = { Text("oats, grilled chicken, brand names…", style = wloType.body) },
             )
             SearchResultsList(state, viewModel)
-            androidx.compose.foundation.layout
-                .Spacer(Modifier.padding(WloSpacing.CARD))
+            Spacer(Modifier.height(WloSpacing.CARD))
         }
     }
 }
 
 /** A miss reason that keeps its human copy next to the state (used by sheets). */
 public fun missCopy(reason: MissReason): String = reason.userCopy()
+
+/**
+ * The capture flow's two marks. The design system's WloIcons carries chrome
+ * glyphs only, so the lens's shutter and lookup marks live here — hairline
+ * strokes in WLO's outline idiom, painted black so `Icon(tint)` recolors.
+ */
+private object CaptureGlyphs {
+    private const val VIEWPORT: Float = 24f
+    private val Stroke: SolidColor = SolidColor(Color.Black)
+
+    private fun builder(name: String): ImageVector.Builder =
+        ImageVector.Builder(
+            name = name,
+            defaultWidth = 24.dp,
+            defaultHeight = 24.dp,
+            viewportWidth = VIEWPORT,
+            viewportHeight = VIEWPORT,
+        )
+
+    private fun ImageVector.Builder.stroke(build: PathBuilder.() -> Unit): ImageVector.Builder =
+        path(
+            stroke = Stroke,
+            strokeLineWidth = 1.8f,
+            strokeLineCap = StrokeCap.Round,
+            strokeLineJoin = StrokeJoin.Round,
+        ) {
+            build()
+        }
+
+    /** The shutter: viewfinder brackets around the lens circle. */
+    public val Scan: ImageVector =
+        builder("CaptureGlyphScan")
+            .stroke {
+                moveTo(8.5f, 4f)
+                horizontalLineTo(6f)
+                arcTo(2f, 2f, 0f, true, true, 4f, 6f)
+                verticalLineTo(8.5f)
+                moveTo(15.5f, 4f)
+                horizontalLineTo(18f)
+                arcTo(2f, 2f, 0f, true, true, 20f, 6f)
+                verticalLineTo(8.5f)
+                moveTo(20f, 15.5f)
+                verticalLineTo(18f)
+                arcTo(2f, 2f, 0f, true, true, 18f, 20f)
+                horizontalLineTo(15.5f)
+                moveTo(8.5f, 20f)
+                horizontalLineTo(6f)
+                arcTo(2f, 2f, 0f, true, true, 4f, 18f)
+                verticalLineTo(15.5f)
+            }.stroke {
+                moveTo(8.8f, 12f)
+                arcTo(3.2f, 3.2f, 0f, true, true, 15.2f, 12f)
+                arcTo(3.2f, 3.2f, 0f, true, true, 8.8f, 12f)
+                close()
+            }.build()
+
+    /** Catalog lookup: the magnifier. */
+    public val Search: ImageVector =
+        builder("CaptureGlyphSearch")
+            .stroke {
+                moveTo(4.5f, 10.5f)
+                arcTo(6f, 6f, 0f, true, true, 16.5f, 10.5f)
+                arcTo(6f, 6f, 0f, true, true, 4.5f, 10.5f)
+                close()
+                moveTo(15.2f, 15.2f)
+                lineTo(19.5f, 19.5f)
+            }.build()
+}

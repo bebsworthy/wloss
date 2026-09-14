@@ -3,35 +3,18 @@ package app.wlo.app.navigation
 import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.heightIn
-import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.material3.HorizontalDivider
-import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.testTag
-import androidx.compose.ui.semantics.Role
-import androidx.compose.ui.semantics.role
-import androidx.compose.ui.semantics.selected
-import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NamedNavArgument
 import androidx.navigation.NavController
@@ -53,11 +36,10 @@ import app.wlo.app.ui.settings.SettingsScreen
 import app.wlo.app.ui.shell.ShellState
 import app.wlo.app.ui.shell.ShellViewModel
 import app.wlo.app.ui.zoo.ZooScreen
+import app.wlo.core.designsystem.WloBottomBar
 import app.wlo.core.designsystem.WloHaptic
-import app.wlo.core.designsystem.WloSpacing
+import app.wlo.core.designsystem.WloTabItem
 import app.wlo.core.designsystem.rememberWloHaptics
-import app.wlo.core.designsystem.wloExtendedColors
-import app.wlo.core.designsystem.wloType
 import app.wlo.core.media.WloCaptureMode
 import app.wlo.core.media.WloShutterBridge
 import app.wlo.core.media.WloViewfinder
@@ -142,7 +124,7 @@ public fun WloApp(
         bottomBar = {
             if (shellState == ShellState.Onboarded) {
                 WloBottomBar(
-                    selectedRoute = currentRoute,
+                    selected = currentRoute.orEmpty(),
                     onSelect = { route ->
                         haptics.perform(WloHaptic.SegmentTick)
                         // Tab switches rebuild the tab root fresh: pop the whole
@@ -155,6 +137,10 @@ public fun WloApp(
                             restoreState = false
                         }
                     },
+                    items =
+                        WLO_TABS.map { tab ->
+                            WloTabItem(route = tab.route, icon = tab.icon, label = tab.label)
+                        },
                 )
             }
         },
@@ -490,58 +476,6 @@ private fun RouteSurface(
         else -> StubScreen(title = STUB_TITLES[route] ?: "Coming later")
     }
 }
-
-/**
- * Bottom navigation bar, WLO-styled: hairline top divider, icon + label per
- * tab, active tab in accent (CSS `.navbar`), a detent tick per selection.
- */
-@Composable
-private fun WloBottomBar(
-    selectedRoute: String?,
-    onSelect: (String) -> Unit,
-): Unit =
-    Column {
-        HorizontalDivider(
-            color = MaterialTheme.colorScheme.outline,
-            thickness = 1.dp,
-        )
-        Row(
-            modifier =
-                Modifier
-                    .fillMaxWidth()
-                    .navigationBarsPadding()
-                    .padding(horizontal = WloSpacing.TIGHT, vertical = WloSpacing.TIGHT),
-        ) {
-            for (tab in WLO_TABS) {
-                val isSelected = tab.route == selectedRoute
-                Column(
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    modifier =
-                        Modifier
-                            .weight(1f)
-                            .heightIn(min = 56.dp)
-                            .padding(vertical = WloSpacing.TIGHT)
-                            .clickable { onSelect(tab.route) }
-                            .semantics {
-                                role = Role.Tab
-                                this.selected = isSelected
-                            }.testTag("tab-${tab.route}"),
-                ) {
-                    Icon(
-                        imageVector = tab.icon,
-                        contentDescription = null,
-                        tint = if (isSelected) MaterialTheme.colorScheme.primary else wloExtendedColors.textTertiary,
-                        modifier = Modifier.size(22.dp),
-                    )
-                    Text(
-                        text = tab.label,
-                        style = wloType.label.copy(fontSize = wloType.label.fontSize * 0.92f),
-                        color = if (isSelected) MaterialTheme.colorScheme.primary else wloExtendedColors.textTertiary,
-                    )
-                }
-            }
-        }
-    }
 
 /**
  * The Plan tab host (M5): owns the IA §1 segmented pipeline state (Plan ·

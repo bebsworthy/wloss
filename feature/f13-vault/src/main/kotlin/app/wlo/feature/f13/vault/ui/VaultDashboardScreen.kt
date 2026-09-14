@@ -1,22 +1,15 @@
 package app.wlo.feature.f13.vault.ui
 
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
-import androidx.compose.material3.Switch
-import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -25,11 +18,15 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
-import androidx.compose.ui.text.font.FontFamily
-import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import app.wlo.core.designsystem.WloShape
+import app.wlo.core.designsystem.WloCard
+import app.wlo.core.designsystem.WloCardHeader
+import app.wlo.core.designsystem.WloDialog
+import app.wlo.core.designsystem.WloListRow
+import app.wlo.core.designsystem.WloScreenTitle
+import app.wlo.core.designsystem.WloSecondaryButton
 import app.wlo.core.designsystem.WloSpacing
+import app.wlo.core.designsystem.WloSwitchRow
 import app.wlo.core.designsystem.wloExtendedColors
 import app.wlo.core.designsystem.wloType
 import app.wlo.feature.f13.vault.state.VaultDashboardViewModel
@@ -60,11 +57,7 @@ public fun VaultDashboardScreen(
                 .testTag("f13-vault"),
         verticalArrangement = Arrangement.spacedBy(WloSpacing.CARD),
     ) {
-        Text(
-            text = "Data Vault",
-            style = wloType.title.copy(fontSize = wloType.title.fontSize * 1.5f),
-            modifier = Modifier.padding(top = WloSpacing.SCREEN).testTag("f13-title"),
-        )
+        WloScreenTitle(title = "Data Vault", modifier = Modifier.testTag("f13-title"))
         Text(
             text =
                 "Your data lives on this device — encrypted at rest, backed up where you say, " +
@@ -74,174 +67,140 @@ public fun VaultDashboardScreen(
         )
 
         // --- storage dashboard ------------------------------------------------
-        Text(text = "Storage", style = wloType.title, modifier = Modifier.padding(top = WloSpacing.TIGHT))
-        Surface(
-            shape = WloShape.Card,
-            color = MaterialTheme.colorScheme.surface,
-            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
-            modifier = Modifier.fillMaxWidth().testTag("f13-storage"),
-        ) {
-            Column(
-                Modifier.padding(WloSpacing.PAD_CARD),
-                verticalArrangement = Arrangement.spacedBy(WloSpacing.TIGHT),
-            ) {
-                state.partitions.forEach { partition ->
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Column(Modifier.weight(1f)) {
-                            Text(text = partition.partition, style = wloType.statS)
-                            Text(
-                                text = "${partition.count} file(s) · AES-GCM, opaque names",
-                                style = wloType.receipt,
-                                color = wloExtendedColors.textTertiary,
-                            )
-                        }
-                        Text(
-                            text = formatBytes(partition.bytes),
-                            style = wloType.statS,
-                            fontFamily = FontFamily.Monospace,
-                        )
-                        TextButton(
-                            onClick = { viewModel.reclaim(partition.partition) },
-                            enabled = partition.count > 0,
-                        ) {
-                            Text("Reclaim", style = wloType.label)
-                        }
-                    }
-                    HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.5f))
-                }
-                if (state.partitions.isEmpty()) {
-                    Text(
-                        text =
-                            "No encrypted partitions in use yet. Captures that land here are invisible to " +
-                                "the gallery and to cloud photo backup.",
-                        style = wloType.body,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                }
-                Text(
-                    text = "total: ${formatBytes(state.totalVaultBytes)}",
-                    style = wloType.label,
-                    fontFamily = FontFamily.Monospace,
-                    modifier = Modifier.testTag("f13-storage-total"),
-                )
-            }
-        }
-
-        // --- backup posture ----------------------------------------------------
-        Text(text = "Backup", style = wloType.title, modifier = Modifier.padding(top = WloSpacing.TIGHT))
-        Surface(
-            shape = WloShape.Card,
-            color = MaterialTheme.colorScheme.surface,
-            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
-            modifier = Modifier.fillMaxWidth().testTag("f13-backup-posture"),
-        ) {
-            Column(
-                Modifier.padding(WloSpacing.PAD_CARD),
-                verticalArrangement = Arrangement.spacedBy(WloSpacing.TIGHT),
-            ) {
-                val backup = state.backup
-                Text(
-                    text =
-                        when {
-                            backup?.folderUri != null && state.lastBackupFile != null ->
-                                "Last backup: ${state.lastBackupFile} (${backup.files.size} kept — rotation keeps 7)"
-                            backup?.folderUri != null -> "Folder chosen — no backup written yet."
-                            else -> "No backup folder yet. Set it up once; backups then run on their own."
-                        },
-                    style = wloType.body,
-                    modifier = Modifier.testTag("f13-last-backup"),
-                )
+        WloCard(modifier = Modifier.fillMaxWidth().testTag("f13-storage")) {
+            WloCardHeader(title = "Storage")
+            state.partitions.forEachIndexed { index, partition ->
+                if (index > 0) HorizontalDivider()
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Column(Modifier.weight(1f)) {
-                        Text(text = "Automatic daily backup", style = wloType.statS)
+                        Text(text = partition.partition, style = wloType.statS)
                         Text(
                             text =
-                                if (backup?.folderUri != null) {
-                                    "Runs quietly once a day while the folder is reachable."
-                                } else {
-                                    "Available once a folder is chosen."
-                                },
+                                "${partition.count} file(s) · encrypted with your key; " +
+                                    "files carry scrambled names",
                             style = wloType.receipt,
                             color = wloExtendedColors.textTertiary,
                         )
                     }
-                    Switch(
-                        checked = backup?.autoEnabled ?: false,
-                        onCheckedChange = viewModel::setAutoBackup,
-                        enabled = backup?.folderUri != null,
-                        colors =
-                            SwitchDefaults.colors(
-                                checkedTrackColor = MaterialTheme.colorScheme.primary,
-                                checkedThumbColor = wloExtendedColors.surfaceSunken,
-                            ),
-                        modifier = Modifier.testTag("f13-auto-toggle"),
+                    Text(text = formatBytes(partition.bytes), style = wloType.statS)
+                    WloSecondaryButton(
+                        label = "Reclaim",
+                        onClick = { viewModel.reclaim(partition.partition) },
+                        enabled = partition.count > 0,
                     )
                 }
-                WizardRow(
-                    tag = "f13-open-backup",
-                    label = "Backup controls — folder, passphrase, backup now",
-                    onClick = onOpenBackup,
-                )
             }
-        }
-
-        // --- wizards -------------------------------------------------------------
-        Text(text = "Move data", style = wloType.title, modifier = Modifier.padding(top = WloSpacing.TIGHT))
-        Surface(
-            shape = WloShape.Card,
-            color = MaterialTheme.colorScheme.surface,
-            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
-            modifier = Modifier.fillMaxWidth(),
-        ) {
-            Column(Modifier.padding(WloSpacing.PAD_CARD)) {
-                WizardRow(tag = "f13-open-restore", label = "Restore from a backup file", onClick = onOpenRestore)
-                HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.5f))
-                WizardRow(
-                    tag = "f13-open-export",
-                    label = "Export — JSON bundle or per-metric CSV",
-                    onClick = onOpenExport,
-                )
-                HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.5f))
-                WizardRow(
-                    tag = "f13-open-import",
-                    label = "Import — bundle or CSV with column mapping",
-                    onClick = onOpenImport,
-                )
-            }
-        }
-
-        // --- Fresh Start (R-B7) ---------------------------------------------------
-        Surface(
-            shape = WloShape.Card,
-            color = MaterialTheme.colorScheme.surface,
-            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
-            modifier = Modifier.fillMaxWidth().testTag("f13-fresh-start-card"),
-        ) {
-            Column(
-                Modifier.padding(WloSpacing.PAD_CARD),
-                verticalArrangement = Arrangement.spacedBy(WloSpacing.TIGHT),
-            ) {
-                Text(text = "Fresh Start", style = wloType.title)
+            if (state.partitions.isEmpty()) {
                 Text(
                     text =
-                        "Starting over after a relapse is a feature, not a failure. Fresh Start HIDES " +
-                            "your history — nothing is deleted — and walks you through onboarding again. " +
-                            "Your backups keep everything.",
+                        "No encrypted partitions in use yet. Captures that land here are invisible to " +
+                            "the gallery and to cloud photo backup.",
                     style = wloType.body,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
-                state.freshStartDone?.let { done ->
-                    Text(
-                        text = "Hidden ${done.archivedDiaryEntries} diary entries. Onboarding re-arms on next launch.",
-                        style = wloType.receipt,
-                        color = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.testTag("f13-fresh-start-done"),
-                    )
-                }
-                TextButton(onClick = { freshStartAsking = true }, modifier = Modifier.testTag("f13-fresh-start")) {
-                    Text("Hide history & start fresh…", style = wloType.label)
-                }
             }
+            Text(
+                text = "Total: ${formatBytes(state.totalVaultBytes)}",
+                style = wloType.receipt,
+                modifier = Modifier.testTag("f13-storage-total"),
+            )
+        }
+
+        // --- backup posture ----------------------------------------------------
+        WloCard(modifier = Modifier.fillMaxWidth().testTag("f13-backup-posture")) {
+            WloCardHeader(title = "Backup")
+            val backup = state.backup
+            Text(
+                text =
+                    when {
+                        backup?.folderUri != null && state.lastBackupFile != null ->
+                            "Last backup: ${state.lastBackupFile} — rotation keeps the last 7"
+                        backup?.folderUri != null -> "Folder chosen — no backup written yet."
+                        else -> "No backup folder yet. Set it up once; backups then run on their own."
+                    },
+                style = wloType.body,
+                modifier = Modifier.testTag("f13-last-backup"),
+            )
+            WloSwitchRow(
+                label = "Automatic daily backup",
+                checked = backup?.autoEnabled ?: false,
+                onCheckedChange = { enabled ->
+                    if (backup?.folderUri != null) {
+                        viewModel.setAutoBackup(enabled)
+                    }
+                },
+                modifier = Modifier.testTag("f13-auto-toggle"),
+            )
+            Text(
+                text =
+                    if (backup?.folderUri != null) {
+                        "Runs quietly once a day while the folder is reachable."
+                    } else {
+                        "Available once a folder is chosen."
+                    },
+                style = wloType.caption,
+                color = wloExtendedColors.textTertiary,
+            )
+            WloListRow(
+                label = "Backup controls",
+                secondary = "Folder, passphrase, back up now",
+                chevron = true,
+                onClick = onOpenBackup,
+                modifier = Modifier.testTag("f13-open-backup"),
+            )
+        }
+
+        // --- wizards -------------------------------------------------------------
+        WloCard(modifier = Modifier.fillMaxWidth()) {
+            WloCardHeader(title = "Move data")
+            WloListRow(
+                label = "Restore from a backup file",
+                chevron = true,
+                onClick = onOpenRestore,
+                modifier = Modifier.testTag("f13-open-restore"),
+            )
+            HorizontalDivider()
+            WloListRow(
+                label = "Export",
+                secondary = "JSON bundle or per-metric CSV",
+                chevron = true,
+                onClick = onOpenExport,
+                modifier = Modifier.testTag("f13-open-export"),
+            )
+            HorizontalDivider()
+            WloListRow(
+                label = "Import",
+                secondary = "Bundle or CSV with column mapping",
+                chevron = true,
+                onClick = onOpenImport,
+                modifier = Modifier.testTag("f13-open-import"),
+            )
+        }
+
+        // --- Fresh Start (R-B7) ---------------------------------------------------
+        WloCard(modifier = Modifier.fillMaxWidth().testTag("f13-fresh-start-card")) {
+            WloCardHeader(title = "Fresh Start")
+            Text(
+                text =
+                    "Starting over after a relapse is a feature, not a failure. Fresh start hides " +
+                        "your history — nothing is deleted — and walks you through onboarding again. " +
+                        "Your backups keep everything.",
+                style = wloType.body,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            state.freshStartDone?.let { done ->
+                Text(
+                    text = "Hidden ${done.archivedDiaryEntries} diary entries. Setup runs again on next launch.",
+                    style = wloType.receipt,
+                    color = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.testTag("f13-fresh-start-done"),
+                )
+            }
+            WloSecondaryButton(
+                label = "Hide history & start fresh…",
+                onClick = { freshStartAsking = true },
+                modifier = Modifier.testTag("f13-fresh-start"),
+            )
         }
         Text(
             text = "Exports are versioned and documented. Secrets and keys never enter a backup or an export.",
@@ -252,50 +211,22 @@ public fun VaultDashboardScreen(
     }
 
     if (freshStartAsking) {
-        AlertDialog(
-            onDismissRequest = { freshStartAsking = false },
-            title = { Text("Hide history & start fresh?") },
-            text = {
-                Text(
-                    text =
-                        "Your ${state.freshStartPreview?.archivedDiaryEntries ?: 0} diary entries will be " +
-                            "hidden — never deleted — and the active profile retires. Everything stays in " +
-                            "your backups. This is reversible from a restore.",
-                )
+        WloDialog(
+            title = "Hide history & start fresh?",
+            text =
+                "Your ${state.freshStartPreview?.archivedDiaryEntries ?: 0} diary entries will be " +
+                    "hidden — never deleted — and the active profile retires. Everything stays in " +
+                    "your backups. This is reversible from a restore.",
+            confirmLabel = "Hide & start fresh",
+            onConfirm = {
+                freshStartAsking = false
+                viewModel.freshStart()
             },
-            confirmButton = {
-                TextButton(
-                    onClick = {
-                        freshStartAsking = false
-                        viewModel.freshStart()
-                    },
-                    modifier = Modifier.testTag("f13-fresh-start-confirm"),
-                ) { Text("Hide & start fresh") }
-            },
-            dismissButton = {
-                TextButton(onClick = { freshStartAsking = false }) { Text("Keep everything") }
-            },
+            dismissLabel = "Keep everything",
+            onDismiss = { freshStartAsking = false },
+            destructive = true,
+            modifier = Modifier.testTag("f13-fresh-start-confirm"),
         )
-    }
-}
-
-@Composable
-private fun WizardRow(
-    tag: String,
-    label: String,
-    onClick: () -> Unit,
-) {
-    Surface(
-        color = MaterialTheme.colorScheme.surface,
-        contentColor = MaterialTheme.colorScheme.onSurface,
-        modifier =
-            Modifier
-                .fillMaxWidth()
-                .heightIn(min = 44.dp)
-                .testTag(tag),
-        onClick = onClick,
-    ) {
-        Text(text = label, style = wloType.statS, modifier = Modifier.padding(vertical = WloSpacing.CARD))
     }
 }
 

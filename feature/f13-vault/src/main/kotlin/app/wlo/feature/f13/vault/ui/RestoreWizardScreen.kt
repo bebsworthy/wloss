@@ -2,7 +2,6 @@ package app.wlo.feature.f13.vault.ui
 
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -10,13 +9,9 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -26,11 +21,17 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
-import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.input.PasswordVisualTransformation
-import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import app.wlo.core.designsystem.WloShape
+import app.wlo.core.designsystem.WloBadge
+import app.wlo.core.designsystem.WloBadgeTone
+import app.wlo.core.designsystem.WloButton
+import app.wlo.core.designsystem.WloCard
+import app.wlo.core.designsystem.WloCardAccent
+import app.wlo.core.designsystem.WloCardHeader
+import app.wlo.core.designsystem.WloProgress
+import app.wlo.core.designsystem.WloScreenTitle
+import app.wlo.core.designsystem.WloSecondaryButton
 import app.wlo.core.designsystem.WloSpacing
 import app.wlo.core.designsystem.wloExtendedColors
 import app.wlo.core.designsystem.wloType
@@ -81,11 +82,7 @@ public fun RestoreWizardScreen(
                 .testTag("f13-restore"),
         verticalArrangement = Arrangement.spacedBy(WloSpacing.CARD),
     ) {
-        Text(
-            text = "Restore",
-            style = wloType.title.copy(fontSize = wloType.title.fontSize * 1.5f),
-            modifier = Modifier.padding(top = WloSpacing.SCREEN).testTag("f13-restore-title"),
-        )
+        WloScreenTitle(title = "Restore", modifier = Modifier.testTag("f13-restore-title"))
         Text(
             text = "Step ${stepNumber(state.step)} of 4 — ${stepName(state.step)}",
             style = wloType.label,
@@ -103,11 +100,11 @@ public fun RestoreWizardScreen(
                         style = wloType.body,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
-                    Button(
+                    WloButton(
+                        label = "Pick a file",
                         onClick = { filePicker.launch(arrayOf("application/octet-stream", "*/*")) },
-                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
                         modifier = Modifier.testTag("f13-restore-pick"),
-                    ) { Text("Choose backup file", style = wloType.label) }
+                    )
                 }
 
             RestoreWizardUiState.Step.Passphrase ->
@@ -115,7 +112,6 @@ public fun RestoreWizardScreen(
                     Text(
                         text = "File: ${state.fileName} · ${formatBytes(state.byteCount)}",
                         style = wloType.receipt,
-                        fontFamily = FontFamily.Monospace,
                     )
                     Text(
                         text =
@@ -143,102 +139,86 @@ public fun RestoreWizardScreen(
                         modifier = Modifier.fillMaxWidth().testTag("f13-restore-passphrase"),
                     )
                     Row(horizontalArrangement = Arrangement.spacedBy(WloSpacing.TIGHT)) {
-                        OutlinedButton(
+                        WloSecondaryButton(
+                            label = "Back",
                             onClick = viewModel::backToPick,
                             modifier = Modifier.testTag("f13-restore-back"),
-                        ) {
-                            Text("Back", style = wloType.label)
-                        }
-                        Button(
+                        )
+                        WloButton(
+                            label = "Validate",
                             onClick = {
                                 viewModel.submitPassphrase(passphrase.toCharArray())
                                 passphrase = ""
                             },
                             enabled = passphrase.isNotEmpty(),
-                            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
                             modifier = Modifier.testTag("f13-restore-unlock"),
-                        ) { Text("Validate", style = wloType.label) }
+                        )
                     }
                 }
 
             RestoreWizardUiState.Step.Report -> {
                 val staged = state.staged
                 Column(verticalArrangement = Arrangement.spacedBy(WloSpacing.CARD)) {
-                    Surface(
-                        shape = WloShape.Card,
-                        color = MaterialTheme.colorScheme.surface,
-                        border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary),
+                    WloCard(
+                        accent = WloCardAccent.Primary,
                         modifier = Modifier.fillMaxWidth().testTag("f13-restore-report"),
                     ) {
-                        Column(
-                            Modifier.padding(WloSpacing.PAD_CARD),
-                            verticalArrangement = Arrangement.spacedBy(WloSpacing.TIGHT),
-                        ) {
-                            Text(
-                                "Validated ✓ — nothing applied yet",
-                                style = wloType.title,
-                                color = MaterialTheme.colorScheme.primary,
-                            )
-                            Text(
-                                text =
-                                    "Schema v${staged?.schemaVersionFrom} → v${staged?.schemaVersionTo}" +
-                                        (
-                                            if ((staged?.schemaVersionFrom ?: 0) < (staged?.schemaVersionTo ?: 0)) {
-                                                " (migrated forward on apply)"
-                                            } else {
-                                                ""
-                                            }
-                                        ),
-                                style = wloType.receipt,
-                                fontFamily = FontFamily.Monospace,
-                                color = wloExtendedColors.textTertiary,
-                                modifier = Modifier.testTag("f13-restore-schema"),
-                            )
-                            HorizontalDivider()
-                            staged?.sections?.forEach { section ->
-                                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                                    Text(
-                                        text = section.name,
-                                        style = wloType.receipt,
-                                        fontFamily = FontFamily.Monospace,
-                                    )
-                                    Text(
-                                        text = "${section.rows} rows",
-                                        style = wloType.receipt,
-                                        fontFamily = FontFamily.Monospace,
-                                        modifier = Modifier.testTag("f13-restore-section-${section.name}"),
-                                    )
-                                }
-                            }
-                            HorizontalDivider()
-                            Text(
-                                text =
-                                    "${staged?.totalRows ?: 0} rows total · every row re-validated " +
-                                        "against its schema",
-                                style = wloType.label,
-                            )
-                            staged?.warnings?.takeIf { it.isNotEmpty() }?.forEach { warning ->
+                        WloCardHeader(
+                            title = "Nothing applied yet",
+                            provenance = { WloBadge(text = "Validated", tone = WloBadgeTone.Accent) },
+                        )
+                        Text(
+                            text =
+                                "Schema v${staged?.schemaVersionFrom} → v${staged?.schemaVersionTo}" +
+                                    (
+                                        if ((staged?.schemaVersionFrom ?: 0) < (staged?.schemaVersionTo ?: 0)) {
+                                            " (migrated forward on apply)"
+                                        } else {
+                                            ""
+                                        }
+                                    ),
+                            style = wloType.receipt,
+                            color = wloExtendedColors.textTertiary,
+                            modifier = Modifier.testTag("f13-restore-schema"),
+                        )
+                        HorizontalDivider()
+                        staged?.sections?.forEach { section ->
+                            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                                Text(text = section.name, style = wloType.receipt)
                                 Text(
-                                    text = "⚠ $warning",
+                                    text = "${section.rows} rows",
                                     style = wloType.receipt,
-                                    color = MaterialTheme.colorScheme.error,
-                                    modifier = Modifier.testTag("f13-restore-warning"),
+                                    modifier = Modifier.testTag("f13-restore-section-${section.name}"),
                                 )
                             }
                         }
+                        HorizontalDivider()
+                        Text(
+                            text =
+                                "${staged?.totalRows ?: 0} rows total · every row re-validated " +
+                                    "against its schema",
+                            style = wloType.label,
+                        )
+                        staged?.warnings?.takeIf { it.isNotEmpty() }?.forEach { warning ->
+                            Text(
+                                text = warning,
+                                style = wloType.receipt,
+                                color = MaterialTheme.colorScheme.error,
+                                modifier = Modifier.testTag("f13-restore-warning"),
+                            )
+                        }
                     }
                     Row(horizontalArrangement = Arrangement.spacedBy(WloSpacing.TIGHT)) {
-                        OutlinedButton(
+                        WloSecondaryButton(
+                            label = "Back",
                             onClick = viewModel::backToPick,
                             modifier = Modifier.testTag("f13-restore-back"),
-                        ) {
-                            Text("Back", style = wloType.label)
-                        }
-                        Button(
+                        )
+                        WloButton(
+                            label = "Continue",
                             onClick = viewModel::confirmCommit,
-                            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
                             modifier = Modifier.testTag("f13-restore-continue"),
-                        ) { Text("Continue", style = wloType.label) }
+                        )
                     }
                 }
             }
@@ -254,100 +234,94 @@ public fun RestoreWizardScreen(
                         modifier = Modifier.testTag("f13-restore-confirm-copy"),
                     )
                     Row(horizontalArrangement = Arrangement.spacedBy(WloSpacing.TIGHT)) {
-                        OutlinedButton(
+                        WloSecondaryButton(
+                            label = "Back",
                             onClick = viewModel::backToPick,
                             modifier = Modifier.testTag("f13-restore-back"),
-                        ) { Text("Back", style = wloType.label) }
-                        Button(
+                        )
+                        WloButton(
+                            label = "Apply restore",
                             onClick = viewModel::confirmCommit,
-                            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
                             modifier = Modifier.testTag("f13-restore-confirm"),
-                        ) { Text("Apply restore", style = wloType.label) }
+                        )
                     }
                 }
 
-            RestoreWizardUiState.Step.Applying ->
-                Text(
-                    "Applying — one transaction, all-or-nothing…",
-                    style = wloType.body,
+            RestoreWizardUiState.Step.Applying -> {
+                WloProgress(
+                    progress = null,
+                    label = "Applying…",
                     modifier = Modifier.testTag("f13-restore-applying"),
                 )
+                Text(
+                    text = "One transaction, all-or-nothing — nothing is half-applied.",
+                    style = wloType.caption,
+                    color = wloExtendedColors.textTertiary,
+                )
+            }
 
             RestoreWizardUiState.Step.Done ->
-                Surface(
-                    shape = WloShape.Card,
-                    color = MaterialTheme.colorScheme.surface,
-                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary),
+                WloCard(
+                    accent = WloCardAccent.Primary,
                     modifier = Modifier.fillMaxWidth().testTag("f13-restore-done"),
                 ) {
-                    Column(
-                        Modifier.padding(WloSpacing.PAD_CARD),
-                        verticalArrangement = Arrangement.spacedBy(WloSpacing.TIGHT),
-                    ) {
-                        Text("Restored ✓", style = wloType.title, color = MaterialTheme.colorScheme.primary)
+                    WloCardHeader(
+                        title = "Restore complete",
+                        provenance = { WloBadge(text = "Restored", tone = WloBadgeTone.Accent) },
+                    )
+                    Text(
+                        text =
+                            "${state.commitInserted} rows added · ${state.commitSkipped} kept " +
+                                "as-is (already present).",
+                        style = wloType.body,
+                        modifier = Modifier.testTag("f13-restore-counts"),
+                    )
+                    state.commitWarnings.forEach {
                         Text(
-                            text =
-                                "${state.commitInserted} rows added · ${state.commitSkipped} kept " +
-                                    "as-is (already present).",
-                            style = wloType.body,
-                            modifier = Modifier.testTag("f13-restore-counts"),
+                            text = it,
+                            style = wloType.receipt,
+                            color = MaterialTheme.colorScheme.error,
                         )
-                        state.commitWarnings.forEach {
-                            Text(
-                                text = "⚠ $it",
-                                style = wloType.receipt,
-                                color = MaterialTheme.colorScheme.error,
-                            )
-                        }
-                        Button(
-                            onClick = onDone,
-                            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
-                        ) { Text("Done", style = wloType.label) }
                     }
+                    WloButton(label = "Done", onClick = onDone)
                 }
 
             RestoreWizardUiState.Step.Failed ->
-                Surface(
-                    shape = WloShape.Card,
-                    color = MaterialTheme.colorScheme.surface,
-                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.error),
+                WloCard(
+                    accent = WloCardAccent.Warning,
                     modifier = Modifier.fillMaxWidth().testTag("f13-restore-failed"),
                 ) {
-                    Column(
-                        Modifier.padding(WloSpacing.PAD_CARD),
-                        verticalArrangement = Arrangement.spacedBy(WloSpacing.TIGHT),
-                    ) {
+                    WloCardHeader(
+                        title = "Restore stopped",
+                        provenance = { WloBadge(text = "Failed", tone = WloBadgeTone.Held) },
+                    )
+                    Text(
+                        text = failureTitle(state.failure),
+                        style = wloType.title,
+                        modifier = Modifier.testTag("f13-restore-failure-title"),
+                    )
+                    Text(
+                        text =
+                            "Nothing was changed. Your data on this device is exactly as it was — " +
+                                "the file never reached it.",
+                        style = wloType.body,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.testTag("f13-restore-untouched"),
+                    )
+                    state.failureDetail?.let {
                         Text(
-                            text = failureTitle(state.failure),
-                            style = wloType.title,
-                            color = MaterialTheme.colorScheme.error,
-                            modifier = Modifier.testTag("f13-restore-failure-title"),
+                            text = it,
+                            style = wloType.receipt,
+                            color = wloExtendedColors.textTertiary,
                         )
-                        Text(
-                            text =
-                                "Nothing was changed. Your data on this device is exactly as it was — " +
-                                    "the file never reached it.",
-                            style = wloType.body,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.testTag("f13-restore-untouched"),
+                    }
+                    Row(horizontalArrangement = Arrangement.spacedBy(WloSpacing.TIGHT)) {
+                        WloSecondaryButton(
+                            label = "Try another file",
+                            onClick = viewModel::backToPick,
+                            modifier = Modifier.testTag("f13-restore-retry"),
                         )
-                        state.failureDetail?.let {
-                            Text(
-                                text = it,
-                                style = wloType.receipt,
-                                fontFamily = FontFamily.Monospace,
-                                color = wloExtendedColors.textTertiary,
-                            )
-                        }
-                        Row(horizontalArrangement = Arrangement.spacedBy(WloSpacing.TIGHT)) {
-                            OutlinedButton(
-                                onClick = viewModel::backToPick,
-                                modifier = Modifier.testTag("f13-restore-retry"),
-                            ) {
-                                Text("Try another file", style = wloType.label)
-                            }
-                            OutlinedButton(onClick = onDone) { Text("Done", style = wloType.label) }
-                        }
+                        WloSecondaryButton(label = "Done", onClick = onDone)
                     }
                 }
         }
@@ -371,13 +345,13 @@ private fun stepNumber(step: RestoreWizardUiState.Step): Int =
 
 private fun stepName(step: RestoreWizardUiState.Step): String =
     when (step) {
-        RestoreWizardUiState.Step.Pick -> "pick a file"
-        RestoreWizardUiState.Step.Passphrase -> "passphrase"
-        RestoreWizardUiState.Step.Report -> "the validation report"
-        RestoreWizardUiState.Step.Confirm -> "confirm"
-        RestoreWizardUiState.Step.Applying -> "applying"
-        RestoreWizardUiState.Step.Done -> "done"
-        RestoreWizardUiState.Step.Failed -> "stopped safely"
+        RestoreWizardUiState.Step.Pick -> "Pick a file"
+        RestoreWizardUiState.Step.Passphrase -> "Passphrase"
+        RestoreWizardUiState.Step.Report -> "Validation report"
+        RestoreWizardUiState.Step.Confirm -> "Confirm"
+        RestoreWizardUiState.Step.Applying -> "Applying"
+        RestoreWizardUiState.Step.Done -> "Done"
+        RestoreWizardUiState.Step.Failed -> "Stopped safely"
     }
 
 private fun failureTitle(failure: VaultFailure?): String =

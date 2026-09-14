@@ -90,8 +90,17 @@ public class M6ScreensTest {
         }
     }
 
+    /**
+     * Taps the first visible object whose text equals [text], falling back to
+     * a contains-match (exact-first: the restore wizard's step header
+     * "Step 1 of 4 — Pick a file" contains the button's own label).
+     */
     private fun tapTextContaining(text: String): Boolean {
-        val node = device().findObjects(By.textContains(text)).firstOrNull() ?: return false
+        val ui = device()
+        val node =
+            ui.findObjects(By.text(text)).firstOrNull()
+                ?: ui.findObjects(By.textContains(text)).firstOrNull()
+                ?: return false
         node.click()
         return true
     }
@@ -118,7 +127,7 @@ public class M6ScreensTest {
         // --- settings (the IA §1 gear surface) -------------------------------
         deliver("wlo://settings")
         awaitRoute("app/settings")
-        awaitText("App lock")
+        awaitText("APP LOCK")
         SystemClock.sleep(500)
         shot("m6-settings")
 
@@ -185,8 +194,8 @@ public class M6ScreensTest {
         deliver("wlo://vault")
         awaitRoute("f13/vault")
         tapTextContaining("Restore from a backup file")
-        awaitText("Choose backup file")
-        tapTextContaining("Choose backup file")
+        awaitText("Pick a file")
+        tapTextContaining("Pick a file")
         pickFixture(backupName)
         awaitText("Backup passphrase")
         // Click the field's label area (focuses the field), then type through
@@ -205,7 +214,7 @@ public class M6ScreensTest {
         // --- export wizard ------------------------------------------------------
         deliver("wlo://vault")
         awaitRoute("f13/vault")
-        tapTextContaining("Export —")
+        tapTextContaining("Export")
         awaitText("JSON bundle")
         SystemClock.sleep(500)
         shot("m6-export")
@@ -214,11 +223,11 @@ public class M6ScreensTest {
         val csvName = publishCsvFixture()
         deliver("wlo://vault")
         awaitRoute("f13/vault")
-        tapTextContaining("Import —")
+        tapTextContaining("Import")
         awaitText("Choose a file")
         tapTextContaining("Choose a file")
         pickFixture(csvName)
-        awaitText("map each column")
+        awaitText("Map each column")
         SystemClock.sleep(700)
         shot("m6-csv-mapping")
 
@@ -292,19 +301,37 @@ public class M6ScreensTest {
     /**
      * Drives the system document picker: roots drawer → Downloads root →
      * file (the picker may open on RECENT — never assume Downloads). The
-     * drawer covers the file list and eats taps, so it is closed before any
-     * file click.
+     * drawer's "Open from" header can persist across iterations (and the
+     * toolbar title may carry the same string), so drawer handling is
+     * BOUNDED: aim it at Downloads at most three times, then close it with
+     * back and hunt for the file whatever the chrome says.
      */
     private fun pickFixture(name: String) {
         val ui = device()
         val deadline = System.currentTimeMillis() + 60_000
         var picked = false
         var inDownloads = false
+        var drawerActions = 0
         while (System.currentTimeMillis() < deadline && !picked) {
-            if (ui.hasObject(By.text("Open from"))) {
+            val drawerOpen = ui.hasObject(By.text("Open from"))
+            if (drawerOpen && drawerActions < 3) {
+                drawerActions++
+                val entry =
+                    ui.findObjects(By.text("Downloads")).firstOrNull { it.visibleCenter.x < 500 }
+                if (entry != null) {
+                    entry.click()
+                    inDownloads = true
+                    Thread.sleep(1_000)
+                    continue
+                }
                 ui.findObject(By.desc("Show roots"))?.click()
                 Thread.sleep(900)
                 continue
+            }
+            if (drawerOpen) {
+                // Stuck drawer: close it and hunt for the file anyway.
+                ui.pressBack()
+                Thread.sleep(900)
             }
             val file = ui.findObjects(By.textContains(name)).firstOrNull()
             if (file != null) {
@@ -315,6 +342,7 @@ public class M6ScreensTest {
             if (!inDownloads) {
                 ui.findObject(By.desc("Show roots"))?.click()
                 Thread.sleep(1_000)
+                drawerActions++
                 val entry =
                     ui.findObjects(By.text("Downloads")).firstOrNull { it.visibleCenter.x < 500 }
                 if (entry != null) {
@@ -339,7 +367,7 @@ public class M6ScreensTest {
         check(picked) {
             val onScreen =
                 ui
-                    .findObjects(By.textContains(" "))
+                    .findObjects(By.textContains("e"))
                     .mapNotNull { it.text }
                     .filter { it.length in 2..40 }
                     .distinct()

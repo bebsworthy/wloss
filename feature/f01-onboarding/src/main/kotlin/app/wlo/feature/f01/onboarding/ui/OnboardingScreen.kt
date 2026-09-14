@@ -5,8 +5,9 @@ import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.togetherWith
-import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -17,14 +18,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -33,16 +27,18 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import app.wlo.core.designsystem.WloBanner
+import app.wlo.core.designsystem.WloBannerTone
+import app.wlo.core.designsystem.WloButton
 import app.wlo.core.designsystem.WloHaptic
+import app.wlo.core.designsystem.WloHaptics
 import app.wlo.core.designsystem.WloMotion
-import app.wlo.core.designsystem.WloShape
+import app.wlo.core.designsystem.WloSecondaryButton
 import app.wlo.core.designsystem.WloSpacing
 import app.wlo.core.designsystem.rememberWloHaptics
 import app.wlo.core.designsystem.wloExtendedColors
-import app.wlo.core.designsystem.wloType
 import app.wlo.feature.f01.onboarding.state.OnboardingEvent
 import app.wlo.feature.f01.onboarding.state.OnboardingStep
 import app.wlo.feature.f01.onboarding.state.OnboardingUiState
@@ -54,7 +50,6 @@ import app.wlo.feature.f01.onboarding.state.OnboardingViewModel
  * zero permission asks. Step transitions ride [WloMotion]; transitions and
  * constraint resolutions carry kind haptics (DESIGN-SYSTEM §4–§5).
  */
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 public fun OnboardingScreen(
     viewModel: OnboardingViewModel,
@@ -135,7 +130,7 @@ public fun OnboardingScreen(
     }
 }
 
-/** Slim segmented progress + the skip link (flow 07: "later", never "incomplete"). */
+/** Slim segmented progress + the skip action (flow 07: "later", never "incomplete"). */
 @Composable
 private fun StepHeader(
     step: OnboardingStep,
@@ -150,27 +145,31 @@ private fun StepHeader(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(WloSpacing.TIGHT),
     ) {
+        // Segmented wizard progress as plain tinted boxes (WLO-0031): no
+        // borders, no Surface. WloProgress is the wrong atom here — it is a
+        // determinate task track with a caption, not a step-you-are-on
+        // indicator. Colors are the tokens: current = primary, passed or
+        // skipped = accentDim, ahead = outline.
         for (candidate in OnboardingStep.entries) {
-            val weight = 1f
-            Surface(
-                modifier = Modifier.weight(weight).height(3.dp),
-                shape = CircleShape,
-                color =
-                    when {
-                        candidate == step -> MaterialTheme.colorScheme.primary
-                        candidate.ordinal < step.ordinal || candidate in skipped -> wloExtendedColors.accentDim
-                        else -> MaterialTheme.colorScheme.outline
-                    },
-                contentColor = MaterialTheme.colorScheme.primary,
-            ) {}
-        }
-        Spacer(Modifier.padding(horizontal = WloSpacing.TIGHT))
-        TextButton(onClick = onSkip, modifier = Modifier.testTag("onboarding-skip")) {
-            Text(
-                text = if (step == OnboardingStep.WELCOME) "skip for now" else "Later",
-                style = wloType.label,
+            val segmentColor =
+                when {
+                    candidate == step -> MaterialTheme.colorScheme.primary
+                    candidate.ordinal < step.ordinal || candidate in skipped -> wloExtendedColors.accentDim
+                    else -> MaterialTheme.colorScheme.outline
+                }
+            Box(
+                modifier =
+                    Modifier
+                        .weight(1f)
+                        .height(3.dp)
+                        .background(color = segmentColor, shape = CircleShape),
             )
         }
+        WloSecondaryButton(
+            label = if (step == OnboardingStep.WELCOME) "Skip for now" else "Later",
+            onClick = onSkip,
+            modifier = Modifier.testTag("onboarding-skip"),
+        )
     }
 }
 
@@ -178,7 +177,7 @@ private fun StepHeader(
 @Composable
 private fun FooterActions(
     state: OnboardingUiState,
-    haptics: app.wlo.core.designsystem.WloHaptics,
+    haptics: WloHaptics,
     onBack: () -> Unit,
     onNext: () -> Unit,
     onStart: () -> Unit,
@@ -192,18 +191,18 @@ private fun FooterActions(
                 .padding(horizontal = WloSpacing.SCREEN, vertical = WloSpacing.CARD),
         verticalArrangement = Arrangement.spacedBy(WloSpacing.TIGHT),
     ) {
-        if (state.error != null) {
-            ErrorCard(state.error)
+        state.error?.let { message ->
+            WloBanner(text = message, tone = WloBannerTone.Warning)
         }
         if (atEnd) {
-            WloPrimaryButton(
-                label = if (state.finishing) "Writing the plan" else "Start — write Plan v1",
+            WloButton(
+                label = if (state.finishing) "Writing the plan" else "Start",
                 enabled = !state.finishing,
-                modifier = Modifier.testTag("onboarding-start"),
+                modifier = Modifier.fillMaxWidth().testTag("onboarding-start"),
                 onClick = onStart,
             )
         } else {
-            WloPrimaryButton(
+            WloButton(
                 label =
                     when (state.step) {
                         OnboardingStep.WELCOME -> "Set up my plan"
@@ -215,82 +214,19 @@ private fun FooterActions(
                         else -> "Continue — review"
                     },
                 enabled = true,
-                modifier = Modifier.testTag("onboarding-next"),
+                modifier = Modifier.fillMaxWidth().testTag("onboarding-next"),
                 onClick = onNext,
             )
         }
         if (!atStart) {
-            WloGhostButton(
+            WloSecondaryButton(
                 label = "Back",
-                modifier = Modifier.testTag("onboarding-back"),
+                modifier = Modifier.fillMaxWidth().testTag("onboarding-back"),
                 onClick = {
                     haptics.perform(WloHaptic.Tick)
                     onBack()
                 },
             )
         }
-    }
-}
-
-/** Honest failure surface (amber — no red exists; D8 copy mapped in the state holder). */
-@Composable
-private fun ErrorCard(message: String) {
-    Surface(
-        modifier = Modifier.fillMaxWidth(),
-        shape = WloShape.Chip,
-        color = wloExtendedColors.held.copy(alpha = 0.12f),
-        contentColor = MaterialTheme.colorScheme.onSurface,
-        border = BorderStroke(1.dp, wloExtendedColors.held.copy(alpha = 0.5f)),
-    ) {
-        Text(
-            text = message,
-            style = wloType.body.copy(fontSize = wloType.receipt.fontSize),
-            modifier = Modifier.padding(horizontal = WloSpacing.CARD, vertical = WloSpacing.TIGHT),
-            maxLines = 3,
-            overflow = TextOverflow.Ellipsis,
-        )
-    }
-}
-
-@Composable
-internal fun WloPrimaryButton(
-    label: String,
-    enabled: Boolean,
-    modifier: Modifier = Modifier,
-    onClick: () -> Unit,
-) {
-    Button(
-        onClick = onClick,
-        enabled = enabled,
-        modifier =
-            modifier
-                .fillMaxWidth()
-                .height(WloSpacing.TOUCH_PRIMARY),
-        colors =
-            ButtonDefaults.buttonColors(
-                containerColor = MaterialTheme.colorScheme.primary,
-                contentColor = MaterialTheme.colorScheme.onPrimary,
-            ),
-        shape = WloShape.Chip,
-    ) {
-        Text(text = label, style = wloType.title)
-    }
-}
-
-@Composable
-internal fun WloGhostButton(
-    label: String,
-    modifier: Modifier = Modifier,
-    onClick: () -> Unit,
-) {
-    OutlinedButton(
-        onClick = onClick,
-        modifier =
-            modifier
-                .fillMaxWidth()
-                .height(WloSpacing.ROW_INTERACTIVE),
-        shape = WloShape.Chip,
-    ) {
-        Text(text = label, style = wloType.body)
     }
 }

@@ -13,6 +13,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import app.wlo.core.designsystem.ProvenanceChip
 import app.wlo.core.designsystem.WloCard
+import app.wlo.core.designsystem.WloCardHeader
+import app.wlo.core.designsystem.WloScreenTitle
 import app.wlo.core.designsystem.WloSpacing
 import app.wlo.core.designsystem.wloExtendedColors
 import app.wlo.core.designsystem.wloType
@@ -38,10 +40,9 @@ public fun MathDocsScreen(modifier: Modifier = Modifier) {
                 .padding(bottom = WloSpacing.SCREEN),
         verticalArrangement = Arrangement.spacedBy(WloSpacing.SCREEN),
     ) {
-        Text(
-            text = "How the trend math works",
-            style = wloType.title.copy(fontSize = wloType.title.fontSize * 1.5f),
-            modifier = Modifier.padding(top = WloSpacing.SCREEN).testTag("f06-math-title"),
+        WloScreenTitle(
+            title = "How the trend math works",
+            modifier = Modifier.testTag("f06-math-title"),
         )
         Text(
             text =
@@ -116,11 +117,8 @@ public fun MathDocsScreen(modifier: Modifier = Modifier) {
         )
 
         Text(
-            text =
-                "Recomputed on your device, from your data. Constants and formula versions live " +
-                    "in one versioned registry, so any value on any chart can be traced to exactly " +
-                    "what ran.",
-            style = wloType.body.copy(fontSize = wloType.receipt.fontSize),
+            text = "Every number here is computed on your device.",
+            style = wloType.caption,
             color = wloExtendedColors.textTertiary,
         )
     }
@@ -136,28 +134,32 @@ private fun MethodDoc(
     testTag: String,
 ): Unit =
     WloCard(modifier = Modifier.testTag(testTag)) {
-        Text(text = name, style = wloType.title)
+        WloCardHeader(
+            title = name,
+            provenance = {
+                ProvenanceChip(
+                    value =
+                        DerivedValue(
+                            0.0,
+                            Provenance.Derived(formulaVersion = formulaVersion, inputs = emptyList()),
+                        ),
+                    format = { formulaVersion },
+                )
+            },
+        )
         Text(
             text = formula,
-            style = wloType.statM.copy(fontSize = wloType.statS.fontSize),
+            style = wloType.statS,
             color = MaterialTheme.colorScheme.primary,
         )
         Column(verticalArrangement = Arrangement.spacedBy(WloSpacing.TIGHT)) {
             for (term in terms) {
                 Text(
                     text = term,
-                    style = wloType.body.copy(fontSize = wloType.receipt.fontSize),
+                    style = wloType.caption,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
         }
         Text(text = plain, style = wloType.body)
-        ProvenanceChip(
-            value =
-                DerivedValue(
-                    0.0,
-                    Provenance.Derived(formulaVersion = formulaVersion, inputs = emptyList()),
-                ),
-            format = { formulaVersion },
-        )
     }

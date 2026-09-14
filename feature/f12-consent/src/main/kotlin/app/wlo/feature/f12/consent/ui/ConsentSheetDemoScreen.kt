@@ -13,6 +13,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
+import app.wlo.core.designsystem.WloScreenTitle
 import app.wlo.core.designsystem.WloSpacing
 import app.wlo.core.designsystem.wloExtendedColors
 import app.wlo.core.designsystem.wloType
@@ -51,11 +52,7 @@ public fun ConsentSheetDemoScreen(modifier: Modifier = Modifier) {
                 .testTag("f12-consent-demo"),
         verticalArrangement = Arrangement.spacedBy(WloSpacing.CARD),
     ) {
-        Text(
-            text = "Point-of-use consent",
-            style = wloType.title.copy(fontSize = wloType.title.fontSize * 1.5f),
-            modifier = Modifier.padding(top = WloSpacing.SCREEN),
-        )
+        WloScreenTitle(title = "Point-of-use consent")
         Text(
             text =
                 "When a feature wants the cloud and consent is off, it asks here — in context, with " +
@@ -69,11 +66,11 @@ public fun ConsentSheetDemoScreen(modifier: Modifier = Modifier) {
                 outcome =
                     when (decision) {
                         ConsentSheetDecision.JUST_ONCE ->
-                            "one-time cloud grant recorded (10 minutes) — the caller proceeds with a receipted call"
+                            "Access granted for 10 minutes — this scan uses the cloud and gets a receipt."
                         ConsentSheetDecision.ALWAYS ->
-                            "standing grant recorded for Food photo — future scans skip this sheet"
+                            "Access granted — ${payload.categoryTitle} won't ask again until you turn it off."
                         ConsentSheetDecision.ON_DEVICE ->
-                            "staying on-device — the scan continues with the local estimate"
+                            "Staying on-device — the scan continues with the local estimate."
                     }
             },
         )
