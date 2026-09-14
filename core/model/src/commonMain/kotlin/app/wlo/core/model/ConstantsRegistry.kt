@@ -225,6 +225,12 @@ public object ConstantsRegistry {
     /** Formula version stamped into [Provenance.Derived]. */
     public const val BMI_FORMULA_VERSION: String = "bmi/quetelet-v1"
 
+    /** Waist÷height (Ashwell simple index) — F06 §3 derived ratios (WLO-0043). */
+    public const val WAIST_HEIGHT_FORMULA_VERSION: String = "ratios/waist-height-v1"
+
+    /** Waist÷hip (WHO) — F06 §3 derived ratios (WLO-0043). */
+    public const val WAIST_HIP_FORMULA_VERSION: String = "ratios/waist-hip-v1"
+
     /** Mifflin-St Jeor BMR (F01 §3, F07 §3 BMR term). */
     public const val BMR_FORMULA_VERSION: String = "bmr/mifflin-st-jeor-v1"
 

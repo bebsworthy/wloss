@@ -13,6 +13,8 @@ import app.wlo.core.data.ProfileRepository
 import app.wlo.core.data.RoomWeighInRepository
 import app.wlo.core.data.WeighInRepository
 import app.wlo.core.designsystem.ChartPoint
+import app.wlo.core.engines.BmiEngine
+import app.wlo.core.engines.GirthRatiosEngine
 import app.wlo.core.engines.OutlierVerdict
 import app.wlo.core.engines.SmoothingEngine
 import app.wlo.core.model.ConstantsRegistry
@@ -103,6 +105,13 @@ public sealed interface WeighInEvent {
     ) : WeighInEvent
 }
 
+/** The derived ratios block (F06 §3, WLO-0043): computed, never entered. */
+public data class RatiosUi(
+    public val waistToHeight: DerivedValue<Double>?,
+    public val waistToHip: DerivedValue<Double>?,
+    public val bmi: DerivedValue<Double>?,
+)
+
 /** The weight surface's segments (R2: weight and body fat live together). */
 public enum class BodySectionUi {
     WEIGHT,
@@ -183,6 +192,7 @@ public data class WeighInUiState(
     public val section: BodySectionUi,
     public val bodyFatPoints: List<ChartPoint>,
     public val waistPoints: List<ChartPoint>,
+    public val ratios: RatiosUi?,
     public val trend: TrendUi?,
     public val method: TrendMethod,
     public val alpha: Double,
@@ -200,6 +210,7 @@ public data class WeighInUiState(
                 section = BodySectionUi.WEIGHT,
                 bodyFatPoints = emptyList(),
                 waistPoints = emptyList(),
+                ratios = null,
                 trend = null,
                 method = TrendMethod.EWMA,
                 alpha = ConstantsRegistry.EWMA_ALPHA_DEFAULT,
@@ -518,7 +529,48 @@ public class WeighInViewModel(
                 .filter { it.kind == MeasurementKind.CUSTOM && it.id in waistEventIds }
                 .map { ChartPoint(it.dayEpochDay, it.valueReal) }
 
+        // The derived ratios (F06 §3, WLO-0043): computed from the latest tape
+        // + the latest daily scalar — never entered, always provenance-badged.
+        val customMetrics =
+            measurements
+                .attrsInRange(id, from, today)
+                .getOrNull()
+                .orEmpty()
+                .filter { it.attr == "metric" }
+                .associate { it.eventId to it.valueText }
+        val latestHip =
+            windowEvents
+                .filter { it.kind == MeasurementKind.CUSTOM && customMetrics[it.id] == "hip" }
+                .maxByOrNull { it.capturedAt }
+                ?.valueReal
+
         val samples = weighIns.dailyScalars(id, from, today).getOrNull().orEmpty()
+        val ratios =
+            run {
+                val waistCm = waistPoints.lastOrNull()?.value
+                val heightCm = profiles.active().getOrNull()?.heightCm
+                val weightKg = samples.lastOrNull()?.weightKg
+                RatiosUi(
+                    waistToHeight =
+                        if (waistCm != null && heightCm != null && heightCm > 0.0) {
+                            GirthRatiosEngine.waistToHeight(waistCm, heightCm)
+                        } else {
+                            null
+                        },
+                    waistToHip =
+                        if (waistCm != null && latestHip != null && latestHip > 0.0) {
+                            GirthRatiosEngine.waistToHip(waistCm, latestHip)
+                        } else {
+                            null
+                        },
+                    bmi =
+                        if (weightKg != null && heightCm != null && heightCm > 0.0) {
+                            BmiEngine.derived(weightKg, heightCm)
+                        } else {
+                            null
+                        },
+                )
+            }
         val series = weighIns.trend(id, from, today, method.value, alpha.value).getOrNull()
         val points = series?.points.orEmpty()
         // THE single trend source (WLO-0030 defect 9): the canonical
@@ -560,6 +612,7 @@ public class WeighInViewModel(
                 section = section.value,
                 bodyFatPoints = bodyFatPoints,
                 waistPoints = waistPoints,
+                ratios = ratios,
                 trend =
                     TrendUi(
                         samples = samples.map { ChartPoint(it.epochDay, it.weightKg) },

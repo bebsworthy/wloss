@@ -60,3 +60,46 @@ public object BmiEngine {
                 ),
         )
 }
+
+/**
+ * Girth ratios (F06 §3 derived, WLO-0043): waist÷height and waist÷hip —
+ * computed, never entered; same DerivedValue shape so every ratio is
+ * provenance-badged. Range copy lives with the render (§6: ranges, not
+ * verdicts); the engines only do math.
+ */
+public object GirthRatiosEngine {
+    public const val WAIST_HEIGHT_VERSION: String = ConstantsRegistry.WAIST_HEIGHT_FORMULA_VERSION
+    public const val WAIST_HIP_VERSION: String = ConstantsRegistry.WAIST_HIP_FORMULA_VERSION
+
+    /** Ashwell's simple index: waist(cm) ÷ height(cm); healthy band ≈ 0.40–0.53. */
+    public fun waistToHeight(
+        waistCm: Double,
+        heightCm: Double,
+    ): DerivedValue<Double> {
+        require(waistCm > 0.0 && heightCm > 0.0) { "waist/height must be positive" }
+        return DerivedValue(
+            value = waistCm / heightCm,
+            provenance =
+                Provenance.Derived(
+                    formulaVersion = WAIST_HEIGHT_VERSION,
+                    inputs = listOf("waistCm", "heightCm"),
+                ),
+        )
+    }
+
+    /** WHO waist÷hip: risk rises above 0.90 (men) / 0.85 (women) — ranges render beside the number. */
+    public fun waistToHip(
+        waistCm: Double,
+        hipCm: Double,
+    ): DerivedValue<Double> {
+        require(waistCm > 0.0 && hipCm > 0.0) { "waist/hip must be positive" }
+        return DerivedValue(
+            value = waistCm / hipCm,
+            provenance =
+                Provenance.Derived(
+                    formulaVersion = WAIST_HIP_VERSION,
+                    inputs = listOf("waistCm", "hipCm"),
+                ),
+        )
+    }
+}

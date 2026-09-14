@@ -49,6 +49,7 @@ import app.wlo.feature.f06.weight.state.BodySectionUi
 import app.wlo.feature.f06.weight.state.ChartWindowUi
 import app.wlo.feature.f06.weight.state.DeletedUi
 import app.wlo.feature.f06.weight.state.LogbookRowUi
+import app.wlo.feature.f06.weight.state.RatiosUi
 import app.wlo.feature.f06.weight.state.SheetUi
 import app.wlo.feature.f06.weight.state.VerdictUi
 import app.wlo.feature.f06.weight.state.WeighInEvent
@@ -556,5 +557,76 @@ private fun BodyFatSection(
             }
         }
     }
+    RatiosCard(
+        ratios = state.ratios,
+        modifier = Modifier.testTag("f06-ratios-card"),
+    )
     BodyFatCalculatorCard(viewModel = bodyFatViewModel)
+}
+
+/**
+ * The ratios card (F06 §3 + §6, WLO-0043): computed, provenance-badged,
+ * ranges-not-verdicts copy — and BMI strictly behind an on-request chip
+ * ("shown on request only" is the spec's own rule).
+ */
+@Composable
+private fun RatiosCard(
+    ratios: RatiosUi?,
+    modifier: Modifier = Modifier,
+) {
+    var bmiShown by rememberSaveable { mutableStateOf(false) }
+    WloCard(modifier = modifier) {
+        WloCardHeader(title = "Ratios")
+        val waistHeight = ratios?.waistToHeight
+        val waistHip = ratios?.waistToHip
+        if (waistHeight == null && waistHip == null) {
+            Text(
+                text = "Save a tape measurement and the ratios read themselves.",
+                style = wloType.caption,
+                color = wloExtendedColors.textTertiary,
+            )
+        }
+        waistHeight?.let { ratio ->
+            ProvenanceChip(
+                value = ratio,
+                format = { v -> "waist ÷ height ${format2(v)}" },
+            )
+            Text(
+                text = "0.40–0.53 reads healthy (Ashwell) — a range, not a verdict.",
+                style = wloType.caption,
+                color = wloExtendedColors.textTertiary,
+            )
+        }
+        waistHip?.let { ratio ->
+            ProvenanceChip(
+                value = ratio,
+                format = { v -> "waist ÷ hip ${format2(v)}" },
+            )
+            Text(
+                text = "WHO: risk rises above 0.90 (men) / 0.85 (women).",
+                style = wloType.caption,
+                color = wloExtendedColors.textTertiary,
+            )
+        }
+        ratios?.bmi?.let { bmi ->
+            if (!bmiShown) {
+                WloSecondaryButton(
+                    label = "Show BMI",
+                    onClick = { bmiShown = true },
+                    modifier = Modifier.testTag("f06-show-bmi"),
+                )
+            } else {
+                ProvenanceChip(
+                    value = bmi,
+                    format = { v -> "BMI ${format1(v)}" },
+                    modifier = Modifier.testTag("f06-bmi"),
+                )
+                Text(
+                    text = "WHO adult band 18.5–24.9 — shown on request only, never a verdict.",
+                    style = wloType.caption,
+                    color = wloExtendedColors.textTertiary,
+                )
+            }
+        }
+    }
 }
