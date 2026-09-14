@@ -91,11 +91,33 @@ public interface MeasurementRepository {
         toDay: Long,
     ): WloResult<List<MeasurementEvent>>
 
+    /** One event by id (the weigh-in door snapshots before delete). */
+    public suspend fun byId(eventId: String): WloResult<MeasurementEvent?>
+
     public fun observeRange(
         profileId: String,
         fromDay: Long,
         toDay: Long,
     ): Flow<WloResult<List<MeasurementEvent>>>
+
+    /**
+     * Hard-deletes one event and its EAV sidecar, then refreshes the touched
+     * day's projection. R-B8 amendment (WLO-0035): a user-initiated delete is
+     * an explicit act, not silent collapsing — the verbatim rule governs
+     * ingestion and automatic processing, not the user's own corrections.
+     * Undo is the caller's business (in-memory snapshot, no trash table).
+     */
+    public suspend fun delete(eventId: String): WloResult<Unit>
+
+    /**
+     * Removes every TREND scalar of a day and refreshes that day's projection.
+     * The weigh-in door calls it when a day's last weigh-in is gone — a stale
+     * trend scalar would keep poisoning the Hub hero and exports.
+     */
+    public suspend fun deleteTrendScalars(
+        profileId: String,
+        day: Long,
+    ): WloResult<Unit>
 
     public suspend fun attrsOf(eventId: String): WloResult<List<MeasurementAttr>>
 }

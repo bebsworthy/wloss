@@ -7,6 +7,7 @@ import app.wlo.core.common.DayBoundary
 import app.wlo.core.common.MassUnit
 import app.wlo.core.common.WloResult
 import app.wlo.core.common.getOrNull
+import app.wlo.core.data.DeletedWeighIn
 import app.wlo.core.data.MeasurementRepository
 import app.wlo.core.data.ProfileRepository
 import app.wlo.core.data.RoomWeighInRepository
@@ -49,8 +50,23 @@ public sealed interface WeighInEvent {
     /** The outlier guard's "keep" — the flagged event stays (it always did). */
     public data object KeepFlagged : WeighInEvent
 
-    /** The outlier guard's "correct" — re-open the sheet on the flagged value. */
-    public data object CorrectFlagged : WeighInEvent
+    /**
+     * The outlier guard's "delete" (R-B8 amendment, WLO-0035): the flagged
+     * entry goes, then the sheet reopens prefilled with the last GOOD
+     * reading — never the bad value.
+     */
+    public data object DeleteFlagged : WeighInEvent
+
+    /** Logbook delete: one weigh-in goes; the UI keeps an in-memory undo. */
+    public data class DeleteWeighIn(
+        public val eventId: String,
+    ) : WeighInEvent
+
+    /** Puts the last deleted weigh-in back (re-appends the snapshot). */
+    public data object UndoDelete : WeighInEvent
+
+    /** Lets the undo notice go without undoing. */
+    public data object DismissDelete : WeighInEvent
 
     public data class MethodChange(
         public val method: TrendMethod,
@@ -92,8 +108,14 @@ public data class TrendUi(
 
 /** The outlier confirm (one line, one tap either way — F06 §4). */
 public data class VerdictUi(
+    public val eventId: String,
     public val weightLabel: String,
     public val residualLabel: String,
+)
+
+/** The just-deleted weigh-in, offered back until dismissed. */
+public data class DeletedUi(
+    public val label: String,
 )
 
 /** The open weigh-in sheet. */
@@ -145,6 +167,8 @@ public class WeighInViewModel(
     private val alpha = MutableStateFlow(ConstantsRegistry.EWMA_ALPHA_DEFAULT)
     private val sheet = MutableStateFlow<SheetUi?>(initialSheetOpen.takeIf { it }?.let { SheetUi("") })
     private val verdict = MutableStateFlow<VerdictUi?>(null)
+    private val deleted = MutableStateFlow<DeletedUi?>(null)
+    private var undoSnapshot: DeletedWeighIn? = null
     private val notice = MutableStateFlow<String?>(null)
     private val data = MutableStateFlow(WeighInUiState.LOADING)
 
@@ -157,11 +181,14 @@ public class WeighInViewModel(
     /** The outlier guard's live verdict, cleared by keep/correct. */
     public val verdictState: StateFlow<VerdictUi?> = verdict
 
+    /** The last deleted weigh-in, offered back until dismissed or undone. */
+    public val deletedState: StateFlow<DeletedUi?> = deleted
+
     /** Session notices. */
     public val noticeState: StateFlow<String?> = notice
 
     init {
-        reload()
+        viewModelScope.launch { reload() }
     }
 
     /** MVI-lite intent entry point. */
@@ -175,22 +202,30 @@ public class WeighInViewModel(
             WeighInEvent.StepperDown -> step(-STEP_KG)
             WeighInEvent.Save -> save()
             WeighInEvent.KeepFlagged -> verdict.value = null
-            WeighInEvent.CorrectFlagged -> {
-                verdict.value?.let { current ->
-                    sheet.value = SheetUi(current.weightLabel)
+            WeighInEvent.DeleteFlagged ->
+                verdict.value?.let { flagged ->
+                    verdict.value = null
+                    deleteWeighIn(flagged.eventId, reopenSheet = true)
                 }
-                verdict.value = null
+
+            is WeighInEvent.DeleteWeighIn -> deleteWeighIn(event.eventId, reopenSheet = false)
+            WeighInEvent.UndoDelete -> undoDelete()
+            WeighInEvent.DismissDelete -> {
+                undoSnapshot = null
+                deleted.value = null
             }
 
-            is WeighInEvent.MethodChange -> {
-                method.value = event.method
-                reload()
-            }
+            is WeighInEvent.MethodChange ->
+                viewModelScope.launch {
+                    method.value = event.method
+                    reload()
+                }
 
-            is WeighInEvent.AlphaChange -> {
-                alpha.value = event.alpha
-                reload()
-            }
+            is WeighInEvent.AlphaChange ->
+                viewModelScope.launch {
+                    alpha.value = event.alpha
+                    reload()
+                }
         }
     }
 
@@ -220,6 +255,7 @@ public class WeighInViewModel(
                     (outcome.value.verdict as? OutlierVerdict.Flagged)?.let { flagged ->
                         verdict.value =
                             VerdictUi(
+                                eventId = outcome.value.event.id,
                                 weightLabel = formatWeightInput(outcome.value.event.valueReal),
                                 residualLabel = formatResidual(flagged.residualKg),
                             )
@@ -232,98 +268,155 @@ public class WeighInViewModel(
         }
     }
 
-    private fun reload() {
+    /**
+     * R-B8 amendment (WLO-0035): the user's delete is an explicit act. The
+     * snapshot rides in memory for a one-tap undo; the day's trend scalar is
+     * the store's to recompute (the door handles it).
+     */
+    private fun deleteWeighIn(
+        eventId: String,
+        reopenSheet: Boolean,
+    ) {
+        val id = profileId ?: return
         viewModelScope.launch {
-            val id = profileId ?: profiles.active().getOrNull()?.id ?: return@launch
-            profileId = id
-            val unit = MassUnit.KILOGRAM
-            val today = DayBoundary.epochDay(clock.now(), zone)
-            val from = today - CHART_WINDOW_DAYS + 1
+            when (val outcome = weighIns.deleteWeighIn(eventId, clock.now())) {
+                is WloResult.Ok -> {
+                    val event = outcome.value.event
+                    undoSnapshot = outcome.value
+                    deleted.value =
+                        DeletedUi(label = "${formatWeightInput(event.valueReal)} kg · ${timeLabel(event.capturedAt)}")
+                    reload()
+                    if (reopenSheet) {
+                        // Prefill from the day that remains — never the deleted value.
+                        sheet.value = SheetUi(lastWeightInput().orEmpty())
+                    }
+                    Unit
+                }
 
-            val dayEvents = weighIns.dayWeighIns(id, today).getOrNull().orEmpty()
-            val lowest = weighIns.lowestOfDay(id, today).getOrNull()
-            val flaggedIds = mutableSetOf<String>()
-            for (event in dayEvents) {
-                val attrs = measurements.attrsOf(event.id).getOrNull().orEmpty()
-                if (attrs.any { it.attr == RoomWeighInRepository.OUTLIER_ATTR }) flaggedIds += event.id
+                is WloResult.Err -> notice.value = "that didn't delete — nothing changed"
             }
-
-            val samples = weighIns.dailyScalars(id, from, today).getOrNull().orEmpty()
-            val series = weighIns.trend(id, from, today, method.value, alpha.value).getOrNull()
-            val points = series?.points.orEmpty()
-            // THE single trend source (WLO-0030 defect 9): the canonical
-            // read — the exact number the Hub shows. The tuner's own output
-            // is a preview and is labeled as one.
-            val canonical = weighIns.currentTrend(id, today).getOrNull()
-            val atDefaults =
-                method.value == TrendMethod.EWMA &&
-                    abs(alpha.value - ConstantsRegistry.EWMA_ALPHA_DEFAULT) < 1e-9
-
-            val byDay = points.associate { it.epochDay to it.trendKg.value }
-            val reference =
-                points.mapNotNull { point ->
-                    byDay[point.epochDay - REFERENCE_SHIFT_DAYS]?.let { behind -> ChartPoint(point.epochDay, behind) }
-                }
-            val lastPoint = points.lastOrNull()
-            val weekAgo = lastPoint?.epochDay?.let { byDay[it - DELTA_WINDOW_DAYS] }
-            val tunerDelta =
-                if (lastPoint != null && weekAgo != null) {
-                    DerivedValue(
-                        lastPoint.trendKg.value - weekAgo,
-                        Provenance.Derived(
-                            formulaVersion = seriesVersion(method.value),
-                            inputs = listOf("windowDays=$DELTA_WINDOW_DAYS"),
-                        ),
-                    )
-                } else {
-                    null
-                }
-            val delta = if (atDefaults) canonical?.delta7 else tunerDelta
-
-            val trailing7 = samples.count { it.epochDay > today - TREND_GATE_WINDOW_DAYS }
-            val trendVisible = trailing7 >= TREND_GATE_POINTS
-
-            data.value =
-                WeighInUiState(
-                    rows =
-                        dayEvents.map { event ->
-                            WeighInRowUi(
-                                id = event.id,
-                                timeLabel = timeLabel(event.capturedAt),
-                                weightLabel = unit.format(event.valueReal),
-                                isLowest = lowest?.id == event.id && dayEvents.size > 1,
-                                flagged = event.id in flaggedIds,
-                            )
-                        },
-                    trend =
-                        TrendUi(
-                            samples = samples.map { ChartPoint(it.epochDay, it.weightKg) },
-                            trend =
-                                if (trendVisible) {
-                                    points.map { ChartPoint(it.epochDay, it.trendKg.value) }
-                                } else {
-                                    emptyList()
-                                },
-                            reference = reference,
-                            current = if (atDefaults) canonical?.current else lastPoint?.trendKg,
-                            delta7 = delta,
-                            trendLineVisible = trendVisible,
-                            preview = !atDefaults,
-                            description =
-                                if (trendVisible) {
-                                    "Weight chart: scale dots with the trend line over them."
-                                } else {
-                                    "Weight chart: scale dots only — keep weighing, the trend forms in a few days."
-                                },
-                        ),
-                    method = method.value,
-                    alpha = alpha.value,
-                    lastWeighInLabel =
-                        dayEvents.lastOrNull()?.let { event ->
-                            "${unit.format(event.valueReal)} · ${timeLabel(event.capturedAt)}"
-                        },
-                )
         }
+    }
+
+    private fun undoDelete() {
+        val id = profileId ?: return
+        val snapshot = undoSnapshot ?: return
+        viewModelScope.launch {
+            val event = snapshot.event
+            val reappended =
+                weighIns.appendWeighIn(
+                    profileId = id,
+                    dayEpochDay = event.dayEpochDay,
+                    weightKg = event.valueReal,
+                    capturedAt = event.capturedAt,
+                    source = event.source,
+                    note = event.note,
+                )
+            when (reappended) {
+                is WloResult.Ok -> {
+                    if (snapshot.attrs.isNotEmpty()) {
+                        measurements.attachAttrs(reappended.value.event.id, snapshot.attrs)
+                    }
+                    undoSnapshot = null
+                    deleted.value = null
+                    reload()
+                }
+
+                is WloResult.Err -> notice.value = "that didn't come back — it stays deleted"
+            }
+        }
+    }
+
+    private suspend fun reload() {
+        val id = profileId ?: profiles.active().getOrNull()?.id ?: return
+        profileId = id
+        val unit = MassUnit.KILOGRAM
+        val today = DayBoundary.epochDay(clock.now(), zone)
+        val from = today - CHART_WINDOW_DAYS + 1
+
+        val dayEvents = weighIns.dayWeighIns(id, today).getOrNull().orEmpty()
+        val lowest = weighIns.lowestOfDay(id, today).getOrNull()
+        val flaggedIds = mutableSetOf<String>()
+        for (event in dayEvents) {
+            val attrs = measurements.attrsOf(event.id).getOrNull().orEmpty()
+            if (attrs.any { it.attr == RoomWeighInRepository.OUTLIER_ATTR }) flaggedIds += event.id
+        }
+
+        val samples = weighIns.dailyScalars(id, from, today).getOrNull().orEmpty()
+        val series = weighIns.trend(id, from, today, method.value, alpha.value).getOrNull()
+        val points = series?.points.orEmpty()
+        // THE single trend source (WLO-0030 defect 9): the canonical
+        // read — the exact number the Hub shows. The tuner's own output
+        // is a preview and is labeled as one.
+        val canonical = weighIns.currentTrend(id, today).getOrNull()
+        val atDefaults =
+            method.value == TrendMethod.EWMA &&
+                abs(alpha.value - ConstantsRegistry.EWMA_ALPHA_DEFAULT) < 1e-9
+
+        val byDay = points.associate { it.epochDay to it.trendKg.value }
+        val reference =
+            points.mapNotNull { point ->
+                byDay[point.epochDay - REFERENCE_SHIFT_DAYS]?.let { behind -> ChartPoint(point.epochDay, behind) }
+            }
+        val lastPoint = points.lastOrNull()
+        val weekAgo = lastPoint?.epochDay?.let { byDay[it - DELTA_WINDOW_DAYS] }
+        val tunerDelta =
+            if (lastPoint != null && weekAgo != null) {
+                DerivedValue(
+                    lastPoint.trendKg.value - weekAgo,
+                    Provenance.Derived(
+                        formulaVersion = seriesVersion(method.value),
+                        inputs = listOf("windowDays=$DELTA_WINDOW_DAYS"),
+                    ),
+                )
+            } else {
+                null
+            }
+        val delta = if (atDefaults) canonical?.delta7 else tunerDelta
+
+        val trailing7 = samples.count { it.epochDay > today - TREND_GATE_WINDOW_DAYS }
+        val trendVisible = trailing7 >= TREND_GATE_POINTS
+
+        data.value =
+            WeighInUiState(
+                rows =
+                    dayEvents.map { event ->
+                        WeighInRowUi(
+                            id = event.id,
+                            timeLabel = timeLabel(event.capturedAt),
+                            weightLabel = unit.format(event.valueReal),
+                            isLowest = lowest?.id == event.id && dayEvents.size > 1,
+                            flagged = event.id in flaggedIds,
+                        )
+                    },
+                trend =
+                    TrendUi(
+                        samples = samples.map { ChartPoint(it.epochDay, it.weightKg) },
+                        trend =
+                            if (trendVisible) {
+                                points.map { ChartPoint(it.epochDay, it.trendKg.value) }
+                            } else {
+                                emptyList()
+                            },
+                        reference = reference,
+                        current = if (atDefaults) canonical?.current else lastPoint?.trendKg,
+                        delta7 = delta,
+                        trendLineVisible = trendVisible,
+                        preview = !atDefaults,
+                        description =
+                            if (trendVisible) {
+                                "Weight chart: scale dots with the trend line over them."
+                            } else {
+                                "Weight chart: scale dots only — keep weighing, the trend forms in a few days."
+                            },
+                    ),
+                method = method.value,
+                alpha = alpha.value,
+                lastWeighInLabel =
+                    dayEvents.lastOrNull()?.let { event ->
+                        "${unit.format(event.valueReal)} · ${timeLabel(event.capturedAt)}"
+                    },
+            )
     }
 
     // --- small helpers ---

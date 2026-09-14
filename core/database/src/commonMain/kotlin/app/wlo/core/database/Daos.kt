@@ -112,6 +112,21 @@ public interface MeasurementEventDao {
     @Query("SELECT * FROM measurement_events WHERE id = :id")
     public suspend fun byId(id: String): MeasurementEventEntity?
 
+    /** R-B8 amendment (WLO-0035): a user-initiated hard delete. */
+    @Query("DELETE FROM measurement_events WHERE id = :eventId")
+    public suspend fun deleteById(eventId: String)
+
+    /** Day-scoped kind delete — the weigh-in door drops stale TREND scalars. */
+    @Query(
+        "DELETE FROM measurement_events " +
+            "WHERE profileId = :profileId AND dayEpochDay = :day AND kind = :kind",
+    )
+    public suspend fun deleteKindForDay(
+        profileId: String,
+        day: Long,
+        kind: String,
+    ): Int
+
     /** F13 staged restore (M6): append/reconcile — existing rows stay LOCAL. */
     @Insert(onConflict = OnConflictStrategy.IGNORE)
     public suspend fun insertAllIgnoring(events: List<MeasurementEventEntity>)
@@ -124,6 +139,10 @@ public interface MeasurementEventAttrDao {
 
     @Query("SELECT * FROM measurement_event_attrs WHERE eventId = :eventId")
     public suspend fun forEvent(eventId: String): List<MeasurementEventAttrEntity>
+
+    /** R-B8 amendment (WLO-0035): the sidecar goes with its event. */
+    @Query("DELETE FROM measurement_event_attrs WHERE eventId = :eventId")
+    public suspend fun deleteForEvent(eventId: String)
 
     /** F13 backup snapshot (M6). */
     @Query("SELECT * FROM measurement_event_attrs")

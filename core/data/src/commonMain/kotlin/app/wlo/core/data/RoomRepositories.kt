@@ -203,6 +203,33 @@ public class RoomMeasurementRepository public constructor(
         toDay: Long,
     ): WloResult<List<MeasurementEvent>> = storageGuard("measurement.range") { dao.range(profileId, fromDay, toDay).map { it.toDomain() } }
 
+    override suspend fun byId(eventId: String): WloResult<MeasurementEvent?> =
+        storageGuard("measurement.byId") { dao.byId(eventId)?.toDomain() }
+
+    override suspend fun delete(eventId: String): WloResult<Unit> =
+        storageGuard("measurement.delete") {
+            val entity = dao.byId(eventId) ?: return@storageGuard
+            attrDao.deleteForEvent(eventId)
+            dao.deleteById(eventId)
+            projector.refresh(entity.profileId, entity.dayEpochDay, entity.dayEpochDay)
+        }
+
+    override suspend fun deleteTrendScalars(
+        profileId: String,
+        day: Long,
+    ): WloResult<Unit> =
+        storageGuard("measurement.deleteTrendScalars") {
+            val trendIds =
+                dao
+                    .rangeOfKind(profileId, MeasurementKind.TREND.wireName, day, day)
+                    .map { it.id }
+            trendIds.forEach { id ->
+                attrDao.deleteForEvent(id)
+                dao.deleteById(id)
+            }
+            projector.refresh(profileId, day, day)
+        }
+
     override fun observeRange(
         profileId: String,
         fromDay: Long,
@@ -245,8 +272,18 @@ public class DayProjector public constructor(
                 .range(profileId, fromDay, toDay)
                 .groupBy { it.dayEpochDay }
         val now = clock.now().toEpochMilliseconds()
+        // Emptied days participate too: a day whose events are all gone (a
+        // deleted weigh-in, a removed diary entry — R-B8 amendment, WLO-0035)
+        // must have its cached scalars cleared, not silently kept.
+        val previouslyCached =
+            db
+                .dayRecords()
+                .range(profileId, fromDay, toDay)
+                .map { it.dayEpochDay }
+                .toSet()
+        val days = (byDay.keys + diaryByDay.keys + previouslyCached).sorted()
         db.withWriteTransaction {
-            (byDay.keys + diaryByDay.keys).sorted().forEach { day ->
+            days.forEach { day ->
                 val dayEvents = byDay[day].orEmpty()
                 val intakeEvents = dayEvents.filter { it.kind == MeasurementKind.INTAKE.wireName }
                 val burnEvents = dayEvents.filter { it.kind == MeasurementKind.BURN.wireName }

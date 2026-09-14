@@ -32,6 +32,8 @@ import app.wlo.core.designsystem.WloCard
 import app.wlo.core.designsystem.WloCardHeader
 import app.wlo.core.designsystem.WloDeltaChip
 import app.wlo.core.designsystem.WloHeroStat
+import app.wlo.core.designsystem.WloIconAction
+import app.wlo.core.designsystem.WloIcons
 import app.wlo.core.designsystem.WloScreenTitle
 import app.wlo.core.designsystem.WloSecondaryButton
 import app.wlo.core.designsystem.WloSheet
@@ -41,6 +43,7 @@ import app.wlo.core.designsystem.WloTrendChart
 import app.wlo.core.designsystem.wloExtendedColors
 import app.wlo.core.designsystem.wloType
 import app.wlo.core.model.TrendMethod
+import app.wlo.feature.f06.weight.state.DeletedUi
 import app.wlo.feature.f06.weight.state.SheetUi
 import app.wlo.feature.f06.weight.state.VerdictUi
 import app.wlo.feature.f06.weight.state.WeighInEvent
@@ -52,10 +55,11 @@ import app.wlo.feature.f06.weight.state.WeighInViewModel
  * The F06 weight surface (owner review WLO-0030): trend-first hero — one
  * "Weight" card header, the hero numeral + small unit + weekly delta, the
  * last raw reading line, a real weigh-in button — then the verbatim day log
- * (both re-weighs listed; lowest-of-day marked and explained), the trend
+ * (both re-weighs listed; lowest-of-day marked and explained; every entry
+ * deletable with a one-tap undo — R-B8 amendment, WLO-0035), the trend
  * chart with its smoother tuner (α visible, R-A2 default 0.15; a non-default
  * selection is a labeled PREVIEW — the saved trend keeps the default), and
- * the outlier guard's one-line keep-or-correct. The weigh-in sheet opens over
+ * the outlier guard's one-line keep-or-delete. The weigh-in sheet opens over
  * this surface (wlo://weight/log) — the typed path is first-class, R-U15.
  */
 @Composable
@@ -68,6 +72,7 @@ public fun WeightScreen(
     val state: WeighInUiState by viewModel.uiState.collectAsStateWithLifecycle()
     val sheet: SheetUi? by viewModel.sheetState.collectAsStateWithLifecycle()
     val verdict: VerdictUi? by viewModel.verdictState.collectAsStateWithLifecycle()
+    val deleted: DeletedUi? by viewModel.deletedState.collectAsStateWithLifecycle()
     val notice: String? by viewModel.noticeState.collectAsStateWithLifecycle()
 
     Column(
@@ -100,9 +105,32 @@ public fun WeightScreen(
                         modifier = Modifier.weight(1f).testTag("f06-outlier-keep"),
                     )
                     WloButton(
-                        label = "Correct",
-                        onClick = { viewModel.onEvent(WeighInEvent.CorrectFlagged) },
-                        modifier = Modifier.weight(1f).testTag("f06-outlier-correct"),
+                        label = "Delete",
+                        onClick = { viewModel.onEvent(WeighInEvent.DeleteFlagged) },
+                        modifier = Modifier.weight(1f).testTag("f06-outlier-delete"),
+                    )
+                }
+            }
+        }
+
+        deleted?.let { current ->
+            // The undo notice (R-B8 amendment): one line, one tap to put it back.
+            Column(verticalArrangement = Arrangement.spacedBy(WloSpacing.TIGHT)) {
+                WloBanner(
+                    text = "Deleted ${current.label} — the day reads without it.",
+                    tone = WloBannerTone.Info,
+                    modifier = Modifier.testTag("f06-deleted-banner"),
+                )
+                Row(horizontalArrangement = Arrangement.spacedBy(WloSpacing.CARD)) {
+                    WloButton(
+                        label = "Undo",
+                        onClick = { viewModel.onEvent(WeighInEvent.UndoDelete) },
+                        modifier = Modifier.weight(1f).testTag("f06-undo-delete"),
+                    )
+                    WloSecondaryButton(
+                        label = "Dismiss",
+                        onClick = { viewModel.onEvent(WeighInEvent.DismissDelete) },
+                        modifier = Modifier.weight(1f).testTag("f06-dismiss-delete"),
                     )
                 }
             }
@@ -216,7 +244,10 @@ public fun WeightScreen(
             }
             state.rows.forEachIndexed { index, row ->
                 if (index > 0) WloStatDivider()
-                DayRow(row)
+                DayRow(
+                    row = row,
+                    onDelete = { viewModel.onEvent(WeighInEvent.DeleteWeighIn(row.id)) },
+                )
             }
             if (state.rows.size > 1) {
                 HorizontalDivider(color = MaterialTheme.colorScheme.outline, thickness = 1.dp)
@@ -297,7 +328,10 @@ private fun SmootherTuner(
     }
 
 @Composable
-private fun DayRow(row: WeighInRowUi): Unit =
+private fun DayRow(
+    row: WeighInRowUi,
+    onDelete: () -> Unit,
+): Unit =
     Row(
         modifier = Modifier.fillMaxWidth().heightIn(min = WloSpacing.ROW_MIN),
         horizontalArrangement = Arrangement.spacedBy(WloSpacing.CARD),
@@ -324,6 +358,13 @@ private fun DayRow(row: WeighInRowUi): Unit =
             )
         }
         Text(text = row.weightLabel, style = wloType.statS)
+        // The delete affordance (R-B8 amendment): every entry can go, one tap.
+        WloIconAction(
+            imageVector = WloIcons.Close,
+            contentDescription = "delete ${row.weightLabel} at ${row.timeLabel}",
+            onClick = onDelete,
+            modifier = Modifier.testTag("f06-row-delete"),
+        )
     }
 
 /**

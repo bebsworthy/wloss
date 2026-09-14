@@ -1,5 +1,6 @@
 package app.wlo.core.data
 
+import app.wlo.core.common.AppError
 import app.wlo.core.common.WloResult
 import app.wlo.core.common.getOrNull
 import app.wlo.core.common.map
@@ -87,7 +88,26 @@ public interface WeighInRepository {
         profileId: String,
         toDay: Long,
     ): WloResult<CurrentTrend>
+
+    /**
+     * Hard-deletes a weigh-in (R-B8 amendment, WLO-0035): the event and its
+     * sidecar go, the day's persisted TREND scalar recomputes (or drops when
+     * the day empties — a stale scalar would keep poisoning the day view and
+     * exports), and the projection refreshes. [at] stamps the recomputed
+     * scalar, mirroring [appendWeighIn]. Returns the snapshot so the UI can
+     * offer an in-memory undo.
+     */
+    public suspend fun deleteWeighIn(
+        eventId: String,
+        at: Instant,
+    ): WloResult<DeletedWeighIn>
 }
+
+/** The undo snapshot: what was deleted, sidecar included. */
+public data class DeletedWeighIn(
+    public val event: MeasurementEvent,
+    public val attrs: List<MeasurementAttr>,
+)
 
 /**
  * The shared current-trend snapshot: the canonical series for a sparkline, the
@@ -192,6 +212,65 @@ public class RoomWeighInRepository public constructor(
             }
 
         return WloResult.ok(WeighInOutcome(event, verdict))
+    }
+
+    override suspend fun deleteWeighIn(
+        eventId: String,
+        at: Instant,
+    ): WloResult<DeletedWeighIn> {
+        val event =
+            when (val fetched = measurements.byId(eventId)) {
+                is WloResult.Ok -> fetched.value
+                is WloResult.Err -> return WloResult.err(fetched.error)
+            } ?: return WloResult.err(AppError.InvalidInput("no measurement event $eventId"))
+        if (event.kind != MeasurementKind.WEIGHT) {
+            return WloResult.err(AppError.InvalidInput("event $eventId is a ${event.kind.wireName}, not a weigh-in"))
+        }
+        val attrs =
+            when (val sidecar = measurements.attrsOf(eventId)) {
+                is WloResult.Ok -> sidecar.value
+                is WloResult.Err -> return WloResult.err(sidecar.error)
+            }
+
+        when (val deleted = measurements.delete(eventId)) {
+            is WloResult.Ok -> deleted
+            is WloResult.Err -> return WloResult.err(deleted.error)
+        }
+
+        // The day's persisted TREND scalar must not outlive its inputs: if
+        // weigh-ins remain, recompute through the one canonical door (the
+        // append persists a fresh scalar — last-in-wins, recompute-safe); if
+        // the day emptied, drop its trend scalars entirely.
+        val remaining =
+            measurements
+                .range(event.profileId, event.dayEpochDay, event.dayEpochDay)
+                .getOrNull()
+                .orEmpty()
+                .filter { it.kind == MeasurementKind.WEIGHT }
+        if (remaining.isEmpty()) {
+            when (val dropped = measurements.deleteTrendScalars(event.profileId, event.dayEpochDay)) {
+                is WloResult.Ok -> dropped
+                is WloResult.Err -> return WloResult.err(dropped.error)
+            }
+        } else {
+            currentTrend(event.profileId, event.dayEpochDay)
+                .getOrNull()
+                ?.current
+                ?.let { current ->
+                    measurements.append(
+                        NewMeasurement(
+                            profileId = event.profileId,
+                            dayEpochDay = event.dayEpochDay,
+                            kind = MeasurementKind.TREND,
+                            valueReal = current.value,
+                            source = MeasurementSource.ENGINE,
+                            capturedAt = at,
+                            note = current.provenance.toString(),
+                        ),
+                    )
+                }
+        }
+        return WloResult.ok(DeletedWeighIn(event, attrs))
     }
 
     override suspend fun dayWeighIns(
