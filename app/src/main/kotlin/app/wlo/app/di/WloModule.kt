@@ -165,6 +165,7 @@ public val platformModule: Module =
                 db = get<WloDatabase>(),
                 targets = get<TargetsRepository>(),
                 recipes = get<RecipeRepository>(),
+                diary = get<DiaryRepository>(),
                 projector = get<DayProjector>(),
                 clock = get<ClockPort>(),
             )

@@ -15,6 +15,9 @@ public data class HubActions(
     // F03 (M5): today's plan card and the evening "plan tomorrow" card.
     val onOpenPlan: () -> Unit = {},
     val onPlanTomorrow: () -> Unit = {},
+    // WLO-0033 wave 2: the meals row opens the planner focused on the slot
+    // (wlo://log/planned?slot= → f03/plan/focus).
+    val onOpenMealSlot: (String) -> Unit = {},
     // Settings (IA §1: top-right on the Hub header; M6 PART B wires it).
     val onOpenSettings: () -> Unit = {},
 )

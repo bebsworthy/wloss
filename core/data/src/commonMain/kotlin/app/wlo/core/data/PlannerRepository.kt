@@ -11,6 +11,9 @@ import app.wlo.core.database.WloDatabase
 import app.wlo.core.documents.TargetsDocument
 import app.wlo.core.engines.AdherenceMetrics
 import app.wlo.core.engines.PlannerEngine
+import app.wlo.core.model.DiaryEntry
+import app.wlo.core.model.EntryVia
+import app.wlo.core.model.MealSlot
 import app.wlo.core.model.PlannedSlot
 import app.wlo.core.model.PlannedSlotState
 import app.wlo.core.model.Recipe
@@ -75,6 +78,25 @@ public interface PlannerRepository {
     ): WloResult<PlannedSlot>
 
     /**
+     * One-tap meal replay (R-B1): logs the slot's planned recipe as a diary
+     * entry and retires the slot in the same breath. The entry is built from
+     * the slot's denormalized per-serving macros (× servings — scale 1.0 for
+     * the default single-serving slot) with [app.wlo.core.model.EntryVia.PLAN]
+     * and the slot's own meal/name, then the diary door writes it ONCE — the
+     * diary keeps the single record (R-D11). The slot transitions planned →
+     * confirmed ("ate this", the KEPT terminal: out of the day's open count,
+     * still inside the plan's claim for honest fidelity) with
+     * [PlannedSlot.replacedByEntryId] set to the new entry so the plan view
+     * shows what was actually logged. Fails for a missing slot, a slot that
+     * already resolved (non-planned), and free-text slots (recipeId null —
+     * nothing to replay).
+     */
+    public suspend fun logAsPlanned(
+        slotId: String,
+        at: Instant,
+    ): WloResult<DiaryEntry>
+
+    /**
      * Swap with rebalancing: retires the planned slot (→ swapped) and deals a
      * fresh planned successor with the new recipe (F03 §3). History stays
      * append-only; the day projection re-folds instantly.
@@ -102,6 +124,7 @@ public class RoomPlannerRepository public constructor(
     private val db: WloDatabase,
     private val targets: TargetsRepository,
     private val recipes: RecipeRepository,
+    private val diary: DiaryRepository,
     private val projector: DayProjector,
     private val clock: ClockPort,
 ) : PlannerRepository {
@@ -244,6 +267,71 @@ public class RoomPlannerRepository public constructor(
         diaryEntryId: String,
         at: Instant,
     ): WloResult<PlannedSlot> = transitionSlot(slotId, PlannedSlotState.REPLACED, diaryEntryId, at)
+
+    override suspend fun logAsPlanned(
+        slotId: String,
+        at: Instant,
+    ): WloResult<DiaryEntry> {
+        val load = storageGuard("planner.logAsPlanned.load") { slots.byId(slotId) }
+        val current = load.getOrNull() ?: return notFoundSlotOr(load, slotId)
+        if (!PlannerEngine.canTransition(current.state.toState(), PlannedSlotState.CONFIRMED)) {
+            return WloResult.err(
+                AppError.InvalidInput("slot $slotId is ${current.state}; only planned slots can be logged as planned"),
+            )
+        }
+        if (current.recipeId == null) {
+            return WloResult.err(
+                AppError.InvalidInput("slot $slotId is a free-text card; there is no recipe to replay"),
+            )
+        }
+        val meal =
+            MealSlot.fromWireName(current.mealSlot)
+                ?: return WloResult.err(
+                    AppError.InvalidInput("slot $slotId carries unknown meal slot '${current.mealSlot}'"),
+                )
+        // R-D11: one diary record, written by the diary door. The plan's
+        // denormalized per-serving macros ARE the numbers (a recipe has no
+        // catalog row), scaled by the slot's serving dial; the slot link lets
+        // the provenance row name the plan as the source.
+        val servings = current.servings
+        val logged =
+            diary
+                .logEntry(
+                    NewDiaryEntry(
+                        profileId = current.profileId,
+                        dayEpochDay = current.dayEpochDay,
+                        mealSlot = meal,
+                        textHint = current.recipeName,
+                        quantity = servings,
+                        unit = RoomDiaryRepository.UNIT_SERVING,
+                        enteredVia = EntryVia.PLAN,
+                        planNutrition =
+                            PlanNutrition(
+                                slotId = current.id,
+                                kcal = (current.kcalPerServing ?: 0.0) * servings,
+                                proteinG = (current.proteinGPerServing ?: 0.0) * servings,
+                                carbG = (current.carbGPerServing ?: 0.0) * servings,
+                                fatG = (current.fatGPerServing ?: 0.0) * servings,
+                                fiberG = (current.fiberGPerServing ?: 0.0) * servings,
+                            ),
+                    ),
+                    at,
+                )
+        val entry =
+            when (logged) {
+                is WloResult.Ok -> logged.value
+                is WloResult.Err -> return WloResult.err(logged.error)
+            }
+        // planned → confirmed is the "logged as planned" terminal (R-B1: "ate
+        // this"): out of the open count, KEPT in adherence, still inside the
+        // plan's claim so energy fidelity compares like with like. The shared
+        // entry-link column records which F02 entry owns the record (R-D11).
+        return storageGuard("planner.logAsPlanned.retire") {
+            slots.setReplaced(current.id, PlannedSlotState.CONFIRMED.wireName, entry.id, at.toEpochMilliseconds())
+            projector.refresh(current.profileId, current.dayEpochDay, current.dayEpochDay)
+            entry
+        }
+    }
 
     override suspend fun swapSlot(
         slotId: String,

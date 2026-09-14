@@ -2,6 +2,7 @@ package app.wlo.feature.f10.hub.ui
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -15,7 +16,9 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -28,6 +31,8 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import app.wlo.core.common.MassUnit
 import app.wlo.core.designsystem.ProvenanceChip
+import app.wlo.core.designsystem.WloBanner
+import app.wlo.core.designsystem.WloBannerTone
 import app.wlo.core.designsystem.WloCard
 import app.wlo.core.designsystem.WloCardHeader
 import app.wlo.core.designsystem.WloDeltaChip
@@ -35,12 +40,17 @@ import app.wlo.core.designsystem.WloForecastBands
 import app.wlo.core.designsystem.WloForecastCard
 import app.wlo.core.designsystem.WloHeroStat
 import app.wlo.core.designsystem.WloIconAction
+import app.wlo.core.designsystem.WloIcons
+import app.wlo.core.designsystem.WloProvenanceGlyphs
 import app.wlo.core.designsystem.WloRailButton
+import app.wlo.core.designsystem.WloRing
 import app.wlo.core.designsystem.WloSecondaryButton
+import app.wlo.core.designsystem.WloShape
 import app.wlo.core.designsystem.WloSheet
 import app.wlo.core.designsystem.WloSpacing
 import app.wlo.core.designsystem.WloStatDivider
 import app.wlo.core.designsystem.WloStatRow
+import app.wlo.core.designsystem.WloTag
 import app.wlo.core.designsystem.WloTrendChart
 import app.wlo.core.designsystem.wloExtendedColors
 import app.wlo.core.designsystem.wloType
@@ -49,11 +59,14 @@ import app.wlo.core.engines.HubCard
 import app.wlo.core.engines.HubCardState
 import app.wlo.core.engines.HubQuickAction
 import app.wlo.core.model.DerivedValue
+import app.wlo.core.model.Provenance
 import app.wlo.feature.f10.hub.state.DiarySliceUi
 import app.wlo.feature.f10.hub.state.ExplainerUi
 import app.wlo.feature.f10.hub.state.HubEvent
 import app.wlo.feature.f10.hub.state.HubUiState
 import app.wlo.feature.f10.hub.state.HubViewModel
+import app.wlo.feature.f10.hub.state.MacroPillUi
+import app.wlo.feature.f10.hub.state.MealTodayUi
 import app.wlo.feature.f10.hub.state.WeekDotUi
 import kotlinx.datetime.LocalDate
 
@@ -64,7 +77,13 @@ import kotlinx.datetime.LocalDate
  * the R-A5 cold-start forecast — ESTIMATED-chipped from day zero. Every chip
  * taps through to the "how we got here" sheet; "Computed on your device" is
  * stated once, here. The user never types on the Hub (F10 §4).
+ *
+ * WLO-0033 wave 2 rebuilds the calories card to the mock's ring anatomy
+ * (WloRing, mock frames morning/midday), the meals card to the one-row
+ * "log as planned" anatomy, and adds the header streak chip.
  */
+
+private const val RING_SIZE: Int = 116 // the mock's `.ring-big`: 116 px
 
 @Composable
 public fun HubScreen(
@@ -87,8 +106,19 @@ public fun HubScreen(
             ) {
                 HubHeader(
                     todayLabel = current.todayLabel,
+                    streakCount = current.streakCount,
                     onOpenSettings = actions.onOpenSettings,
                 )
+
+                current.notice?.let { notice ->
+                    WloBanner(
+                        text = notice,
+                        tone = WloBannerTone.Warning,
+                        actionLabel = "Got it",
+                        action = viewModel::dismissNotice,
+                        modifier = Modifier.testTag("f10-notice"),
+                    )
+                }
 
                 QuickActionRail(current.dayModel.quickActions, actions)
 
@@ -114,6 +144,7 @@ public fun HubScreen(
                         state = current,
                         actions = actions,
                         onExplain = { explainer -> viewModel.onEvent(HubEvent.ShowExplainer(explainer)) },
+                        onLogAsPlanned = viewModel::onLogAsPlanned,
                     )
                 }
 
@@ -199,6 +230,7 @@ public fun HubScreen(
 @Composable
 private fun HubHeader(
     todayLabel: String,
+    streakCount: Int?,
     onOpenSettings: () -> Unit,
 ): Unit =
     Row(
@@ -216,6 +248,10 @@ private fun HubHeader(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(WloSpacing.TIGHT),
         ) {
+            // The streak chip (mock "🔥 12"): display-only, no tap-through;
+            // hidden at 0 — absence, never a zero (R-D14). It ticks after
+            // today's log because the streak anchors at today once counted.
+            if (streakCount != null) StreakChip(streakCount)
             Text(
                 text = todayLabel,
                 style = wloType.label,
@@ -232,6 +268,38 @@ private fun HubHeader(
                 onClick = onOpenSettings,
                 modifier = Modifier.testTag("hub-settings"),
             )
+        }
+    }
+
+/**
+ * The header streak chip (WLO-0033 wave 2, mock "🔥 12"): a small
+ * display-only pill — flame glyph + count. Neither [WloBadge] nor [WloTag]
+ * carries a leading glyph, so this is the sanctioned Hub-local fold: the same
+ * neutral-pill recipe (tonal wash, pill shape, `label` type), no border, no
+ * click target — a fact on the header, never a nag.
+ */
+@Composable
+private fun StreakChip(count: Int): Unit =
+    Surface(
+        shape = WloShape.Pill,
+        color = MaterialTheme.colorScheme.surfaceVariant,
+        contentColor = MaterialTheme.colorScheme.onSurfaceVariant,
+        modifier =
+            Modifier
+                .semantics { contentDescription = "$count-day streak" }
+                .testTag("f10-streak-chip"),
+    ) {
+        Row(
+            modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(WloSpacing.TIGHT),
+        ) {
+            Icon(
+                imageVector = WloIcons.Flame,
+                contentDescription = null,
+                modifier = Modifier.size(14.dp),
+            )
+            Text(text = count.toString(), style = wloType.label)
         }
     }
 
@@ -288,6 +356,7 @@ private fun HubCardView(
     state: HubUiState.Ready,
     actions: HubActions,
     onExplain: (ExplainerUi) -> Unit,
+    onLogAsPlanned: (String) -> Unit,
 ) {
     when (card.card) {
         HubCard.WEIGH_IN ->
@@ -306,7 +375,9 @@ private fun HubCardView(
         HubCard.TREND ->
             TrendCard(isHero = isHero, state = state, onOpenWeight = actions.onOpenWeight, onExplain = onExplain)
 
-        HubCard.CALORIE_RING -> BudgetCard(state = state, onExplain = onExplain)
+        // The calories ring (mock, WLO-0033 wave 2): ring + card tap through to
+        // the same today's-detail the diary card opens.
+        HubCard.CALORIE_RING -> BudgetCard(state = state, onExplain = onExplain, onOpenDetail = actions.onOpenDiary)
 
         HubCard.CLOSE_DAY ->
             WloCard(
@@ -339,8 +410,17 @@ private fun HubCardView(
             }
 
         // F03's content-rendered cards (R-D14): they exist only while the
-        // plan gives them content — no empty state, no upsell.
-        HubCard.MEALS_TODAY -> MealsTodayCard(state, onOpenPlan = actions.onOpenPlan)
+        // plan gives them content — no empty state, no upsell. The meals row
+        // carries the one-tap "log as planned" CTA; the row itself opens the
+        // plan focused on the slot (confirm · ate something else · swap).
+        HubCard.MEALS_TODAY ->
+            state.mealToday?.let { meal ->
+                MealsTodayCard(
+                    meal = meal,
+                    onLogAsPlanned = onLogAsPlanned,
+                    onOpenSlot = actions.onOpenMealSlot,
+                )
+            }
 
         HubCard.PLAN_TOMORROW ->
             WloCard(
@@ -359,27 +439,68 @@ private fun HubCardView(
     }
 }
 
-/** "Meals · today" (F10 §5): the open planned slots, tapping into the planner. */
+/**
+ * "Meals · today" (F10 §5, mock, WLO-0033 wave 2): forward-looking only
+ * (R-D13) — ONE row, the next open planned slot, with its planned-kcal
+ * receipt + planned tag and the one-tap "log as planned" CTA (R-B1 prefill
+ * treaty). Tapping the row opens the planner focused on the slot (confirm ·
+ * ate something else · swap · not having it — the button is only the happy
+ * path). The header carries the kept/total count; the card exists only while
+ * an open slot exists (R-D14).
+ */
 @Composable
 private fun MealsTodayCard(
-    state: HubUiState.Ready,
-    onOpenPlan: () -> Unit,
+    meal: MealTodayUi,
+    onLogAsPlanned: (String) -> Unit,
+    onOpenSlot: (String) -> Unit,
 ): Unit =
-    WloCard(
-        onClick = onOpenPlan,
-        modifier = Modifier.testTag("hub-meals-card"),
-    ) {
-        WloCardHeader(title = "Meals · today")
-        val open = state.plannedMealsOpen ?: 0
-        Text(
-            text = if (open == 1) "1 planned meal open" else "$open planned meals open",
-            style = wloType.title,
+    WloCard(modifier = Modifier.testTag("hub-meals-card")) {
+        WloCardHeader(
+            title = "Meals · today",
+            provenance = {
+                Text(
+                    text = mealsCountLine(meal.kept, meal.total),
+                    style = wloType.receipt,
+                    color = wloExtendedColors.textTertiary,
+                )
+            },
         )
-        Text(
-            text = "Tap to eat, swap, or skip — nothing owed either way.",
-            style = wloType.caption,
-            color = wloExtendedColors.textTertiary,
-        )
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(WloSpacing.CARD),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Column(
+                modifier =
+                    Modifier
+                        .weight(1f)
+                        .clickable(onClickLabel = "Open the meal") { onOpenSlot(meal.slotId) }
+                        .testTag("f10-meal-row"),
+            ) {
+                Text(text = meal.name, style = wloType.title)
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(WloSpacing.TIGHT),
+                ) {
+                    meal.kcalPerServing?.let { kcal ->
+                        Text(
+                            text = formatIntKcal(kcal) + " kcal",
+                            style = wloType.receipt,
+                            color = wloExtendedColors.textTertiary,
+                        )
+                        Text(text = "·", style = wloType.receipt, color = wloExtendedColors.textTertiary)
+                    }
+                    // The planned word, F03's slot state (never a fabricated
+                    // provenance claim on a denormalized recipe number).
+                    WloTag(text = "planned")
+                }
+            }
+            WloSecondaryButton(
+                label = "Log as planned",
+                onClick = { onLogAsPlanned(meal.slotId) },
+                modifier = Modifier.testTag("f10-log-as-planned"),
+            )
+        }
     }
 
 /**
@@ -468,33 +589,164 @@ private fun formatNumeral(kg: Double): String {
     return "$whole.$tenth"
 }
 
+/**
+ * The calories card (mock, WLO-0033 wave 2): the big ring (fill =
+ * consumed/budget, capped) with the consumed stat + the small "of N kcal"
+ * target line in its center, and the right column's "N left" fact, the macro
+ * pills, and the tap-through hint. The whole content region taps through to
+ * today's diary detail; the ⓘ on the target line opens the budget explainer —
+ * provenance lives on the number it describes, the header carries none
+ * (R-D12 round 8). Over budget the ring caps at full and the small line reads
+ * "of N · +M" — information, never a verdict (R-D1/R-D5).
+ */
 @Composable
 private fun BudgetCard(
     state: HubUiState.Ready,
     onExplain: (ExplainerUi) -> Unit,
+    onOpenDetail: () -> Unit,
 ): Unit =
-    WloCard(modifier = Modifier.testTag("hub-energy-card")) {
+    WloCard(
+        onClick = onOpenDetail,
+        modifier = Modifier.testTag("f10-ring-card"),
+    ) {
         WloCardHeader(title = "Calories")
-        state.budget?.let {
-            WloStatRow(
-                label = "of today's budget",
-                value = it,
-                format = ::identity,
-                onExplain = state.budgetExplainer?.let { handler -> { onExplain(handler) } },
-                modifier = Modifier.testTag("hub-budget-row"),
-            )
+        state.budget?.let { budget ->
+            val budgetKcal = budget.value
+            val consumedKcal = state.diarySlice?.kcal?.value ?: 0.0
+            val overKcal = (consumedKcal - budgetKcal).coerceAtLeast(0.0)
+            val leftKcal = (budgetKcal - consumedKcal).coerceAtLeast(0.0)
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(WloSpacing.CARD),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                WloRing(
+                    progress = if (budgetKcal > 0.0) (consumedKcal / budgetKcal).toFloat() else 0f,
+                    modifier = Modifier.size(RING_SIZE.dp).testTag("f10-ring"),
+                    centerContent = {
+                        Column(
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.spacedBy(2.dp),
+                        ) {
+                            Text(text = formatIntKcal(consumedKcal), style = wloType.statM)
+                            BudgetTargetLine(
+                                budget = budget,
+                                overKcal = overKcal,
+                                explainer = state.budgetExplainer,
+                                onExplain = onExplain,
+                            )
+                        }
+                    },
+                )
+                Column(verticalArrangement = Arrangement.spacedBy(WloSpacing.TIGHT)) {
+                    Text(
+                        text = leftOrOverLine(overKcal, leftKcal),
+                        style = wloType.statM,
+                    )
+                    if (state.macroPills.isNotEmpty()) MacroPillsRow(state.macroPills)
+                    // The burn stat, folded in receipt-style (the mock has no
+                    // burn row; the chip keeps its explainer tap-through).
+                    state.burn?.let { burn ->
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(WloSpacing.TIGHT),
+                        ) {
+                            Text(
+                                text = "burn ${burn.value}",
+                                style = wloType.receipt,
+                                color = wloExtendedColors.textTertiary,
+                            )
+                            ProvenanceChip(
+                                value = burn,
+                                format = ::identity,
+                                onClick = state.burnExplainer?.let { handler -> { onExplain(handler) } },
+                            )
+                        }
+                    }
+                    Text(
+                        text = "tap the ring for today's detail",
+                        style = wloType.receipt,
+                        color = wloExtendedColors.textTertiary,
+                    )
+                }
+            }
         }
-        if (state.budget != null && state.burn != null) {
-            WloStatDivider()
-        }
-        state.burn?.let {
-            WloStatRow(
-                label = "estimated burn, today",
-                value = it,
-                format = ::identity,
-                onExplain = state.burnExplainer?.let { handler -> { onExplain(handler) } },
-                modifier = Modifier.testTag("hub-burn-row"),
-            )
+    }
+
+/**
+ * The ring's small "of 1,900 kcal" target line; the ⓘ opens the budget
+ * explainer. The merged description carries the provenance word — the chip's
+ * promise (a number travels with its provenance) moves onto the ⓘ line the
+ * mock draws there (R-D12 round 8).
+ */
+@Composable
+private fun BudgetTargetLine(
+    budget: DerivedValue<Double>,
+    overKcal: Double,
+    explainer: ExplainerUi?,
+    onExplain: (ExplainerUi) -> Unit,
+) {
+    val line = budgetTargetLine(budget.value, overKcal)
+    if (explainer == null) {
+        Text(text = line, style = wloType.receipt, color = wloExtendedColors.textTertiary)
+        return
+    }
+    val description = "$line, ${provenanceWord(budget.provenance)}, how we got here"
+    Row(
+        modifier =
+            Modifier
+                .clickable(onClickLabel = "How we got here") { onExplain(explainer) }
+                .semantics(mergeDescendants = true) { contentDescription = description },
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(2.dp),
+    ) {
+        Text(text = line, style = wloType.receipt, color = wloExtendedColors.textTertiary)
+        Icon(
+            imageVector = WloProvenanceGlyphs.Info,
+            contentDescription = null,
+            tint = wloExtendedColors.textTertiary,
+            modifier = Modifier.size(12.dp),
+        )
+    }
+}
+
+/** The provenance word the chips use (mirrors the design system's vocabulary). */
+private fun provenanceWord(provenance: Provenance): String =
+    when (provenance) {
+        is Provenance.Measured -> "measured"
+        is Provenance.Estimated -> "estimated"
+        is Provenance.Derived -> "derived"
+        is Provenance.Held -> "held"
+    }
+
+/** The mock's macro dots: swatch + "P 128/165" per macro, both sides present. */
+@Composable
+private fun MacroPillsRow(pills: List<MacroPillUi>): Unit =
+    Row(
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .testTag("f10-macro-pills"),
+        horizontalArrangement = Arrangement.spacedBy(WloSpacing.CARD),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        for (pill in pills) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(WloSpacing.TIGHT),
+            ) {
+                Box(
+                    modifier =
+                        Modifier
+                            .size(8.dp)
+                            .background(wloExtendedColors.series[pill.colorIndex], CircleShape),
+                )
+                Text(
+                    text = "${pill.label} ${formatIntG(pill.consumedG)}/${formatIntG(pill.targetG)}",
+                    style = wloType.label,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
         }
     }
 
@@ -591,6 +843,33 @@ private fun weekdayShort(epochDay: Long): String {
 
 /** Identity formatter for display-ready strings (chips already carry units). */
 private fun identity(value: String): String = value
+
+/** Grouped kcal numeral, no unit — the ring center, the left/over stat. */
+private fun formatIntKcal(value: Double): String = "%,d".format(value.toInt())
+
+/** Grouped gram numeral, no unit — the macro pills. */
+private fun formatIntG(value: Double): String = "%,d".format(value.toInt())
+
+/** The meals header count: "0 of 3", and "2 of 3 confirmed" once any are kept. */
+private fun mealsCountLine(
+    kept: Int,
+    total: Int,
+): String = if (kept > 0) "$kept of $total confirmed" else "$kept of $total"
+
+/** The right-column fact: "1,008 left", or "+10 over" — a fact, never a verdict. */
+private fun leftOrOverLine(
+    overKcal: Double,
+    leftKcal: Double,
+): String = if (overKcal > 0.0) "+" + formatIntKcal(overKcal) + " over" else formatIntKcal(leftKcal) + " left"
+
+/** The ring's small target line: "of 1,900 kcal", or "of 1,900 · +10" over budget. */
+private fun budgetTargetLine(
+    budgetKcal: Double,
+    overKcal: Double,
+): String {
+    val base = "of " + formatIntKcal(budgetKcal)
+    return if (overKcal > 0.0) base + " · +" + formatIntKcal(overKcal) else base + " kcal"
+}
 
 /** kcal formatting for the diary/energy chips. */
 private fun formatKcalValue(value: Double): String = "%,d kcal".format(value.toInt())

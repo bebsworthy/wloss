@@ -39,9 +39,10 @@ public class M3DiaryHubTest {
     public fun seededWeek_hubRendersBudgetTrendWeekDots_andDiaryCarriesTheDay() {
         TestNav.awaitTag(rule, "hub-trend-card")
 
-        // Budget from Targets (the ring's number) and the forecast card (M2);
-        // the Day-Model hub is a longer stack now — scroll to the lower cards.
-        rule.onNodeWithTag("hub-budget-row", useUnmergedTree = true).assertIsDisplayed()
+        // Budget from Targets — the calories ring card (WLO-0033 wave 2
+        // anatomy) — and the forecast card (M2); the Day-Model hub is a longer
+        // stack now — scroll to the lower cards.
+        rule.onNodeWithTag("f10-ring-card", useUnmergedTree = true).assertIsDisplayed()
         rule.onNodeWithTag("hub-forecast-card", useUnmergedTree = true).performScrollTo().assertIsDisplayed()
 
         // The diary slice: the week-dots row marks the CURRENT week's logged

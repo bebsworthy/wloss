@@ -326,6 +326,12 @@ private fun RouteSurface(
                                 onWorkout = { navController.navigate("stub/exercise") },
                                 onOpenPlan = { navController.navigate(WloTabs.PLAN) },
                                 onPlanTomorrow = { navController.navigate(F03Routes.TOMORROW) },
+                                // The meals row's plan focus: the registry maps
+                                // wlo://log/planned?slot= onto f03/plan/focus
+                                // (day defaults to today).
+                                onOpenMealSlot = { slotId ->
+                                    navController.navigate(Uri.parse("wlo://log/planned?slot=$slotId"))
+                                },
                                 onOpenSettings = { navController.navigate("app/settings") },
                             ),
                     )

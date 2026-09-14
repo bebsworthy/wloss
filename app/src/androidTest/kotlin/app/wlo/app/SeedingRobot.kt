@@ -7,11 +7,14 @@ import app.wlo.core.common.DayBoundary
 import app.wlo.core.common.WloResult
 import app.wlo.core.data.DiaryRepository
 import app.wlo.core.data.FoodRepository
+import app.wlo.core.data.GenerateWeekPlan
 import app.wlo.core.data.MeasurementRepository
 import app.wlo.core.data.NewCustomFood
 import app.wlo.core.data.NewDiaryEntry
 import app.wlo.core.data.NewMeasurement
 import app.wlo.core.data.NewProfile
+import app.wlo.core.data.PlanView
+import app.wlo.core.data.PlannerRepository
 import app.wlo.core.data.ProfileRepository
 import app.wlo.core.data.TargetsWriteOutcome
 import app.wlo.core.data.TargetsWriters
@@ -45,6 +48,31 @@ public object SeedingRobot {
         public val profileId: String,
         public val today: Long,
     )
+
+    /**
+     * Deals a deterministic week plan through the real planner door (F03),
+     * WLO-0033 wave 2: the Hub meals card + "log as planned" tests need slots
+     * with recipes; the seeded targets cover the week's budgets.
+     */
+    public fun dealWeekPlan(
+        profileId: String,
+        startDayEpochDay: Long,
+        seed: Long,
+    ): PlanView =
+        runBlocking {
+            val planner = koin().get<PlannerRepository>()
+            val result =
+                planner.generateWeek(
+                    GenerateWeekPlan(
+                        profileId = profileId,
+                        startDayEpochDay = startDayEpochDay,
+                        days = 7,
+                        seed = seed,
+                    ),
+                )
+            check(result is WloResult.Ok) { "plan deal failed: $result" }
+            result.value
+        }
 
     /** The app's own Koin (the Application started it in this process). */
     private fun koin(): org.koin.core.Koin =

@@ -15,10 +15,10 @@ import androidx.compose.ui.unit.dp
  *
  * Two hairline weights, both round-capped and round-joined: the 12-viewport
  * micro-glyphs (1.4 stroke — [ChevronRight]) and the 24-viewport action marks
- * (1.8–2 stroke — the stepper/close/check/search/scan set). The 24-viewport
- * geometry is ported verbatim from the in-feature glyphs these replaced
- * (f01's wizard steppers, f02's capture marks), so existing call sites render
- * pixel-identical.
+ * (1.8–2 stroke — the stepper/close/check/search/scan/flame set). The
+ * 24-viewport geometry is ported verbatim from the in-feature glyphs these
+ * replaced (f01's wizard steppers, f02's capture marks), so existing call
+ * sites render pixel-identical.
  */
 public object WloIcons {
     /** Paint source for all glyph paths; `Icon(tint = ...)` recolors at render. */
@@ -153,6 +153,30 @@ public object WloIcons {
                 moveTo(8.8f, 12f)
                 arcTo(3.2f, 3.2f, 0f, true, true, 15.2f, 12f)
                 arcTo(3.2f, 3.2f, 0f, true, true, 8.8f, 12f)
+                close()
+            }
+        }
+
+    /** Streak flame (Hub streak chip): a lick over the bowl, round-joined so
+     * the silhouette stays readable at 14–16 dp. Geometry follows the Lucide
+     * flame mark (ISC), the proven small-size flame. */
+    public val Flame: ImageVector =
+        mark("WloFlame") {
+            path(
+                stroke = Black,
+                strokeLineWidth = 2f,
+                strokeLineCap = StrokeCap.Round,
+                strokeLineJoin = StrokeJoin.Round,
+            ) {
+                moveTo(8.5f, 14.5f)
+                arcTo(2.5f, 2.5f, 0f, false, false, 11f, 12f)
+                curveToRelative(0f, -1.38f, -0.5f, -2f, -1f, -3f)
+                curveToRelative(-1.072f, -2.143f, -0.224f, -4.054f, 2f, -6f)
+                curveToRelative(0.5f, 2.5f, 2f, 4.9f, 4f, 6.5f)
+                curveToRelative(2f, 1.6f, 3f, 3.5f, 3f, 5.5f)
+                arcToRelative(7f, 7f, 0f, true, true, -14f, 0f)
+                curveToRelative(0f, -1.153f, 0.433f, -2.294f, 1f, -3f)
+                arcToRelative(2.5f, 2.5f, 0f, false, false, 2.5f, 2.5f)
                 close()
             }
         }

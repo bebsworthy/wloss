@@ -87,6 +87,15 @@ public data class NewDiaryEntry(
      * Additive field (M4): null for every pre-existing save path.
      */
     public val estimate: EstimateProvenance? = null,
+    /**
+     * Planned-meal replay ("log as planned", R-B1): the F03 slot's
+     * denormalized per-serving nutrition, already scaled by the slot's
+     * servings. A recipe has no catalog row, so the plan's own numbers ARE
+     * the entry's numbers and the provenance row names the slot — the diary
+     * keeps the single record (R-D11). Set ONLY by the planner's
+     * one-tap replay; null for every pre-existing save path.
+     */
+    public val planNutrition: PlanNutrition? = null,
 )
 
 /** Model + consent paperwork for one AI-assisted save (no schema change — rides the provenance row). */
@@ -100,6 +109,23 @@ public data class EstimateProvenance(
     public val consentGranted: Boolean = false,
     /** True when the analyzer held this estimate (low confidence); the UI says so. */
     public val held: Boolean = false,
+)
+
+/**
+ * The planned-slot numbers one "log as planned" save replays verbatim
+ * (R-B1): the F03 slot's denormalized per-serving macros × servings, named
+ * back to the slot so the entry's provenance row can say "planned recipe,
+ * slot <id>" instead of guessing a portion math path.
+ */
+@Serializable
+public data class PlanNutrition(
+    /** The [app.wlo.core.model.PlannedSlot.id] this entry replays. */
+    public val slotId: String,
+    public val kcal: Double,
+    public val proteinG: Double,
+    public val carbG: Double,
+    public val fatG: Double,
+    public val fiberG: Double,
 )
 
 /** Edit input; every accepted edit bumps the entry's revision chain. */
@@ -384,6 +410,23 @@ public class RoomDiaryRepository public constructor(
         kcalOnly: Double?,
     ): ComputedEntry =
         when {
+            // R-B1 plan replay: the F03 slot's denormalized nutrition IS the
+            // number (R-D11: the diary keeps the single record — the plan's
+            // claim never gets re-derived here).
+            input.planNutrition != null -> {
+                val plan = input.planNutrition
+                ComputedEntry(
+                    grams = 0.0,
+                    kcal = plan.kcal,
+                    proteinG = plan.proteinG,
+                    carbG = plan.carbG,
+                    fatG = plan.fatG,
+                    fiberG = plan.fiberG,
+                    method = PROVENANCE_METHOD_PLAN,
+                    formulaVersion = PLAN_REPLAY_FORMULA_VERSION,
+                    inputs = listOf("via=plan", "slot=${plan.slotId}", "kcal=${plan.kcal}"),
+                )
+            }
             // F02 §4 kcal-only quick-add: the user's number IS the entry.
             kcalOnly != null ->
                 ComputedEntry(
@@ -492,10 +535,14 @@ public class RoomDiaryRepository public constructor(
         public const val PROVENANCE_METHOD_AI_ESTIMATE: String = "ai-estimate"
         public const val PROVENANCE_METHOD_QUICK_ADD: String = "quick-add"
         public const val PROVENANCE_METHOD_TEXT_HINT: String = "text-hint"
+        public const val PROVENANCE_METHOD_PLAN: String = "planned-recipe"
 
         public const val UNIT_SERVING: String = "serving"
 
         /** Formula version shared by every diary-derived number. */
         public const val PORTION_FORMULA_VERSION: String = ConstantsRegistry.DIARY_PORTION_FORMULA_VERSION
+
+        /** R-B1 plan-replay formula version (stamped into the provenance row). */
+        public const val PLAN_REPLAY_FORMULA_VERSION: String = "planner/slot-replay-v1"
     }
 }

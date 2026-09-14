@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import app.wlo.core.common.ClockPort
 import app.wlo.core.common.DayBoundary
 import app.wlo.core.common.MassUnit
+import app.wlo.core.common.WloResult
 import app.wlo.core.common.getOrNull
 import app.wlo.core.data.DayProjectionRepository
 import app.wlo.core.data.DayProjector
@@ -25,9 +26,12 @@ import app.wlo.core.engines.DayModelInput
 import app.wlo.core.engines.DayPhase
 import app.wlo.core.engines.ForecastBands
 import app.wlo.core.engines.ForecastEngine
+import app.wlo.core.engines.StreakMetrics
 import app.wlo.core.model.ConstantsRegistry
 import app.wlo.core.model.DerivedValue
 import app.wlo.core.model.MealSlot
+import app.wlo.core.model.PlannedSlot
+import app.wlo.core.model.PlannedSlotState
 import app.wlo.core.model.Profile
 import app.wlo.core.model.Provenance
 import app.wlo.core.model.UnitSystem
@@ -41,6 +45,7 @@ import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.launch
 import kotlinx.datetime.Instant
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.TimeZone
@@ -81,7 +86,7 @@ public sealed interface HubUiState {
         public val trendLine: List<ChartPoint>,
         /** "How we got here" for the trend chip (null while the gate holds). */
         public val trendExplainer: ExplainerUi?,
-        public val budget: DerivedValue<String>?,
+        public val budget: DerivedValue<Double>?,
         public val budgetExplainer: ExplainerUi?,
         public val burn: DerivedValue<String>?,
         public val burnExplainer: ExplainerUi?,
@@ -90,9 +95,22 @@ public sealed interface HubUiState {
         /** Current week M..S — one dot per day, logged vs not (the mock's row). */
         public val weekDots: List<WeekDotUi>,
         public val forecast: HubForecast?,
+        /**
+         * The multi-oracle streak (F11 counting, WLO-0033 wave 1): null while
+         * 0 — a hidden chip, never a zero shaming (R-D14).
+         */
+        public val streakCount: Int? = null,
+        /**
+         * The next open planned meal + the meals card's kept/total count
+         * (WLO-0033 wave 2); null while no open slot exists — the card only
+         * renders with content (R-D14).
+         */
+        public val mealToday: MealTodayUi? = null,
+        /** Macro pill scalars for the calories card (both sides must exist). */
+        public val macroPills: List<MacroPillUi> = emptyList(),
         public val explainer: ExplainerUi? = null,
-        /** F03 (M5): open planned meals for today; null while no plan exists. */
-        public val plannedMealsOpen: Int? = null,
+        /** User-worded action failure ("that didn't save — nothing changed"). */
+        public val notice: String? = null,
     ) : HubUiState
 }
 
@@ -101,6 +119,37 @@ public data class DiarySliceUi(
     public val kcal: DerivedValue<Double>,
     public val entryCount: Int,
     public val slotSummary: String,
+    /** Consumed macros — null while no entry today carries that macro. */
+    public val proteinG: Double? = null,
+    public val carbG: Double? = null,
+    public val fatG: Double? = null,
+)
+
+/**
+ * One macro pill of the calories card ("P 128/165"): rendered only when both
+ * the consumed side and the target side exist. [colorIndex] is the data-viz
+ * series slot (the mock maps P→series 4, C→series 1, F→series 2).
+ */
+public data class MacroPillUi(
+    public val label: String,
+    public val consumedG: Double,
+    public val targetG: Double,
+    public val colorIndex: Int,
+)
+
+/**
+ * The meals card's one row — the NEXT open planned slot (WLO-0033 wave 2,
+ * mock: name weight-600 + "380 kcal · planned" receipt + the one-tap CTA)
+ * plus the header count ("0 of 3" / "2 of 3 confirmed").
+ */
+public data class MealTodayUi(
+    public val slotId: String,
+    public val name: String,
+    public val kcalPerServing: Double?,
+    /** Slots already resolved as kept (confirmed / replaced). */
+    public val kept: Int,
+    /** Slots still in play (planned + kept); skips shrink the count. */
+    public val total: Int,
 )
 
 /**
@@ -162,6 +211,14 @@ private data class HubInputs(
     val targets: TargetsRecord?,
 )
 
+/** Meals header count: the terminals that count as kept (logged or eaten-instead). */
+private val KEPT_SLOT_STATES: Set<PlannedSlotState> =
+    setOf(PlannedSlotState.CONFIRMED, PlannedSlotState.REPLACED)
+
+/** Meals header count: retired swaps and neutral skips leave the denominator. */
+private val OUT_OF_PLAY_STATES: Set<PlannedSlotState> =
+    setOf(PlannedSlotState.SWAPPED, PlannedSlotState.SKIPPED)
+
 /**
  * The F10 Hub state holder (moved from :app in M3; F10 §1: the Hub computes
  * no science — it composes, routes, and schedules). The Day Model engine
@@ -183,6 +240,7 @@ public class HubViewModel(
     private val now: Instant = clock.now()
 
     private val explainer: MutableStateFlow<ExplainerUi?> = MutableStateFlow(null)
+    private val notice: MutableStateFlow<String?> = MutableStateFlow(null)
 
     /** MVI-lite intent entry point. */
     public fun onEvent(event: HubEvent) {
@@ -192,9 +250,28 @@ public class HubViewModel(
         }
     }
 
+    /**
+     * One-tap meal replay (R-B1, WLO-0033 wave 2): logs the planned recipe as
+     * a diary entry and retires the slot. Success needs no manual refresh —
+     * the write refreshes the day projection, whose flow re-emits and re-renders
+     * the ring, the meals card, and the streak. Failure surfaces the house
+     * notice (F03's user-worded pattern); nothing changed, nothing judged.
+     */
+    public fun onLogAsPlanned(slotId: String) {
+        viewModelScope.launch {
+            val outcome = planner.logAsPlanned(slotId, clock.now())
+            if (outcome is WloResult.Err) notice.value = ACTION_FAILED_NOTICE
+        }
+    }
+
+    /** Clears the action-failure notice. */
+    public fun dismissNotice() {
+        notice.value = null
+    }
+
     /** Renderable hub state. */
     public val uiState: StateFlow<HubUiState> =
-        combine(inputs(), explainer, ::withExplainer).stateIn(
+        combine(inputs(), explainer, notice, ::withVolatile).stateIn(
             viewModelScope,
             SharingStarted.Eagerly,
             HubUiState.Loading,
@@ -217,10 +294,11 @@ public class HubViewModel(
             ) { dayResult, targetsResult -> HubInputs(profile, dayResult.getOrNull(), targetsResult.getOrNull()) }
         }
 
-    private fun withExplainer(
+    private fun withVolatile(
         ready: HubUiState,
         explainerUi: ExplainerUi?,
-    ): HubUiState = if (ready is HubUiState.Ready) ready.copy(explainer = explainerUi) else ready
+        notice: String?,
+    ): HubUiState = if (ready is HubUiState.Ready) ready.copy(explainer = explainerUi, notice = notice) else ready
 
     private suspend fun render(inputs: HubInputs?): HubUiState {
         if (inputs == null) return HubUiState.Fresh
@@ -262,13 +340,21 @@ public class HubViewModel(
                 emptyList()
             }
 
-        val budget = day?.budgetKcal?.let { DerivedValue(formatKcal(it.value), it.provenance) }
+        // The calories card's budget (numeric — the ring's fill and the
+        // "of N kcal" line); the explainer formats it for its sheet row.
+        val budget = day?.budgetKcal
         val burn =
             day?.burnKcal?.takeIf { it.value > 0.0 }?.let { DerivedValue(formatKcal(it.value), it.provenance) }
         val forecast = current?.let { coldStartForecast(profile, it, heroTrend.value, day?.budgetKcal?.value, unit) }
 
         val diarySlice = renderDiarySlice(profile.id)
-        val weekDots = renderWeekDots(profile.id)
+
+        // One range read feeds BOTH the week dots and the streak (the same
+        // door week dots always used — the day projection range, A.3).
+        val dayViews = dayProjection.range(profile.id, today - STREAK_WINDOW_DAYS, today).getOrNull().orEmpty()
+        val weekDots = renderWeekDots(dayViews)
+        val streakCount = renderStreak(dayViews)
+        val macroPills = renderMacroPills(day, diarySlice)
 
         // The Day Model rules (F10 §3). Completeness inputs the features own:
         // the weigh-in flag, the F10 §4 trend gate, and (since M5) the F03
@@ -313,31 +399,81 @@ public class HubViewModel(
             diaryExplainer = diarySlice?.let { diaryExplainer(it) },
             weekDots = weekDots,
             forecast = forecast,
-            plannedMealsOpen = planFlags.openToday,
+            streakCount = streakCount,
+            mealToday = planFlags.mealToday,
+            macroPills = macroPills,
         )
     }
 
-    /** The F03 completeness flags (R-B1/R-D14): planner-hood and the open slots. */
+    /**
+     * The F03 completeness flags (R-B1/R-D14): planner-hood, the open slots,
+     * and — WLO-0033 wave 2 — the renderable "next open meal" row + the
+     * header count.
+     *
+     * Header-count rule (mock "0 of 3" / "2 of 3 confirmed"): today's slots
+     * with a recipe, SWAPPED rows excluded (retired history — the successor
+     * carries the claim, the same semantics AdherenceMetrics uses) and
+     * SKIPPED rows excluded (mock pin 7: skipping is a neutral decision that
+     * shrinks the count). Kept = the CONFIRMED + REPLACED terminals — logged
+     * as planned, or eaten-something-else; a skip keeps the count honest by
+     * leaving the denominator instead of showing as a miss.
+     *
+     * Row rule: the FIRST open slot (planned, with a recipe) in meal-slot
+     * declaration order (breakfast→lunch→dinner→snack→drinks, the diary's own
+     * order), ties broken by creation time then id — stable and deterministic
+     * regardless of insert order.
+     */
     private suspend fun planFlags(profileId: String): PlanFlags {
         val plan = planner.currentPlan(profileId).getOrNull()
-        if (plan == null) return PlanFlags(isPlanner = false, openToday = null, tomorrowPending = false)
+        if (plan == null) {
+            return PlanFlags(isPlanner = false, openToday = null, tomorrowPending = false, mealToday = null)
+        }
         val todaySlots = planner.slots(profileId, today, today).getOrNull().orEmpty()
         val tomorrowSlots = planner.slots(profileId, today + 1, today + 1).getOrNull().orEmpty()
-        val openToday =
-            todaySlots.count { it.state == app.wlo.core.model.PlannedSlotState.PLANNED && it.recipeId != null }
-        val tomorrowCovered =
-            tomorrowSlots.any { it.state == app.wlo.core.model.PlannedSlotState.PLANNED && it.recipeId != null }
+        val openSlots = todaySlots.filter { it.state == PlannedSlotState.PLANNED && it.recipeId != null }
+        val openToday = openSlots.size
+        val total = todaySlots.count(::inPlay)
+        val kept = todaySlots.count(::keptSlot)
         return PlanFlags(
             isPlanner = true,
             openToday = openToday,
-            tomorrowPending = !tomorrowCovered,
+            tomorrowPending = !tomorrowSlots.any { it.state == PlannedSlotState.PLANNED && it.recipeId != null },
+            mealToday =
+                openSlots
+                    .minWithOrNull(
+                        compareBy<PlannedSlot> { MealSlot.fromWireName(it.mealSlot)?.ordinal ?: Int.MAX_VALUE }
+                            .thenBy { it.createdAtEpochMs }
+                            .thenBy { it.id },
+                    )?.let { next ->
+                        MealTodayUi(
+                            slotId = next.id,
+                            name = mealDisplayName(next),
+                            kcalPerServing = next.kcalPerServing,
+                            kept = kept,
+                            total = total,
+                        )
+                    },
         )
+    }
+
+    /** Header-count "in play": has a recipe, neither retired (swapped) nor skipped. */
+    private fun inPlay(slot: PlannedSlot): Boolean = slot.recipeId != null && slot.state !in OUT_OF_PLAY_STATES
+
+    /** Header-count "kept": the confirmed / replaced terminals. */
+    private fun keptSlot(slot: PlannedSlot): Boolean = slot.state in KEPT_SLOT_STATES
+
+    /** The row's display name: the denormalized recipe name, else the meal word. */
+    private fun mealDisplayName(slot: PlannedSlot): String {
+        slot.recipeName?.let { return it }
+        val slotWord = MealSlot.fromWireName(slot.mealSlot)?.let { slotLabel(it) }
+        return slotWord?.replaceFirstChar { it.uppercase() } ?: "Planned meal"
     }
 
     private data class PlanFlags(
         val isPlanner: Boolean,
         val openToday: Int?,
         val tomorrowPending: Boolean,
+        val mealToday: MealTodayUi?,
     )
 
     // --- diary slice + week dots (F10 renders today; F02 owns the diary, R-B1) ---
@@ -353,7 +489,58 @@ public class HubViewModel(
             kcal = DerivedValue(day.totals.kcal, dayProvenance(day.entries.size)),
             entryCount = day.entries.size,
             slotSummary = summary,
+            proteinG = day.totals.proteinG,
+            carbG = day.totals.carbG,
+            fatG = day.totals.fatG,
         )
+    }
+
+    /**
+     * The streak chip's count (WLO-0033 wave 2): the multi-oracle run over the
+     * same day-projection range the week dots read — a day counts when it has
+     * a weigh-in (trend scalar) OR logged food (intake scalar) OR a workout
+     * (burn > 0), F11's counting rule. Null (chip hidden) when 0.
+     */
+    private fun renderStreak(views: List<DayView>): Int? {
+        val countedDays =
+            views.mapNotNullTo(mutableSetOf()) { view ->
+                val counted =
+                    view.trendWeightKg != null ||
+                        view.intakeKcal != null ||
+                        (view.burnKcal?.value ?: 0.0) > 0.0
+                if (counted) view.dayEpochDay else null
+            }
+        return StreakMetrics.currentStreak(countedDays, today).takeIf { it > 0 }
+    }
+
+    /**
+     * The calories card's macro pills ("P 128/165"): each pill renders only
+     * when BOTH sides exist — the consumed macro (null while no entry today
+     * carries it) and the day's target. A day with no entries at all has
+     * consumed 0 — a fact, so the pills render against 0 like the mock's
+     * morning frame.
+     */
+    private fun renderMacroPills(
+        day: DayView?,
+        slice: DiarySliceUi?,
+    ): List<MacroPillUi> {
+        if (day == null) return emptyList()
+        val pills = mutableListOf<MacroPillUi>()
+
+        fun pill(
+            label: String,
+            target: DerivedValue<Double>?,
+            consumed: Double?,
+            colorIndex: Int,
+        ) {
+            target ?: return
+            val consumedG = if (slice == null) 0.0 else consumed ?: return
+            pills.add(MacroPillUi(label, consumedG, target.value, colorIndex))
+        }
+        pill("P", day.proteinG, slice?.proteinG, MACRO_SERIES_P)
+        pill("C", day.carbG, slice?.carbG, MACRO_SERIES_C)
+        pill("F", day.fatG, slice?.fatG, MACRO_SERIES_F)
+        return pills
     }
 
     /**
@@ -363,9 +550,8 @@ public class HubViewModel(
      * projection range (A.3), a day counts as logged when its intake scalar
      * exists.
      */
-    private suspend fun renderWeekDots(profileId: String): List<WeekDotUi> {
+    private fun renderWeekDots(views: List<DayView>): List<WeekDotUi> {
         val weekStart = today - (toLocalDate(today).dayOfWeek.isoDayNumber - 1)
-        val views = dayProjection.range(profileId, weekStart, today).getOrNull().orEmpty()
         val loggedDays = views.mapNotNullTo(mutableSetOf()) { view -> view.intakeKcal?.let { view.dayEpochDay } }
         return (0 until 7).map { offset ->
             val day = weekStart + offset
@@ -397,12 +583,12 @@ public class HubViewModel(
         )
 
     /** The budget chip's sheet: the adaptive targets + the formulas behind them. */
-    private fun budgetExplainer(budget: DerivedValue<String>): ExplainerUi =
+    private fun budgetExplainer(budget: DerivedValue<Double>): ExplainerUi =
         ExplainerUi(
             headline = "How we got here",
             rows =
                 listOf(
-                    "today's budget" to budget.value,
+                    "today's budget" to formatKcal(budget.value),
                     "source" to "your adaptive targets",
                     "BMR formula" to ConstantsRegistry.BMR_FORMULA_VERSION,
                     "energy rule" to "${ConstantsRegistry.KCAL_PER_KG_FAT.toInt()} kcal per kg",
@@ -549,6 +735,21 @@ public class HubViewModel(
 
         /** The hero delta window (the weekly rate). */
         public const val DELTA_WINDOW_DAYS: Long = 7
+
+        /**
+         * The streak's lookback window (days): the projection range fetched
+         * for the run — 90 days of history bound the count; a longer streak
+         * renders truncated rather than paying an unbounded read.
+         */
+        public const val STREAK_WINDOW_DAYS: Long = 90
+
+        /** The action-failure notice — the house user-worded pattern (F03). */
+        public const val ACTION_FAILED_NOTICE: String = "that didn't save — nothing changed"
+
+        /** Macro pill data-viz series slots — the mock's P/C/F mapping. */
+        public const val MACRO_SERIES_P: Int = 3
+        public const val MACRO_SERIES_C: Int = 0
+        public const val MACRO_SERIES_F: Int = 1
 
         /** Metric default, imperial a profile setting (R-D10). */
         public fun massUnitFor(unit: UnitSystem): MassUnit =

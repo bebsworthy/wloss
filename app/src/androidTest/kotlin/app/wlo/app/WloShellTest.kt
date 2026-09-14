@@ -4,6 +4,7 @@ import androidx.compose.ui.graphics.toPixelMap
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.captureToImage
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
+import androidx.compose.ui.test.onAllNodesWithContentDescription
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onFirst
 import androidx.compose.ui.test.onNodeWithContentDescription
@@ -63,9 +64,14 @@ public class WloShellTest {
 
         // Trend + budget arrive provenance-chipped from the day projection
         // (derived); the R-A5 cold-start forecast is estimated until ≥ 14 days
-        // of real data exist.
+        // of real data exist. WLO-0033 wave 2: the budget's chip is the mock's
+        // ⓘ on the "of N kcal" target line — its merged description carries
+        // the provenance word (the header never does, R-D12 round 8).
         composeTestRule.onNodeWithTag("hub-trend-card").assertIsDisplayed()
-        composeTestRule.onAllNodesWithText("derived").onFirst().assertExists()
+        composeTestRule
+            .onAllNodesWithContentDescription("derived", substring = true, useUnmergedTree = true)
+            .onFirst()
+            .assertExists()
         composeTestRule.onAllNodesWithText("estimated").onFirst().assertExists()
         composeTestRule.onAllNodesWithText("ESTIMATED").onFirst().assertExists()
         // WloCardHeader uppercases the source string; the hero numeral renders
