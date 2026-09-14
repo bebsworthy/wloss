@@ -62,6 +62,11 @@ public sealed interface WeighInEvent {
         public val window: ChartWindowUi,
     ) : WeighInEvent
 
+    /** The weight surface's segment (WLO-0035 R2: same screen, different series). */
+    public data class SectionChange(
+        public val section: BodySectionUi,
+    ) : WeighInEvent
+
     public data object StepperUp : WeighInEvent
 
     public data object StepperDown : WeighInEvent
@@ -96,6 +101,12 @@ public sealed interface WeighInEvent {
     public data class AlphaChange(
         public val alpha: Double,
     ) : WeighInEvent
+}
+
+/** The weight surface's segments (R2: weight and body fat live together). */
+public enum class BodySectionUi {
+    WEIGHT,
+    BODY_FAT,
 }
 
 /** The chart window (F06 §5); `days = null` means "all". */
@@ -169,6 +180,9 @@ public data class SheetUi(
 public data class WeighInUiState(
     public val logbook: List<LogbookDayUi>,
     public val window: ChartWindowUi,
+    public val section: BodySectionUi,
+    public val bodyFatPoints: List<ChartPoint>,
+    public val waistPoints: List<ChartPoint>,
     public val trend: TrendUi?,
     public val method: TrendMethod,
     public val alpha: Double,
@@ -183,6 +197,9 @@ public data class WeighInUiState(
             WeighInUiState(
                 logbook = emptyList(),
                 window = ChartWindowUi.D90,
+                section = BodySectionUi.WEIGHT,
+                bodyFatPoints = emptyList(),
+                waistPoints = emptyList(),
                 trend = null,
                 method = TrendMethod.EWMA,
                 alpha = ConstantsRegistry.EWMA_ALPHA_DEFAULT,
@@ -231,6 +248,7 @@ public class WeighInViewModel(
     private val weighIns: WeighInRepository,
     private val measurements: MeasurementRepository,
     initialSheetOpen: Boolean,
+    initialSection: BodySectionUi = BodySectionUi.WEIGHT,
 ) : ViewModel() {
     private val zone: TimeZone = TimeZone.currentSystemDefault()
     private var profileId: String? = null
@@ -238,6 +256,7 @@ public class WeighInViewModel(
     private val method = MutableStateFlow(TrendMethod.EWMA)
     private val alpha = MutableStateFlow(ConstantsRegistry.EWMA_ALPHA_DEFAULT)
     private val window = MutableStateFlow(ChartWindowUi.D90)
+    private val section = MutableStateFlow(initialSection)
     private val sheet = MutableStateFlow<SheetUi?>(initialSheetOpen.takeIf { it }?.let { openSheet(prefillKg = null) })
     private val verdict = MutableStateFlow<VerdictUi?>(null)
     private val deleted = MutableStateFlow<DeletedUi?>(null)
@@ -277,6 +296,8 @@ public class WeighInViewModel(
                     window.value = event.window
                     reload()
                 }
+
+            is WeighInEvent.SectionChange -> section.value = event.section
             WeighInEvent.StepperUp -> step(STEP_KG)
             WeighInEvent.StepperDown -> step(-STEP_KG)
             WeighInEvent.Save -> save()
@@ -469,6 +490,26 @@ public class WeighInViewModel(
                     )
                 }
 
+        // The companion series (WLO-0035 R2): body-fat estimates in % and the
+        // waist tape in cm — same store, same window, no cap anywhere.
+        val windowEvents = measurements.range(id, from, today).getOrNull().orEmpty()
+        val waistEventIds =
+            measurements
+                .attrsInRange(id, from, today)
+                .getOrNull()
+                .orEmpty()
+                .filter { it.attr == "metric" && it.valueText == "waist" }
+                .map { it.eventId }
+                .toSet()
+        val bodyFatPoints =
+            windowEvents
+                .filter { it.kind == MeasurementKind.BODY_FAT }
+                .map { ChartPoint(it.dayEpochDay, it.valueReal) }
+        val waistPoints =
+            windowEvents
+                .filter { it.kind == MeasurementKind.CUSTOM && it.id in waistEventIds }
+                .map { ChartPoint(it.dayEpochDay, it.valueReal) }
+
         val samples = weighIns.dailyScalars(id, from, today).getOrNull().orEmpty()
         val series = weighIns.trend(id, from, today, method.value, alpha.value).getOrNull()
         val points = series?.points.orEmpty()
@@ -508,6 +549,9 @@ public class WeighInViewModel(
             WeighInUiState(
                 logbook = logbook,
                 window = window.value,
+                section = section.value,
+                bodyFatPoints = bodyFatPoints,
+                waistPoints = waistPoints,
                 trend =
                     TrendUi(
                         samples = samples.map { ChartPoint(it.epochDay, it.weightKg) },

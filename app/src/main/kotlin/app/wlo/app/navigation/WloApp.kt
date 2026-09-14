@@ -56,6 +56,7 @@ import app.wlo.feature.f04.shopping.F04Routes
 import app.wlo.feature.f04.shopping.ui.ListScreen
 import app.wlo.feature.f04.shopping.ui.PantryScreen
 import app.wlo.feature.f06.weight.F06Routes
+import app.wlo.feature.f06.weight.state.BodySectionUi
 import app.wlo.feature.f06.weight.ui.BodyFatScreen
 import app.wlo.feature.f06.weight.ui.MathDocsScreen
 import app.wlo.feature.f06.weight.ui.WeightScreen
@@ -460,16 +461,16 @@ private fun RouteSurface(
 
         "f06/weight" ->
             WeightScreen(
-                viewModel = koinViewModel(parameters = { parametersOf(false) }),
+                viewModel = koinViewModel(parameters = { parametersOf(false, BodySectionUi.WEIGHT) }),
+                bodyFatViewModel = koinViewModel(),
                 onOpenMath = { navController.navigate(F06Routes.MATH) },
-                onOpenBodyFat = { navController.navigate(F06Routes.BODY_FAT) },
             )
 
         "f06/log" ->
             WeightScreen(
-                viewModel = koinViewModel(parameters = { parametersOf(true) }),
+                viewModel = koinViewModel(parameters = { parametersOf(true, BodySectionUi.WEIGHT) }),
+                bodyFatViewModel = koinViewModel(),
                 onOpenMath = { navController.navigate(F06Routes.MATH) },
-                onOpenBodyFat = { navController.navigate(F06Routes.BODY_FAT) },
             )
 
         F06Routes.MATH -> MathDocsScreen()

@@ -16,6 +16,9 @@ import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
@@ -41,6 +44,8 @@ import app.wlo.core.designsystem.WloTrendChart
 import app.wlo.core.designsystem.wloExtendedColors
 import app.wlo.core.designsystem.wloType
 import app.wlo.core.model.TrendMethod
+import app.wlo.feature.f06.weight.state.BodyFatViewModel
+import app.wlo.feature.f06.weight.state.BodySectionUi
 import app.wlo.feature.f06.weight.state.ChartWindowUi
 import app.wlo.feature.f06.weight.state.DeletedUi
 import app.wlo.feature.f06.weight.state.LogbookRowUi
@@ -60,12 +65,14 @@ import app.wlo.feature.f06.weight.state.WeighInViewModel
  * selection is a labeled PREVIEW — the saved trend keeps the default), and
  * the outlier guard's one-line keep-or-delete. The weigh-in sheet opens over
  * this surface (wlo://weight/log) — the typed path is first-class, R-U15.
+ * One screen, two segments (R2, WLO-0035): Weight (this) and Body fat
+ * (per-method series + tape + calculator) — never a separate route.
  */
 @Composable
 public fun WeightScreen(
     viewModel: WeighInViewModel,
+    bodyFatViewModel: BodyFatViewModel,
     onOpenMath: () -> Unit,
-    onOpenBodyFat: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val state: WeighInUiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -88,203 +95,223 @@ public fun WeightScreen(
             modifier = Modifier.testTag("f06-title"),
         )
 
-        verdict?.let { current ->
-            // The outlier guard's one line (F06 §4): describe, offer both taps,
-            // never judge. The event is already stored — this only confirms.
-            Column(verticalArrangement = Arrangement.spacedBy(WloSpacing.TIGHT)) {
-                WloBanner(
-                    text = "${current.weightLabel} is ${current.residualLabel} vs your trend — keep or correct?",
-                    tone = WloBannerTone.Warning,
-                    modifier = Modifier.testTag("f06-outlier-banner"),
-                )
-                Row(horizontalArrangement = Arrangement.spacedBy(WloSpacing.CARD)) {
-                    WloSecondaryButton(
-                        label = "Keep",
-                        onClick = { viewModel.onEvent(WeighInEvent.KeepFlagged) },
-                        modifier = Modifier.weight(1f).testTag("f06-outlier-keep"),
-                    )
-                    WloButton(
-                        label = "Delete",
-                        onClick = { viewModel.onEvent(WeighInEvent.DeleteFlagged) },
-                        modifier = Modifier.weight(1f).testTag("f06-outlier-delete"),
-                    )
-                }
-            }
-        }
-
-        deleted?.let { current ->
-            // The undo notice (R-B8 amendment): one line, one tap to put it back.
-            Column(verticalArrangement = Arrangement.spacedBy(WloSpacing.TIGHT)) {
-                WloBanner(
-                    text = "Deleted ${current.label} — the day reads without it.",
-                    tone = WloBannerTone.Info,
-                    modifier = Modifier.testTag("f06-deleted-banner"),
-                )
-                Row(horizontalArrangement = Arrangement.spacedBy(WloSpacing.CARD)) {
-                    WloButton(
-                        label = "Undo",
-                        onClick = { viewModel.onEvent(WeighInEvent.UndoDelete) },
-                        modifier = Modifier.weight(1f).testTag("f06-undo-delete"),
-                    )
-                    WloSecondaryButton(
-                        label = "Dismiss",
-                        onClick = { viewModel.onEvent(WeighInEvent.DismissDelete) },
-                        modifier = Modifier.weight(1f).testTag("f06-dismiss-delete"),
-                    )
-                }
-            }
-        }
-
-        WloCard(modifier = Modifier.testTag("f06-hero-card")) {
-            val trend = state.trend
-            val current = trend?.current
-            val delta7 = trend?.delta7
-            WloCardHeader(
-                title = "Weight",
-                provenance =
-                    if (current != null) {
-                        {
-                            // The chip opens the math sheet — real "how we got
-                            // here" content, never a dead info mark.
-                            ProvenanceChip(
-                                value = current,
-                                format = { kg -> "${format1(kg)} kg" },
-                                onClick = onOpenMath,
-                            )
-                        }
-                    } else {
-                        null
-                    },
+        // One screen, different series (R2, WLO-0035) — segments, not routes.
+        Row(horizontalArrangement = Arrangement.spacedBy(WloSpacing.TIGHT)) {
+            SelectChip(
+                label = "Weight",
+                selected = state.section == BodySectionUi.WEIGHT,
+                onClick = { viewModel.onEvent(WeighInEvent.SectionChange(BodySectionUi.WEIGHT)) },
+                modifier = Modifier.testTag("f06-section-weight"),
             )
-            if (current != null) {
-                WloHeroStat(
-                    value = current,
-                    format = ::format1,
-                    unit = "kg",
-                    delta =
-                        if (delta7 != null) {
+            SelectChip(
+                label = "Body fat",
+                selected = state.section == BodySectionUi.BODY_FAT,
+                onClick = { viewModel.onEvent(WeighInEvent.SectionChange(BodySectionUi.BODY_FAT)) },
+                modifier = Modifier.testTag("f06-section-bodyfat"),
+            )
+        }
+
+        if (state.section == BodySectionUi.BODY_FAT) {
+            BodyFatSection(
+                state = state,
+                bodyFatViewModel = bodyFatViewModel,
+            )
+        } else {
+            // Weight segment: the weigh-in ritual, the trend, the logbook.
+
+            verdict?.let { current ->
+                // The outlier guard's one line (F06 §4): describe, offer both taps,
+                // never judge. The event is already stored — this only confirms.
+                Column(verticalArrangement = Arrangement.spacedBy(WloSpacing.TIGHT)) {
+                    WloBanner(
+                        text = "${current.weightLabel} is ${current.residualLabel} vs your trend — keep or correct?",
+                        tone = WloBannerTone.Warning,
+                        modifier = Modifier.testTag("f06-outlier-banner"),
+                    )
+                    Row(horizontalArrangement = Arrangement.spacedBy(WloSpacing.CARD)) {
+                        WloSecondaryButton(
+                            label = "Keep",
+                            onClick = { viewModel.onEvent(WeighInEvent.KeepFlagged) },
+                            modifier = Modifier.weight(1f).testTag("f06-outlier-keep"),
+                        )
+                        WloButton(
+                            label = "Delete",
+                            onClick = { viewModel.onEvent(WeighInEvent.DeleteFlagged) },
+                            modifier = Modifier.weight(1f).testTag("f06-outlier-delete"),
+                        )
+                    }
+                }
+            }
+
+            deleted?.let { current ->
+                // The undo notice (R-B8 amendment): one line, one tap to put it back.
+                Column(verticalArrangement = Arrangement.spacedBy(WloSpacing.TIGHT)) {
+                    WloBanner(
+                        text = "Deleted ${current.label} — the day reads without it.",
+                        tone = WloBannerTone.Info,
+                        modifier = Modifier.testTag("f06-deleted-banner"),
+                    )
+                    Row(horizontalArrangement = Arrangement.spacedBy(WloSpacing.CARD)) {
+                        WloButton(
+                            label = "Undo",
+                            onClick = { viewModel.onEvent(WeighInEvent.UndoDelete) },
+                            modifier = Modifier.weight(1f).testTag("f06-undo-delete"),
+                        )
+                        WloSecondaryButton(
+                            label = "Dismiss",
+                            onClick = { viewModel.onEvent(WeighInEvent.DismissDelete) },
+                            modifier = Modifier.weight(1f).testTag("f06-dismiss-delete"),
+                        )
+                    }
+                }
+            }
+
+            WloCard(modifier = Modifier.testTag("f06-hero-card")) {
+                val trend = state.trend
+                val current = trend?.current
+                val delta7 = trend?.delta7
+                WloCardHeader(
+                    title = "Weight",
+                    provenance =
+                        if (current != null) {
                             {
-                                WloDeltaChip(
-                                    value = delta7,
-                                    format = { magnitude -> "${format1(magnitude)} kg / 7 d" },
-                                    style = wloType.statM,
-                                    context = "trend delta",
+                                // The chip opens the math sheet — real "how we got
+                                // here" content, never a dead info mark.
+                                ProvenanceChip(
+                                    value = current,
+                                    format = { kg -> "${format1(kg)} kg" },
+                                    onClick = onOpenMath,
                                 )
                             }
                         } else {
                             null
                         },
-                    // The card header owns the single provenance chip (top-right).
-                    provenance = {},
-                    modifier = Modifier.testTag("f06-trend-stat"),
+                )
+                if (current != null) {
+                    WloHeroStat(
+                        value = current,
+                        format = ::format1,
+                        unit = "kg",
+                        delta =
+                            if (delta7 != null) {
+                                {
+                                    WloDeltaChip(
+                                        value = delta7,
+                                        format = { magnitude -> "${format1(magnitude)} kg / 7 d" },
+                                        style = wloType.statM,
+                                        context = "trend delta",
+                                    )
+                                }
+                            } else {
+                                null
+                            },
+                        // The card header owns the single provenance chip (top-right).
+                        provenance = {},
+                        modifier = Modifier.testTag("f06-trend-stat"),
+                    )
+                }
+                state.lastWeighInLabel?.let { last ->
+                    Text(
+                        text = "Last raw reading $last",
+                        style = wloType.receipt,
+                        color = wloExtendedColors.textTertiary,
+                    )
+                }
+                WloButton(
+                    label = "Weigh in",
+                    onClick = { viewModel.onEvent(WeighInEvent.OpenSheet()) },
+                    modifier = Modifier.fillMaxWidth().testTag("f06-open-sheet"),
                 )
             }
-            state.lastWeighInLabel?.let { last ->
-                Text(
-                    text = "Last raw reading $last",
-                    style = wloType.receipt,
-                    color = wloExtendedColors.textTertiary,
-                )
-            }
-            WloButton(
-                label = "Weigh in",
-                onClick = { viewModel.onEvent(WeighInEvent.OpenSheet()) },
-                modifier = Modifier.fillMaxWidth().testTag("f06-open-sheet"),
-            )
-        }
 
-        state.trend?.let { trend ->
-            WloCard(modifier = Modifier.testTag("f06-trend-card")) {
-                WloCardHeader(title = "Trend")
-                Row(horizontalArrangement = Arrangement.spacedBy(WloSpacing.TIGHT)) {
-                    for (candidate in ChartWindowUi.entries) {
-                        SelectChip(
-                            label = candidate.label,
-                            selected = candidate == state.window,
-                            onClick = { viewModel.onEvent(WeighInEvent.WindowChange(candidate)) },
-                            modifier = Modifier.testTag("f06-window-${candidate.name.lowercase()}"),
+            state.trend?.let { trend ->
+                WloCard(modifier = Modifier.testTag("f06-trend-card")) {
+                    WloCardHeader(title = "Trend")
+                    Row(horizontalArrangement = Arrangement.spacedBy(WloSpacing.TIGHT)) {
+                        for (candidate in ChartWindowUi.entries) {
+                            SelectChip(
+                                label = candidate.label,
+                                selected = candidate == state.window,
+                                onClick = { viewModel.onEvent(WeighInEvent.WindowChange(candidate)) },
+                                modifier = Modifier.testTag("f06-window-${candidate.name.lowercase()}"),
+                            )
+                        }
+                    }
+                    WloTrendChart(
+                        samples = trend.samples,
+                        trend = trend.trend,
+                        currentTrend = null,
+                        formatWeight = { kg -> "${format1(kg)} kg" },
+                        reference = trend.reference,
+                        describe = trend.description,
+                    )
+                    if (!trend.trendLineVisible) {
+                        Text(
+                            text = "Keep weighing — the trend forms in a few days.",
+                            style = wloType.caption,
+                            color = wloExtendedColors.textTertiary,
+                        )
+                    }
+                    SmootherTuner(
+                        method = state.method,
+                        alpha = state.alpha,
+                        onMethod = { viewModel.onEvent(WeighInEvent.MethodChange(it)) },
+                        onAlpha = { viewModel.onEvent(WeighInEvent.AlphaChange(it)) },
+                    )
+                    if (trend.preview) {
+                        Text(
+                            text = "Preview — the saved trend keeps the default smoother.",
+                            style = wloType.caption,
+                            color = wloExtendedColors.held,
+                        )
+                    }
+                    WloSecondaryButton(
+                        label = "How the math works",
+                        onClick = onOpenMath,
+                        modifier = Modifier.fillMaxWidth().testTag("f06-open-math"),
+                    )
+                }
+            }
+
+            WloCard(modifier = Modifier.testTag("f06-logbook-card")) {
+                WloCardHeader(title = "Logbook")
+                if (state.logbook.isEmpty()) {
+                    Text(
+                        text = "None yet — the morning window reads steadiest, whenever you get to it.",
+                        style = wloType.caption,
+                        color = wloExtendedColors.textTertiary,
+                    )
+                }
+                state.logbook.forEachIndexed { dayIndex, day ->
+                    if (dayIndex > 0) WloStatDivider()
+                    Text(
+                        text = day.dayLabel,
+                        style = wloType.label,
+                        color = wloExtendedColors.textTertiary,
+                    )
+                    day.rows.forEach { row ->
+                        LogbookRow(
+                            row = row,
+                            onDelete = { viewModel.onEvent(WeighInEvent.DeleteWeighIn(row.id)) },
+                        )
+                    }
+                    if (day.isToday && day.rows.size > 1) {
+                        Text(
+                            text = WeighInUiState.LOWEST_COPY,
+                            style = wloType.caption,
+                            color = wloExtendedColors.textTertiary,
                         )
                     }
                 }
-                WloTrendChart(
-                    samples = trend.samples,
-                    trend = trend.trend,
-                    currentTrend = null,
-                    formatWeight = { kg -> "${format1(kg)} kg" },
-                    reference = trend.reference,
-                    describe = trend.description,
-                )
-                if (!trend.trendLineVisible) {
-                    Text(
-                        text = "Keep weighing — the trend forms in a few days.",
-                        style = wloType.caption,
-                        color = wloExtendedColors.textTertiary,
-                    )
-                }
-                SmootherTuner(
-                    method = state.method,
-                    alpha = state.alpha,
-                    onMethod = { viewModel.onEvent(WeighInEvent.MethodChange(it)) },
-                    onAlpha = { viewModel.onEvent(WeighInEvent.AlphaChange(it)) },
-                )
-                if (trend.preview) {
-                    Text(
-                        text = "Preview — the saved trend keeps the default smoother.",
-                        style = wloType.caption,
-                        color = wloExtendedColors.held,
-                    )
-                }
-                WloSecondaryButton(
-                    label = "How the math works",
-                    onClick = onOpenMath,
-                    modifier = Modifier.fillMaxWidth().testTag("f06-open-math"),
-                )
             }
-        }
 
-        WloCard(modifier = Modifier.testTag("f06-logbook-card")) {
-            WloCardHeader(title = "Logbook")
-            if (state.logbook.isEmpty()) {
+            notice?.let {
                 Text(
-                    text = "None yet — the morning window reads steadiest, whenever you get to it.",
+                    text = it,
                     style = wloType.caption,
-                    color = wloExtendedColors.textTertiary,
+                    color = wloExtendedColors.held,
                 )
             }
-            state.logbook.forEachIndexed { dayIndex, day ->
-                if (dayIndex > 0) WloStatDivider()
-                Text(
-                    text = day.dayLabel,
-                    style = wloType.label,
-                    color = wloExtendedColors.textTertiary,
-                )
-                day.rows.forEach { row ->
-                    LogbookRow(
-                        row = row,
-                        onDelete = { viewModel.onEvent(WeighInEvent.DeleteWeighIn(row.id)) },
-                    )
-                }
-                if (day.isToday && day.rows.size > 1) {
-                    Text(
-                        text = WeighInUiState.LOWEST_COPY,
-                        style = wloType.caption,
-                        color = wloExtendedColors.textTertiary,
-                    )
-                }
-            }
-            WloSecondaryButton(
-                label = "Body-fat methods",
-                onClick = onOpenBodyFat,
-                modifier = Modifier.fillMaxWidth().testTag("f06-open-bodyfat"),
-            )
-        }
-
-        notice?.let {
-            Text(
-                text = it,
-                style = wloType.caption,
-                color = wloExtendedColors.held,
-            )
         }
     }
 
@@ -465,3 +492,69 @@ private fun methodLabel(method: TrendMethod): String =
 
 private const val ALPHA_MIN = 0.05f
 private const val ALPHA_MAX = 0.5f
+
+/**
+ * The body-fat segment (R2, WLO-0035): the estimate series and the waist
+ * tape chart over the SAME window as weight, then the calculator card —
+ * tape in, estimate out, both saved to their own series.
+ */
+@Composable
+private fun BodyFatSection(
+    state: WeighInUiState,
+    bodyFatViewModel: BodyFatViewModel,
+) {
+    var showWaist by rememberSaveable { mutableStateOf(false) }
+    WloCard(modifier = Modifier.testTag("f06-bfseries-card")) {
+        WloCardHeader(title = "Body fat")
+        Row(horizontalArrangement = Arrangement.spacedBy(WloSpacing.TIGHT)) {
+            SelectChip(
+                label = "Body fat %",
+                selected = !showWaist,
+                onClick = { showWaist = false },
+                modifier = Modifier.testTag("f06-series-bodyfat"),
+            )
+            SelectChip(
+                label = "Waist",
+                selected = showWaist,
+                onClick = { showWaist = true },
+                modifier = Modifier.testTag("f06-series-waist"),
+            )
+        }
+        if (showWaist) {
+            if (state.waistPoints.isEmpty()) {
+                Text(
+                    text = "No tape yet — a saved estimate stores your measurements too.",
+                    style = wloType.caption,
+                    color = wloExtendedColors.textTertiary,
+                )
+            } else {
+                WloTrendChart(
+                    samples = state.waistPoints,
+                    trend = emptyList(),
+                    currentTrend = null,
+                    formatWeight = { cm -> "${format1(cm)} cm" },
+                    reference = emptyList(),
+                    describe = "Waist tape series in centimetres.",
+                )
+            }
+        } else {
+            if (state.bodyFatPoints.isEmpty()) {
+                Text(
+                    text = "No estimates yet — compute and save one below.",
+                    style = wloType.caption,
+                    color = wloExtendedColors.textTertiary,
+                )
+            } else {
+                WloTrendChart(
+                    samples = state.bodyFatPoints,
+                    trend = emptyList(),
+                    currentTrend = null,
+                    formatWeight = { pct -> "${format1(pct)} %" },
+                    reference = emptyList(),
+                    describe = "Body-fat estimates in percent — every method is an estimate, ±3–4 % typical.",
+                )
+            }
+        }
+    }
+    BodyFatCalculatorCard(viewModel = bodyFatViewModel)
+}

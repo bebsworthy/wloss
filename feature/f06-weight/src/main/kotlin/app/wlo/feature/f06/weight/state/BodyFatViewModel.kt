@@ -9,16 +9,19 @@ import app.wlo.core.common.getOrNull
 import app.wlo.core.data.MeasurementRepository
 import app.wlo.core.data.NewMeasurement
 import app.wlo.core.data.ProfileRepository
+import app.wlo.core.datastore.SettingsStore
 import app.wlo.core.engines.BodyFatEngine
 import app.wlo.core.engines.BodyFatEstimate
 import app.wlo.core.model.BodyFatMethod
 import app.wlo.core.model.DerivedValue
 import app.wlo.core.model.MeasurementAttr
+import app.wlo.core.model.MeasurementEvent
 import app.wlo.core.model.MeasurementKind
 import app.wlo.core.model.MeasurementSource
 import app.wlo.core.model.Sex
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.datetime.TimeZone
 
@@ -76,6 +79,7 @@ public class BodyFatViewModel(
     private val clock: ClockPort,
     private val profiles: ProfileRepository,
     private val measurements: MeasurementRepository,
+    private val settings: SettingsStore,
 ) : ViewModel() {
     private val zone: TimeZone = TimeZone.currentSystemDefault()
     private var profileId: String? = null
@@ -90,25 +94,63 @@ public class BodyFatViewModel(
         viewModelScope.launch {
             profiles.active().getOrNull()?.let { profile ->
                 profileId = profile.id
+                val headline =
+                    BodyFatMethod
+                        .fromWireName(settings.bodyFatHeadlineMethod.first())
+                        ?: BodyFatMethod.NAVY_TAPE
                 state.value =
                     state.value.copy(
                         heightCm = profile.heightCm,
                         sex = profile.sex,
+                        method = headline,
                     )
             }
+            prefillTape()
         }
     }
 
     /** MVI-lite intent entry point. */
     public fun onEvent(event: BodyFatEvent) {
         when (event) {
-            is BodyFatEvent.MethodChange -> state.value = state.value.copy(method = event.method)
+            is BodyFatEvent.MethodChange -> {
+                state.value = state.value.copy(method = event.method)
+                viewModelScope.launch { settings.setBodyFatHeadlineMethod(event.method.wireName) }
+            }
             is BodyFatEvent.WaistChange -> state.value = state.value.copy(waistText = event.text)
             is BodyFatEvent.NeckChange -> state.value = state.value.copy(neckText = event.text)
             is BodyFatEvent.HipChange -> state.value = state.value.copy(hipText = event.text)
             BodyFatEvent.Compute -> compute()
             BodyFatEvent.SaveToLogbook -> saveToLogbook()
         }
+    }
+
+    /**
+     * R2 (WLO-0035): the tape IS the measurement — the latest girth readings
+     * prefill the fields so a monthly check is three taps, not three forms
+     * (F06 §3 input minimization).
+     */
+    private suspend fun prefillTape() {
+        val id = profileId ?: return
+        val today = DayBoundary.epochDay(clock.now(), zone)
+        val metricByEvent =
+            measurements
+                .attrsInRange(id, 0, today)
+                .getOrNull()
+                .orEmpty()
+                .filter { it.attr == TAPE_METRIC_ATTR }
+                .associate { it.eventId to it.valueText }
+        val latest = mutableMapOf<String, MeasurementEvent>()
+        for (event in measurements.range(id, 0, today).getOrNull().orEmpty()) {
+            if (event.kind != MeasurementKind.CUSTOM) continue
+            metricByEvent[event.id]?.let { metric -> latest[metric] = event }
+        }
+        if (latest.isEmpty()) return
+        state.value =
+            state.value.copy(
+                waistText = latest["waist"]?.let { format1(it.valueReal) } ?: state.value.waistText,
+                neckText = latest["neck"]?.let { format1(it.valueReal) } ?: state.value.neckText,
+                hipText = latest["hip"]?.let { format1(it.valueReal) } ?: state.value.hipText,
+            )
     }
 
     private fun compute() {
@@ -157,8 +199,40 @@ public class BodyFatViewModel(
     private fun saveToLogbook() {
         val id = profileId ?: return
         val estimate = lastEstimate ?: return
+        val current = state.value
         viewModelScope.launch {
             val today = DayBoundary.epochDay(clock.now(), zone)
+
+            // R2 (WLO-0035): tape and estimate both persist — the tape as
+            // MEASURED girth events, the estimate as an ESTIMATED series event.
+            var tapeSaved = 0
+            for ((metric, text) in listOf("waist" to current.waistText, "neck" to current.neckText, "hip" to current.hipText)) {
+                val cm = text.toDoubleOrNull() ?: continue
+                val appended =
+                    measurements.append(
+                        NewMeasurement(
+                            profileId = id,
+                            dayEpochDay = today,
+                            kind = MeasurementKind.CUSTOM,
+                            valueReal = cm,
+                            source = MeasurementSource.MANUAL,
+                            capturedAt = clock.now(),
+                            unitOverride = TAPE_UNIT,
+                        ),
+                    )
+                when (appended) {
+                    is WloResult.Ok -> {
+                        tapeSaved++
+                        measurements.attachAttrs(
+                            appended.value.id,
+                            listOf(MeasurementAttr(eventId = appended.value.id, attr = TAPE_METRIC_ATTR, valueText = metric)),
+                        )
+                    }
+
+                    is WloResult.Err -> Unit
+                }
+            }
+
             val appended =
                 measurements.append(
                     NewMeasurement(
@@ -179,7 +253,15 @@ public class BodyFatViewModel(
                             valueText = estimate.method.wireName,
                         )
                     measurements.attachAttrs(appended.value.id, listOf(attr))
-                    state.value = state.value.copy(notice = "saved — each method keeps its own series")
+                    state.value =
+                        state.value.copy(
+                            notice =
+                                if (tapeSaved > 0) {
+                                    "saved — tape and estimate, each to its own series"
+                                } else {
+                                    "saved — each method keeps its own series"
+                                },
+                        )
                 }
 
                 is WloResult.Err -> state.value = state.value.copy(notice = "that didn't save — nothing changed")
@@ -201,5 +283,11 @@ public class BodyFatViewModel(
             val tenth = tenths % 10
             return "$whole.$tenth"
         }
+
+        /** The EAV attr naming a CUSTOM event's metric ("waist" | "neck" | "hip"). */
+        public const val TAPE_METRIC_ATTR: String = "metric"
+
+        /** Girth unit (F06 §3 catalog: tape sites read in cm). */
+        public const val TAPE_UNIT: String = "cm"
     }
 }

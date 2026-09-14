@@ -145,6 +145,18 @@ public class SettingsStore(
     }
 
     /**
+     * F06 body-fat headline method (WLO-0035 R2): which estimate series leads
+     * ("navy-tape" | "rfm" wire names). The registry keeps every series —
+     * this only picks the one the chart renders first.
+     */
+    public val bodyFatHeadlineMethod: Flow<String> =
+        dataStore.data.map { prefs -> prefs[KEY_BF_HEADLINE_METHOD] ?: BF_HEADLINE_DEFAULT }
+
+    public suspend fun setBodyFatHeadlineMethod(wire: String) {
+        dataStore.edit { it[KEY_BF_HEADLINE_METHOD] = wire }
+    }
+
+    /**
      * The known settings as a plain map — the backup "settings" section (M6).
      * SENSITIVE keys are excluded here AND at the export layer (defense in
      * depth): anything matching [SENSITIVE_SETTING_PREFIXES] never rides a
@@ -217,6 +229,10 @@ public class SettingsStore(
         val KEY_FOOD_DB_LOOKUPS_ENABLED = booleanPreferencesKey("food_db_lookups_enabled")
         val KEY_AI_CLOUD_KILL_SWITCH = booleanPreferencesKey("ai_cloud_kill_switch")
         val KEY_REMEMBERED_CSV_MAPPING = stringPreferencesKey("remembered_csv_mapping")
+        val KEY_BF_HEADLINE_METHOD = stringPreferencesKey("bf_headline_method")
+
+        /** Default body-fat headline method (F06 §3: Navy tape first). */
+        const val BF_HEADLINE_DEFAULT = "navy-tape"
 
         // Section keys (backup/export "settings" map, F13 §3).
         const val SETTING_UNIT_SYSTEM = "unit_system"

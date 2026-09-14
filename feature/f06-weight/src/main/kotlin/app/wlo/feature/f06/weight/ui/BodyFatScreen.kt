@@ -43,8 +43,6 @@ public fun BodyFatScreen(
     viewModel: BodyFatViewModel,
     modifier: Modifier = Modifier,
 ) {
-    val state: BodyFatUiState by viewModel.uiState.collectAsStateWithLifecycle()
-
     Column(
         modifier =
             modifier
@@ -65,7 +63,20 @@ public fun BodyFatScreen(
             style = wloType.caption,
             color = wloExtendedColors.textTertiary,
         )
+        BodyFatCalculatorCard(viewModel = viewModel)
+    }
+}
 
+/**
+ * The calculator + tape entry + estimate card, embeddable — the weight
+ * surface's body-fat segment hosts it (R2, WLO-0035: same screen, different
+ * series). Saving persists the tape AND the estimate, each to its own series.
+ */
+@Composable
+public fun BodyFatCalculatorCard(viewModel: BodyFatViewModel) {
+    val state: BodyFatUiState by viewModel.uiState.collectAsStateWithLifecycle()
+
+    Column(verticalArrangement = Arrangement.spacedBy(WloSpacing.SCREEN)) {
         WloCard(modifier = Modifier.testTag("f06-bodyfat-card")) {
             Row(horizontalArrangement = Arrangement.spacedBy(WloSpacing.TIGHT)) {
                 for (method in BodyFatMethod.entries) {

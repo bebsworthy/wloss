@@ -24,6 +24,7 @@ dependencies {
     implementation(project(":core:common"))
     implementation(project(":core:engines"))
     implementation(project(":core:data"))
+    implementation(project(":core:datastore"))
 
     testImplementation(libs.kotlin.test.junit)
 }
