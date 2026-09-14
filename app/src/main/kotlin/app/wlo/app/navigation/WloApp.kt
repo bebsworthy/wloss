@@ -32,6 +32,7 @@ import app.wlo.app.ui.PlaceholderScreen
 import app.wlo.app.ui.STUB_TITLES
 import app.wlo.app.ui.StubScreen
 import app.wlo.app.ui.debug.EgressMonitorScreen
+import app.wlo.app.ui.settings.ProfileFactsScreen
 import app.wlo.app.ui.settings.SettingsScreen
 import app.wlo.app.ui.shell.ShellState
 import app.wlo.app.ui.shell.ShellViewModel
@@ -43,6 +44,8 @@ import app.wlo.core.designsystem.rememberWloHaptics
 import app.wlo.core.media.WloCaptureMode
 import app.wlo.core.media.WloShutterBridge
 import app.wlo.core.media.WloViewfinder
+import app.wlo.feature.f01.onboarding.F01Routes
+import app.wlo.feature.f01.onboarding.ui.GoalsEditorScreen
 import app.wlo.feature.f01.onboarding.ui.OnboardingScreen
 import app.wlo.feature.f02.food.state.CaptureLensMode
 import app.wlo.feature.f02.food.ui.CaptureScreen
@@ -412,7 +415,16 @@ private fun RouteSurface(
             SettingsScreen(
                 onOpenAiStudio = { navController.navigate(F12Routes.STUDIO) },
                 onOpenVault = { navController.navigate(Uri.parse("wlo://vault")) },
+                onOpenGoals = { navController.navigate(F01Routes.STUDIO) },
+                onOpenProfile = { navController.navigate("app/profile") },
             )
+
+        // The goals editor (WLO-0035 W4): the wizard's first run is v1 of this
+        // same editor — R-B2's STUDIO_F01 door, now surfaced.
+        F01Routes.STUDIO -> GoalsEditorScreen(viewModel = koinViewModel())
+
+        // The profile-facts editor (WLO-0035 W4): onboarding answers, correctable.
+        "app/profile" -> ProfileFactsScreen()
 
         F12Routes.STUDIO ->
             AiStudioScreen(

@@ -2,6 +2,7 @@ package app.wlo.feature.f01.onboarding.di
 
 import app.wlo.core.datastore.JsonDocumentStore
 import app.wlo.feature.f01.onboarding.domain.FinishOnboarding
+import app.wlo.feature.f01.onboarding.state.GoalsEditorViewModel
 import app.wlo.feature.f01.onboarding.state.OnboardingViewModel
 import org.koin.androidx.viewmodel.dsl.viewModel
 import org.koin.core.module.Module
@@ -27,4 +28,12 @@ public val f01OnboardingModule: Module =
             )
         }
         viewModel { OnboardingViewModel(library = get(), finisher = get(), documents = get(), clock = get()) }
+        viewModel {
+            GoalsEditorViewModel(
+                profiles = get(),
+                targets = get(),
+                writers = get(),
+                clock = get(),
+            )
+        }
     }

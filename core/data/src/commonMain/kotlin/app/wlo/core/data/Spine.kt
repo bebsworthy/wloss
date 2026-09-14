@@ -55,6 +55,20 @@ public interface ProfileRepository {
         profileId: String,
         unit: UnitSystem,
     ): WloResult<Unit>
+
+    /**
+     * Corrects the profile FACTS collected at onboarding (sex, birth year,
+     * height, activity level — WLO-0035 W4). A mistyped height must never
+     * permanently skew RFM/Navy/BMR math. Not a goal edit: goals live in the
+     * versioned Targets store (R-B2); this only rewrites the measured facts.
+     */
+    public suspend fun updateFacts(
+        profileId: String,
+        sex: Sex?,
+        birthYear: Int,
+        heightCm: Double,
+        activityLevel: ActivityLevel,
+    ): WloResult<Unit>
 }
 
 /** Append input (R-B8: events are append-only). Unit derives from [kind]

@@ -48,6 +48,8 @@ import org.koin.androidx.compose.koinViewModel
 public fun SettingsScreen(
     onOpenAiStudio: () -> Unit,
     onOpenVault: () -> Unit,
+    onOpenGoals: () -> Unit,
+    onOpenProfile: () -> Unit,
 ) {
     val viewModel: SettingsViewModel = koinViewModel()
     val state by viewModel.state.collectAsStateWithLifecycle()
@@ -83,6 +85,20 @@ public fun SettingsScreen(
             chevron = true,
             onClick = onOpenVault,
             modifier = Modifier.testTag("settings-open-vault"),
+        )
+        WloListRow(
+            label = "Goals",
+            secondary = "Goal weight, pace, budget — every save is a new version",
+            chevron = true,
+            onClick = onOpenGoals,
+            modifier = Modifier.testTag("settings-open-goals"),
+        )
+        WloListRow(
+            label = "Profile",
+            secondary = "Sex, birth year, height, activity — the facts the math reads",
+            chevron = true,
+            onClick = onOpenProfile,
+            modifier = Modifier.testTag("settings-open-profile"),
         )
 
         // --- App lock (F13 §3) ------------------------------------------------

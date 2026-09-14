@@ -23,6 +23,7 @@ import app.wlo.core.documents.TargetsRecord
 import app.wlo.core.documents.TargetsWriterId
 import app.wlo.core.engines.InputsHash
 import app.wlo.core.engines.PlannerEngine
+import app.wlo.core.model.ActivityLevel
 import app.wlo.core.model.ConstantsRegistry
 import app.wlo.core.model.DerivedValue
 import app.wlo.core.model.MeasurementAttr
@@ -141,6 +142,27 @@ public class RoomProfileRepository public constructor(
         storageGuard("profiles.setUnitPreference") {
             dao.setUnitPreference(profileId, unit.wireName)
             settings.setMassUnit(unitFor(unit))
+        }
+
+    override suspend fun updateFacts(
+        profileId: String,
+        sex: Sex?,
+        birthYear: Int,
+        heightCm: Double,
+        activityLevel: ActivityLevel,
+    ): WloResult<Unit> =
+        storageGuard("profiles.updateFacts") {
+            // Read-modify-write preserves identity, start weight, unit, and
+            // the archive flag — only the measured facts move.
+            val entity = dao.byId(profileId) ?: return@storageGuard
+            dao.upsert(
+                entity.copy(
+                    sex = sex?.wireName,
+                    birthYear = birthYear,
+                    heightCm = heightCm,
+                    activityLevel = activityLevel.wireName,
+                ),
+            )
         }
 
     private fun unitFor(unit: UnitSystem): MassUnit =

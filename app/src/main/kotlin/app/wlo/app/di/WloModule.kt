@@ -100,6 +100,11 @@ public val appModule: Module =
             app.wlo.app.ui.settings
                 .SettingsViewModel(settings = get(), appLock = get())
         }
+        // The profile-facts editor (WLO-0035 W4): onboarding answers, correctable.
+        viewModel {
+            app.wlo.app.ui.settings
+                .ProfileFactsViewModel(profiles = get())
+        }
         // Debug egress monitor (F12 §3.8): reads the persisted receipt ledger.
         factory { EgressMonitorViewModel(ledger = get(), zoo = get()) }
         // The F12 model manager (R-S14): the wlo://ai/models surface's state.
