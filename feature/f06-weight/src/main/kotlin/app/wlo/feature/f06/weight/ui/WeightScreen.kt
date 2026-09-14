@@ -37,6 +37,7 @@ import app.wlo.core.designsystem.WloScreenTitle
 import app.wlo.core.designsystem.WloSecondaryButton
 import app.wlo.core.designsystem.WloSheet
 import app.wlo.core.designsystem.WloSpacing
+import app.wlo.core.designsystem.WloStatDivider
 import app.wlo.core.designsystem.WloTrendChart
 import app.wlo.core.designsystem.wloExtendedColors
 import app.wlo.core.designsystem.wloType
@@ -263,7 +264,9 @@ public fun WeightScreen(
                 // One row per bucket, coarser with distance (WLO-0055): the
                 // tier captions mark the compression, and every row taps
                 // through to the verbatim feed — delete lives there, on the
-                // raw rows, never on an aggregate.
+                // raw rows, never on an aggregate. Hairline dividers inside
+                // a tier, tier captions at the boundaries — the same list
+                // rhythm as the logbook (WLO-0056).
                 var previousTier: HistoryTier? = null
                 state.history.forEach { bucket ->
                     if (bucket.tier != previousTier) {
@@ -273,6 +276,8 @@ public fun WeightScreen(
                             style = wloType.label,
                             color = wloExtendedColors.textTertiary,
                         )
+                    } else {
+                        WloStatDivider()
                     }
                     HistoryRow(
                         bucket = bucket,
