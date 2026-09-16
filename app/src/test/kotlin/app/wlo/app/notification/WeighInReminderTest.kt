@@ -2,6 +2,8 @@ package app.wlo.app.notification
 
 import java.time.Duration
 import java.time.LocalDateTime
+import java.time.ZoneId
+import java.time.ZonedDateTime
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
@@ -48,5 +50,19 @@ class WeighInReminderTest {
         val now = LocalDateTime.parse("2026-09-14T21:00:00")
         val delay = WeighInReminder.delayUntilNext(minuteOfDay = 20 * 60, now = now)
         assertEquals(Duration.ofHours(23), delay)
+    }
+
+    @Test
+    fun dstGapUsesTheNextValidLocalOccurrence() {
+        val now = ZonedDateTime.of(LocalDateTime.parse("2026-03-28T23:00:00"), ZoneId.of("Europe/Paris"))
+        val delay = WeighInReminder.delayUntilNext(minuteOfDay = 2 * 60 + 30, now = now)
+        assertEquals(Duration.ofMinutes(210), delay)
+    }
+
+    @Test
+    fun dstOverlapUsesOneDeterministicOccurrence() {
+        val now = ZonedDateTime.of(LocalDateTime.parse("2026-10-24T23:00:00"), ZoneId.of("Europe/Paris"))
+        val delay = WeighInReminder.delayUntilNext(minuteOfDay = 2 * 60 + 30, now = now)
+        assertEquals(Duration.ofMinutes(210), delay)
     }
 }

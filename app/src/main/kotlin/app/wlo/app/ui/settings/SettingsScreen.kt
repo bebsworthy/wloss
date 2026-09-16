@@ -1,7 +1,9 @@
 package app.wlo.app.ui.settings
 
 import android.content.Context
+import android.content.Intent
 import android.os.Build
+import android.provider.Settings
 import android.text.format.DateFormat
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -29,10 +31,15 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.fragment.app.FragmentActivity
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewModelScope
+import app.wlo.app.notification.ReminderAvailability
 import app.wlo.app.notification.WeighInReminder
+import app.wlo.app.notification.WeighInReminderWorker
 import app.wlo.core.common.MassUnit
 import app.wlo.core.common.getOrNull
 import app.wlo.core.data.ProfileRepository
@@ -49,6 +56,7 @@ import app.wlo.core.model.UnitSystem
 import app.wlo.core.vault.AppLockController
 import app.wlo.core.vault.LockTimeout
 import app.wlo.core.vault.canPromptBiometric
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
@@ -73,14 +81,24 @@ public fun SettingsScreen(
     val viewModel: SettingsViewModel = koinViewModel()
     val state by viewModel.state.collectAsStateWithLifecycle()
     val context = LocalContext.current
+    val lifecycleOwner = LocalLifecycleOwner.current
     val canPrompt = (context as? FragmentActivity)?.canPromptBiometric() == true
     var showTimePicker by remember { mutableStateOf(false) }
+    androidx.compose.runtime.DisposableEffect(lifecycleOwner) {
+        val observer =
+            LifecycleEventObserver { _, event ->
+                if (event == Lifecycle.Event.ON_RESUME) viewModel.refreshReminderAvailability()
+            }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
+    }
 
     // Android 13+ gates reminders behind POST_NOTIFICATIONS; a denial keeps
     // the toggle off — no re-prompt loop, no settings lecture.
     val permissionLauncher =
-        rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
-            viewModel.setReminder(granted, state.reminderMinuteOfDay)
+        rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) {
+            viewModel.setReminder(true, state.reminderMinuteOfDay)
+            viewModel.refreshReminderAvailability()
         }
 
     Column(
@@ -211,7 +229,7 @@ public fun SettingsScreen(
                 },
                 modifier = Modifier.testTag("settings-reminder-toggle"),
             )
-            if (state.reminderEnabled) {
+            if (state.reminderRequested) {
                 WloListRow(
                     label = "Approximate local time",
                     secondary = minuteLabel(state.reminderMinuteOfDay),
@@ -220,10 +238,26 @@ public fun SettingsScreen(
                     modifier = Modifier.testTag("settings-reminder-time"),
                 )
                 Text(
-                    "Android schedules this approximately; it is not an exact alarm.",
+                    if (state.reminderEnabled) {
+                        "Android schedules this approximately; it is not an exact alarm."
+                    } else {
+                        reminderAvailabilityCopy(state.reminderAvailability)
+                    },
                     style = wloType.receipt,
                     color = wloExtendedColors.textTertiary,
                 )
+                if (!state.reminderEnabled) {
+                    app.wlo.core.designsystem.WloSecondaryButton(
+                        label = "Open notification settings",
+                        onClick = {
+                            val intent =
+                                Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS)
+                                    .putExtra(Settings.EXTRA_APP_PACKAGE, context.packageName)
+                            context.startActivity(intent)
+                        },
+                        modifier = Modifier.fillMaxWidth().testTag("settings-reminder-repair"),
+                    )
+                }
             }
         }
 
@@ -294,6 +328,14 @@ private fun ReminderTimePicker(
 
 private fun minuteLabel(minuteOfDay: Int): String = "%02d:%02d".format(minuteOfDay / 60, minuteOfDay % 60)
 
+private fun reminderAvailabilityCopy(availability: ReminderAvailability): String =
+    when (availability) {
+        ReminderAvailability.AVAILABLE -> "Android schedules this approximately; it is not an exact alarm."
+        ReminderAvailability.PERMISSION_REQUIRED -> "Notification permission is off. Your reminder time is still saved."
+        ReminderAvailability.APP_BLOCKED -> "Notifications are off for WLO. Your reminder time is still saved."
+        ReminderAvailability.CHANNEL_BLOCKED -> "Weigh-in reminders are off in Android settings. Your time is still saved."
+    }
+
 private fun timeoutLabel(timeout: LockTimeout): String =
     when (timeout) {
         LockTimeout.IMMEDIATE -> "Immediately"
@@ -307,6 +349,8 @@ public data class SettingsUiState(
     public val appLockEnabled: Boolean = false,
     public val lockTimeout: LockTimeout = LockTimeout.ONE_MINUTE,
     public val reminderEnabled: Boolean = false,
+    public val reminderRequested: Boolean = false,
+    public val reminderAvailability: ReminderAvailability = ReminderAvailability.AVAILABLE,
     public val reminderMinuteOfDay: Int = 450,
 )
 
@@ -316,6 +360,8 @@ public class SettingsViewModel(
     private val appLock: AppLockController,
     private val appContext: Context,
 ) : ViewModel() {
+    private val reminderAvailability = MutableStateFlow(WeighInReminderWorker.availability(appContext))
+
     public val state: StateFlow<SettingsUiState> =
         combine(
             combine(settings.massUnit, settings.appLockEnabled, settings.lockTimeout) { massUnit, enabled, timeout ->
@@ -327,9 +373,20 @@ public class SettingsViewModel(
             },
             settings.weighInReminderEnabled,
             settings.weighInReminderMinuteOfDay,
-        ) { base, reminderEnabled, minute ->
-            base.copy(reminderEnabled = reminderEnabled, reminderMinuteOfDay = minute)
+            reminderAvailability,
+        ) { base, reminderRequested, minute, availability ->
+            base.copy(
+                reminderEnabled = reminderRequested && availability == ReminderAvailability.AVAILABLE,
+                reminderRequested = reminderRequested,
+                reminderAvailability = availability,
+                reminderMinuteOfDay = minute,
+            )
         }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), SettingsUiState())
+
+    public fun refreshReminderAvailability() {
+        WeighInReminderWorker.ensureChannel(appContext)
+        reminderAvailability.value = WeighInReminderWorker.availability(appContext)
+    }
 
     /**
      * Persists the reminder AND reschedules the WorkManager work — one door,

@@ -19,6 +19,7 @@ import androidx.work.WorkManager
 import androidx.work.WorkerParameters
 import java.time.Duration
 import java.time.LocalDateTime
+import java.time.ZonedDateTime
 import java.util.concurrent.TimeUnit
 
 /**
@@ -37,8 +38,8 @@ public class WeighInReminderWorker(
     @SuppressLint("MissingPermission")
     override suspend fun doWork(): Result {
         val context = applicationContext
-        if (!notificationsPermitted(context)) return Result.success()
         ensureChannel(context)
+        if (!notificationsPermitted(context)) return Result.success()
         val tap =
             PendingIntent.getActivity(
                 context,
@@ -77,10 +78,24 @@ public class WeighInReminderWorker(
             )
         }
 
-        public fun notificationsPermitted(context: Context): Boolean =
-            Build.VERSION.SDK_INT < 33 ||
-                context.checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) ==
-                PackageManager.PERMISSION_GRANTED
+        public fun notificationsPermitted(context: Context): Boolean = availability(context) == ReminderAvailability.AVAILABLE
+
+        public fun availability(context: Context): ReminderAvailability {
+            if (Build.VERSION.SDK_INT >= 33 &&
+                context.checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED
+            ) {
+                return ReminderAvailability.PERMISSION_REQUIRED
+            }
+            val manager = NotificationManagerCompat.from(context)
+            if (!manager.areNotificationsEnabled()) return ReminderAvailability.APP_BLOCKED
+            if (Build.VERSION.SDK_INT >= 26) {
+                val channel = context.getSystemService(NotificationManager::class.java)?.getNotificationChannel(CHANNEL_ID)
+                if (channel != null && channel.importance == NotificationManager.IMPORTANCE_NONE) {
+                    return ReminderAvailability.CHANNEL_BLOCKED
+                }
+            }
+            return ReminderAvailability.AVAILABLE
+        }
     }
 }
 
@@ -99,7 +114,7 @@ public object WeighInReminder {
         WeighInReminderWorker.ensureChannel(context)
         val request =
             PeriodicWorkRequestBuilder<WeighInReminderWorker>(24, TimeUnit.HOURS)
-                .setInitialDelay(delayUntilNext(minuteOfDay, LocalDateTime.now()).toMillis(), TimeUnit.MILLISECONDS)
+                .setInitialDelay(delayUntilNext(minuteOfDay, ZonedDateTime.now()).toMillis(), TimeUnit.MILLISECONDS)
                 .build()
         manager.enqueueUniquePeriodicWork(
             WeighInReminderWorker.WORK_NAME,
@@ -116,12 +131,26 @@ public object WeighInReminder {
     public fun delayUntilNext(
         minuteOfDay: Int,
         now: LocalDateTime,
+    ): Duration = delayUntilNext(minuteOfDay, now.atZone(java.time.ZoneId.systemDefault()))
+
+    /** Zone-aware form used by production and DST/timezone regression tests. */
+    public fun delayUntilNext(
+        minuteOfDay: Int,
+        now: ZonedDateTime,
     ): Duration {
         val todayAt = now.toLocalDate().atTime(minuteOfDay / 60, minuteOfDay % 60)
         val grace = now.plusMinutes(GRACE_MINUTES)
-        val next = if (todayAt.isAfter(grace)) todayAt else todayAt.plusDays(1)
+        var next = todayAt.atZone(now.zone)
+        if (!next.isAfter(grace)) next = todayAt.plusDays(1).atZone(now.zone)
         return Duration.between(now, next)
     }
 
     private const val GRACE_MINUTES: Long = 5
+}
+
+public enum class ReminderAvailability {
+    AVAILABLE,
+    PERMISSION_REQUIRED,
+    APP_BLOCKED,
+    CHANNEL_BLOCKED,
 }
