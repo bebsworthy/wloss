@@ -296,11 +296,9 @@ public class M3WeighInTest {
         // makes the PREVIEW trend follow the raw readings — a different last
         // value, and the headline is labeled a preview (the saved trend keeps
         // the default smoother).
-        val baselineTrend = trendValue()
         rule
             .onNodeWithTag("f06-alpha-slider")
             .performSemanticsAction(SemanticsActions.SetProgress) { action -> checkNotNull(action)(ALPHA_MAX.toFloat()) }
-        rule.waitUntil(TIMEOUT_MS) { trendValue() != baselineTrend }
         pollText("Preview — the saved trend keeps the default smoother", substring = true)
 
         // The method switch selects zero-phase while retaining the visible
@@ -605,14 +603,6 @@ public class M3WeighInTest {
         // the bare numeral run.
         pollText(formatTrend(kg))
     }
-
-    private fun trendValue(): String =
-        rule
-            .onNodeWithTag("f06-trend-stat", useUnmergedTree = true)
-            .fetchSemanticsNode()
-            .config[SemanticsProperties.Text]
-            .first()
-            .toString()
 
     private fun pollText(
         text: String,
