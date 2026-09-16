@@ -269,6 +269,7 @@ class WeighInViewModelReliabilityTest {
                         appendSucceeds = true
                         appendVerdict = OutlierVerdict.Flagged(40.0, 6.0, 2.0)
                         savedEventId = original.id
+                        canonicalTrendKg = 82.0
                     }
                 val viewModel =
                     viewModel(

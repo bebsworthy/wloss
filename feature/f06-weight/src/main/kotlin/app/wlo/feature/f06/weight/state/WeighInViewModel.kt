@@ -196,6 +196,7 @@ public data class VerdictUi(
     public val eventId: String,
     public val weightLabel: String,
     public val residualLabel: String,
+    public val safePrefillKg: Double?,
 )
 
 /**
@@ -523,7 +524,7 @@ public class WeighInViewModel(
             WeighInEvent.KeepFlagged -> verdict.value = null
             WeighInEvent.CorrectFlagged ->
                 verdict.value?.let { flagged ->
-                    openCorrection(flagged.eventId)
+                    openCorrection(flagged.eventId, flagged.safePrefillKg)
                 }
 
             is WeighInEvent.MethodChange ->
@@ -615,6 +616,7 @@ public class WeighInViewModel(
             }
         submission.value = WeighInSubmissionState.SAVING
         val frozen = current.copy(weightError = null, whenError = null, saveError = null)
+        val safePrefillKg = uiState.value.entryPrefillKg
         updateSheet(frozen)
         viewModelScope.launch {
             val id = profileId ?: profiles.active().getOrNull()?.id
@@ -668,6 +670,7 @@ public class WeighInViewModel(
                                 eventId = outcome.value.event.id,
                                 weightLabel = activeUnit.formatNumber(outcome.value.event.valueReal),
                                 residualLabel = formatResidual(flagged.residualKg),
+                                safePrefillKg = safePrefillKg,
                             )
                     }
                     refresh()
@@ -684,7 +687,10 @@ public class WeighInViewModel(
         }
     }
 
-    private fun openCorrection(eventId: String) {
+    private fun openCorrection(
+        eventId: String,
+        safePrefillKg: Double?,
+    ) {
         if (submission.value == WeighInSubmissionState.SAVING) return
         viewModelScope.launch {
             when (val result = measurements.byId(eventId)) {
@@ -700,10 +706,10 @@ public class WeighInViewModel(
                     confirmation.value = null
                     verdict.value = null
                     restoredSheetNeedsNewOperation = false
-                    val safePrefillKg = uiState.value.entryPrefillKg ?: original.valueReal
+                    val correctionPrefillKg = safePrefillKg ?: original.valueReal
                     updateSheet(
                         SheetUi(
-                            weightText = activeUnit.formatNumber(safePrefillKg),
+                            weightText = activeUnit.formatNumber(correctionPrefillKg),
                             dayText = local.date.toString(),
                             timeText = "%02d:%02d".format(local.hour, local.minute),
                             prefillContext =
