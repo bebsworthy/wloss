@@ -549,6 +549,8 @@ internal fun ProfileRow.toEntity(): ProfileEntity =
         unitPreference = unitPreference,
         createdAtEpochMs = createdAtEpochMs,
         archivedAtEpochMs = archivedAtEpochMs,
+        weightPolicyTimeZoneId = weightPolicyTimeZoneId,
+        weightPolicyVersion = weightPolicyVersion,
     )
 
 internal fun MeasurementRow.toEntity(): MeasurementEventEntity =

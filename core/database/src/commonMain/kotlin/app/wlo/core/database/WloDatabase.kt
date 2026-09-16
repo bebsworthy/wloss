@@ -4,7 +4,8 @@ import androidx.room3.Database
 import androidx.room3.RoomDatabase
 
 /**
- * WLO relational core, schema v8 (Health Connect source identity, cursors,
+ * WLO relational core, schema v9 (fixed weight-policy timezone/version;
+ * v8 added Health Connect source identity, cursors,
  * and visible import receipts; weight-first onboarding makes optional
  * health facts nullable rather than inventing placeholder values; M5 added the
  * F03/F04 planning surface on the
@@ -38,7 +39,7 @@ import androidx.room3.RoomDatabase
         HealthConnectSyncStateEntity::class,
         HealthConnectImportLogEntity::class,
     ],
-    version = 8,
+    version = 9,
     exportSchema = true,
 )
 public abstract class WloDatabase : RoomDatabase() {

@@ -34,6 +34,10 @@ public data class ProfileEntity(
     public val unitPreference: String,
     public val createdAtEpochMs: Long,
     public val archivedAtEpochMs: Long? = null,
+    /** Fixed once so travel cannot silently rewrite historical daily weight selection. */
+    public val weightPolicyTimeZoneId: String? = null,
+    /** Null only for a legacy profile awaiting the one-time policy upgrade. */
+    public val weightPolicyVersion: String? = null,
 )
 
 /**

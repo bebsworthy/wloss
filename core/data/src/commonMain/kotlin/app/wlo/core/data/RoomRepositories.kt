@@ -38,6 +38,7 @@ import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.map
 import kotlinx.datetime.Instant
 import kotlinx.datetime.LocalDate
+import kotlinx.datetime.TimeZone
 import kotlinx.datetime.isoDayNumber
 import kotlin.uuid.Uuid
 
@@ -122,6 +123,8 @@ public class RoomProfileRepository public constructor(
                     activityLevel = profile.activityLevel.wireName,
                     unitPreference = profile.unitPreference.wireName,
                     createdAtEpochMs = at.toEpochMilliseconds(),
+                    weightPolicyTimeZoneId = TimeZone.currentSystemDefault().id,
+                    weightPolicyVersion = DailyWeightPolicy.VERSION,
                 )
             dao.upsert(entity)
             // Keep the app-level unit setting in lockstep (R-D10 single

@@ -213,9 +213,14 @@ these are binding until amended *here* (feature docs must not re-litigate them).
 - **R-B4 — Adherence metrics:** F03 computes (plan coverage, energy fidelity,
   swap gravity, cook realism); F11 consumes read-only. One definition per number.
 - **R-B5 — F06→F07 series contract** frozen: versioned daily scalars + trend +
-  residual σ + coverage % + provenance flags. Lowest-of-day/noon-normalized is
-  a benchmark candidate, not an ingestion or dedup rule; WLO-0072 validates it
-  against first-of-day, consistent-window, and median policies before release.
+  residual σ + coverage % + provenance flags. Release 1 uses
+  `consistent-window-v1`: for each stored day bucket select the valid
+  canonical-kg reading in the half-open 05:30–09:30 profile-policy-timezone
+  window nearest 07:00 (tie-break local minute, capture instant, stable event
+  ID); when the window is empty use the day's median, averaging and attributing
+  both middle events for an even count. Empty days remain absent. The profile
+  timezone is captured once and travels with backup data, so travel cannot
+  silently rewrite history.
 - **R-B6 — F09 classifier personalization:** correction-cache prior over a
   frozen on-device model in v1 (shared mechanism with F02's dish priors);
   on-device fine-tuning is [future], pending an F12 platform ruling.

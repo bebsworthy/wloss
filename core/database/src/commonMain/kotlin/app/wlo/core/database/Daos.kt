@@ -57,6 +57,16 @@ public interface ProfileDao {
         id: String,
         unit: String,
     )
+
+    @Query(
+        "UPDATE profiles SET weightPolicyTimeZoneId = :timeZoneId, weightPolicyVersion = :version " +
+            "WHERE id = :id AND weightPolicyTimeZoneId IS NULL",
+    )
+    public suspend fun initializeWeightPolicy(
+        id: String,
+        timeZoneId: String,
+        version: String,
+    )
 }
 
 /** APPEND-ONLY (R-B8): insert + queries only — no update, no delete. */

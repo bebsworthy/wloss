@@ -47,6 +47,7 @@ import app.wlo.core.model.Provenance
  *   when wired, the info mark tints to the state color to signal tappability
  */
 @Composable
+@Suppress("UnusedParameter")
 public fun <T : Any> ProvenanceChip(
     value: DerivedValue<T>,
     format: (T) -> String,
@@ -56,7 +57,7 @@ public fun <T : Any> ProvenanceChip(
     val provenance = value.provenance
     val state = stateColor(provenance)
     val word = userWord(provenance)
-    val description = "$word, ${format(value.value)}"
+    val description = word
     val border = BorderStroke(1.dp, state.copy(alpha = BORDER_ALPHA))
 
     val anatomy: @Composable () -> Unit = {
@@ -72,12 +73,14 @@ public fun <T : Any> ProvenanceChip(
                 style = wloType.label,
                 color = state,
             )
-            Spacer(Modifier.width(WloSpacing.TIGHT))
-            Icon(
-                imageVector = WloProvenanceGlyphs.Info,
-                contentDescription = null,
-                tint = if (onClick == null) wloExtendedColors.textTertiary else state,
-            )
+            if (onClick != null) {
+                Spacer(Modifier.width(WloSpacing.TIGHT))
+                Icon(
+                    imageVector = WloProvenanceGlyphs.Info,
+                    contentDescription = null,
+                    tint = state,
+                )
+            }
         }
     }
 

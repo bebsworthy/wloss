@@ -11,7 +11,6 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
-import app.wlo.core.designsystem.ProvenanceChip
 import app.wlo.core.designsystem.WloCard
 import app.wlo.core.designsystem.WloCardHeader
 import app.wlo.core.designsystem.WloScreenTitle
@@ -19,15 +18,13 @@ import app.wlo.core.designsystem.WloSpacing
 import app.wlo.core.designsystem.wloExtendedColors
 import app.wlo.core.designsystem.wloType
 import app.wlo.core.model.ConstantsRegistry
-import app.wlo.core.model.DerivedValue
-import app.wlo.core.model.Provenance
 
 /**
  * The in-app math documentation (F06 §3: "the math is in-app documentation",
  * Happy-Scale-FAQ style): each smoother's formula, its plain-language terms,
  * and its honestly documented failure modes — plus the outlier guard and the
- * lowest-of-day rule. Formula versions come from the constants registry, the
- * same strings the provenance chips resolve to.
+ * versioned daily-selection rule. Formula versions come from the constants
+ * registry, the same strings derived-value explainers resolve to.
  */
 @Composable
 public fun MathDocsScreen(modifier: Modifier = Modifier) {
@@ -46,8 +43,10 @@ public fun MathDocsScreen(modifier: Modifier = Modifier) {
         )
         Text(
             text =
-                "Every daily weight is the lowest reading of that day. The trend line then " +
-                    "smooths those daily numbers with one of the methods below — yours is switchable " +
+                "Each daily weight uses the reading nearest 07:00 inside the profile-fixed " +
+                    "05:30–09:30 window, or the day's median when that window is empty " +
+                    "(consistent-window-v1). The trend line then smooths those daily numbers " +
+                    "with one of the methods below — yours is switchable " +
                     "any time, and every value on the chart carries the method that produced it.",
             style = wloType.body,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -58,7 +57,7 @@ public fun MathDocsScreen(modifier: Modifier = Modifier) {
             formula = "sₜ = α·xₜ + (1−α)·sₜ₋₁,   s₀ = x₀",
             terms =
                 listOf(
-                    "xₜ — today's lowest-of-day weight",
+                    "xₜ — today's selected daily weight",
                     "sₜ₋₁ — yesterday's trend",
                     "α — how much today moves the line (your slider, default ${ConstantsRegistry.EWMA_ALPHA_DEFAULT})",
                 ),
@@ -134,18 +133,11 @@ private fun MethodDoc(
     testTag: String,
 ): Unit =
     WloCard(modifier = Modifier.testTag(testTag)) {
-        WloCardHeader(
-            title = name,
-            provenance = {
-                ProvenanceChip(
-                    value =
-                        DerivedValue(
-                            0.0,
-                            Provenance.Derived(formulaVersion = formulaVersion, inputs = emptyList()),
-                        ),
-                    format = { formulaVersion },
-                )
-            },
+        WloCardHeader(title = name)
+        Text(
+            text = "Formula version: $formulaVersion",
+            style = wloType.caption,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
         Text(
             text = formula,

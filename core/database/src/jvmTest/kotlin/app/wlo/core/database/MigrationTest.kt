@@ -41,6 +41,28 @@ class MigrationTest {
         )
 
     @Test
+    fun migrate8To9_preservesRowsAndAddsNullableWeightPolicyMetadata() =
+        runTest {
+            helper.createDatabase(8).use { connection ->
+                connection.exec(
+                    "INSERT INTO profiles (id, sex, birthYear, heightCm, startWeightKg, activityLevel, " +
+                        "unitPreference, createdAtEpochMs) VALUES ('legacy', NULL, NULL, NULL, NULL, " +
+                        "'sedentary', 'metric', 1000)",
+                )
+                connection.exec(
+                    "INSERT INTO measurement_events (id, profileId, dayEpochDay, kind, valueReal, unit, source, capturedAtEpochMs) " +
+                        "VALUES ('raw', 'legacy', 20708, 'weight', 80.0, 'kg', 'manual', 1789196400000)",
+                )
+            }
+            helper.runMigrationsAndValidate(9, listOf(Migrations.MIGRATION_8_9)).use { connection ->
+                assertEquals(1L, queryLong(connection, "SELECT COUNT(*) FROM measurement_events WHERE id='raw'"))
+                assertEquals(1L, queryLong(connection, "SELECT COUNT(*) FROM profiles WHERE id='legacy'"))
+                assertEquals(1L, queryLong(connection, "SELECT weightPolicyTimeZoneId IS NULL FROM profiles WHERE id='legacy'"))
+                assertEquals(1L, queryLong(connection, "SELECT weightPolicyVersion IS NULL FROM profiles WHERE id='legacy'"))
+            }
+        }
+
+    @Test
     fun migrate7To8_addsHealthConnectIdentityCursorAndLog() =
         runTest {
             helper.createDatabase(7).close()
@@ -349,12 +371,12 @@ class MigrationTest {
         }
 
     @Test
-    fun v1DatabaseChainsThroughToV8() =
+    fun v1DatabaseChainsThroughToV9() =
         runTest {
             helper.createDatabase(1).close()
             helper
                 .runMigrationsAndValidate(
-                    8,
+                    9,
                     listOf(
                         Migrations.MIGRATION_1_2,
                         Migrations.MIGRATION_2_3,
@@ -363,6 +385,7 @@ class MigrationTest {
                         Migrations.MIGRATION_5_6,
                         Migrations.MIGRATION_6_7,
                         Migrations.MIGRATION_7_8,
+                        Migrations.MIGRATION_8_9,
                     ),
                 ).use { connection ->
                     assertEquals(

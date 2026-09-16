@@ -54,6 +54,7 @@ import app.wlo.core.designsystem.WloSecondaryButton
 import app.wlo.core.designsystem.WloSheet
 import app.wlo.core.designsystem.WloSpacing
 import app.wlo.core.designsystem.WloStatDivider
+import app.wlo.core.designsystem.WloStatRow
 import app.wlo.core.designsystem.WloTrendChart
 import app.wlo.core.designsystem.formatDay
 import app.wlo.core.designsystem.rememberWloHaptics
@@ -374,14 +375,10 @@ private fun GoalProgressCard(
             GoalProgressState.GAIN,
             -> {
                 progress.currentTrend?.let { trend ->
-                    WloListRow(
+                    WloStatRow(
                         label = "Current trend",
-                        value = {
-                            ProvenanceChip(
-                                value = trend,
-                                format = state.massUnit::format,
-                            )
-                        },
+                        value = trend,
+                        format = state.massUnit::format,
                     )
                 }
                 progress.targetWeightKg?.let { target ->
@@ -955,9 +952,10 @@ private fun RatiosCard(
             )
         }
         waistHeight?.let { ratio ->
-            ProvenanceChip(
+            WloStatRow(
+                label = "Waist ÷ height",
                 value = ratio,
-                format = { v -> "waist ÷ height ${format2(v)}" },
+                format = ::format2,
             )
             Text(
                 text = "0.40–0.53 reads healthy (Ashwell) — a range, not a verdict.",
@@ -966,9 +964,10 @@ private fun RatiosCard(
             )
         }
         waistHip?.let { ratio ->
-            ProvenanceChip(
+            WloStatRow(
+                label = "Waist ÷ hip",
                 value = ratio,
-                format = { v -> "waist ÷ hip ${format2(v)}" },
+                format = ::format2,
             )
             Text(
                 text = "WHO: risk rises above 0.90 (men) / 0.85 (women).",
@@ -984,9 +983,10 @@ private fun RatiosCard(
                     modifier = Modifier.testTag("f06-show-bmi"),
                 )
             } else {
-                ProvenanceChip(
+                WloStatRow(
+                    label = "BMI",
                     value = bmi,
-                    format = { v -> "BMI ${format1(v)}" },
+                    format = ::format1,
                     modifier = Modifier.testTag("f06-bmi"),
                 )
                 Text(

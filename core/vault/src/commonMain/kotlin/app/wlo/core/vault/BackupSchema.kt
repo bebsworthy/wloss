@@ -83,6 +83,8 @@ public data class ProfileRow(
     val unitPreference: String,
     val createdAtEpochMs: Long,
     val archivedAtEpochMs: Long? = null,
+    val weightPolicyTimeZoneId: String? = null,
+    val weightPolicyVersion: String? = null,
 )
 
 /** One measurement event with its EAV sidecar attrs (R-B8, F13 §3 EAV pattern). */

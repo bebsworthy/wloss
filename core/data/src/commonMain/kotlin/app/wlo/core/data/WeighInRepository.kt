@@ -20,14 +20,14 @@ import app.wlo.core.model.MeasurementSource
 import app.wlo.core.model.Provenance
 import app.wlo.core.model.TrendMethod
 import kotlinx.datetime.Instant
+import kotlinx.datetime.TimeZone
 import kotlin.uuid.Uuid
 
 /**
  * The weigh-in door (F06 §3 semantics over the R-B8 event store):
  *  - appends every weigh-in VERBATIM (multiple weigh-ins per day are normal
  *    data — the "post-bathroom win" re-weigh is kept, never collapsed);
- *  - the daily scalar is a DERIVED VIEW: lowest-of-day wins (Happy Scale's
- *    rule — the best estimator of true morning mass);
+ *  - the daily scalar is a DERIVED VIEW selected by [DailyWeightPolicy];
  *  - trend smoothing lives exactly here (one smoother selection, F06 owns
  *    the math via [SmoothingEngine]; F07 consumes the series per R-B5);
  *  - the ±3σ outlier guard (F06 §4) flags at capture — a one-line "keep or
@@ -56,13 +56,33 @@ public interface WeighInRepository {
         day: Long,
     ): WloResult<List<MeasurementEvent>>
 
-    /** The daily scalar view: lowest-of-day (null when the day has no weigh-in). */
+    /** Legacy compatibility query only; canonical trend consumers use [dailySelections]. */
     public suspend fun lowestOfDay(
         profileId: String,
         day: Long,
     ): WloResult<MeasurementEvent?>
 
-    /** Lowest-of-day series per calendar day — the trend/engine input (R-B5). */
+    /** Typed daily selections, including attribution and the fixed policy timezone. */
+    public suspend fun dailySelections(
+        profileId: String,
+        fromDay: Long,
+        toDay: Long,
+    ): WloResult<List<DailyWeightSelection>> =
+        dailyScalars(profileId, fromDay, toDay).map { samples ->
+            samples.map {
+                DailyWeightSelection(
+                    dayEpochDay = it.epochDay,
+                    kg = it.weightKg,
+                    contributingEventIds = emptyList(),
+                    candidateCount = 0,
+                    reason = DailyWeightSelectionReason.FALLBACK_MEDIAN,
+                    policyVersion = DailyWeightPolicy.VERSION,
+                    timeZoneId = "unknown",
+                )
+            }
+        }
+
+    /** Canonical daily scalar series per stored calendar day — the trend/engine input (R-B5). */
     public suspend fun dailyScalars(
         profileId: String,
         fromDay: Long,
@@ -143,7 +163,7 @@ public data class ReplacedWeighIn(
  * latest smoothed value, and neutral lookback deltas — all from the one window.
  */
 public data class CurrentTrend(
-    /** Lowest-of-day scalars of the canonical window, oldest first. */
+    /** Canonical daily scalars of the canonical window, oldest first. */
     public val samples: List<WeightSample>,
     /** The default smoother's series over those samples (null when empty). */
     public val series: TrendSeries?,
@@ -153,6 +173,8 @@ public data class CurrentTrend(
     public val delta7: DerivedValue<Double>?,
     /** Change across the canonical 30-calendar-day window, if that full span exists. */
     public val delta30: DerivedValue<Double>? = null,
+    /** Attribution/explainer inputs for every sample. */
+    public val selections: List<DailyWeightSelection> = emptyList(),
 )
 
 /** Append result: the stored event plus the guard's verdict (UI confirm input). */
@@ -318,13 +340,26 @@ public class RoomWeighInRepository internal constructor(
         fromDay: Long,
         toDay: Long,
     ): WloResult<List<WeightSample>> =
-        measurements.range(profileId, fromDay, toDay).map { events ->
+        dailySelections(profileId, fromDay, toDay).map { selections ->
+            selections.map { WeightSample(it.dayEpochDay, it.kg) }
+        }
+
+    override suspend fun dailySelections(
+        profileId: String,
+        fromDay: Long,
+        toDay: Long,
+    ): WloResult<List<DailyWeightSelection>> {
+        val policy = policyFor(profileId)
+        if (policy is WloResult.Err) return policy
+        val timeZoneId = (policy as WloResult.Ok).value
+        return measurements.range(profileId, fromDay, toDay).map { events ->
             events
                 .filter { it.kind == MeasurementKind.WEIGHT }
                 .groupBy { it.dayEpochDay }
-                .map { (day, dayEvents) -> WeightSample(day, dayEvents.minOf { it.valueReal }) }
-                .sortedBy { it.epochDay }
+                .mapNotNull { (day, dayEvents) -> DailyWeightPolicy.select(day, dayEvents, timeZoneId) }
+                .sortedBy { it.dayEpochDay }
         }
+    }
 
     override suspend fun trend(
         profileId: String,
@@ -341,9 +376,10 @@ public class RoomWeighInRepository internal constructor(
         profileId: String,
         toDay: Long,
     ): WloResult<CurrentTrend> =
-        dailyScalars(profileId, toDay - TREND_WINDOW_DAYS + 1, toDay).map { samples ->
+        dailySelections(profileId, toDay - TREND_WINDOW_DAYS + 1, toDay).map { selections ->
+            val samples = selections.map { WeightSample(it.dayEpochDay, it.kg) }
             if (samples.isEmpty()) {
-                CurrentTrend(samples = samples, series = null, current = null, delta7 = null, delta30 = null)
+                CurrentTrend(samples = samples, series = null, current = null, delta7 = null, delta30 = null, selections = selections)
             } else {
                 val series = SmoothingEngine.trend(samples)
                 val last = series.points.last()
@@ -377,6 +413,7 @@ public class RoomWeighInRepository internal constructor(
                     current = last.trendKg,
                     delta7 = delta,
                     delta30 = delta30,
+                    selections = selections,
                 )
             }
         }
@@ -387,7 +424,7 @@ public class RoomWeighInRepository internal constructor(
         weightKg: Double,
         excludingEventId: String? = null,
     ): OutlierVerdict {
-        val recent =
+        val recentEvents =
             db
                 .measurementEvents()
                 .rangeOfKind(
@@ -396,8 +433,12 @@ public class RoomWeighInRepository internal constructor(
                     dayEpochDay - WEIGH_IN_TRAILING_DAYS,
                     dayEpochDay - 1,
                 ).filterNot { it.id == excludingEventId }
+                .map { it.toDomain() }
+        val timeZoneId = policyForOrThrow(profileId)
+        val recent =
+            recentEvents
                 .groupBy { it.dayEpochDay }
-                .map { (_, events) -> events.minOf { it.valueReal } }
+                .mapNotNull { (day, events) -> DailyWeightPolicy.select(day, events, timeZoneId)?.kg }
         return SmoothingEngine.outlierVerdict(weightKg, recent)
     }
 
@@ -466,6 +507,7 @@ public class RoomWeighInRepository internal constructor(
         at: Instant,
     ) {
         val dao = db.measurementEvents()
+        val timeZoneId = policyForOrThrow(profileId)
         val weights =
             dao.rangeOfKind(
                 profileId,
@@ -488,13 +530,16 @@ public class RoomWeighInRepository internal constructor(
             oldTrendIds.forEach { db.measurementEventAttrs().deleteForEvent(it) }
             dao.deleteKindForDay(profileId, day, MeasurementKind.TREND.wireName)
 
-            val samples =
+            val selections =
                 weights
                     .asSequence()
                     .filter { it.dayEpochDay in (day - TREND_WINDOW_DAYS + 1)..day }
                     .groupBy { it.dayEpochDay }
-                    .map { (sampleDay, events) -> WeightSample(sampleDay, events.minOf { it.valueReal }) }
-                    .sortedBy { it.epochDay }
+                    .mapNotNull { (sampleDay, events) ->
+                        DailyWeightPolicy.select(sampleDay, events.map { it.toDomain() }, timeZoneId)
+                    }.sortedBy { it.dayEpochDay }
+                    .toList()
+            val samples = selections.map { WeightSample(it.dayEpochDay, it.kg) }
             if (samples.isNotEmpty() && weights.any { it.dayEpochDay == day }) {
                 val current =
                     SmoothingEngine
@@ -502,9 +547,10 @@ public class RoomWeighInRepository internal constructor(
                         .points
                         .last()
                         .trendKg
+                val trendId = Uuid.random().toString()
                 dao.insert(
                     MeasurementEventEntity(
-                        id = Uuid.random().toString(),
+                        id = trendId,
                         profileId = profileId,
                         dayEpochDay = day,
                         kind = MeasurementKind.TREND.wireName,
@@ -513,6 +559,15 @@ public class RoomWeighInRepository internal constructor(
                         source = MeasurementSource.ENGINE,
                         capturedAtEpochMs = at.toEpochMilliseconds(),
                         note = current.provenance.toString(),
+                    ),
+                )
+                val selected = selections.last()
+                writeAttributes(
+                    listOf(
+                        MeasurementAttr(trendId, "dailyPolicyVersion", valueText = selected.policyVersion),
+                        MeasurementAttr(trendId, "dailyPolicyTimeZone", valueText = selected.timeZoneId),
+                        MeasurementAttr(trendId, "dailySelectionReason", valueText = selected.reason.name),
+                        MeasurementAttr(trendId, "dailySourceEventIds", valueText = selected.contributingEventIds.joinToString(",")),
                     ),
                 )
             }
@@ -528,6 +583,31 @@ public class RoomWeighInRepository internal constructor(
         } else {
             null
         }
+
+    private suspend fun policyFor(profileId: String): WloResult<String> =
+        try {
+            WloResult.ok(policyForOrThrow(profileId))
+        } catch (cancellation: kotlinx.coroutines.CancellationException) {
+            throw cancellation
+        } catch (t: Throwable) {
+            WloResult.err(AppError.Storage(cause = t, detail = "weighIn.policy"))
+        }
+
+    private suspend fun policyForOrThrow(profileId: String): String {
+        var profile = db.profiles().byId(profileId) ?: throw InvalidWeighInMutation("no profile $profileId")
+        if (profile.weightPolicyTimeZoneId == null) {
+            db.profiles().initializeWeightPolicy(
+                id = profileId,
+                timeZoneId = TimeZone.currentSystemDefault().id,
+                version = DailyWeightPolicy.VERSION,
+            )
+            profile = db.profiles().byId(profileId) ?: throw InvalidWeighInMutation("no profile $profileId")
+        }
+        if (profile.weightPolicyVersion != DailyWeightPolicy.VERSION) {
+            throw InvalidWeighInMutation("unsupported daily weight policy ${profile.weightPolicyVersion}")
+        }
+        return requireNotNull(profile.weightPolicyTimeZoneId)
+    }
 
     /** The series' formula version from its points' provenance (EWMA default). */
     private fun seriesFormulaVersion(series: app.wlo.core.engines.TrendSeries): String =

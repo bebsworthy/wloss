@@ -120,6 +120,8 @@ internal fun ProfileEntity.toRow(): ProfileRow =
         unitPreference = unitPreference,
         createdAtEpochMs = createdAtEpochMs,
         archivedAtEpochMs = archivedAtEpochMs,
+        weightPolicyTimeZoneId = weightPolicyTimeZoneId,
+        weightPolicyVersion = weightPolicyVersion,
     )
 
 internal fun MeasurementEventEntity.toRow(attrs: List<MeasurementAttrRow>): MeasurementRow =

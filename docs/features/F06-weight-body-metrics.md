@@ -68,10 +68,15 @@ Core objectives:
   a walk, or the bathroom to "get their win"; that psychology is supported and
   recorded, and it is partly why the gut tracker exists beside the scale). The
   **daily scalar is a versioned derived view**, never an ingestion rule.
-  WLO-0072 froze the Release 1 policy as a fixed, versioned
-  consistent-time-window anchored per profile, with median fallback when the
-  window has no reading. Minimum and first-of-day remain benchmark comparators,
-  not identity or default-selection rules. Girths use last-in-day.
+  Release 1 ships `consistent-window-v1`: select the valid canonical-kg reading
+  inside the profile-fixed half-open 05:30–09:30 window nearest 07:00; ties
+  resolve by local minute, capture instant and stable event ID. If the window
+  is empty, use the day's median (the mean of both middle events for an even
+  count) and retain every contributing event ID. Empty days remain absent.
+  The policy timezone is captured once per profile; legacy timestamps are
+  interpreted in the timezone captured at upgrade. Minimum and first-of-day
+  remain benchmark comparators, not identity or default-selection rules.
+  Girths use last-in-day.
   Raw events and durable source identity are preserved; only a repeat delivery
   of the same source record updates an existing event.
 - **Trend weight — selectable smoothers (the math is in-app documentation):**
