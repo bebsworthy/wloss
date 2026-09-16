@@ -7,6 +7,8 @@ import app.wlo.core.data.ProfileRepository
 import app.wlo.core.data.TargetsRepository
 import app.wlo.core.datastore.JsonDocumentStore
 import app.wlo.feature.f01.onboarding.domain.FinishOnboarding
+import app.wlo.feature.f01.onboarding.domain.FirstWeightSource
+import app.wlo.feature.f01.onboarding.domain.WeightFirstOnboardingStore
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.SharingStarted
@@ -16,6 +18,7 @@ import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.launch
 
 /** The shell gate: which surface the Hub route renders right now. */
 public sealed interface ShellState {
@@ -39,6 +42,8 @@ public class ShellViewModel(
     targets: TargetsRepository,
     documents: JsonDocumentStore,
 ) : ViewModel() {
+    private val documentStore = documents
+
     @OptIn(ExperimentalCoroutinesApi::class)
     private val profileState: Flow<Pair<Boolean, Boolean>> =
         profiles
@@ -64,4 +69,14 @@ public class ShellViewModel(
                 else -> ShellState.Fresh
             }
         }.stateIn(viewModelScope, SharingStarted.Eagerly, ShellState.Loading)
+
+    public val postCompletionSource: StateFlow<FirstWeightSource?> =
+        documents
+            .observeText(WeightFirstOnboardingStore.HANDOFF_KEY)
+            .map { value -> value?.let { runCatching { FirstWeightSource.valueOf(it) }.getOrNull() } }
+            .stateIn(viewModelScope, SharingStarted.Eagerly, null)
+
+    public fun acknowledgePostCompletionHandoff() {
+        viewModelScope.launch { documentStore.remove(WeightFirstOnboardingStore.HANDOFF_KEY) }
+    }
 }

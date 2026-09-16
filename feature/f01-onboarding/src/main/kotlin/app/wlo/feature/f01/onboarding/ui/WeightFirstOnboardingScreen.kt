@@ -83,15 +83,29 @@ public fun WeightFirstOnboardingScreen(
             }
             if (state.draft.step == WeightFirstStep.WEIGHT) {
                 Button(onClick = viewModel::finish, modifier = Modifier.weight(1f).testTag("weight-first-finish")) {
-                    Text("Open Weight")
+                    Text(
+                        when (state.draft.weightSource) {
+                            FirstWeightSource.FILE_IMPORT -> "Import a file"
+                            FirstWeightSource.HEALTH_CONNECT -> "Connect Health Connect"
+                            FirstWeightSource.MANUAL, FirstWeightSource.NONE -> "Open Weight"
+                        },
+                    )
                 }
             } else {
                 Button(
                     onClick = viewModel::next,
                     enabled = state.draft.step != WeightFirstStep.UNIT || state.draft.unit != null,
                     modifier = Modifier.weight(1f).testTag("weight-first-next"),
-                ) { Text(if (state.draft.step == WeightFirstStep.GOAL) "Continue or skip" else "Continue") }
+                ) { Text(if (state.draft.step == WeightFirstStep.WELCOME) "Get started" else "Continue") }
             }
+        }
+        if (state.draft.step == WeightFirstStep.GOAL && state.draft.goalMode != null) {
+            OutlinedButton(
+                onClick = {
+                    viewModel.chooseGoal(null)
+                    viewModel.next()
+                },
+            ) { Text("Skip goal") }
         }
     }
 }
@@ -204,4 +218,15 @@ private fun WeightStep(
             modifier = Modifier.fillMaxWidth().testTag("weight-first-weight"),
         )
     }
+    Text("Review: ${unit.settingsName()} · ${source.reviewName()}")
 }
+
+private fun MassUnit.settingsName(): String = if (this == MassUnit.KILOGRAM) "Kilograms" else "Pounds"
+
+private fun FirstWeightSource.reviewName(): String =
+    when (this) {
+        FirstWeightSource.NONE -> "Start without a reading"
+        FirstWeightSource.MANUAL -> "Manual first reading"
+        FirstWeightSource.FILE_IMPORT -> "Import after setup"
+        FirstWeightSource.HEALTH_CONNECT -> "Health Connect after setup"
+    }

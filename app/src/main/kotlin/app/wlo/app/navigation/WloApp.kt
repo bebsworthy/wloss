@@ -117,6 +117,7 @@ public fun WloApp(
     val haptics = rememberWloHaptics()
     val shell: ShellViewModel = koinViewModel<ShellViewModel>()
     val shellState: ShellState by shell.state.collectAsStateWithLifecycle()
+    val postCompletionSource by shell.postCompletionSource.collectAsStateWithLifecycle()
     val backStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = backStackEntry?.destination?.route
     val metadata = routeMetadata(currentRoute)
@@ -155,6 +156,18 @@ public fun WloApp(
     // singleTask re-delivery: the activity hands us the new intent here.
     LaunchedEffect(newIntent) {
         newIntent?.let(navController::handleDeepLink)
+    }
+
+    LaunchedEffect(shellState, postCompletionSource) {
+        if (shellState == ShellState.Onboarded) {
+            when (postCompletionSource) {
+                FirstWeightSource.FILE_IMPORT -> navController.navigate(F13Routes.IMPORT) { launchSingleTop = true }
+                FirstWeightSource.HEALTH_CONNECT -> navController.navigate(F13Routes.VAULT) { launchSingleTop = true }
+                FirstWeightSource.MANUAL, FirstWeightSource.NONE -> Unit
+                null -> return@LaunchedEffect
+            }
+            shell.acknowledgePostCompletionHandoff()
+        }
     }
 
     BoxWithConstraints(modifier = modifier) {
@@ -584,7 +597,6 @@ private fun TopLevelRouteSurface(
             OnboardingGatedSurface(
                 shellState = shellState,
                 onSurfaceChanged = onSurfaceChanged,
-                navController = navController,
             ) {
                 onSurfaceChanged("weight")
                 WeightScreen(
@@ -600,7 +612,6 @@ private fun TopLevelRouteSurface(
             OnboardingGatedSurface(
                 shellState = shellState,
                 onSurfaceChanged = onSurfaceChanged,
-                navController = navController,
             ) {
                 onSurfaceChanged("hub")
                 HubScreen(
@@ -626,7 +637,6 @@ private fun TopLevelRouteSurface(
 private fun OnboardingGatedSurface(
     shellState: ShellState,
     onSurfaceChanged: (String) -> Unit,
-    navController: NavHostController,
     onboarded: @Composable () -> Unit,
 ) {
     when (shellState) {
@@ -635,9 +645,7 @@ private fun OnboardingGatedSurface(
             onSurfaceChanged("onboarding")
             WeightFirstOnboardingScreen(
                 viewModel = koinViewModel(),
-                onComplete = { source ->
-                    if (source == FirstWeightSource.FILE_IMPORT) navController.navigate(F13Routes.IMPORT)
-                },
+                onComplete = {},
             )
         }
         ShellState.Onboarded -> onboarded()

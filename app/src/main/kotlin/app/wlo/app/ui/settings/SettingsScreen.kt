@@ -2,6 +2,7 @@ package app.wlo.app.ui.settings
 
 import android.content.Context
 import android.os.Build
+import android.text.format.DateFormat
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
@@ -11,10 +12,19 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.TimePicker
+import androidx.compose.material3.rememberTimePickerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
@@ -31,7 +41,6 @@ import app.wlo.core.designsystem.SelectChip
 import app.wlo.core.designsystem.WloCard
 import app.wlo.core.designsystem.WloCardHeader
 import app.wlo.core.designsystem.WloListRow
-import app.wlo.core.designsystem.WloScreenTitle
 import app.wlo.core.designsystem.WloSpacing
 import app.wlo.core.designsystem.WloSwitchRow
 import app.wlo.core.designsystem.wloExtendedColors
@@ -65,6 +74,7 @@ public fun SettingsScreen(
     val state by viewModel.state.collectAsStateWithLifecycle()
     val context = LocalContext.current
     val canPrompt = (context as? FragmentActivity)?.canPromptBiometric() == true
+    var showTimePicker by remember { mutableStateOf(false) }
 
     // Android 13+ gates reminders behind POST_NOTIFICATIONS; a denial keeps
     // the toggle off — no re-prompt loop, no settings lecture.
@@ -82,27 +92,13 @@ public fun SettingsScreen(
                 .testTag("settings"),
         verticalArrangement = Arrangement.spacedBy(WloSpacing.CARD),
     ) {
-        WloScreenTitle(title = "Settings", modifier = Modifier.testTag("settings-title"))
         Text(
             text = "One screen, then the two deep surfaces. Everything here lives on this device.",
             style = wloType.body,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
 
-        WloListRow(
-            label = "AI Studio",
-            secondary = "Consent, receipts, models, kill switch",
-            chevron = true,
-            onClick = onOpenAiStudio,
-            modifier = Modifier.testTag("settings-open-ai"),
-        )
-        WloListRow(
-            label = "Data Vault",
-            secondary = "Backups, restore, export, storage",
-            chevron = true,
-            onClick = onOpenVault,
-            modifier = Modifier.testTag("settings-open-vault"),
-        )
+        Text("Weight tracking", style = MaterialTheme.typography.titleMedium)
         WloListRow(
             label = "Goals",
             secondary = "Goal weight, pace, budget — every save is a new version",
@@ -216,19 +212,37 @@ public fun SettingsScreen(
                 modifier = Modifier.testTag("settings-reminder-toggle"),
             )
             if (state.reminderEnabled) {
-                Text(text = "Nudge me around…", style = wloType.statS)
-                Row(horizontalArrangement = Arrangement.spacedBy(WloSpacing.TIGHT)) {
-                    for (minute in listOf(360, 420, 450, 510, 720, 1200)) {
-                        SelectChip(
-                            label = minuteLabel(minute),
-                            selected = state.reminderMinuteOfDay == minute,
-                            onClick = { viewModel.setReminder(true, minute) },
-                            modifier = Modifier.testTag("settings-reminder-$minute"),
-                        )
-                    }
-                }
+                WloListRow(
+                    label = "Approximate local time",
+                    secondary = minuteLabel(state.reminderMinuteOfDay),
+                    chevron = true,
+                    onClick = { showTimePicker = true },
+                    modifier = Modifier.testTag("settings-reminder-time"),
+                )
+                Text(
+                    "Android schedules this approximately; it is not an exact alarm.",
+                    style = wloType.receipt,
+                    color = wloExtendedColors.textTertiary,
+                )
             }
         }
+
+        Text("Data and connections", style = MaterialTheme.typography.titleMedium)
+        WloListRow(
+            label = "Data Vault",
+            secondary = "Import, export, backups, restore, and Health Connect",
+            chevron = true,
+            onClick = onOpenVault,
+            modifier = Modifier.testTag("settings-open-vault"),
+        )
+        Text("Optional AI", style = MaterialTheme.typography.titleMedium)
+        WloListRow(
+            label = "AI Studio",
+            secondary = "Independent capability consent, receipts, models, and kill switch",
+            chevron = true,
+            onClick = onOpenAiStudio,
+            modifier = Modifier.testTag("settings-open-ai"),
+        )
 
         Text(
             text =
@@ -239,6 +253,43 @@ public fun SettingsScreen(
             modifier = Modifier.padding(bottom = WloSpacing.SCREEN),
         )
     }
+
+    if (showTimePicker) {
+        ReminderTimePicker(
+            minuteOfDay = state.reminderMinuteOfDay,
+            is24Hour = DateFormat.is24HourFormat(context),
+            onDismiss = { showTimePicker = false },
+            onConfirm = { minute ->
+                showTimePicker = false
+                viewModel.setReminder(true, minute)
+            },
+        )
+    }
+}
+
+@Composable
+@OptIn(ExperimentalMaterial3Api::class)
+private fun ReminderTimePicker(
+    minuteOfDay: Int,
+    is24Hour: Boolean,
+    onDismiss: () -> Unit,
+    onConfirm: (Int) -> Unit,
+) {
+    val pickerState =
+        rememberTimePickerState(
+            initialHour = minuteOfDay / 60,
+            initialMinute = minuteOfDay % 60,
+            is24Hour = is24Hour,
+        )
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Weigh-in reminder time") },
+        text = { TimePicker(state = pickerState) },
+        confirmButton = {
+            Button(onClick = { onConfirm(pickerState.hour * 60 + pickerState.minute) }) { Text("Set time") }
+        },
+        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } },
+    )
 }
 
 private fun minuteLabel(minuteOfDay: Int): String = "%02d:%02d".format(minuteOfDay / 60, minuteOfDay % 60)

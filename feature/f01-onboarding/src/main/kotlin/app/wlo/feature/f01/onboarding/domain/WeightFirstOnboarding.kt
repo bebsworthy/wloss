@@ -68,14 +68,20 @@ public class WeightFirstOnboardingStore(
 
     public suspend fun finish(draft: WeightFirstDraft) {
         documents.writeText(GOAL_INTENT_KEY, DocumentCodec.json.encodeToString(WeightFirstDraft.serializer(), draft))
+        documents.writeText(HANDOFF_KEY, draft.weightSource.name)
         documents.writeFlag(FinishOnboarding.FLAG_COMPLETE, true)
         documents.remove(DRAFT_KEY)
+    }
+
+    public suspend fun consumeHandoff() {
+        documents.remove(HANDOFF_KEY)
     }
 
     public companion object {
         private val EMPTY_DRAFT: WeightFirstDraft = WeightFirstDraft()
         public const val DRAFT_KEY: String = "onboarding/weight-first-draft"
         public const val GOAL_INTENT_KEY: String = "weight/goal-intent-v1"
+        public const val HANDOFF_KEY: String = "onboarding/post-completion-handoff"
 
         public fun decodeDraft(text: String): WeightFirstDraft =
             runCatching { DocumentCodec.json.decodeFromString(WeightFirstDraft.serializer(), text) }

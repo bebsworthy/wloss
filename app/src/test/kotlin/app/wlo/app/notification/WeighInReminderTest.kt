@@ -4,6 +4,7 @@ import java.time.Duration
 import java.time.LocalDateTime
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
 /**
@@ -13,6 +14,13 @@ import kotlin.test.assertTrue
  * fire immediately or double-fire).
  */
 class WeighInReminderTest {
+    @Test
+    fun copyWorksForAnyChosenTime() {
+        assertEquals("Time for a weigh-in", WeighInReminderWorker.TITLE)
+        assertFalse(WeighInReminderWorker.TITLE.contains("morning", ignoreCase = true))
+        assertFalse(WeighInReminderWorker.BODY.contains("morning", ignoreCase = true))
+    }
+
     @Test
     fun laterToday_whenTheMinuteIsStillAhead() {
         val now = LocalDateTime.parse("2026-09-14T06:00:00")

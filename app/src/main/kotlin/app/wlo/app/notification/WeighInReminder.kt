@@ -67,8 +67,8 @@ public class WeighInReminderWorker(
         public const val WORK_NAME: String = "weigh-in-reminder"
 
         /** Reminder copy per F06 §2/§6 tone rules: an invitation, never a verdict. */
-        public const val TITLE: String = "The morning window reads steadiest"
-        public const val BODY: String = "Whenever you get to it — a weigh-in keeps the trend honest."
+        public const val TITLE: String = "Time for a weigh-in"
+        public const val BODY: String = "Log one if this is a useful moment for you."
 
         public fun ensureChannel(context: Context) {
             val manager = context.getSystemService(NotificationManager::class.java) ?: return
