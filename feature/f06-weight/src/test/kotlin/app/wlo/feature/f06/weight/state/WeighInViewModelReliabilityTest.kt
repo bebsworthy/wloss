@@ -13,6 +13,7 @@ import app.wlo.core.data.ProfileRepository
 import app.wlo.core.data.ReplacedWeighIn
 import app.wlo.core.data.WeighInOutcome
 import app.wlo.core.data.WeighInRepository
+import app.wlo.core.engines.OutlierVerdict
 import app.wlo.core.engines.SmoothingEngine
 import app.wlo.core.engines.WeightSample
 import app.wlo.core.model.ActivityLevel
@@ -20,6 +21,7 @@ import app.wlo.core.model.DerivedValue
 import app.wlo.core.model.MeasurementAttr
 import app.wlo.core.model.MeasurementEvent
 import app.wlo.core.model.MeasurementKind
+import app.wlo.core.model.MeasurementSource
 import app.wlo.core.model.Profile
 import app.wlo.core.model.Provenance
 import app.wlo.core.model.TrendMethod
@@ -48,6 +50,144 @@ import kotlin.test.assertTrue
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class WeighInViewModelReliabilityTest {
+    @Test
+    fun `successful save confirms persisted raw event and recomputed canonical trend`() =
+        runTest {
+            Dispatchers.setMain(StandardTestDispatcher(testScheduler))
+            try {
+                val today =
+                    java.time.LocalDate
+                        .of(2026, 9, 16)
+                        .toEpochDay()
+                val weighIns =
+                    FakeWeighIns().apply {
+                        appendSucceeds = true
+                        scalarSamples =
+                            listOf(
+                                WeightSample(today - 2, 81.0),
+                                WeightSample(today - 1, 80.5),
+                                WeightSample(today, 80.0),
+                            )
+                        canonicalTrendKg = 80.25
+                        canonicalDeltaKg = -0.75
+                    }
+                val viewModel = viewModel(weighIns = weighIns, initialSheetOpen = true)
+                advanceUntilIdle()
+
+                viewModel.onEvent(WeighInEvent.WeightChange("79.8"))
+                viewModel.onEvent(WeighInEvent.Save)
+                advanceUntilIdle()
+
+                val confirmation = assertNotNull(viewModel.confirmationState.value)
+                assertEquals("saved-event", confirmation.eventId)
+                assertEquals(79.8, confirmation.rawWeightKg)
+                assertEquals(MeasurementSource.MANUAL, confirmation.source)
+                assertEquals(80.25, confirmation.trend?.value)
+                assertEquals(-0.75, confirmation.delta7?.value)
+                assertEquals(3, confirmation.sampleCount)
+                assertTrue(confirmation.hapticPending)
+                assertEquals(WeighInSubmissionState.SUCCESS, viewModel.submissionState.value)
+            } finally {
+                Dispatchers.resetMain()
+            }
+        }
+
+    @Test
+    fun `confirmation haptic acknowledgement is one shot and Done clears the receipt`() =
+        runTest {
+            Dispatchers.setMain(StandardTestDispatcher(testScheduler))
+            try {
+                val weighIns = FakeWeighIns().apply { appendSucceeds = true }
+                val viewModel = viewModel(weighIns = weighIns, initialSheetOpen = true)
+                advanceUntilIdle()
+                viewModel.onEvent(WeighInEvent.WeightChange("79.8"))
+                viewModel.onEvent(WeighInEvent.Save)
+                advanceUntilIdle()
+                val eventId = assertNotNull(viewModel.confirmationState.value).eventId
+
+                viewModel.onEvent(WeighInEvent.ConfirmationHapticConsumed(eventId))
+                assertFalse(assertNotNull(viewModel.confirmationState.value).hapticPending)
+                viewModel.onEvent(WeighInEvent.ConfirmationHapticConsumed(eventId))
+                assertFalse(assertNotNull(viewModel.confirmationState.value).hapticPending)
+
+                viewModel.onEvent(WeighInEvent.DismissConfirmation)
+                assertEquals(null, viewModel.confirmationState.value)
+            } finally {
+                Dispatchers.resetMain()
+            }
+        }
+
+    @Test
+    fun `failed save produces neither confirmation nor successful submission`() =
+        runTest {
+            Dispatchers.setMain(StandardTestDispatcher(testScheduler))
+            try {
+                val viewModel = viewModel(initialSheetOpen = true)
+                advanceUntilIdle()
+                viewModel.onEvent(WeighInEvent.WeightChange("79.8"))
+
+                viewModel.onEvent(WeighInEvent.Save)
+                advanceUntilIdle()
+
+                assertEquals(null, viewModel.confirmationState.value)
+                assertEquals(WeighInSubmissionState.FAILURE, viewModel.submissionState.value)
+                assertNotNull(viewModel.sheetState.value)
+            } finally {
+                Dispatchers.resetMain()
+            }
+        }
+
+    @Test
+    fun `cancelled entry produces no confirmation`() =
+        runTest {
+            Dispatchers.setMain(StandardTestDispatcher(testScheduler))
+            try {
+                val viewModel = viewModel(initialSheetOpen = true)
+                advanceUntilIdle()
+                viewModel.onEvent(WeighInEvent.WeightChange("79.8"))
+
+                viewModel.onEvent(WeighInEvent.DismissSheet)
+
+                assertEquals(null, viewModel.confirmationState.value)
+                assertEquals(null, viewModel.sheetState.value)
+                assertEquals(WeighInSubmissionState.IDLE, viewModel.submissionState.value)
+            } finally {
+                Dispatchers.resetMain()
+            }
+        }
+
+    @Test
+    fun `sparse successful save keeps canonical raw value without inventing a trend`() =
+        runTest {
+            Dispatchers.setMain(StandardTestDispatcher(testScheduler))
+            try {
+                val weighIns =
+                    FakeWeighIns().apply {
+                        appendSucceeds = true
+                        scalarSamples = listOf(WeightSample(20_000, 80.0))
+                        canonicalTrendKg = 80.0
+                    }
+                val viewModel =
+                    viewModel(
+                        weighIns = weighIns,
+                        massUnits = flowOf(MassUnit.POUND),
+                        initialSheetOpen = true,
+                    )
+                advanceUntilIdle()
+                viewModel.onEvent(WeighInEvent.WeightChange("176.4"))
+
+                viewModel.onEvent(WeighInEvent.Save)
+                advanceUntilIdle()
+
+                val confirmation = assertNotNull(viewModel.confirmationState.value)
+                assertEquals(MassUnit.POUND.toKilograms(176.4), confirmation.rawWeightKg, 1e-9)
+                assertEquals(1, confirmation.sampleCount)
+                assertEquals(80.0, confirmation.trend?.value)
+            } finally {
+                Dispatchers.resetMain()
+            }
+        }
+
     @Test
     fun `first daily entry prefills from canonical trend in the active unit`() =
         runTest {
@@ -498,10 +638,12 @@ private class FakeWeighIns(
     private val firstDailyScalarsGate: CompletableDeferred<Unit>? = null,
     private val currentTrendGate: CompletableDeferred<Unit>? = null,
 ) : WeighInRepository {
+    var appendSucceeds: Boolean = false
     var currentTrendFails: Boolean = false
     var scalarSamples: List<WeightSample> = emptyList()
     var filterScalarsByRange: Boolean = false
     var canonicalTrendKg: Double? = null
+    var canonicalDeltaKg: Double? = null
     val requestedDays = mutableListOf<Long>()
     private var dailyScalarCalls = 0
 
@@ -512,7 +654,28 @@ private class FakeWeighIns(
         capturedAt: Instant,
         source: String,
         note: String?,
-    ): WloResult<WeighInOutcome> = failure()
+    ): WloResult<WeighInOutcome> =
+        if (appendSucceeds) {
+            WloResult.ok(
+                WeighInOutcome(
+                    event =
+                        MeasurementEvent(
+                            id = "saved-event",
+                            profileId = profileId,
+                            dayEpochDay = dayEpochDay,
+                            kind = MeasurementKind.WEIGHT,
+                            valueReal = weightKg,
+                            unit = MassUnit.KILOGRAM.symbol,
+                            source = source,
+                            capturedAt = capturedAt,
+                            note = note,
+                        ),
+                    verdict = OutlierVerdict.Quiet(residualKg = 0.0, sigma = 0.0),
+                ),
+            )
+        } else {
+            failure()
+        }
 
     override suspend fun dayWeighIns(
         profileId: String,
@@ -566,7 +729,11 @@ private class FakeWeighIns(
             canonicalTrendKg?.let { value ->
                 DerivedValue(value, Provenance.Derived(formulaVersion = "test", inputs = emptyList()))
             }
-        return WloResult.ok(CurrentTrend(emptyList(), null, current, null))
+        val delta =
+            canonicalDeltaKg?.let { value ->
+                DerivedValue(value, Provenance.Derived(formulaVersion = "test", inputs = emptyList()))
+            }
+        return WloResult.ok(CurrentTrend(scalarSamples, null, current, delta))
     }
 
     override suspend fun deleteWeighIn(

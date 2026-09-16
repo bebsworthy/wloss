@@ -104,6 +104,11 @@ public class M3WeighInTest {
 
         rule.onNodeWithTag("f06-save-weighin", useUnmergedTree = true).performScrollTo().performClick()
         pollTodayEventCount(koin, before + 1)
+        TestNav.awaitTag(rule, "f06-confirmation-card")
+        val announcement = confirmationAnnouncement()
+        assertTrue(announcement.indexOf("Weight trend") < announcement.indexOf("Raw reading"))
+        rule.onNodeWithTag("f06-confirmation-done").performClick()
+        assertTrue(rule.onAllNodesWithTag("f06-confirmation-card").fetchSemanticsNodes().isEmpty())
     }
 
     @Test
@@ -141,7 +146,8 @@ public class M3WeighInTest {
         rule.onNodeWithTag("f06-weight-field").performTextClearance()
         rule.onNodeWithTag("f06-weight-field").performTextInput("76.8")
         rule.onNodeWithTag("f06-save-weighin").performClick()
-        pollText("76.8 kg")
+        pollText("Raw reading 76.8 kg · manual")
+        dismissConfirmation()
 
         // Weigh in #2: the post-bathroom-win re-weigh is normal data.
         rule.onNodeWithTag("f06-open-sheet").performClick()
@@ -154,6 +160,7 @@ public class M3WeighInTest {
         // today's lowest (76.8) REPLACES the seeded reading — same calendar day.
         val canonicalWindow = SEEDED_SCALARS.takeLast(CANONICAL_WINDOW_DAYS).dropLast(1) + 76.8
         pollTrend(trailingEwmaLast(canonicalWindow, ALPHA))
+        dismissConfirmation()
 
         // Both events stay listed verbatim in the full logbook (WLO-0055) —
         // the weight surface's history card compresses the day to its
@@ -180,7 +187,15 @@ public class M3WeighInTest {
         rule.onNodeWithTag("f06-weight-field").performTextClearance()
         rule.onNodeWithTag("f06-weight-field").performTextInput("170.0")
         rule.onNodeWithTag("f06-save-weighin").performClick()
-        pollText("170.0 lb")
+        pollText("Raw reading 170.0 lb · manual")
+        TestNav.awaitTag(rule, "f06-confirmation-card")
+        assertTrue(
+            rule
+                .onAllNodesWithText("Raw reading 170.0 lb · manual", useUnmergedTree = true)
+                .fetchSemanticsNodes()
+                .isNotEmpty(),
+        )
+        assertTrue("active unit is announced", "lb" in confirmationAnnouncement())
 
         val expectedKg = MassUnit.POUND.toKilograms(170.0)
         val storedKg =
@@ -197,6 +212,36 @@ public class M3WeighInTest {
                     .single { abs(it - expectedKg) < 1e-9 }
             }
         assertEquals(expectedKg, storedKg, 1e-9)
+    }
+
+    @Test
+    public fun firstSavedReading_showsHonestSparseConfirmation() {
+        val koin = GlobalContext.get()
+        awaitWeightSurface()
+        UiDevice.getInstance(InstrumentationRegistry.getInstrumentation()).pressBack()
+
+        runBlocking {
+            val profile = checkNotNull(koin.get<ProfileRepository>().active().getOrNull())
+            val clock = koin.get<ClockPort>()
+            val today = DayBoundary.epochDay(clock.now(), TimeZone.currentSystemDefault())
+            val repository = koin.get<WeighInRepository>()
+            koin
+                .get<MeasurementRepository>()
+                .rangeOfKind(profile.id, MeasurementKind.WEIGHT, today - 365, today)
+                .getOrNull()
+                .orEmpty()
+                .forEach { repository.deleteWeighIn(it.id, clock.now()) }
+        }
+
+        rule.onNodeWithTag("f06-open-sheet").performScrollTo().performClick()
+        rule.onNodeWithTag("f06-weight-field").performTextClearance()
+        rule.onNodeWithTag("f06-weight-field").performTextInput("80.0")
+        rule.onNodeWithTag("f06-save-weighin").performClick()
+
+        TestNav.awaitTag(rule, "f06-confirmation-sparse")
+        pollText("Trend is still learning")
+        pollText("Add 2 more to establish a trend.")
+        assertTrue("sparse state is announced before raw data", confirmationAnnouncement().startsWith("Weight saved. Trend"))
     }
 
     @Test
@@ -229,7 +274,7 @@ public class M3WeighInTest {
             checkNotNull(click)()
             checkNotNull(click)()
         }
-        pollText("76.8 kg")
+        pollText("Raw reading 76.8 kg · manual")
         assertEquals(before + 1, todayEvents(koin).size)
     }
 
@@ -242,6 +287,7 @@ public class M3WeighInTest {
         rule.onNodeWithTag("f06-save-weighin").performClick()
         val canonicalWindow = SEEDED_SCALARS.takeLast(CANONICAL_WINDOW_DAYS).dropLast(1) + 76.8
         pollTrend(trailingEwmaLast(canonicalWindow, ALPHA))
+        dismissConfirmation()
 
         // The α tuner (R-A2: visible, default 0.15): pushing α to its cap
         // makes the PREVIEW trend follow the raw readings — a different last
@@ -324,6 +370,7 @@ public class M3WeighInTest {
         pollText("keep or correct?", substring = true)
 
         rule.onNodeWithTag("f06-outlier-keep").performClick()
+        dismissConfirmation()
         // "Keep" clears the question; prove the raw event survives by reading
         // it from the verbatim logbook (the weight hero intentionally shows
         // the lower daily scalar rather than every reading).
@@ -349,7 +396,23 @@ public class M3WeighInTest {
                 .fetchSemanticsNode()
                 .config[SemanticsProperties.EditableText]
                 .text
-        assertEquals("77.0", correctedPrefill)
+        val expectedPrefill =
+            runBlocking {
+                val profile = checkNotNull(koin.get<ProfileRepository>().active().getOrNull())
+                val clock = koin.get<ClockPort>()
+                val today = DayBoundary.epochDay(clock.now(), TimeZone.currentSystemDefault())
+                val current =
+                    checkNotNull(
+                        koin
+                            .get<WeighInRepository>()
+                            .currentTrend(profile.id, today)
+                            .getOrNull()
+                            ?.current,
+                    )
+                MassUnit.KILOGRAM.formatNumber(current.value)
+            }
+        assertEquals(expectedPrefill, correctedPrefill)
+        assertNotEquals("95.0", correctedPrefill)
         assertTrue(todayEvents(koin).none { abs(it.valueReal - 95.0) < 1e-9 })
     }
 
@@ -416,6 +479,22 @@ public class M3WeighInTest {
         // The entry is replaced in place, and the log says so.
         pollFirstRow("80.4 kg")
         pollText("edited", substring = true)
+    }
+
+    private fun confirmationAnnouncement(): String =
+        rule
+            .onAllNodesWithContentDescription("Weight saved", substring = true)
+            .onFirst()
+            .fetchSemanticsNode()
+            .config[SemanticsProperties.ContentDescription]
+            .single()
+
+    private fun dismissConfirmation() {
+        TestNav.awaitTag(rule, "f06-confirmation-done")
+        rule.onNodeWithTag("f06-confirmation-done").performClick()
+        rule.waitUntil(TIMEOUT_MS) {
+            rule.onAllNodesWithTag("f06-confirmation-card").fetchSemanticsNodes().isEmpty()
+        }
     }
 
     private fun firstRowWeight(): String {
@@ -528,7 +607,12 @@ public class M3WeighInTest {
     ) {
         val deadline = System.currentTimeMillis() + TIMEOUT_MS
         while (System.currentTimeMillis() < deadline) {
-            if (rule.onAllNodesWithText(text, substring = substring).fetchSemanticsNodes().isNotEmpty()) {
+            if (
+                rule
+                    .onAllNodesWithText(text, substring = substring, useUnmergedTree = true)
+                    .fetchSemanticsNodes()
+                    .isNotEmpty()
+            ) {
                 return
             }
             Thread.sleep(POLL_MS)

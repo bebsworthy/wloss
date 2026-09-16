@@ -1,13 +1,13 @@
 ---
 id: WLO-0070
 title: 'Post-save weight confirmation: trend-first result, raw reading, and restrained haptic'
-status: todo
+status: done
 theme: weight-experience
 release: 1
 created: 2026-09-15T21:28:23Z
-modified: 2026-09-15T21:29:52Z
-closed:
-revision: e8d58be2cd4752bd
+modified: 2026-09-16T00:28:27Z
+closed: 2026-09-16T00:28:27Z
+revision: 0ce5d13607c204bc
 blocks: []
 related: [WLO-0079]
 ---

@@ -78,6 +78,14 @@ public sealed interface WeighInEvent {
 
     public data object Save : WeighInEvent
 
+    /** The confirmation card's explicit return to the Weight surface. */
+    public data object DismissConfirmation : WeighInEvent
+
+    /** Acknowledges the one-shot save haptic for [eventId]. */
+    public data class ConfirmationHapticConsumed(
+        public val eventId: String,
+    ) : WeighInEvent
+
     /** Re-reads time-sensitive state after resume, a boundary, or an explicit retry. */
     public data object Refresh : WeighInEvent
 
@@ -169,6 +177,22 @@ public data class VerdictUi(
     public val eventId: String,
     public val weightLabel: String,
     public val residualLabel: String,
+)
+
+/**
+ * The post-commit receipt. Raw data comes from the event returned by the
+ * append, while trend data comes from the canonical read performed after
+ * that append has rebuilt projections (WLO-0070). [hapticPending] is consumed
+ * by the UI so ordinary recomposition cannot replay the save haptic.
+ */
+public data class WeighInConfirmationUi(
+    public val eventId: String,
+    public val rawWeightKg: Double,
+    public val source: String,
+    public val trend: DerivedValue<Double>?,
+    public val delta7: DerivedValue<Double>?,
+    public val sampleCount: Int,
+    public val hapticPending: Boolean = true,
 )
 
 /** The open weigh-in sheet. */
@@ -341,6 +365,7 @@ public class WeighInViewModel(
     private var sheetPrefillPending: Boolean = initialSheetOpen
     private val sheet = MutableStateFlow<SheetUi?>(initialSheetOpen.takeIf { it }?.let { freshSheet() })
     private val verdict = MutableStateFlow<VerdictUi?>(null)
+    private val confirmation = MutableStateFlow<WeighInConfirmationUi?>(null)
     private val notice = MutableStateFlow<String?>(null)
     private val submission = MutableStateFlow(WeighInSubmissionState.IDLE)
     private val data = MutableStateFlow(WeighInUiState.LOADING)
@@ -356,6 +381,9 @@ public class WeighInViewModel(
 
     /** The outlier guard's live verdict, cleared by keep/correct. */
     public val verdictState: StateFlow<VerdictUi?> = verdict
+
+    /** The persisted-event + canonical-trend confirmation, or null after Done. */
+    public val confirmationState: StateFlow<WeighInConfirmationUi?> = confirmation
 
     /** Session notices. */
     public val noticeState: StateFlow<String?> = notice
@@ -377,7 +405,10 @@ public class WeighInViewModel(
     /** MVI-lite intent entry point. */
     public fun onEvent(event: WeighInEvent) {
         when (event) {
-            is WeighInEvent.OpenSheet -> sheet.value = openSheet(event.prefillKg)
+            is WeighInEvent.OpenSheet -> {
+                confirmation.value = null
+                sheet.value = openSheet(event.prefillKg)
+            }
             WeighInEvent.DismissSheet -> {
                 sheet.value = null
                 sheetPrefillPending = false
@@ -403,12 +434,20 @@ public class WeighInViewModel(
             WeighInEvent.StepperUp -> step(STEP_DISPLAY_UNIT)
             WeighInEvent.StepperDown -> step(-STEP_DISPLAY_UNIT)
             WeighInEvent.Save -> save()
+            WeighInEvent.DismissConfirmation -> confirmation.value = null
+            is WeighInEvent.ConfirmationHapticConsumed -> {
+                val current = confirmation.value
+                if (current?.eventId == event.eventId && current.hapticPending) {
+                    confirmation.value = current.copy(hapticPending = false)
+                }
+            }
             WeighInEvent.Refresh -> refresh()
             WeighInEvent.BoundaryCheck -> refreshIfBoundaryChanged()
             WeighInEvent.KeepFlagged -> verdict.value = null
             WeighInEvent.CorrectFlagged ->
                 verdict.value?.let { flagged ->
                     verdict.value = null
+                    confirmation.value = null
                     deleteFlagged(flagged.eventId)
                 }
 
@@ -507,8 +546,18 @@ public class WeighInViewModel(
                 )
             when (outcome) {
                 is WloResult.Ok -> {
+                    val canonical = weighIns.currentTrend(id, day).getOrNull()
                     submission.value = WeighInSubmissionState.SUCCESS
                     sheet.value = null
+                    confirmation.value =
+                        WeighInConfirmationUi(
+                            eventId = outcome.value.event.id,
+                            rawWeightKg = outcome.value.event.valueReal,
+                            source = outcome.value.event.source,
+                            trend = canonical?.current,
+                            delta7 = canonical?.delta7,
+                            sampleCount = canonical?.samples?.size ?: 0,
+                        )
                     (outcome.value.verdict as? OutlierVerdict.Flagged)?.let { flagged ->
                         verdict.value =
                             VerdictUi(
