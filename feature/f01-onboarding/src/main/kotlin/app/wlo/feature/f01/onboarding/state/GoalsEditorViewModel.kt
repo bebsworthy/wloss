@@ -175,6 +175,7 @@ public class GoalsEditorViewModel(
     private var currentWeightKg: Double? = null
     private var engineState: EngineState = EngineState.Developing(0)
     private var measuredTdeeKcal: Double? = null
+    private var pendingCommittedJournal: GoalSaveJournal? = null
 
     private val state = MutableStateFlow(GoalsEditorUi())
 
@@ -220,13 +221,24 @@ public class GoalsEditorViewModel(
             GoalsEditorEvent.ReviewDifferences ->
                 viewModelScope.launch {
                     val id = profileId ?: return@launch
-                    val version = targets.current(id).getOrNull()?.version ?: return@launch
+                    val current = targets.current(id).getOrNull() ?: return@launch
+                    val differences =
+                        listOf(
+                            "Goal: current ${activeUnit.format(current.document.goal.targetWeightKg)}, " +
+                                "draft ${state.value.goalWeightText} ${activeUnit.symbol}",
+                            "Pace: current ${trimNumber(current.document.goal.pacePctPerWeek)}%, " +
+                                "draft ${state.value.paceText}%",
+                            "Budget: current ${current.document.energy.budgetKcal
+                                ?.let(::trimNumber) ?: "held"}, " +
+                                "draft ${state.value.budgetText.ifBlank { "held" }} kcal",
+                        )
                     state.value =
                         state.value.copy(
-                            baseVersion = version,
+                            baseVersion = current.version,
                             formState = GoalFormState.EDITING,
                             dirty = true,
-                            notice = "Your draft is retained against v$version. Review and save again.",
+                            diff = differences,
+                            notice = "Current v${current.version} and your draft are shown below. Save only after review.",
                         )
                     persistDraft(state.value)
                 }
@@ -292,6 +304,11 @@ public class GoalsEditorViewModel(
 
     private fun save() {
         val id = profileId ?: return
+        pendingCommittedJournal?.let { journal ->
+            state.value = state.value.copy(formState = GoalFormState.SAVING, notice = null)
+            viewModelScope.launch { finishJournal(journal, emptyList()) }
+            return
+        }
         val current = state.value
         val displayWeight = DecimalInput.parse(current.goalWeightText)
         if (displayWeight == null || displayWeight <= 0.0) {
@@ -413,6 +430,7 @@ public class GoalsEditorViewModel(
             when (outcome) {
                 is TargetsWriteOutcome.Written -> {
                     val committed = journal.copy(committedVersion = outcome.record.version)
+                    pendingCommittedJournal = committed
                     runCatching { documents.writeText(journalKey(id), GoalSaveJournalIO.encode(committed)) }
                     finishJournal(committed, outcome.diff)
                 }
@@ -473,7 +491,9 @@ public class GoalsEditorViewModel(
                 ?.let(GoalSaveJournalIO::decode)
                 ?.takeIf { it.profileId == id }
         if (pending != null && current?.document == pending.document) {
-            finishJournal(pending.copy(committedVersion = current.version), emptyList())
+            val committed = pending.copy(committedVersion = current.version)
+            pendingCommittedJournal = committed
+            finishJournal(committed, emptyList())
             return
         }
         val draft =
@@ -483,8 +503,9 @@ public class GoalsEditorViewModel(
                 documents
                     .readText(draftKey(id))
                     ?.let(GoalsEditorDraftIO::decode)
-                    ?.takeIf { it.profileId == id && it.baseVersion == current?.version }
+                    ?.takeIf { it.profileId == id }
             }
+        val draftConflict = draft != null && draft.baseVersion != current?.version
         if (current == null) {
             val intent =
                 documents
@@ -493,7 +514,7 @@ public class GoalsEditorViewModel(
             updateSafety(
                 state.value.copy(
                     loading = false,
-                    formState = GoalFormState.EDITING,
+                    formState = if (draftConflict) GoalFormState.CONFLICT else GoalFormState.EDITING,
                     hasTargets = false,
                     baseVersion = null,
                     goalWeightText =
@@ -510,6 +531,7 @@ public class GoalsEditorViewModel(
                     medicallyInfluencedWeight = draft?.medicallyInfluencedWeight ?: SafetyAnswer.NOT_ANSWERED,
                     currentWeightIsStarting = trendWeight == null && activeProfile.startWeightKg != null,
                     dirty = draft != null,
+                    notice = if (draftConflict) "Your draft was based on a different version. Review differences." else null,
                 ),
             )
             return
@@ -544,7 +566,7 @@ public class GoalsEditorViewModel(
         updateSafety(
             state.value.copy(
                 loading = false,
-                formState = GoalFormState.EDITING,
+                formState = if (draftConflict) GoalFormState.CONFLICT else GoalFormState.EDITING,
                 hasTargets = true,
                 baseVersion = current.version,
                 goalWeightText =
@@ -568,6 +590,7 @@ public class GoalsEditorViewModel(
                         ?: SafetyAnswer.NOT_ANSWERED,
                 currentWeightIsStarting = trendWeight == null && activeProfile.startWeightKg != null,
                 dirty = draft != null,
+                notice = if (draftConflict) "Your draft was based on a different version. Review differences." else null,
                 history = history,
             ),
         )
@@ -696,6 +719,7 @@ public class GoalsEditorViewModel(
                 )
             return
         }
+        pendingCommittedJournal = null
         reload(ignoreDraft = true)
         state.value =
             state.value.copy(
