@@ -13,11 +13,19 @@ import app.wlo.feature.f01.onboarding.domain.GoalSaveJournal
 import app.wlo.feature.f01.onboarding.domain.GoalSaveJournalIO
 import app.wlo.feature.f01.onboarding.domain.GoalsEditorDraft
 import app.wlo.feature.f01.onboarding.domain.GoalsEditorDraftIO
+import app.wlo.feature.f01.onboarding.state.restoredGoalWeightText
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNull
 
 class GoalsEditorDraftTest {
+    @Test
+    fun `imperial draft is converted exactly once when restored`() {
+        assertEquals("160.0", restoredGoalWeightText("160", MassUnit.POUND, MassUnit.POUND))
+        assertEquals("72.6", restoredGoalWeightText("160", MassUnit.POUND, MassUnit.KILOGRAM))
+        assertEquals("160.1", restoredGoalWeightText("72.62", MassUnit.KILOGRAM, MassUnit.POUND))
+    }
+
     @Test
     fun canonicalDraftRoundTripsAcrossProcessRecreation() {
         val draft =

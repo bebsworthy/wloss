@@ -670,10 +670,7 @@ public class GoalsEditorViewModel(
         viewModelScope.launch { documents.writeText(draftKey(id), GoalsEditorDraftIO.encode(draft)) }
     }
 
-    private fun GoalsEditorDraft.displayWeight(unit: MassUnit): String {
-        val value = DecimalInput.parse(targetWeightText) ?: return targetWeightText
-        return unit.formatNumber(unit.fromKilograms(massUnit.toKilograms(value)))
-    }
+    private fun GoalsEditorDraft.displayWeight(unit: MassUnit): String = restoredGoalWeightText(targetWeightText, massUnit, unit)
 
     private suspend fun finishJournal(
         journal: GoalSaveJournal,
@@ -797,4 +794,13 @@ public class GoalsEditorViewModel(
         val tenths = (value * 10).toLong()
         return "${tenths / 10}.${tenths % 10}"
     }
+}
+
+internal fun restoredGoalWeightText(
+    text: String,
+    storedUnit: MassUnit,
+    displayUnit: MassUnit,
+): String {
+    val value = DecimalInput.parse(text) ?: return text
+    return displayUnit.formatNumber(storedUnit.toKilograms(value))
 }
