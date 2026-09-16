@@ -7,6 +7,7 @@ import app.wlo.core.model.WeightGoalSafetyInput
 import app.wlo.feature.f06.weight.state.BodyFatViewModel
 import app.wlo.feature.f06.weight.state.BodySectionUi
 import app.wlo.feature.f06.weight.state.GoalProgressLoader
+import app.wlo.feature.f06.weight.state.LogbookDeletionRecoveryStore
 import app.wlo.feature.f06.weight.state.LogbookViewModel
 import app.wlo.feature.f06.weight.state.WeighInViewModel
 import org.koin.androidx.viewmodel.dsl.viewModel
@@ -64,6 +65,7 @@ public val f06WeightModule: Module =
                 weighIns = get(),
                 measurements = get(),
                 settings = get(),
+                recovery = LogbookDeletionRecoveryStore(get()),
             )
         }
     }

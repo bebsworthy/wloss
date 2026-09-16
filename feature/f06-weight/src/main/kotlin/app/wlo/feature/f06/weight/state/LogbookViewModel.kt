@@ -7,7 +7,6 @@ import app.wlo.core.common.DayBoundary
 import app.wlo.core.common.MassUnit
 import app.wlo.core.common.WloResult
 import app.wlo.core.common.getOrNull
-import app.wlo.core.data.DeletedWeighIn
 import app.wlo.core.data.MeasurementRepository
 import app.wlo.core.data.ProfileRepository
 import app.wlo.core.data.WeighInAttribute
@@ -15,7 +14,6 @@ import app.wlo.core.data.WeighInRepository
 import app.wlo.core.datastore.SettingsStore
 import app.wlo.core.model.MeasurementEvent
 import app.wlo.core.model.MeasurementKind
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.collectLatest
@@ -30,13 +28,28 @@ import kotlin.math.abs
 
 /** Logbook intents (WLO-0055). */
 public sealed interface LogbookEvent {
-    /** One verbatim entry goes; the UI keeps an in-memory undo with a timer. */
+    /** One verbatim entry goes after its durable recovery receipt is staged. */
     public data class Delete(
         public val eventId: String,
     ) : LogbookEvent
 
     /** Puts the last deleted weigh-in back (re-appends the snapshot). */
     public data object Undo : LogbookEvent
+
+    /** The snackbar was dismissed or its accessibility-aware timeout elapsed. */
+    public data object FinalizeDelete : LogbookEvent
+
+    public data object RetryLoad : LogbookEvent
+
+    public data class Explain(
+        public val eventId: String,
+    ) : LogbookEvent
+
+    public data class ApplyRange(
+        public val range: HistoryRange,
+    ) : LogbookEvent
+
+    public data object ClearRange : LogbookEvent
 
     /** Extends the loaded window one chunk further into the past. */
     public data object LoadEarlier : LogbookEvent
@@ -72,6 +85,7 @@ public data class LogbookRowUi(
     public val dateLabel: String,
     public val timeLabel: String,
     public val weightLabel: String,
+    public val sourceLabel: String,
     public val isLowest: Boolean,
     public val flagged: Boolean,
     public val edited: Boolean,
@@ -86,12 +100,27 @@ public data class LogbookMonthUi(
     public val rows: List<LogbookRowUi>,
 )
 
+/** Half-open history interval shared with the overview and navigation. */
+public data class HistoryRange(
+    public val startInclusive: Long,
+    public val endExclusive: Long,
+) {
+    init {
+        require(startInclusive < endExclusive)
+    }
+}
+
+public enum class LogbookContentState { Loading, Ready, Empty, FilteredEmpty, Error }
+
 /** The logbook feed's data state (undo/notice are separate flows). */
 public data class LogbookUiState(
     public val massUnit: MassUnit,
     public val months: List<LogbookMonthUi>,
     public val totalEntries: Int,
     public val loadedEntries: Int,
+    public val contentState: LogbookContentState = LogbookContentState.Loading,
+    public val range: HistoryRange? = null,
+    public val rangeLabel: String? = null,
 ) {
     public companion object {
         public val LOADING: LogbookUiState =
@@ -105,12 +134,13 @@ public data class LogbookUiState(
 }
 
 /**
- * The just-deleted weigh-in, offered back inline where the row was (WLO-0050,
- * relocated to this screen by WLO-0055) — never as a page-level banner.
+ * The just-deleted weigh-in exposed through the Scaffold snackbar host.
  */
 public data class DeletedUi(
     public val label: String,
     public val dayEpochDay: Long,
+    public val operationId: String,
+    public val restoreFailed: Boolean = false,
 )
 
 /** The open edit sheet, prefilled from the entry being corrected (F06 §5). */
@@ -122,6 +152,9 @@ public data class EditSheetUi(
     public val weightError: String? = null,
     public val whenError: String? = null,
     public val saveError: String? = null,
+    public val isSaving: Boolean = false,
+    internal val originalValueKg: Double = Double.NaN,
+    internal val originalCapturedAt: Instant? = null,
 )
 
 /**
@@ -129,8 +162,8 @@ public data class EditSheetUi(
  * under sticky month headers. The feed is windowed — the latest
  * [WINDOW_MONTHS] months load first and "Load earlier" extends one chunk at a
  * time — so a decade of daily weigh-ins reads the same as a week. The
- * swipe-to-reveal delete with its timed inline undo (WLO-0050) lives here,
- * on the verbatim rows; the compressed history card carries no delete.
+ * swipe-to-reveal delete and its durable snackbar undo live here, on the
+ * verbatim rows; the compressed history card carries no delete.
  */
 public class LogbookViewModel(
     private val clock: ClockPort,
@@ -138,6 +171,8 @@ public class LogbookViewModel(
     private val weighIns: WeighInRepository,
     private val measurements: MeasurementRepository,
     private val settings: SettingsStore,
+    private val recovery: LogbookDeletionRecoveryStore? = null,
+    initialRange: HistoryRange? = null,
 ) : ViewModel() {
     private val zone: TimeZone = TimeZone.currentSystemDefault()
     private var profileId: String? = null
@@ -149,10 +184,9 @@ public class LogbookViewModel(
     private val data = MutableStateFlow(LogbookUiState.LOADING)
     private val deleted = MutableStateFlow<DeletedUi?>(null)
     private val edit = MutableStateFlow<EditSheetUi?>(null)
-    private var undoSnapshot: DeletedWeighIn? = null
-
-    /** Bumped per delete/undo so stale auto-clear timers no-op. */
-    private var undoGeneration: Int = 0
+    private var pendingDeletion: PendingLogbookDeletion? = null
+    private var range: HistoryRange? = initialRange
+    private var recoveryReconciled: Boolean = false
     private val notice = MutableStateFlow<String?>(null)
 
     /** Renderable feed state. */
@@ -182,6 +216,17 @@ public class LogbookViewModel(
         when (event) {
             is LogbookEvent.Delete -> deleteWeighIn(event.eventId)
             LogbookEvent.Undo -> undoDelete()
+            LogbookEvent.FinalizeDelete -> finalizeDelete()
+            LogbookEvent.RetryLoad -> viewModelScope.launch { reload() }
+            is LogbookEvent.Explain -> explain(event.eventId)
+            is LogbookEvent.ApplyRange -> {
+                range = event.range
+                viewModelScope.launch { reload() }
+            }
+            LogbookEvent.ClearRange -> {
+                range = null
+                viewModelScope.launch { reload() }
+            }
             LogbookEvent.LoadEarlier ->
                 viewModelScope.launch {
                     val current = LocalDate.fromEpochDays(windowStart)
@@ -205,29 +250,54 @@ public class LogbookViewModel(
     }
 
     private suspend fun reload() {
-        val id = profileId ?: profiles.active().getOrNull()?.id ?: return
+        if (data.value.months.isEmpty()) data.value = data.value.copy(contentState = LogbookContentState.Loading)
+        val active = profileId?.let { null } ?: profiles.active()
+        val id = profileId ?: (active as? WloResult.Ok)?.value?.id
+        if (id == null) {
+            data.value = data.value.copy(contentState = LogbookContentState.Error)
+            return
+        }
         profileId = id
+        if (!recoveryReconciled) {
+            recoveryReconciled = true
+            recovery?.read(id)?.let { record ->
+                if (measurements.byId(record.snapshot.event.id).getOrNull() == null) {
+                    pendingDeletion = record
+                    deleted.value = record.toUi(activeUnit)
+                } else {
+                    // The process stopped after staging but before delete.
+                    recovery.clear(id)
+                }
+            }
+        }
         val unit = activeUnit
         val today = DayBoundary.epochDay(clock.now(), zone)
+        val activeRange = range
+        val queryStart = activeRange?.startInclusive ?: windowStart
+        val queryEnd = minOf(today, (activeRange?.endExclusive ?: (today + 1)) - 1)
 
+        val attrsResult = measurements.attrsInRange(id, queryStart, queryEnd)
+        val eventsResult = measurements.rangeOfKind(id, MeasurementKind.WEIGHT, queryStart, queryEnd)
+        if (attrsResult is WloResult.Err || eventsResult is WloResult.Err) {
+            data.value = data.value.copy(contentState = LogbookContentState.Error, range = activeRange)
+            return
+        }
         val flaggedIds =
-            measurements
-                .attrsInRange(id, windowStart, today)
-                .getOrNull()
-                .orEmpty()
+            (attrsResult as WloResult.Ok)
+                .value
                 .filter {
                     it.attr == WeighInAttribute.OUTLIER.wireName ||
                         it.attr == WeighInAttribute.EDITED.wireName
                 }.toList()
         val flaggedSet = flaggedIds.filter { it.attr == WeighInAttribute.OUTLIER.wireName }.map { it.eventId }.toSet()
         val editedSet = flaggedIds.filter { it.attr == WeighInAttribute.EDITED.wireName }.map { it.eventId }.toSet()
-        val events =
-            measurements
-                .rangeOfKind(id, MeasurementKind.WEIGHT, windowStart, today)
-                .getOrNull()
-                .orEmpty()
-                .sortedByDescending { it.capturedAt }
-        val total = measurements.countOfKind(id, MeasurementKind.WEIGHT, 0, today).getOrNull() ?: events.size
+        val events = (eventsResult as WloResult.Ok).value.sortedByDescending { it.capturedAt }
+        val total =
+            if (activeRange == null) {
+                measurements.countOfKind(id, MeasurementKind.WEIGHT, 0, today).getOrNull() ?: events.size
+            } else {
+                events.size
+            }
 
         // Month groups, newest first; the header earns its keep with the
         // month's facts (weigh-in count + the change across its days'
@@ -268,6 +338,7 @@ public class LogbookViewModel(
                                     dateLabel = HistoryLabels.rowDayLabel(day, today),
                                     timeLabel = timeLabel(event.capturedAt),
                                     weightLabel = unit.format(event.valueReal),
+                                    sourceLabel = event.source.replace('-', ' '),
                                     isLowest = event.id == lowestId && dayEvents.size > 1,
                                     flagged = event.id in flaggedSet,
                                     edited = event.id in editedSet,
@@ -293,6 +364,14 @@ public class LogbookViewModel(
                 months = months,
                 totalEntries = total,
                 loadedEntries = events.size,
+                contentState =
+                    when {
+                        events.isNotEmpty() -> LogbookContentState.Ready
+                        activeRange != null -> LogbookContentState.FilteredEmpty
+                        else -> LogbookContentState.Empty
+                    },
+                range = activeRange,
+                rangeLabel = activeRange?.let { historyRangeLabel(it) },
             )
     }
 
@@ -315,6 +394,8 @@ public class LogbookViewModel(
                     weightText = activeUnit.formatNumber(event.valueReal),
                     dayText = LocalDate.fromEpochDays(event.dayEpochDay).toString(),
                     timeText = timeLabel(event.capturedAt),
+                    originalValueKg = event.valueReal,
+                    originalCapturedAt = event.capturedAt,
                 )
         }
     }
@@ -322,16 +403,29 @@ public class LogbookViewModel(
     private fun saveEdit() {
         profileId ?: return
         val current = edit.value ?: return
+        if (current.isSaving) return
         val parsedWeight = WeighInInputParser.parse(current.weightText, activeUnit)
         if (parsedWeight.isFailure) {
             edit.value = current.copy(weightError = parsedWeight.exceptionOrNull()?.message, saveError = null)
             return
         }
-        edit.value = current.copy(weightError = null, whenError = null, saveError = null)
+        edit.value = current.copy(weightError = null, whenError = null, saveError = null, isSaving = true)
         viewModelScope.launch {
             val original = measurements.byId(current.eventId).getOrNull()
             if (original == null) {
-                edit.value = edit.value?.copy(saveError = "That entry is no longer available. Refresh and try again.")
+                edit.value =
+                    edit.value?.copy(
+                        saveError = "This entry changed or was removed. Reload the logbook.",
+                        isSaving = false,
+                    )
+                return@launch
+            }
+            if (original.valueReal != current.originalValueKg || original.capturedAt != current.originalCapturedAt) {
+                edit.value =
+                    edit.value?.copy(
+                        saveError = "This entry changed since editing began. Reload and try again.",
+                        isSaving = false,
+                    )
                 return@launch
             }
             // The sheet deliberately displays minute precision. If the user
@@ -347,7 +441,7 @@ public class LogbookViewModel(
                     SheetWhenParser.parse(current.dayText, current.timeText, zone, clock.now())
                 }
             if (parsedWhen == null) {
-                edit.value = edit.value?.copy(whenError = "Choose today or an earlier date and time.")
+                edit.value = edit.value?.copy(whenError = "Choose today or an earlier date and time.", isSaving = false)
                 return@launch
             }
             val (replacementDay, replacementAt) = parsedWhen
@@ -371,6 +465,7 @@ public class LogbookViewModel(
                     edit.value =
                         edit.value?.copy(
                             saveError = "That didn't save — ${replaced.error.debugMessage.lowercase()}",
+                            isSaving = false,
                         )
             }
         }
@@ -383,45 +478,88 @@ public class LogbookViewModel(
      */
     private fun deleteWeighIn(eventId: String) {
         profileId ?: return
+        if (pendingDeletion != null) {
+            notice.value = "Undo or dismiss the current deletion before deleting another entry."
+            return
+        }
         viewModelScope.launch {
+            val snapshot =
+                when (val prepared = weighIns.deletionSnapshot(eventId)) {
+                    is WloResult.Ok -> prepared.value
+                    is WloResult.Err -> {
+                        notice.value = "That didn't delete — nothing changed."
+                        return@launch
+                    }
+                }
+            val record =
+                PendingLogbookDeletion(
+                    operationId = "$eventId:${clock.now().toEpochMilliseconds()}",
+                    snapshot = snapshot,
+                )
+            try {
+                recovery?.write(record)
+            } catch (_: Throwable) {
+                notice.value = "That didn't delete — recovery could not be prepared."
+                return@launch
+            }
             when (val outcome = weighIns.deleteWeighIn(eventId, clock.now())) {
                 is WloResult.Ok -> {
                     val event = outcome.value.event
-                    undoSnapshot = outcome.value
+                    pendingDeletion = record.copy(snapshot = outcome.value)
                     deleted.value =
                         DeletedUi(
                             label = "${activeUnit.format(event.valueReal)} · ${timeLabel(event.capturedAt)}",
                             dayEpochDay = event.dayEpochDay,
+                            operationId = record.operationId,
                         )
                     reload()
-                    undoGeneration += 1
-                    val generation = undoGeneration
-                    delay(UNDO_WINDOW_MS)
-                    if (undoGeneration == generation) {
-                        undoSnapshot = null
-                        deleted.value = null
-                    }
                 }
 
-                is WloResult.Err -> notice.value = "that didn't delete — nothing changed"
+                is WloResult.Err -> {
+                    recovery?.clear(snapshot.event.profileId)
+                    notice.value = "That didn't delete — nothing changed."
+                }
             }
         }
     }
 
     private fun undoDelete() {
         profileId ?: return
-        val snapshot = undoSnapshot ?: return
-        undoGeneration += 1 // invalidates the auto-clear timer — the user acted
+        val record = pendingDeletion ?: return
         viewModelScope.launch {
-            when (weighIns.restoreWeighIn(snapshot)) {
+            when (weighIns.restoreWeighIn(record.snapshot)) {
                 is WloResult.Ok -> {
-                    undoSnapshot = null
+                    recovery?.clear(record.snapshot.event.profileId)
+                    pendingDeletion = null
                     deleted.value = null
+                    notice.value = "Weigh-in restored."
                     reload()
                 }
 
-                is WloResult.Err -> notice.value = "that didn't come back — it stays deleted"
+                is WloResult.Err -> {
+                    deleted.value = deleted.value?.copy(restoreFailed = true)
+                    notice.value = "Restore failed. The recovery copy is safe; choose Retry."
+                }
             }
+        }
+    }
+
+    private fun finalizeDelete() {
+        val record = pendingDeletion ?: return
+        viewModelScope.launch {
+            recovery?.clear(record.snapshot.event.profileId)
+            pendingDeletion = null
+            deleted.value = null
+        }
+    }
+
+    private fun explain(eventId: String) {
+        viewModelScope.launch {
+            val event = measurements.byId(eventId).getOrNull() ?: return@launch
+            val source = event.source.replace('-', ' ')
+            notice.value =
+                "${activeUnit.format(event.valueReal)} was recorded from $source " +
+                "at ${timeLabel(event.capturedAt)}."
         }
     }
 
@@ -437,11 +575,21 @@ public class LogbookViewModel(
         return "${local.hour.toString().padStart(2, '0')}:${local.minute.toString().padStart(2, '0')}"
     }
 
+    private fun historyRangeLabel(value: HistoryRange): String =
+        "${LocalDate.fromEpochDays(value.startInclusive)} – ${LocalDate.fromEpochDays(value.endExclusive - 1)}"
+
+    private fun PendingLogbookDeletion.toUi(unit: MassUnit): DeletedUi =
+        DeletedUi(
+            label = "${unit.format(snapshot.event.valueReal)} · ${timeLabel(snapshot.event.capturedAt)}",
+            dayEpochDay = snapshot.event.dayEpochDay,
+            operationId = operationId,
+        )
+
     public companion object {
         /** Months in one loaded chunk (WLO-0055's window). */
         public const val WINDOW_MONTHS: Int = 3
 
-        /** The undo notice's visible countdown, then it slides away (WLO-0050). */
+        /** Baseline passed to Material's accessibility-aware snackbar timeout. */
         public const val UNDO_WINDOW_MS: Long = 4_500L
     }
 }

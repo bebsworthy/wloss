@@ -21,6 +21,7 @@ import app.wlo.core.model.Provenance
 import app.wlo.core.model.TrendMethod
 import kotlinx.datetime.Instant
 import kotlinx.datetime.TimeZone
+import kotlinx.serialization.Serializable
 import kotlin.uuid.Uuid
 
 /**
@@ -144,12 +145,16 @@ public interface WeighInRepository {
      * the day empties — a stale scalar would keep poisoning the day view and
      * exports), and the projection refreshes. [at] stamps the recomputed
      * scalar, mirroring [appendWeighIn]. Returns the snapshot so the UI can
-     * offer an in-memory undo.
+     * offer a recoverable undo receipt.
      */
     public suspend fun deleteWeighIn(
         eventId: String,
         at: Instant,
     ): WloResult<DeletedWeighIn>
+
+    /** Reads the complete delete receipt without mutating the event. */
+    public suspend fun deletionSnapshot(eventId: String): WloResult<DeletedWeighIn> =
+        WloResult.err(AppError.InvalidInput("delete recovery snapshots are not supported"))
 
     /** Atomically replaces one user-owned weigh-in and repairs both affected suffixes. */
     public suspend fun replaceWeighIn(
@@ -160,7 +165,7 @@ public interface WeighInRepository {
         editedDescription: String,
     ): WloResult<ReplacedWeighIn>
 
-    /** Atomically restores a delete snapshot for the logbook's in-memory undo. */
+    /** Atomically restores a delete snapshot for the logbook's recoverable undo. */
     public suspend fun restoreWeighIn(snapshot: DeletedWeighIn): WloResult<MeasurementEvent>
 }
 
@@ -202,6 +207,7 @@ public sealed interface WeighInWriteCommand {
 }
 
 /** The undo snapshot: what was deleted, sidecar included. */
+@Serializable
 public data class DeletedWeighIn(
     public val event: MeasurementEvent,
     public val attrs: List<MeasurementAttr>,
@@ -394,6 +400,13 @@ public class RoomWeighInRepository internal constructor(
             }
         }
 
+    override suspend fun deletionSnapshot(eventId: String): WloResult<DeletedWeighIn> =
+        weighInMutationGuard("weighIn.deleteSnapshot") {
+            val entity = requireWeightEntity(eventId)
+            val attrs = db.measurementEventAttrs().forEvent(eventId).map { it.toDomain() }
+            DeletedWeighIn(entity.toDomain(), attrs)
+        }
+
     override suspend fun replaceWeighIn(
         eventId: String,
         dayEpochDay: Long,
@@ -453,6 +466,11 @@ public class RoomWeighInRepository internal constructor(
         }
         return weighInMutationGuard("weighIn.restore") {
             db.withWriteTransaction {
+                // A process can die after Room commits the restore but before
+                // the recovery document is cleared. Treat replay as success.
+                db.measurementEvents().byId(snapshot.event.id)?.let { existing ->
+                    if (existing.kind == MeasurementKind.WEIGHT.wireName) return@withWriteTransaction existing.toDomain()
+                }
                 val entity = snapshot.event.toEntity()
                 db.measurementEvents().insert(entity)
                 mutationProbe(WeighInMutationStage.RAW_EVENT_WRITTEN)

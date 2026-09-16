@@ -24,6 +24,25 @@ public object WloIcons {
     /** Paint source for all glyph paths; `Icon(tint = ...)` recolors at render. */
     private val Black: SolidColor = SolidColor(Color.Black)
 
+    /** Standard vertical overflow menu affordance. */
+    public val MoreVertical: ImageVector =
+        mark("WloMoreVertical") {
+            path(fill = Black) {
+                moveTo(12f, 5f)
+                arcTo(1.5f, 1.5f, 0f, true, true, 12f, 8f)
+                arcTo(1.5f, 1.5f, 0f, true, true, 12f, 5f)
+                close()
+                moveTo(12f, 10.5f)
+                arcTo(1.5f, 1.5f, 0f, true, true, 12f, 13.5f)
+                arcTo(1.5f, 1.5f, 0f, true, true, 12f, 10.5f)
+                close()
+                moveTo(12f, 16f)
+                arcTo(1.5f, 1.5f, 0f, true, true, 12f, 19f)
+                arcTo(1.5f, 1.5f, 0f, true, true, 12f, 16f)
+                close()
+            }
+        }
+
     /** Standard back/up affordance for nested app-bar navigation. */
     public val ArrowBack: ImageVector =
         mark("WloArrowBack") {

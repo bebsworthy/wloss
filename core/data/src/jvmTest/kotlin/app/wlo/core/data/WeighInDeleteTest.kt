@@ -167,4 +167,24 @@ class WeighInDeleteTest {
             val trendEvent = dayTrendScalarIds(profileId, day).single()
             assertIs<WloResult.Err>(weighIns.deleteWeighIn(trendEvent, clock.now()))
         }
+
+    @Test
+    fun recoverySnapshotIsCompleteAndRestoreReplayIsIdempotent() =
+        runTest {
+            val profileId = aProfile()
+            val day = today()
+            for (back in 7L downTo 1L) weighIn(profileId, day - back, 95.0 + (7 - back) * 0.1)
+            val flagged = weighIn(profileId, day, 59.0)
+
+            val prepared = weighIns.deletionSnapshot(flagged.event.id).okOrDie()
+            assertEquals(flagged.event, prepared.event)
+            assertTrue(prepared.attrs.isNotEmpty())
+
+            weighIns.deleteWeighIn(flagged.event.id, clock.now()).okOrDie()
+            weighIns.restoreWeighIn(prepared).okOrDie()
+            weighIns.restoreWeighIn(prepared).okOrDie()
+
+            assertEquals(1, weighIns.dayWeighIns(profileId, day).okOrDie().count { it.id == flagged.event.id })
+            assertEquals(prepared.attrs, measurements.attrsOf(flagged.event.id).okOrDie())
+        }
 }

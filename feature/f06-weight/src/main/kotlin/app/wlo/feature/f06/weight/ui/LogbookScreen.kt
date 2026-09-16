@@ -1,35 +1,35 @@
 package app.wlo.feature.f06.weight.ui
 
-import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
-import androidx.compose.animation.core.Animatable
-import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.tween
-import androidx.compose.animation.expandVertically
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.shrinkOut
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarDuration
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -42,6 +42,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.scale
+import androidx.compose.ui.platform.LocalAccessibilityManager
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.CustomAccessibilityAction
@@ -52,7 +53,10 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.repeatOnLifecycle
 import app.wlo.core.designsystem.WloBanner
 import app.wlo.core.designsystem.WloBannerTone
 import app.wlo.core.designsystem.WloButton
@@ -71,6 +75,7 @@ import app.wlo.core.designsystem.wloExtendedColors
 import app.wlo.core.designsystem.wloType
 import app.wlo.feature.f06.weight.state.DeletedUi
 import app.wlo.feature.f06.weight.state.EditSheetUi
+import app.wlo.feature.f06.weight.state.LogbookContentState
 import app.wlo.feature.f06.weight.state.LogbookEvent
 import app.wlo.feature.f06.weight.state.LogbookMonthUi
 import app.wlo.feature.f06.weight.state.LogbookRowUi
@@ -78,6 +83,7 @@ import app.wlo.feature.f06.weight.state.LogbookUiState
 import app.wlo.feature.f06.weight.state.LogbookViewModel
 import app.wlo.feature.f06.weight.state.WeighInUiState
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 
 /**
  * The full-page logbook (WLO-0055): every weigh-in verbatim, newest first,
@@ -85,8 +91,8 @@ import kotlinx.coroutines.delay
  * The feed is windowed — the latest few months first, "Load earlier" below —
  * so the list stays bounded no matter how many years it holds. The delete
  * door (WLO-0050) lives here on the raw rows: swipe to reveal, release past
- * the trigger to fire, undo inline where the row was with a visible
- * countdown. No dialogs, no page-level banners, no color fills.
+ * the trigger to fire. Undo lives in the Scaffold snackbar host so it remains
+ * reachable independently of scroll position and accessibility timeout.
  */
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
@@ -96,112 +102,103 @@ public fun LogbookScreen(viewModel: LogbookViewModel) {
     val edit: EditSheetUi? by viewModel.editState.collectAsStateWithLifecycle()
     val notice: String? by viewModel.noticeState.collectAsStateWithLifecycle()
 
-    // Rendering mirror of the pending delete: it holds the notice through
-    // the slide-away exit so the feed slot doesn't pop when the timer clears.
-    var renderPending by remember { mutableStateOf<DeletedUi?>(null) }
-    LaunchedEffect(deleted) {
-        when {
-            deleted != null -> renderPending = deleted
-            renderPending != null -> {
-                delay(EXIT_ANIM_MS)
-                renderPending = null
+    val snackbarHostState = remember { SnackbarHostState() }
+    val accessibility = LocalAccessibilityManager.current
+    val lifecycle = LocalLifecycleOwner.current.lifecycle
+    LaunchedEffect(deleted?.operationId, deleted?.restoreFailed) {
+        val pending = deleted ?: return@LaunchedEffect
+        val timeoutMillis =
+            accessibility?.calculateRecommendedTimeoutMillis(
+                originalTimeoutMillis = LogbookViewModel.UNDO_WINDOW_MS,
+                containsIcons = false,
+                containsText = true,
+                containsControls = true,
+            ) ?: LogbookViewModel.UNDO_WINDOW_MS
+        // One foreground-only deadline owns the receipt lifetime. Restarting
+        // the delay after STOPPED intentionally gives back any partial slice;
+        // background time can never consume the Undo opportunity.
+        val expiry =
+            launch {
+                lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                    delay(timeoutMillis)
+                    snackbarHostState.currentSnackbarData?.dismiss()
+                }
             }
+        val result =
+            snackbarHostState.showSnackbar(
+                message =
+                    if (pending.restoreFailed) {
+                        "Restore failed for ${pending.label}. Recovery copy retained."
+                    } else {
+                        "Deleted ${pending.label}"
+                    },
+                actionLabel = if (pending.restoreFailed) "Retry" else "Undo",
+                withDismissAction = true,
+                duration = SnackbarDuration.Indefinite,
+            )
+        expiry.cancel()
+        if (result == SnackbarResult.ActionPerformed) {
+            viewModel.onEvent(LogbookEvent.Undo)
+        } else {
+            viewModel.onEvent(LogbookEvent.FinalizeDelete)
         }
     }
 
-    Column(
-        modifier =
-            Modifier
-                .fillMaxSize()
-                .padding(horizontal = WloSpacing.SCREEN)
-                .padding(bottom = WloSpacing.SCREEN),
-        verticalArrangement = Arrangement.spacedBy(WloSpacing.SCREEN),
+    Scaffold(
+        snackbarHost = { SnackbarHost(snackbarHostState) },
     ) {
-        WloScreenTitle(
-            title = "Logbook",
-            modifier = Modifier.testTag("f06-logbook-title"),
-        )
-        Column(verticalArrangement = Arrangement.spacedBy(WloSpacing.TIGHT)) {
-            Text(
-                text = "${state.totalEntries} weigh-ins · newest first",
-                style = wloType.caption,
-                color = wloExtendedColors.textTertiary,
-            )
-            Text(
-                text = WeighInUiState.LOWEST_COPY,
-                style = wloType.caption,
-                color = wloExtendedColors.textTertiary,
-            )
-        }
-
-        LazyColumn(
-            modifier = Modifier.weight(1f).testTag("f06-logbook-list"),
-            verticalArrangement = Arrangement.spacedBy(WloSpacing.TIGHT),
+        Column(
+            modifier =
+                Modifier
+                    .fillMaxSize()
+                    .padding(it)
+                    .padding(horizontal = WloSpacing.SCREEN)
+                    .padding(bottom = WloSpacing.SCREEN),
+            verticalArrangement = Arrangement.spacedBy(WloSpacing.SCREEN),
         ) {
-            val pending = renderPending
-            state.months.forEach { month ->
-                stickyHeader(key = "month-${month.startDay}") { MonthHeader(month) }
-                if (pending != null && pending.dayEpochDay in month.startDay..month.endDay) {
-                    item(key = "undo-${pending.dayEpochDay}") {
-                        // The notice keeps its slot through the exit:
-                        // AnimatedVisibility slides it away when the timer
-                        // empties (WLO-0050).
-                        AnimatedVisibility(
-                            visible = deleted != null,
-                            enter =
-                                expandVertically(tween(WloMotion.DURATION_MEDIUM_MS, easing = WloMotion.EasingEnter)) +
-                                    fadeIn(tween(WloMotion.DURATION_MEDIUM_MS, easing = WloMotion.EasingEnter)),
-                            exit =
-                                shrinkOut(tween(WloMotion.DURATION_SHORT_MS, easing = WloMotion.EasingExit)) +
-                                    fadeOut(tween(WloMotion.DURATION_SHORT_MS, easing = WloMotion.EasingExit)),
-                        ) {
-                            InlineUndoRow(
-                                deleted = pending,
-                                onUndo = { viewModel.onEvent(LogbookEvent.Undo) },
-                            )
-                        }
-                    }
-                }
-                month.rows.forEachIndexed { index, row ->
-                    item(key = row.id) {
-                        LogbookRow(
-                            row = row,
-                            onOpen = { viewModel.onEvent(LogbookEvent.BeginEdit(row.id)) },
-                            onDelete = { viewModel.onEvent(LogbookEvent.Delete(row.id)) },
-                        )
-                    }
-                    // The M3 list rhythm: items separated by hairline
-                    // dividers, never by boxed rows.
-                    if (index < month.rows.lastIndex) {
-                        item(key = "div-${row.id}") { WloStatDivider() }
-                    }
-                }
-            }
-            val remaining = state.totalEntries - state.loadedEntries
-            if (remaining > 0) {
-                item(key = "load-earlier") {
-                    WloSecondaryButton(
-                        label = "Load earlier ($remaining more)",
-                        onClick = { viewModel.onEvent(LogbookEvent.LoadEarlier) },
-                        modifier = Modifier.fillMaxWidth().testTag("f06-load-earlier"),
-                    )
-                }
-            }
-        }
-
-        notice?.let {
-            Text(
-                text = it,
-                style = wloType.caption,
-                color = wloExtendedColors.held,
-                modifier = Modifier.testTag("f06-logbook-notice"),
+            WloScreenTitle(
+                title = state.rangeLabel?.let { range -> "Logbook · $range" } ?: "Logbook",
+                modifier = Modifier.testTag("f06-logbook-title"),
             )
+            state.range?.let {
+                TextButton(onClick = { viewModel.onEvent(LogbookEvent.ClearRange) }) { Text("Clear filter") }
+            }
+            when (state.contentState) {
+                LogbookContentState.Loading ->
+                    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { CircularProgressIndicator() }
+                LogbookContentState.Error ->
+                    LogbookMessage("Couldn't load the logbook.", "Retry") {
+                        viewModel.onEvent(LogbookEvent.RetryLoad)
+                    }
+                LogbookContentState.Empty -> LogbookMessage("No weigh-ins yet.")
+                LogbookContentState.FilteredEmpty ->
+                    LogbookMessage("No weigh-ins in this date range.", "Clear filter") {
+                        viewModel.onEvent(LogbookEvent.ClearRange)
+                    }
+                LogbookContentState.Ready ->
+                    LogbookFeed(
+                        state = state,
+                        deletionEnabled = deleted == null,
+                        viewModel = viewModel,
+                    )
+            }
+
+            notice?.let { message ->
+                Text(
+                    text = message,
+                    style = wloType.caption,
+                    color = wloExtendedColors.held,
+                    modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite }.testTag("f06-logbook-notice"),
+                )
+            }
         }
     }
 
     edit?.let { current ->
         WloSheet(
-            onDismissRequest = { viewModel.onEvent(LogbookEvent.CancelEdit) },
+            onDismissRequest = {
+                if (!current.isSaving) viewModel.onEvent(LogbookEvent.CancelEdit)
+            },
             modifier = Modifier.testTag("f06-edit-sheet"),
             title = "Edit weigh-in",
         ) {
@@ -214,6 +211,68 @@ public fun LogbookScreen(viewModel: LogbookViewModel) {
                 onSave = { viewModel.onEvent(LogbookEvent.SaveEdit) },
             )
         }
+    }
+}
+
+@Composable
+private fun ColumnScope.LogbookFeed(
+    state: LogbookUiState,
+    deletionEnabled: Boolean,
+    viewModel: LogbookViewModel,
+) {
+    Column(verticalArrangement = Arrangement.spacedBy(WloSpacing.TIGHT)) {
+        Text(
+            "${state.totalEntries} weigh-ins · newest first",
+            style = wloType.caption,
+            color = wloExtendedColors.textTertiary,
+        )
+        Text(WeighInUiState.LOWEST_COPY, style = wloType.caption, color = wloExtendedColors.textTertiary)
+    }
+    LazyColumn(
+        modifier = Modifier.weight(1f).testTag("f06-logbook-list"),
+        verticalArrangement = Arrangement.spacedBy(WloSpacing.TIGHT),
+    ) {
+        state.months.forEach { month ->
+            stickyHeader(key = "month-${month.startDay}") { MonthHeader(month) }
+            month.rows.forEachIndexed { index, row ->
+                item(key = row.id) {
+                    LogbookRow(
+                        row = row,
+                        deletionEnabled = deletionEnabled,
+                        onEdit = { viewModel.onEvent(LogbookEvent.BeginEdit(row.id)) },
+                        onExplain = { viewModel.onEvent(LogbookEvent.Explain(row.id)) },
+                        onDelete = { viewModel.onEvent(LogbookEvent.Delete(row.id)) },
+                    )
+                }
+                if (index < month.rows.lastIndex) item(key = "div-${row.id}") { WloStatDivider() }
+            }
+        }
+        val remaining = state.totalEntries - state.loadedEntries
+        if (state.range == null && remaining > 0) {
+            item(key = "load-earlier") {
+                WloSecondaryButton(
+                    label = "Load earlier ($remaining more)",
+                    onClick = { viewModel.onEvent(LogbookEvent.LoadEarlier) },
+                    modifier = Modifier.fillMaxWidth().testTag("f06-load-earlier"),
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun ColumnScope.LogbookMessage(
+    message: String,
+    action: String? = null,
+    onAction: () -> Unit = {},
+) {
+    Column(
+        modifier = Modifier.weight(1f).fillMaxWidth(),
+        verticalArrangement = Arrangement.Center,
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
+        Text(message, style = wloType.body, modifier = Modifier.testTag("f06-logbook-state"))
+        action?.let { TextButton(onClick = onAction) { Text(it) } }
     }
 }
 
@@ -302,8 +361,9 @@ private fun EditSheetContent(
             )
         }
         WloButton(
-            label = "Save changes",
+            label = if (sheet.isSaving) "Saving…" else "Save changes",
             onClick = onSave,
+            enabled = !sheet.isSaving,
             modifier = Modifier.fillMaxWidth().testTag("f06-edit-save"),
         )
     }
@@ -348,15 +408,19 @@ private fun MonthHeader(month: LogbookMonthUi) {
 @Composable
 private fun LogbookRow(
     row: LogbookRowUi,
-    onOpen: () -> Unit,
+    deletionEnabled: Boolean,
+    onEdit: () -> Unit,
+    onExplain: () -> Unit,
     onDelete: () -> Unit,
 ) {
     val haptics = rememberWloHaptics()
     WloSwipeRevealRow(
         revealWidth = REVEAL_WIDTH,
         onTrigger = {
-            haptics.perform(WloHaptic.Settle)
-            onDelete()
+            if (deletionEnabled) {
+                haptics.perform(WloHaptic.Settle)
+                onDelete()
+            }
         },
         reveal = { progress, armed ->
             val actionColor by animateColorAsState(
@@ -409,7 +473,7 @@ private fun LogbookRow(
         Box(modifier = Modifier.background(MaterialTheme.colorScheme.background)) {
             val meta =
                 buildString {
-                    append(row.timeLabel)
+                    append("${row.timeLabel} · ${row.sourceLabel}")
                     if (row.isLowest) append(" · day's weight")
                     if (row.flagged) append(" · flagged — kept")
                     if (row.edited) append(" · edited")
@@ -417,91 +481,86 @@ private fun LogbookRow(
             WloListRow(
                 label = row.dateLabel,
                 secondary = meta,
-                value = {
-                    Text(
-                        text = row.weightLabel,
-                        style = wloType.statS,
-                        modifier = Modifier.testTag("f06-row-weight"),
-                    )
+                trailing = {
+                    RowActions(row, deletionEnabled, onEdit, onExplain, onDelete)
                 },
-                onClick = onOpen,
+                onClick = onEdit,
                 modifier =
                     Modifier
                         .semantics {
                             customActions =
                                 listOf(
                                     CustomAccessibilityAction(
-                                        "Delete ${row.weightLabel} at ${row.dateLabel} ${row.timeLabel}",
+                                        "Edit ${row.weightLabel} at ${row.dateLabel} ${row.timeLabel}",
                                     ) {
-                                        onDelete()
+                                        onEdit()
                                         true
                                     },
-                                )
+                                    CustomAccessibilityAction(
+                                        "Explain ${row.weightLabel} at ${row.dateLabel} ${row.timeLabel}",
+                                    ) {
+                                        onExplain()
+                                        true
+                                    },
+                                ) +
+                                if (deletionEnabled) {
+                                    listOf(
+                                        CustomAccessibilityAction(
+                                            "Delete ${row.weightLabel} at ${row.dateLabel} ${row.timeLabel}",
+                                        ) {
+                                            onDelete()
+                                            true
+                                        },
+                                    )
+                                } else {
+                                    emptyList()
+                                }
                         }.testTag("f06-row"),
             )
         }
     }
 }
 
-/**
- * The undo notice, rendered inline where the row was (R-B8 amendment): the
- * fact, one Undo action, and a visible countdown hairline — when it empties
- * the notice slides away on its own (WLO-0050). Copy states the fact and
- * the action; no mood lines.
- */
 @Composable
-private fun InlineUndoRow(
-    deleted: DeletedUi,
-    onUndo: () -> Unit,
+private fun RowActions(
+    row: LogbookRowUi,
+    deletionEnabled: Boolean,
+    onEdit: () -> Unit,
+    onExplain: () -> Unit,
+    onDelete: () -> Unit,
 ) {
-    Column(modifier = Modifier.fillMaxWidth().testTag("f06-deleted-banner")) {
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(WloSpacing.TIGHT),
+    var expanded by remember { mutableStateOf(false) }
+    Text(row.weightLabel, style = wloType.statS, modifier = Modifier.testTag("f06-row-weight"))
+    Box {
+        IconButton(
+            onClick = { expanded = true },
+            modifier = Modifier.testTag("f06-row-actions"),
         ) {
-            Text(
-                text = "Deleted ${deleted.label}",
-                style = wloType.caption,
-                color = wloExtendedColors.textTertiary,
-                modifier = Modifier.weight(1f),
+            Icon(
+                WloIcons.MoreVertical,
+                contentDescription = "Actions for ${row.dateLabel} ${row.timeLabel} ${row.weightLabel}",
             )
-            TextButton(onClick = onUndo, modifier = Modifier.testTag("f06-undo-delete")) { Text("Undo") }
         }
-        UndoCountdown()
-    }
-}
-
-/** The visible timer: a 2 dp hairline depleting over [LogbookViewModel.UNDO_WINDOW_MS]. */
-@Composable
-private fun UndoCountdown() {
-    val remaining = remember { Animatable(1f) }
-    LaunchedEffect(Unit) {
-        remaining.snapTo(1f)
-        remaining.animateTo(
-            0f,
-            tween(LogbookViewModel.UNDO_WINDOW_MS.toInt(), easing = LinearEasing),
-        )
-    }
-    Box(
-        modifier =
-            Modifier
-                .fillMaxWidth()
-                .padding(top = WloSpacing.TIGHT)
-                .height(2.dp)
-                .background(MaterialTheme.colorScheme.surfaceVariant, CircleShape),
-    ) {
-        Box(
-            modifier =
-                Modifier
-                    .fillMaxWidth(remaining.value.coerceIn(0f, 1f))
-                    .height(2.dp)
-                    .background(MaterialTheme.colorScheme.primary, CircleShape),
-        )
+        DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
+            DropdownMenuItem(text = { Text("Edit") }, onClick = {
+                expanded = false
+                onEdit()
+            })
+            DropdownMenuItem(text = { Text("Explain") }, onClick = {
+                expanded = false
+                onExplain()
+            })
+            DropdownMenuItem(
+                text = { Text("Delete") },
+                enabled = deletionEnabled,
+                onClick = {
+                    expanded = false
+                    onDelete()
+                },
+            )
+        }
     }
 }
 
 /** How far a logbook entry travels to arm its delete action (WLO-0050). */
 private val REVEAL_WIDTH = 112.dp
-
-/** How long the exit slide-away takes before the feed slot unmounts (WLO-0050). */
-private const val EXIT_ANIM_MS = 320L

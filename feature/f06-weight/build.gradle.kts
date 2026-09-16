@@ -1,5 +1,6 @@
 plugins {
     id("wlo.android.library.compose")
+    alias(libs.plugins.kotlin.serialization)
 }
 
 dependencies {
@@ -10,6 +11,7 @@ dependencies {
     implementation(libs.androidx.lifecycle.runtime.compose)
     implementation(libs.kotlinx.datetime)
     implementation(libs.kotlinx.coroutines.core)
+    implementation(libs.kotlinx.serialization.json)
 
     // MVI-lite state holder + ViewModel DSL (koin-android carries the
     // lifecycle-viewmodel types the state holder extends).
@@ -24,6 +26,7 @@ dependencies {
     implementation(project(":core:model"))
     implementation(project(":core:common"))
     implementation(project(":core:engines"))
+    implementation(project(":core:documents"))
     implementation(project(":core:data"))
     implementation(project(":core:datastore"))
 
