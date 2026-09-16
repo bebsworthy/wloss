@@ -159,7 +159,7 @@ jobs:
           certs="$("$apksigner" verify --print-certs app/build/outputs/apk/release/app-release.apk)"
           printf '%s\n' "$certs"
           actual="$(printf '%s\n' "$certs" \
-            | awk -F': ' '/^Signer #1 certificate SHA-256 digest:/ { print toupper($2); exit }' \
+            | awk -F': ' '/certificate SHA-256 digest:/ { print toupper($NF); exit }' \
             | tr -d '[:space:]')"
           if [ "$actual" != "$EXPECTED_CERT_SHA256" ]; then
             echo "::error::Signing certificate '$actual' does not match WLO's pinned channel identity"
