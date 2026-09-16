@@ -63,3 +63,31 @@ Start: GitHub repo + `release.yml` (alpha-on-main, stable-on-tag) +
 Obtainium on the phone. Next: decide whether/when to build the in-app
 self-updater as a proper consent-gated platform feature. Play internal
 testing when Play work begins in earnest.
+
+
+## Implementation checkpoint — 2026-09-16
+
+The owner-approved choices are now the channel contract: a public GitHub
+repository, Obtainium for phone-side updates, and one application ID/signing
+identity shared by alpha and stable.
+
+Distribution is consolidated into `.github/workflows/ci.yml`; there is no
+independent release workflow that can publish around the verification gate.
+Pushes to `main` and `v*` tags must pass the build/checkArchitecture job,
+build-logic self-tests, and API-29 instrumented suite before a signed APK can
+publish. Alpha is a rolling prerelease; stable accepts semantic `vX.Y.Z` tags
+only and requires the tagged commit to be in `main` history.
+
+Signing fails closed: release builds never fall back to the debug key, all four
+CI secrets are required, environment variable names match the documented
+contract, and the final APK certificate SHA-256 is checked against the pinned
+canonical dogfood identity before publication. A stale main run refuses to
+replace a newer alpha.
+
+Operator and installation guidance lives in `docs/tech/DISTRIBUTION.md`; the
+repository landing page links the governing product, architecture, design, and
+distribution documents.
+
+Remaining completion evidence: create/push the public repository, configure
+its signing secrets, observe the first green CI-published alpha, and validate
+an update on the owner's real device through Obtainium.

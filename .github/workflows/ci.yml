@@ -3,11 +3,15 @@ name: ci
 on:
   push:
     branches: [main]
+    tags: ["v*"]
   pull_request:
 
 concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: true
+
+permissions:
+  contents: read
 
 jobs:
   build:
@@ -54,3 +58,127 @@ jobs:
           api-level: 29
           arch: x86_64
           script: ./gradlew :app:connectedDebugAndroidTest
+
+  publish:
+    name: publish signed APK
+    if: github.event_name == 'push'
+    needs: [build, arch-selftest, instrumented]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+      - name: Decode channel signing key
+        env:
+          WLO_SIGNING_KEYSTORE_BASE64: ${{ secrets.WLO_SIGNING_KEYSTORE_BASE64 }}
+          WLO_SIGNING_STORE_PASSWORD: ${{ secrets.WLO_SIGNING_STORE_PASSWORD }}
+          WLO_SIGNING_KEY_ALIAS: ${{ secrets.WLO_SIGNING_KEY_ALIAS }}
+          WLO_SIGNING_KEY_PASSWORD: ${{ secrets.WLO_SIGNING_KEY_PASSWORD }}
+        run: |
+          required=(
+            WLO_SIGNING_KEYSTORE_BASE64
+            WLO_SIGNING_STORE_PASSWORD
+            WLO_SIGNING_KEY_ALIAS
+            WLO_SIGNING_KEY_PASSWORD
+          )
+          for name in "${required[@]}"; do
+            if [ -z "${!name:-}" ]; then
+              echo "::error::Missing required Actions secret: $name"
+              exit 1
+            fi
+          done
+          printf '%s' "$WLO_SIGNING_KEYSTORE_BASE64" | base64 --decode > "$RUNNER_TEMP/wlo-release.keystore"
+      - name: Resolve channel metadata
+        id: channel
+        shell: bash
+        run: |
+          version_code="$(git rev-list --count HEAD)"
+          if [[ "$GITHUB_REF" == refs/tags/v* ]]; then
+            if [[ ! "$GITHUB_REF_NAME" =~ ^v[0-9]+\.[0-9]+\.[0-9]+([.-][0-9A-Za-z.-]+)?$ ]]; then
+              echo "::error::Stable release tags must look like v1.2.3"
+              exit 1
+            fi
+            version_name="${GITHUB_REF_NAME#v}"
+            release_tag="$GITHUB_REF_NAME"
+            title="WLO $version_name"
+            prerelease=false
+          else
+            version_name="0.1.0-alpha.${GITHUB_RUN_NUMBER}+${GITHUB_SHA::7}"
+            release_tag=alpha
+            title="WLO alpha ${GITHUB_SHA::7}"
+            prerelease=true
+          fi
+          echo "version_code=$version_code" >> "$GITHUB_OUTPUT"
+          echo "version_name=$version_name" >> "$GITHUB_OUTPUT"
+          echo "release_tag=$release_tag" >> "$GITHUB_OUTPUT"
+          echo "title=$title" >> "$GITHUB_OUTPUT"
+          echo "prerelease=$prerelease" >> "$GITHUB_OUTPUT"
+      - name: Build signed channel APK
+        env:
+          WLO_VERSION_CODE: ${{ steps.channel.outputs.version_code }}
+          WLO_VERSION_NAME: ${{ steps.channel.outputs.version_name }}
+          WLO_SIGNING_STORE_FILE: ${{ runner.temp }}/wlo-release.keystore
+          WLO_SIGNING_STORE_PASSWORD: ${{ secrets.WLO_SIGNING_STORE_PASSWORD }}
+          WLO_SIGNING_KEY_ALIAS: ${{ secrets.WLO_SIGNING_KEY_ALIAS }}
+          WLO_SIGNING_KEY_PASSWORD: ${{ secrets.WLO_SIGNING_KEY_PASSWORD }}
+        run: ./gradlew :app:assembleRelease
+      - name: Verify signing identity
+        env:
+          EXPECTED_CERT_SHA256: 191A90BC4AC61C36647316ED748FE1C70940FDC06A0D8AD32C632A8288EA8EC5
+        run: |
+          apksigner="$ANDROID_HOME/build-tools/$(ls "$ANDROID_HOME/build-tools" | sort -V | tail -1)/apksigner"
+          "$apksigner" verify --verbose app/build/outputs/apk/release/app-release.apk
+          actual="$($apksigner verify --print-certs app/build/outputs/apk/release/app-release.apk \
+            | sed -n 's/^Signer #1 certificate SHA-256 digest: //p' \
+            | tr '[:lower:]' '[:upper:]')"
+          if [ "$actual" != "$EXPECTED_CERT_SHA256" ]; then
+            echo "::error::Signing certificate does not match WLO's pinned channel identity"
+            exit 1
+          fi
+      - name: Stage release asset
+        id: asset
+        run: |
+          asset="wlo-${{ steps.channel.outputs.version_name }}.apk"
+          cp app/build/outputs/apk/release/app-release.apk "$RUNNER_TEMP/$asset"
+          echo "path=$RUNNER_TEMP/$asset" >> "$GITHUB_OUTPUT"
+      - name: Replace rolling alpha release
+        if: steps.channel.outputs.prerelease == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          remote_main="$(git ls-remote origin refs/heads/main | cut -f1)"
+          if [ "$remote_main" != "$GITHUB_SHA" ]; then
+            echo "::notice::A newer main commit exists; refusing to regress the alpha channel."
+            exit 0
+          fi
+          gh release delete alpha --yes --cleanup-tag 2>/dev/null || true
+          gh release create alpha \
+            --target "$GITHUB_SHA" \
+            --prerelease \
+            --title "${{ steps.channel.outputs.title }}" \
+            --generate-notes \
+            "${{ steps.asset.outputs.path }}"
+      - name: Publish stable release
+        if: steps.channel.outputs.prerelease == 'false'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          git fetch origin main --no-tags
+          if ! git merge-base --is-ancestor "$GITHUB_SHA" origin/main; then
+            echo "::error::Stable tags must point to a commit on main"
+            exit 1
+          fi
+          gh release create "${{ steps.channel.outputs.release_tag }}" \
+            --verify-tag \
+            --title "${{ steps.channel.outputs.title }}" \
+            --generate-notes \
+            "${{ steps.asset.outputs.path }}"

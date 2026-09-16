@@ -18,10 +18,10 @@ import java.util.Properties
  * committed — loaded from `keystore.properties` (git-ignored; see
  * keystore.properties.example) or env (`WLO_SIGNING_STORE_FILE`,
  * `WLO_SIGNING_STORE_PASSWORD`, `WLO_SIGNING_KEY_ALIAS`,
- * `WLO_SIGNING_KEY_PASSWORD`). Without a config the release build falls back
- * to the debug key locally so `assembleRelease` never breaks a dev machine;
- * CI always injects the real one (signature change ⇒ forced uninstall ⇒ data
- * loss, so dogfood devices must stay on one identity).
+ * `WLO_SIGNING_KEY_PASSWORD`). Without a config the release APK is unsigned;
+ * CI refuses to publish unless every signing secret is present. A debug key is
+ * never allowed onto either dogfood channel (signature change ⇒ forced
+ * uninstall ⇒ data loss).
  */
 plugins {
     id("com.android.application")
@@ -51,16 +51,29 @@ android {
         applicationId = app.wlo.buildlogic.AndroidConfig.APPLICATION_ID
         minSdk = app.wlo.buildlogic.AndroidConfig.MIN_SDK
         targetSdk = app.wlo.buildlogic.AndroidConfig.TARGET_SDK
-        versionCode = versionOverride("versionCode")?.toIntOrNull() ?: commitCount()
+        val requestedVersionCode = versionOverride("versionCode")
+        versionCode =
+            requestedVersionCode?.let {
+                requireNotNull(it.toIntOrNull()?.takeIf { code -> code > 0 }) {
+                    "wlo.versionCode/WLO_VERSION_CODE must be a positive integer, got '$it'"
+                }
+            } ?: commitCount()
         versionName = versionOverride("versionName") ?: "0.1.0"
     }
 
     signingConfigs {
         val props = Properties()
         val propsFile = rootProject.file("keystore.properties")
+        val environmentKeys =
+            mapOf(
+                "storeFile" to "WLO_SIGNING_STORE_FILE",
+                "storePassword" to "WLO_SIGNING_STORE_PASSWORD",
+                "keyAlias" to "WLO_SIGNING_KEY_ALIAS",
+                "keyPassword" to "WLO_SIGNING_KEY_PASSWORD",
+            )
         fun prop(key: String): String? =
             props.getProperty(key)
-                ?: providers.environmentVariable("WLO_SIGNING_${key.uppercase()}").orNull
+                ?: environmentKeys[key]?.let { providers.environmentVariable(it).orNull }
         if (propsFile.exists()) {
             propsFile.inputStream().use(props::load)
         }
@@ -78,9 +91,7 @@ android {
     buildTypes {
         release {
             isMinifyEnabled = false // R8 decision deferred (WLO-0029); dogfood builds unshrunk
-            signingConfig =
-                signingConfigs.findByName("channel")
-                    ?: signingConfigs.getByName("debug")
+            signingConfig = signingConfigs.findByName("channel")
         }
     }
 

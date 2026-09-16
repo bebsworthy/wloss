@@ -18,7 +18,8 @@ default: build
 build:
     ./gradlew :app:assembleDebug
 
-# Build the dogfood (release) APK — signed with ~/.android/wlo-release.keystore
+# Build the dogfood APK. Requires keystore.properties; unsigned release builds
+# are intentionally not installable as channel builds.
 build-release:
     ./gradlew :app:assembleRelease
 
