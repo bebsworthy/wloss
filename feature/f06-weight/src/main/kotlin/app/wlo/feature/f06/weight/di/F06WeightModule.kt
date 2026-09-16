@@ -1,5 +1,6 @@
 package app.wlo.feature.f06.weight.di
 
+import app.wlo.core.data.TargetsWriters
 import app.wlo.core.datastore.JsonDocumentStore
 import app.wlo.core.datastore.SettingsStore
 import app.wlo.core.documents.DocumentCodec
@@ -7,6 +8,7 @@ import app.wlo.core.model.WeightGoalSafetyInput
 import app.wlo.feature.f06.weight.state.BodyFatViewModel
 import app.wlo.feature.f06.weight.state.BodySectionUi
 import app.wlo.feature.f06.weight.state.GoalProgressLoader
+import app.wlo.feature.f06.weight.state.GoalTargetEditor
 import app.wlo.feature.f06.weight.state.LogbookDeletionRecoveryStore
 import app.wlo.feature.f06.weight.state.LogbookViewModel
 import app.wlo.feature.f06.weight.state.WeighInViewModel
@@ -21,6 +23,16 @@ import org.koin.dsl.module
  */
 public val f06WeightModule: Module =
     module {
+        factory {
+            val writers = get<TargetsWriters>()
+            GoalTargetEditor(get(), get()) { id, version, document ->
+                if (version == null) {
+                    writers.studio().writeFirst(id, document)
+                } else {
+                    writers.studio().writeRevision(id, version, document)
+                }
+            }
+        }
         factory {
             val documents = get<JsonDocumentStore>()
             GoalProgressLoader(
@@ -43,6 +55,7 @@ public val f06WeightModule: Module =
                 weighIns = get(),
                 measurements = get(),
                 goalProgressLoader = get(),
+                goalTargetEditor = get(),
                 massUnits = get<SettingsStore>().massUnit,
                 initialSheetOpen = initialSheetOpen,
                 initialSection = initialSection,

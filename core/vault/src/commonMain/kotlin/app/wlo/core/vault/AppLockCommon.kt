@@ -109,6 +109,8 @@ public object SecureSurfaces {
             "stub/archive-capture", // wlo://archive/capture
             "stub/archive-compare", // wlo://archive/compare
             "stub/vault", // wlo://vault — the PART A stub (pre-PART-B builds)
+            "app/health-connect", // split from the protected vault dashboard
+            "f13/storage", // split from the protected vault dashboard
             "f13/vault", // the Data Vault dashboard (M6 PART B)
             "f13/vault/restore",
             "f13/vault/export",

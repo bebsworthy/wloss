@@ -79,19 +79,15 @@ import app.wlo.core.designsystem.WloSpacing
 import app.wlo.core.designsystem.WloStatRow
 import app.wlo.core.designsystem.WloTrendChart
 import app.wlo.core.designsystem.WloWeightChart
-import app.wlo.core.designsystem.formatDay
 import app.wlo.core.designsystem.rememberWloHaptics
 import app.wlo.core.designsystem.wloExtendedColors
 import app.wlo.core.designsystem.wloType
-import app.wlo.core.engines.MilestoneLadder
 import app.wlo.core.model.ConstantsRegistry
 import app.wlo.core.model.TrendMethod
 import app.wlo.feature.f06.weight.state.BodyFatUiState
 import app.wlo.feature.f06.weight.state.BodyFatViewModel
 import app.wlo.feature.f06.weight.state.BodySectionUi
 import app.wlo.feature.f06.weight.state.ChartWindowUi
-import app.wlo.feature.f06.weight.state.GoalProgressState
-import app.wlo.feature.f06.weight.state.GoalProgressUi
 import app.wlo.feature.f06.weight.state.HistoryRange
 import app.wlo.feature.f06.weight.state.RatiosUi
 import app.wlo.feature.f06.weight.state.SheetUi
@@ -125,7 +121,21 @@ public fun WeightScreen(
     onEditGoal: () -> Unit,
     modifier: Modifier = Modifier,
     showTopBar: Boolean = false,
+    initialGoalOpen: Boolean = false,
+    onGoalClosed: () -> Unit = {},
 ) {
+    val goalDraft by viewModel.goalTargetEditor.uiState.collectAsStateWithLifecycle()
+    var openedGoal by rememberSaveable { mutableStateOf(false) }
+    LaunchedEffect(initialGoalOpen) {
+        if (initialGoalOpen) viewModel.openGoal()
+    }
+    LaunchedEffect(goalDraft) {
+        if (goalDraft != null) {
+            openedGoal = true
+        } else if (openedGoal && initialGoalOpen) {
+            onGoalClosed()
+        }
+    }
     var showChartSettings by rememberSaveable { mutableStateOf(false) }
     val state: WeighInUiState by viewModel.uiState.collectAsStateWithLifecycle()
     val sheet: SheetUi? by viewModel.sheetState.collectAsStateWithLifecycle()
@@ -283,7 +293,6 @@ public fun WeightScreen(
                                 viewModel = viewModel,
                                 onOpenMath = onOpenMath,
                                 onOpenLogbook = { onOpenLogbook(null) },
-                                onEditGoal = onEditGoal,
                             )
 
                             notice?.let {
@@ -335,6 +344,16 @@ public fun WeightScreen(
         }
     }
 
+    goalDraft?.let { draft ->
+        GoalTargetSheet(
+            draft = draft,
+            currentKg = state.goalProgress.currentTrend?.value,
+            onEdit = viewModel.goalTargetEditor::edit,
+            onDismiss = viewModel.goalTargetEditor::dismiss,
+            onSave = viewModel::saveGoal,
+        )
+    }
+
     sheet?.let { current ->
         WloSheet(
             onDismissRequest = { viewModel.onEvent(WeighInEvent.DismissSheet) },
@@ -356,126 +375,6 @@ public fun WeightScreen(
         }
     }
 }
-
-@Composable
-private fun GoalProgressCard(
-    progress: GoalProgressUi,
-    state: WeighInUiState,
-    onEditGoal: () -> Unit,
-) {
-    var milestonesExpanded by rememberSaveable { mutableStateOf(false) }
-    WloCard(modifier = Modifier.testTag("f06-goal-progress")) {
-        WloCardHeader(title = "Goal")
-        when (progress.state) {
-            GoalProgressState.NO_GOAL -> {
-                Text(
-                    text = "No weight goal is active. Weight tracking works without one.",
-                    style = wloType.caption,
-                    color = wloExtendedColors.textTertiary,
-                )
-                WloSecondaryButton(
-                    label = "Set a goal",
-                    onClick = onEditGoal,
-                    modifier = Modifier.fillMaxWidth().testTag("f06-set-goal"),
-                )
-            }
-            GoalProgressState.UNAVAILABLE ->
-                Text(
-                    text = "Goal progress couldn't refresh. Weight tracking still works.",
-                    style = wloType.caption,
-                    color = wloExtendedColors.textTertiary,
-                )
-            GoalProgressState.TREND_FORMING -> {
-                Text(
-                    text = "Keep weighing — goal progress starts from the canonical trend, not a single low reading.",
-                    style = wloType.caption,
-                    color = wloExtendedColors.textTertiary,
-                )
-                progress.targetWeightKg?.let { target ->
-                    WloListRow(
-                        label = "Target",
-                        value = { Text(state.massUnit.format(target), style = wloType.statS) },
-                    )
-                }
-                WloSecondaryButton(
-                    label = "Edit goal",
-                    onClick = onEditGoal,
-                    modifier = Modifier.fillMaxWidth().testTag("f06-edit-goal"),
-                )
-            }
-            GoalProgressState.LOSS,
-            GoalProgressState.MAINTENANCE,
-            GoalProgressState.GAIN,
-            -> {
-                progress.targetWeightKg?.let { target ->
-                    WloListRow(
-                        label = "Target · ${progress.state.modeLabel()}",
-                        value = { Text(state.massUnit.format(target), style = wloType.statS) },
-                    )
-                }
-                val visibleRungs =
-                    if (milestonesExpanded) {
-                        progress.rungs
-                    } else {
-                        progress.rungs
-                            .filterNot {
-                                it.state == MilestoneLadder.State.COMPLETED
-                            }.take(1)
-                    }
-                visibleRungs.forEach { rung ->
-                    WloListRow(
-                        label =
-                            buildString {
-                                append(state.massUnit.format(rung.weightKg))
-                                if (rung.isGoal) append(" · goal")
-                            },
-                        secondary =
-                            when {
-                                rung.state == MilestoneLadder.State.COMPLETED -> "Reached by your trend"
-                                rung.rangeEpochDays != null -> {
-                                    val (early, late) = checkNotNull(rung.rangeEpochDays)
-                                    "${formatDay(early)} – ${formatDay(late)}"
-                                }
-                                else -> "Date unavailable — progress still counts"
-                            },
-                        leading = {
-                            Text(
-                                text = if (rung.state == MilestoneLadder.State.COMPLETED) "Done" else "Next",
-                                style = wloType.label,
-                                color = wloExtendedColors.textTertiary,
-                            )
-                        },
-                    )
-                }
-                progress.forecastCopy?.let { copy ->
-                    Text(
-                        text = copy,
-                        style = wloType.caption,
-                        color = wloExtendedColors.textTertiary,
-                    )
-                }
-                if (progress.rungs.size > 1) {
-                    TextButton(onClick = { milestonesExpanded = !milestonesExpanded }) {
-                        Text(if (milestonesExpanded) "Hide milestones" else "Milestones")
-                    }
-                }
-                WloSecondaryButton(
-                    label = "Edit goal",
-                    onClick = onEditGoal,
-                    modifier = Modifier.fillMaxWidth().testTag("f06-edit-goal"),
-                )
-            }
-        }
-    }
-}
-
-private fun GoalProgressState.modeLabel(): String =
-    when (this) {
-        GoalProgressState.LOSS -> "loss"
-        GoalProgressState.MAINTENANCE -> "maintenance"
-        GoalProgressState.GAIN -> "gain"
-        else -> "goal"
-    }
 
 /**
  * Material 3 card receipt for WLO-0070. The derived trend is only promoted to
@@ -604,10 +503,8 @@ private fun WeightOverview(
     viewModel: WeighInViewModel,
     onOpenMath: () -> Unit,
     onOpenLogbook: () -> Unit,
-    onEditGoal: () -> Unit,
 ) {
     val trend = state.trend ?: return
-    var showGoal by rememberSaveable { mutableStateOf(false) }
     val first = trend.trend.firstOrNull()
     val last = trend.trend.lastOrNull()
     val change =
@@ -680,7 +577,7 @@ private fun WeightOverview(
                     }
                 }
                 TextButton(
-                    onClick = { if (state.goalProgress.targetWeightKg != null) showGoal = true else onEditGoal() },
+                    onClick = viewModel::openGoal,
                     contentPadding = PaddingValues(0.dp),
                     shape = androidx.compose.ui.graphics.RectangleShape,
                     modifier = Modifier.weight(1f).testTag("f06-goal-summary"),
@@ -797,16 +694,6 @@ private fun WeightOverview(
                     onOpenMath()
                 }) { Text("How the trend is calculated") }
                 WloButton(label = "Done", onClick = { onSettingsChange(false) }, modifier = Modifier.fillMaxWidth())
-            }
-        }
-    }
-    if (showGoal) {
-        WloSheet(onDismissRequest = { showGoal = false }, title = "Goal progress") {
-            Column(Modifier.verticalScroll(rememberScrollState())) {
-                GoalProgressCard(state.goalProgress, state, onEditGoal = {
-                    showGoal = false
-                    onEditGoal()
-                })
             }
         }
     }

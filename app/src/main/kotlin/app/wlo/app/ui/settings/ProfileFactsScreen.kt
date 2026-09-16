@@ -32,8 +32,6 @@ import app.wlo.core.designsystem.SelectChip
 import app.wlo.core.designsystem.WloBanner
 import app.wlo.core.designsystem.WloBannerTone
 import app.wlo.core.designsystem.WloButton
-import app.wlo.core.designsystem.WloCard
-import app.wlo.core.designsystem.WloCardHeader
 import app.wlo.core.designsystem.WloSpacing
 import app.wlo.core.designsystem.wloExtendedColors
 import app.wlo.core.designsystem.wloType
@@ -251,8 +249,10 @@ public fun ProfileFactsScreen(
             )
         }
 
-        WloCard(modifier = Modifier.testTag("profile-card")) {
-            WloCardHeader(title = "Facts")
+        Column(
+            modifier = Modifier.testTag("profile-card"),
+            verticalArrangement = Arrangement.spacedBy(WloSpacing.CARD),
+        ) {
             Text(
                 text = "Recorded sex (floors and tape formulas use it; undisclosed is allowed).",
                 style = wloType.caption,

@@ -538,3 +538,13 @@ The overview uses 24dp content gutters, 5dp hero gaps, 23dp before the summary, 
 Chart geometry follows the reference 360×285 SVG aspect within its extended 372-unit plot container: height = contentWidth × 285/360 × 372/364. Plot top/bottom are 22/285 and 232/285 of height; label row is at 257/285; right plot edge reserves 12.5% plus enough space for scaled axis text. The domain remains data-driven and includes the goal with padding; it is not hardcoded to demo weights. Short windows have three date ticks; quarter windows have calendar-month ticks; larger windows retain year-aware ticks. The latest trend has a filled marker. Sparse windows say when readings start.
 
 Preserve Android system bars: the HTML reference has no Android system navigation bar, so its footer cannot be matched physically by drawing under the OS controls. Main content scrolls and the action stays reachable. Other screens retain their typography roles.
+
+### Inline goal sheet (WLO-0117)
+
+The weight overview goal opens a standard M3 bottom sheet with one outlined
+numeric target field and unit suffix, current-trend comparison, and Done or
+Save goal. Use the same Inter hierarchy, chartGoal numeral color and 24dp
+content alignment as the overview. No nested card, milestones, mode selector,
+pace/date, calorie-plan or screening controls. Save is versioned and explicit;
+closing/back/scrim discards the draft. Busy saves cannot be submitted twice;
+errors retain the input. Preserve IME/system insets and large-text scrolling.

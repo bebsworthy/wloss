@@ -12,6 +12,8 @@ class SecureSurfacesTest {
         assertTrue(SecureSurfaces.isSecure("stub/archive-capture"))
         assertTrue(SecureSurfaces.isSecure("stub/archive-compare"))
         assertTrue(SecureSurfaces.isSecure("stub/vault"))
+        assertTrue(SecureSurfaces.isSecure("app/health-connect"))
+        assertTrue(SecureSurfaces.isSecure("f13/storage"))
         assertTrue(SecureSurfaces.isSecure("f13/vault/restore?step=2"))
     }
 

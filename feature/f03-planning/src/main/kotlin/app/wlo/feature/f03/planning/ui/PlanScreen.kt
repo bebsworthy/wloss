@@ -59,6 +59,7 @@ public fun PlanScreen(
     viewModel: PlanViewModel,
     segment: PlanSegment,
     onSegmentSelect: (PlanSegment) -> Unit,
+    onOpenDiet: () -> Unit = {},
     onOpenList: () -> Unit,
     onOpenPantry: () -> Unit,
     onEditRecipe: (String?) -> Unit,
@@ -74,6 +75,10 @@ public fun PlanScreen(
                     .padding(horizontal = WloSpacing.SCREEN),
             verticalArrangement = Arrangement.spacedBy(WloSpacing.CARD),
         ) {
+            androidx.compose.material3.TextButton(
+                onClick = onOpenDiet,
+                modifier = Modifier.testTag("plan-diet-preferences"),
+            ) { androidx.compose.material3.Text("Diet plan") }
             WloSegmentedBar(
                 segments = SEGMENT_LABELS,
                 selected = segment.ordinal,

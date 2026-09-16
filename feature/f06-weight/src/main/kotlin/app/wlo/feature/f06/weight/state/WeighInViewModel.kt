@@ -30,6 +30,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.datetime.Instant
 import kotlinx.datetime.LocalDate
@@ -401,6 +402,7 @@ public class WeighInViewModel(
     private val weighIns: WeighInRepository,
     private val measurements: MeasurementRepository,
     private val goalProgressLoader: GoalProgressLoader,
+    public val goalTargetEditor: GoalTargetEditor,
     @Provided private val massUnits: Flow<MassUnit>,
     initialSheetOpen: Boolean,
     initialSection: BodySectionUi = BodySectionUi.WEIGHT,
@@ -458,6 +460,16 @@ public class WeighInViewModel(
                     activeUnit = unit
                     refresh()
                 }
+        }
+    }
+
+    public fun openGoal() {
+        viewModelScope.launch { goalTargetEditor.open(massUnits.first()) }
+    }
+
+    public fun saveGoal() {
+        viewModelScope.launch {
+            if (goalTargetEditor.save()) refresh()
         }
     }
 

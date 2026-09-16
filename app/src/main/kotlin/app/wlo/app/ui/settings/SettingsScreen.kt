@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
@@ -45,8 +46,6 @@ import app.wlo.core.common.getOrNull
 import app.wlo.core.data.ProfileRepository
 import app.wlo.core.datastore.SettingsStore
 import app.wlo.core.designsystem.SelectChip
-import app.wlo.core.designsystem.WloCard
-import app.wlo.core.designsystem.WloCardHeader
 import app.wlo.core.designsystem.WloListRow
 import app.wlo.core.designsystem.WloSpacing
 import app.wlo.core.designsystem.WloSwitchRow
@@ -64,19 +63,14 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import org.koin.androidx.compose.koinViewModel
 
-/**
- * Settings (IA §1): ONE screen deep — AI Studio and Data Vault live one tap
- * behind it, the app lock (F13 §3: biometric + configurable timeout) renders
- * inline because it is the discretion switch every sensitive surface defers
- * to. No drawer, no settings search (IA §7).
- */
+/** Grouped app preferences with focused detail surfaces. */
 @Composable
 public fun SettingsScreen(
     onOpenAiStudio: () -> Unit,
     onOpenVault: () -> Unit,
-    onOpenGoals: () -> Unit,
-    onOpenPlanStudio: () -> Unit,
-    onOpenProfile: () -> Unit,
+    onOpenHealth: () -> Unit,
+    onOpenDetail: (String) -> Unit,
+    section: String = "overview",
 ) {
     val viewModel: SettingsViewModel = koinViewModel()
     val state by viewModel.state.collectAsStateWithLifecycle()
@@ -84,6 +78,7 @@ public fun SettingsScreen(
     val lifecycleOwner = LocalLifecycleOwner.current
     val canPrompt = (context as? FragmentActivity)?.canPromptBiometric() == true
     var showTimePicker by remember { mutableStateOf(false) }
+    var showUnits by remember { mutableStateOf(false) }
     androidx.compose.runtime.DisposableEffect(lifecycleOwner) {
         val observer =
             LifecycleEventObserver { _, event ->
@@ -110,64 +105,107 @@ public fun SettingsScreen(
                 .testTag("settings"),
         verticalArrangement = Arrangement.spacedBy(WloSpacing.CARD),
     ) {
-        Text(
-            text = "One screen, then the two deep surfaces. Everything here lives on this device.",
-            style = wloType.body,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
-
-        Text("Weight tracking", style = MaterialTheme.typography.titleMedium)
-        WloListRow(
-            label = "Goals",
-            secondary = "Goal weight, pace, budget — every save is a new version",
-            chevron = true,
-            onClick = onOpenGoals,
-            modifier = Modifier.testTag("settings-open-goals"),
-        )
-        WloListRow(
-            label = "Diet Plan Studio",
-            secondary = "Optional meal targets and diet-plan setup",
-            chevron = true,
-            onClick = onOpenPlanStudio,
-            modifier = Modifier.testTag("settings-open-plan-studio"),
-        )
-        WloListRow(
-            label = "Profile",
-            secondary = "Sex, birth year, height, activity — the facts the math reads",
-            chevron = true,
-            onClick = onOpenProfile,
-            modifier = Modifier.testTag("settings-open-profile"),
-        )
-
-        WloCard(
-            modifier = Modifier.testTag("settings-weight-unit"),
-            header = { WloCardHeader(title = "Weight unit") },
-        ) {
-            Text(
-                text = "Changes how weights are displayed and entered. Stored measurements stay unchanged.",
-                style = wloType.body,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-            Row(horizontalArrangement = Arrangement.spacedBy(WloSpacing.TIGHT)) {
-                for (unit in MassUnit.entries) {
-                    SelectChip(
-                        label = unit.settingsLabel(),
-                        selected = state.massUnit == unit,
-                        onClick = { viewModel.setMassUnit(unit) },
-                        modifier = Modifier.testTag("settings-unit-${unit.symbol}"),
-                    )
-                }
+        if (section == "overview") {
+            app.wlo.core.designsystem.WloSettingsGroup("Everyday use") {
+                WloListRow(
+                    label = "Weight unit",
+                    secondary = state.massUnit.settingsLabel(),
+                    chevron = true,
+                    onClick = { showUnits = true },
+                    modifier = Modifier.testTag("settings-weight-unit"),
+                )
+                WloListRow(
+                    label = "Weigh-in reminder",
+                    secondary =
+                        when {
+                            state.reminderEnabled -> minuteLabel(state.reminderMinuteOfDay)
+                            state.reminderRequested -> "Blocked by Android"
+                            else -> "Off"
+                        },
+                    chevron = true,
+                    onClick = { onOpenDetail("reminder") },
+                )
+            }
+            app.wlo.core.designsystem.WloSettingsGroup("Privacy") {
+                WloListRow(
+                    label = "App lock",
+                    secondary =
+                        when {
+                            !canPrompt -> "Device screen lock required"
+                            state.appLockEnabled -> timeoutLabel(state.lockTimeout)
+                            else -> "Off"
+                        },
+                    chevron = true,
+                    onClick = { onOpenDetail("lock") },
+                )
+                WloListRow(
+                    label = "AI",
+                    secondary = "On-device models and cloud access",
+                    chevron = true,
+                    onClick = onOpenAiStudio,
+                    modifier = Modifier.testTag("settings-open-ai"),
+                )
+                WloListRow(
+                    label = "Diagnostics",
+                    secondary = "Optional crash reporting",
+                    chevron = true,
+                    onClick = { onOpenDetail("diagnostics") },
+                )
+            }
+            app.wlo.core.designsystem.WloSettingsGroup("Data") {
+                WloListRow(
+                    label = "Data & backup",
+                    secondary = "Backups, import, export and storage",
+                    chevron = true,
+                    onClick = onOpenVault,
+                    modifier = Modifier.testTag("settings-open-vault"),
+                )
+                WloListRow(
+                    label = "Health Connect",
+                    secondary = "Weight and body-fat access",
+                    chevron = true,
+                    onClick = onOpenHealth,
+                    modifier = Modifier.testTag("settings-open-health"),
+                )
             }
         }
-
+        if (showUnits || section == "units") {
+            AlertDialog(
+                onDismissRequest = { showUnits = false },
+                title = { Text("Weight unit") },
+                text = {
+                    Column {
+                        MassUnit.entries.forEach { unit ->
+                            androidx.compose.material3.ListItem(
+                                headlineContent = { Text(unit.settingsLabel()) },
+                                leadingContent = {
+                                    androidx.compose.material3.RadioButton(
+                                        selected = state.massUnit == unit,
+                                        onClick = null,
+                                    )
+                                },
+                                modifier =
+                                    Modifier
+                                        .selectable(
+                                            selected = state.massUnit == unit,
+                                            role = androidx.compose.ui.semantics.Role.RadioButton,
+                                            onClick = {
+                                                viewModel.setMassUnit(unit)
+                                                showUnits = false
+                                            },
+                                        ).testTag("settings-unit-${unit.symbol}"),
+                            )
+                        }
+                    }
+                },
+                confirmButton = { TextButton(onClick = { showUnits = false }) { Text("Done") } },
+            )
+        }
         // --- App lock (F13 §3) ------------------------------------------------
-        WloCard(
-            modifier = Modifier.testTag("settings-applock"),
-            header = { WloCardHeader(title = "App lock") },
-        ) {
+        if (section == "lock") {
             if (canPrompt) {
                 WloSwitchRow(
-                    label = "Ask for your screen lock (biometric or PIN) when you come back",
+                    label = "Lock WLO",
                     checked = state.appLockEnabled,
                     onCheckedChange = viewModel::setAppLock,
                     modifier = Modifier.testTag("settings-applock-toggle"),
@@ -175,8 +213,7 @@ public fun SettingsScreen(
             } else {
                 Text(
                     text =
-                        "This device has no screen lock configured, so there is nothing to " +
-                            "verify against. Set one in Android's security settings first.",
+                        "Set up an Android screen lock before enabling app lock.",
                     style = wloType.body,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.testTag("settings-applock-availability"),
@@ -196,15 +233,17 @@ public fun SettingsScreen(
                 }
                 Text(
                     text =
-                        "The lock is a convenience screen — your data is already encrypted at rest, " +
-                            "and a weigh-in glance-away shouldn't relock everything. One minute is the default.",
+                        "Choose how soon WLO locks after you leave the app.",
                     style = wloType.receipt,
                     color = wloExtendedColors.textTertiary,
                 )
             }
             if (!canPrompt) {
+                TextButton(onClick = { context.startActivity(Intent(Settings.ACTION_SECURITY_SETTINGS)) }) {
+                    Text("Open Android security settings")
+                }
                 Text(
-                    text = "Open Android → Security to set a screen lock, then come back.",
+                    text = "Uses your device PIN or biometrics.",
                     style = wloType.receipt,
                     color = wloExtendedColors.textTertiary,
                     modifier = Modifier.testTag("settings-applock-no-lock"),
@@ -213,12 +252,9 @@ public fun SettingsScreen(
         }
 
         // --- Weigh-in reminder (F06 §4, WLO-0040) ---------------------------
-        WloCard(
-            modifier = Modifier.testTag("settings-reminder"),
-            header = { WloCardHeader(title = "Weigh-in reminder") },
-        ) {
+        if (section == "reminder") {
             WloSwitchRow(
-                label = "One soft daily nudge — an invitation, never a streak",
+                label = "Weigh-in reminder",
                 checked = state.reminderEnabled,
                 onCheckedChange = { wanted ->
                     if (wanted && Build.VERSION.SDK_INT >= 33) {
@@ -260,32 +296,6 @@ public fun SettingsScreen(
                 }
             }
         }
-
-        Text("Data and connections", style = MaterialTheme.typography.titleMedium)
-        WloListRow(
-            label = "Data Vault",
-            secondary = "Import, export, backups, restore, and Health Connect",
-            chevron = true,
-            onClick = onOpenVault,
-            modifier = Modifier.testTag("settings-open-vault"),
-        )
-        Text("Optional AI", style = MaterialTheme.typography.titleMedium)
-        WloListRow(
-            label = "AI Studio",
-            secondary = "Independent capability consent, receipts, models, and kill switch",
-            chevron = true,
-            onClick = onOpenAiStudio,
-            modifier = Modifier.testTag("settings-open-ai"),
-        )
-
-        Text(
-            text =
-                "WLO is free, offline-first, and account-less. No telemetry exists in this app — " +
-                    "the egress ledger in AI Studio is the whole story.",
-            style = wloType.receipt,
-            color = wloExtendedColors.textTertiary,
-            modifier = Modifier.padding(bottom = WloSpacing.SCREEN),
-        )
     }
 
     if (showTimePicker) {

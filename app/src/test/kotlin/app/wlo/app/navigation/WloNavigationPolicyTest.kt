@@ -22,8 +22,16 @@ class WloNavigationPolicyTest {
     @Test
     fun nestedRoutesHaveStableAppBarTitles() {
         assertEquals("Weight", routeTitle("f06/log"))
-        assertEquals("Backups", routeTitle(F13Routes.BACKUP))
+        assertEquals("Backup", routeTitle(F13Routes.BACKUP))
         assertEquals("Capture food", routeTitle("f02/capture"))
+    }
+
+    @Test
+    fun settingsAndDietRoutesHaveClearHomes() {
+        assertEquals("Health Connect", routeTitle("app/health-connect"))
+        assertEquals("App lock", routeTitle("app/settings/lock"))
+        assertEquals("Data & backup", routeTitle(F13Routes.VAULT))
+        assertEquals(WloTabs.PLAN, routeMetadata(app.wlo.feature.f01.onboarding.F01Routes.PLAN_STUDIO)?.topLevelOwner)
     }
 
     @Test

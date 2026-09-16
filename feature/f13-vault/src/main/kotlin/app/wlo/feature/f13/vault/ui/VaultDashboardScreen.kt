@@ -13,7 +13,9 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
@@ -23,12 +25,9 @@ import androidx.health.connect.client.records.BodyFatRecord
 import androidx.health.connect.client.records.WeightRecord
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import app.wlo.core.common.formatBytes
-import app.wlo.core.designsystem.WloCard
-import app.wlo.core.designsystem.WloCardHeader
 import app.wlo.core.designsystem.WloListRow
 import app.wlo.core.designsystem.WloSecondaryButton
 import app.wlo.core.designsystem.WloSpacing
-import app.wlo.core.designsystem.WloSwitchRow
 import app.wlo.core.designsystem.wloExtendedColors
 import app.wlo.core.designsystem.wloType
 import app.wlo.core.ports.HealthConnectAvailability
@@ -47,8 +46,29 @@ public fun VaultDashboardScreen(
     onOpenRestore: () -> Unit,
     onOpenExport: () -> Unit,
     onOpenImport: () -> Unit,
+    onOpenStorage: () -> Unit,
+    section: String = "overview",
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
+    var deletePartition by remember { mutableStateOf<String?>(null) }
+    deletePartition?.let { partition ->
+        androidx.compose.material3.AlertDialog(
+            onDismissRequest = { deletePartition = null },
+            title = { Text("Delete local attachments?") },
+            text = {
+                Text("All attachments in this storage category will be permanently deleted. This cannot be undone.")
+            },
+            confirmButton = {
+                androidx.compose.material3.TextButton(onClick = {
+                    viewModel.reclaim(partition)
+                    deletePartition = null
+                }) { Text("Delete attachments") }
+            },
+            dismissButton = {
+                androidx.compose.material3.TextButton(onClick = { deletePartition = null }) { Text("Cancel") }
+            },
+        )
+    }
     val healthPermissions =
         remember {
             setOf(
@@ -70,122 +90,97 @@ public fun VaultDashboardScreen(
                 .testTag("f13-vault"),
         verticalArrangement = Arrangement.spacedBy(WloSpacing.CARD),
     ) {
-        Text(
-            text =
-                "Your data lives on this device — encrypted at rest, backed up where you say, " +
-                    "exportable in formats that outlive the app.",
-            style = wloType.body,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
-
+        if (section == "overview") {
+            app.wlo.core.designsystem.WloSettingsGroup {
+                WloListRow(
+                    label = "Backup",
+                    secondary =
+                        when {
+                            state.backup?.folderUri == null -> "Not set up"
+                            state.lastBackupFile != null -> "Last backup: ${state.lastBackupFile}"
+                            else -> "No backup yet"
+                        },
+                    chevron = true,
+                    onClick = onOpenBackup,
+                    modifier = Modifier.testTag("f13-open-backup"),
+                )
+                WloListRow(
+                    label = "Restore backup",
+                    secondary = "Recover data from a backup file",
+                    chevron = true,
+                    onClick = onOpenRestore,
+                    modifier = Modifier.testTag("f13-open-restore"),
+                )
+            }
+            app.wlo.core.designsystem.WloSettingsGroup {
+                WloListRow(
+                    label = "Export data",
+                    secondary = "Save a copy to a file",
+                    chevron = true,
+                    onClick = onOpenExport,
+                    modifier = Modifier.testTag("f13-open-export"),
+                )
+                WloListRow(
+                    label = "Import data",
+                    secondary = "Review a file before adding records",
+                    chevron = true,
+                    onClick = onOpenImport,
+                    modifier = Modifier.testTag("f13-open-import"),
+                )
+            }
+            app.wlo.core.designsystem.WloSettingsGroup {
+                WloListRow(
+                    label = "Storage",
+                    secondary = "${formatBytes(state.totalVaultBytes)} of local attachments",
+                    chevron = true,
+                    onClick = onOpenStorage,
+                    modifier = Modifier.testTag("f13-open-storage"),
+                )
+            }
+        }
         // --- storage dashboard ------------------------------------------------
-        WloCard(modifier = Modifier.fillMaxWidth().testTag("f13-storage")) {
-            WloCardHeader(title = "Storage")
+        if (section == "storage") {
             state.partitions.forEachIndexed { index, partition ->
                 if (index > 0) HorizontalDivider()
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Column(Modifier.weight(1f)) {
-                        Text(text = partition.partition, style = wloType.statS)
+                        Text(
+                            text = if (partition.partition == "photo") "Photos" else partition.partition,
+                            style = wloType.statS,
+                        )
                         Text(
                             text =
-                                "${partition.count} file(s) · encrypted with your key; " +
-                                    "files carry scrambled names",
+                                "${partition.count} local attachments",
                             style = wloType.receipt,
                             color = wloExtendedColors.textTertiary,
                         )
                     }
                     Text(text = formatBytes(partition.bytes), style = wloType.statS)
-                    WloSecondaryButton(
-                        label = "Reclaim",
-                        onClick = { viewModel.reclaim(partition.partition) },
-                        enabled = partition.count > 0,
-                    )
+                    if (partition.count > 0) {
+                        WloSecondaryButton(
+                            label = "Delete attachments",
+                            onClick = { deletePartition = partition.partition },
+                            enabled = partition.count > 0,
+                        )
+                    }
                 }
             }
             if (state.partitions.isEmpty()) {
                 Text(
                     text =
-                        "No encrypted partitions in use yet. Captures that land here are invisible to " +
-                            "the gallery and to cloud photo backup.",
+                        "No local attachments.",
                     style = wloType.body,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
             Text(
-                text = "Total: ${formatBytes(state.totalVaultBytes)}",
+                text = "Local attachments: ${formatBytes(state.totalVaultBytes)}",
                 style = wloType.receipt,
                 modifier = Modifier.testTag("f13-storage-total"),
             )
         }
 
-        // --- backup posture ----------------------------------------------------
-        WloCard(modifier = Modifier.fillMaxWidth().testTag("f13-backup-posture")) {
-            WloCardHeader(title = "Backup")
-            val backup = state.backup
-            Text(
-                text =
-                    when {
-                        backup?.folderUri != null && state.lastBackupFile != null ->
-                            "Last backup: ${state.lastBackupFile} — rotation keeps the last 7"
-                        backup?.folderUri != null -> "Folder chosen — no backup written yet."
-                        else -> "No backup folder yet. Set it up once; backups then run on their own."
-                    },
-                style = wloType.body,
-                modifier = Modifier.testTag("f13-last-backup"),
-            )
-            // Real precondition (WLO-0032): without a folder the row is
-            // disabled and dimmed — the gate is visible, not silent.
-            WloSwitchRow(
-                label = "Automatic daily backup",
-                checked = backup?.autoEnabled ?: false,
-                onCheckedChange = viewModel::setAutoBackup,
-                enabled = backup?.folderUri != null,
-                secondary =
-                    if (backup?.folderUri != null) {
-                        "Runs quietly once a day while the folder is reachable."
-                    } else {
-                        "Available once a folder is chosen."
-                    },
-                modifier = Modifier.testTag("f13-auto-toggle"),
-            )
-            WloListRow(
-                label = "Backup controls",
-                secondary = "Folder, passphrase, back up now",
-                chevron = true,
-                onClick = onOpenBackup,
-                modifier = Modifier.testTag("f13-open-backup"),
-            )
-        }
-
-        // --- wizards -------------------------------------------------------------
-        WloCard(modifier = Modifier.fillMaxWidth()) {
-            WloCardHeader(title = "Move data")
-            WloListRow(
-                label = "Restore from a backup file",
-                chevron = true,
-                onClick = onOpenRestore,
-                modifier = Modifier.testTag("f13-open-restore"),
-            )
-            HorizontalDivider()
-            WloListRow(
-                label = "Export",
-                secondary = "JSON bundle or per-metric CSV",
-                chevron = true,
-                onClick = onOpenExport,
-                modifier = Modifier.testTag("f13-open-export"),
-            )
-            HorizontalDivider()
-            WloListRow(
-                label = "Import",
-                secondary = "Bundle or CSV with column mapping",
-                chevron = true,
-                onClick = onOpenImport,
-                modifier = Modifier.testTag("f13-open-import"),
-            )
-        }
-
-        WloCard(modifier = Modifier.fillMaxWidth().testTag("f13-health-connect")) {
-            WloCardHeader(title = "Health Connect")
+        if (section == "health") {
             val health = state.healthConnect
             val statusText =
                 when {
@@ -229,12 +224,5 @@ public fun VaultDashboardScreen(
                 }
             }
         }
-
-        Text(
-            text = "Exports are versioned and documented. Secrets and keys never enter a backup or an export.",
-            style = wloType.receipt,
-            color = wloExtendedColors.textTertiary,
-            modifier = Modifier.padding(bottom = WloSpacing.SCREEN),
-        )
     }
 }

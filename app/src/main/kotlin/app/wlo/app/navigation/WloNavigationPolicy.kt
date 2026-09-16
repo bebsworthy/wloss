@@ -47,7 +47,7 @@ internal fun routeMetadata(route: String?): RouteMetadata? {
     val title = routeTitle(route) ?: return null
     val owner =
         when {
-            route.startsWith("f03/") || route.startsWith("f04/") -> WloTabs.PLAN
+            route == F01Routes.PLAN_STUDIO || route.startsWith("f03/") || route.startsWith("f04/") -> WloTabs.PLAN
             route.startsWith("f06/") -> WloTabs.WEIGHT
             else -> WloTabs.MORE
         }
@@ -76,16 +76,23 @@ internal fun routeTitle(route: String?): String? =
         WloDeepLinks.INSIGHTS_UNAVAILABLE -> "More"
         "ai/models" -> "On-device models"
         "app/settings" -> "Settings"
+        "app/settings/units" -> "Weight unit"
+        "app/settings/reminder" -> "Weigh-in reminder"
+        "app/settings/lock" -> "App lock"
+        "app/settings/diagnostics" -> "Diagnostics"
+        "app/health-connect" -> "Health Connect"
+        "f13/storage" -> "Storage"
+        F01Routes.PLAN_STUDIO -> "Diet plan"
         "app/profile" -> "Profile"
         F01Routes.STUDIO -> "Goals"
-        F12Routes.STUDIO -> "AI studio"
-        F12Routes.RECEIPTS -> "AI receipts"
+        F12Routes.STUDIO -> "AI"
+        F12Routes.RECEIPTS -> "Activity history"
         F12Routes.CONSENT_SHEET_DEMO -> "Consent preview"
-        F13Routes.VAULT -> "Data vault"
-        F13Routes.BACKUP -> "Backups"
-        F13Routes.RESTORE -> "Restore"
-        F13Routes.EXPORT -> "Export"
-        F13Routes.IMPORT -> "Import"
+        F13Routes.VAULT -> "Data & backup"
+        F13Routes.BACKUP -> "Backup"
+        F13Routes.RESTORE -> "Restore backup"
+        F13Routes.EXPORT -> "Export data"
+        F13Routes.IMPORT -> "Import data"
         "debug/egress" -> "Egress monitor"
         else -> STUB_TITLES[route] ?: "WLO"
     }

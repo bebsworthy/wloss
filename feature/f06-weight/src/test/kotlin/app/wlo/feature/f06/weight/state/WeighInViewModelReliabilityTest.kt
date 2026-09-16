@@ -58,6 +58,7 @@ import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertIs
 import kotlin.test.assertNotNull
+import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -664,6 +665,31 @@ class WeighInViewModelReliabilityTest {
             }
         }
 
+    @Test
+    fun goalOpeningWaitsForPersistedUnit() =
+        runTest {
+            Dispatchers.setMain(StandardTestDispatcher(testScheduler))
+            try {
+                val model =
+                    viewModel(
+                        massUnits =
+                            flow {
+                                kotlinx.coroutines.delay(100)
+                                emit(MassUnit.POUND)
+                            },
+                    )
+                model.openGoal()
+                advanceUntilIdle()
+                assertEquals(
+                    MassUnit.POUND,
+                    model.goalTargetEditor.uiState.value
+                        ?.unit,
+                )
+            } finally {
+                Dispatchers.resetMain()
+            }
+        }
+
     private fun viewModel(
         clock: MutableClock = MutableClock(Instant.parse("2026-09-16T12:00:00Z")),
         weighIns: FakeWeighIns = FakeWeighIns(),
@@ -687,11 +713,82 @@ class WeighInViewModelReliabilityTest {
                     readGoalSafetyInput = { null },
                     zoneProvider = zoneProvider,
                 ),
+            goalTargetEditor = GoalTargetEditor(FakeProfiles, targets) { _, _, _ -> error("Unexpected goal write") },
             massUnits = massUnits,
             initialSheetOpen = initialSheetOpen,
             zoneProvider = zoneProvider,
             savedStateHandle = savedStateHandle,
         )
+}
+
+class GoalTargetEditorTest {
+    @Test
+    fun targetOnlySavePreservesPlanAndVersion() =
+        runTest {
+            val record = targetsRecord(74.0)
+            var writes = 0
+            val editor =
+                GoalTargetEditor(FakeProfiles, StaticTargets(record)) { _, version, document ->
+                    writes++
+                    assertEquals(record.version, version)
+                    assertEquals(
+                        record.document.copy(goal = record.document.goal.copy(targetWeightKg = 75.0)),
+                        document,
+                    )
+                    app.wlo.core.data.TargetsWriteOutcome.Written(
+                        record.copy(document = document),
+                        emptyList(),
+                        app.wlo.core.documents.TargetsWriterId.STUDIO_F01,
+                    )
+                }
+            editor.open(MassUnit.KILOGRAM)
+            assertFalse(editor.save())
+            editor.open(MassUnit.KILOGRAM)
+            editor.edit("75,0")
+            assertTrue(editor.save())
+            assertEquals(1, writes)
+            assertNull(editor.uiState.value)
+        }
+
+    @Test
+    fun targetConflictRetainsDraftAndDiscardDoesNotWrite() =
+        runTest {
+            var writes = 0
+            val editor =
+                GoalTargetEditor(FakeProfiles, StaticTargets(targetsRecord(74.0))) { _, _, _ ->
+                    writes++
+                    app.wlo.core.data.TargetsWriteOutcome
+                        .Rejected(
+                            app.wlo.core.data.TargetsWriteError
+                                .VersionConflict(1, 2),
+                        )
+                }
+            editor.open(MassUnit.KILOGRAM)
+            editor.edit("75")
+            editor.dismiss()
+            assertEquals(0, writes)
+            editor.open(MassUnit.KILOGRAM)
+            assertEquals("74.0", editor.uiState.value?.text)
+            editor.edit("75")
+            assertFalse(editor.save())
+            assertEquals("75", editor.uiState.value?.text)
+            assertTrue(
+                editor.uiState.value
+                    ?.error
+                    ?.contains("changed elsewhere") == true,
+            )
+        }
+
+    @Test
+    fun referenceGoalDoesNotInventCaloriesOrPace() {
+        val document = targetDocument(null, 74.0, 1500.0)
+        assertNull(document.energy.budgetKcal)
+        assertEquals(0.0, document.goal.pacePctPerWeek)
+        assertNull(document.goal.targetDate)
+        assertNull(GoalTargetDraft(text = "NaN").kilograms)
+        assertNull(GoalTargetDraft(text = "-1").kilograms)
+        assertEquals(45.359237, GoalTargetDraft(text = "100", unit = MassUnit.POUND).kilograms!!, 0.000001)
+    }
 }
 
 private class StaticTargets(

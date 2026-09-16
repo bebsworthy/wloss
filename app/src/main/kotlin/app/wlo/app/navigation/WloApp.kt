@@ -61,7 +61,6 @@ import app.wlo.core.media.WloShutterBridge
 import app.wlo.core.media.WloViewfinder
 import app.wlo.feature.f01.onboarding.F01Routes
 import app.wlo.feature.f01.onboarding.domain.FirstWeightSource
-import app.wlo.feature.f01.onboarding.ui.GoalsEditorScreen
 import app.wlo.feature.f01.onboarding.ui.OnboardingScreen
 import app.wlo.feature.f01.onboarding.ui.WeightFirstOnboardingScreen
 import app.wlo.feature.f02.food.state.CaptureLensMode
@@ -164,7 +163,8 @@ public fun WloApp(
         if (shellState == ShellState.Onboarded) {
             when (postCompletionSource) {
                 FirstWeightSource.FILE_IMPORT -> navController.navigate(F13Routes.IMPORT) { launchSingleTop = true }
-                FirstWeightSource.HEALTH_CONNECT -> navController.navigate(F13Routes.VAULT) { launchSingleTop = true }
+                FirstWeightSource.HEALTH_CONNECT ->
+                    navController.navigate("app/health-connect") { launchSingleTop = true }
                 FirstWeightSource.MANUAL, FirstWeightSource.NONE -> Unit
                 null -> return@LaunchedEffect
             }
@@ -281,6 +281,18 @@ public fun WloApp(
                             navController = navController,
                             registerUpHandler = { guardedUpHandler = it },
                         )
+                    }
+                    APP_DETAIL_ROUTES.forEach { detail ->
+                        composable(route = detail) {
+                            RouteSurface(
+                                route = detail,
+                                arguments = null,
+                                shellState = shellState,
+                                onSurfaceChanged = onSurfaceChanged,
+                                navController = navController,
+                                registerUpHandler = { guardedUpHandler = it },
+                            )
+                        }
                     }
                     composable(route = F13Routes.BACKUP) {
                         RouteSurface(
@@ -434,11 +446,7 @@ private fun RouteSurface(
     when (route) {
         WloDeepLinks.INSIGHTS_UNAVAILABLE ->
             MoreScreen(
-                onOpenArchive = { navController.navigate(WloTabs.ARCHIVE) },
-                onOpenDigestion = { navController.navigate(WloTabs.DIGESTION) },
-                onOpenExercise = { navController.navigate("stub/exercise") },
-                onOpenVault = { navController.navigate(F13Routes.VAULT) },
-                onOpenAi = { navController.navigate(F12Routes.STUDIO) },
+                onOpenProfile = { navController.navigate("app/profile") },
                 onOpenSettings = { navController.navigate("app/settings") },
                 notice = "Insights is not available yet. Your available data and settings are below.",
             )
@@ -510,22 +518,25 @@ private fun RouteSurface(
         "ai/models" -> ZooScreen()
 
         // --- M6 PART B: the F12 consent shell + the F13 vault surfaces ------
-        "app/settings" ->
+        "app/settings", "app/settings/units", "app/settings/reminder", "app/settings/lock" ->
             SettingsScreen(
                 onOpenAiStudio = { navController.navigate(F12Routes.STUDIO) },
                 onOpenVault = { navController.navigate(Uri.parse("wlo://vault")) },
-                onOpenGoals = { navController.navigate(F01Routes.STUDIO) },
-                onOpenPlanStudio = { navController.navigate(F01Routes.PLAN_STUDIO) },
-                onOpenProfile = { navController.navigate("app/profile") },
+                onOpenHealth = { navController.navigate("app/health-connect") },
+                onOpenDetail = { section -> navController.navigate("app/settings/$section") },
+                section = if (route == "app/settings") "overview" else route.substringAfterLast("/"),
             )
 
-        // The goals editor (WLO-0035 W4): the wizard's first run is v1 of this
-        // same editor — R-B2's STUDIO_F01 door, now surfaced.
+        // All goal entry points share the target-only sheet (WLO-0117).
         F01Routes.STUDIO ->
-            GoalsEditorScreen(
-                viewModel = koinViewModel(),
-                onBack = { navController.popBackStack() },
-                registerUpHandler = registerUpHandler,
+            WeightScreen(
+                viewModel = koinViewModel(parameters = { parametersOf(false, BodySectionUi.WEIGHT) }),
+                bodyFatViewModel = koinViewModel(),
+                onOpenMath = { navController.navigate(F06Routes.MATH) },
+                onOpenLogbook = { range -> navController.navigate(F06Routes.logbook(range)) },
+                onEditGoal = {},
+                initialGoalOpen = true,
+                onGoalClosed = { navController.popBackStack() },
             )
 
         F01Routes.PLAN_STUDIO -> OnboardingScreen(viewModel = koinViewModel())
@@ -538,20 +549,30 @@ private fun RouteSurface(
                 viewModel = koinViewModel(),
                 onOpenReceipts = { navController.navigate(F12Routes.RECEIPTS) },
                 onOpenModelManager = { navController.navigate(Uri.parse("wlo://ai/models")) },
-                onOpenConsentDemo = { navController.navigate(F12Routes.CONSENT_SHEET_DEMO) },
             )
+
+        "app/settings/diagnostics" ->
+            app.wlo.feature.f12.consent.ui
+                .DiagnosticsScreen(viewModel = koinViewModel())
 
         F12Routes.RECEIPTS -> ReceiptsScreen(viewModel = koinViewModel())
 
         F12Routes.CONSENT_SHEET_DEMO -> ConsentSheetDemoScreen()
 
-        F13Routes.VAULT ->
+        F13Routes.VAULT, "app/health-connect", "f13/storage" ->
             VaultDashboardScreen(
                 viewModel = koinViewModel(),
                 onOpenBackup = { navController.navigate(F13Routes.BACKUP) },
                 onOpenRestore = { navController.navigate(F13Routes.RESTORE) },
                 onOpenExport = { navController.navigate(F13Routes.EXPORT) },
                 onOpenImport = { navController.navigate(F13Routes.IMPORT) },
+                onOpenStorage = { navController.navigate("f13/storage") },
+                section =
+                    when (route) {
+                        "app/health-connect" -> "health"
+                        "f13/storage" -> "storage"
+                        else -> "overview"
+                    },
             )
 
         F13Routes.BACKUP -> BackupControlsScreen(viewModel = koinViewModel())
@@ -640,11 +661,7 @@ private fun TopLevelRouteSurface(
         WloTabs.PLAN -> PlanTabRoute(focusDay = null, focusSlot = null, navController = navController)
         WloTabs.MORE ->
             MoreScreen(
-                onOpenArchive = { navController.navigate(WloTabs.ARCHIVE) },
-                onOpenDigestion = { navController.navigate(WloTabs.DIGESTION) },
-                onOpenExercise = { navController.navigate("stub/exercise") },
-                onOpenVault = { navController.navigate(F13Routes.VAULT) },
-                onOpenAi = { navController.navigate(F12Routes.STUDIO) },
+                onOpenProfile = { navController.navigate("app/profile") },
                 onOpenSettings = { navController.navigate("app/settings") },
             )
     }
@@ -705,6 +722,7 @@ private fun PlanTabRoute(
         viewModel = viewModel,
         segment = segment,
         onSegmentSelect = { next -> segment = next },
+        onOpenDiet = { navController.navigate(F01Routes.PLAN_STUDIO) },
         onOpenList = { navController.navigate(F04Routes.LIST) },
         onOpenPantry = { navController.navigate(F04Routes.PANTRY) },
         onEditRecipe = { recipeId ->
@@ -728,3 +746,13 @@ private fun tomorrowEpochDay(): Long {
             .epochDay(clock.now(), kotlinx.datetime.TimeZone.currentSystemDefault()) + 1
     }
 }
+
+private val APP_DETAIL_ROUTES =
+    listOf(
+        "app/profile",
+        "app/settings/reminder",
+        "app/settings/lock",
+        "app/settings/diagnostics",
+        "app/health-connect",
+        "f13/storage",
+    )

@@ -6,7 +6,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.MaterialTheme
@@ -20,17 +19,13 @@ import app.wlo.core.designsystem.WloIcons
 import app.wlo.core.designsystem.WloSpacing
 
 /**
- * The fifth top-level destination from IA §1. It is intentionally a standard
+ * The secondary feature directory from IA §1. It is intentionally a standard
  * Material 3 list: these are stable destinations, not dashboard cards or a
  * second navigation hierarchy.
  */
 @Composable
 public fun MoreScreen(
-    onOpenArchive: () -> Unit,
-    onOpenDigestion: () -> Unit,
-    onOpenExercise: () -> Unit,
-    onOpenVault: () -> Unit,
-    onOpenAi: () -> Unit,
+    onOpenProfile: () -> Unit,
     onOpenSettings: () -> Unit,
     notice: String? = null,
 ) {
@@ -44,17 +39,14 @@ public fun MoreScreen(
         notice?.let {
             WloBanner(text = it, tone = WloBannerTone.Info, modifier = Modifier.testTag("more-notice"))
         }
-        MoreDestination("Archive", "Private vector-outline history", "more-archive", onOpenArchive)
-        HorizontalDivider()
-        MoreDestination("Digestion", "Gut and fiber tracking", "more-digestion", onOpenDigestion)
-        HorizontalDivider()
-        MoreDestination("Exercise", "Sessions and movement", "more-exercise", onOpenExercise)
-        HorizontalDivider()
-        MoreDestination("Data Vault", "Backup, restore, import, and export", "more-vault", onOpenVault)
-        HorizontalDivider()
-        MoreDestination("AI", "On-device models and consent", "more-ai", onOpenAi)
-        HorizontalDivider()
-        MoreDestination("Settings", "Units, reminders, privacy, and profile", "more-settings", onOpenSettings)
+        app.wlo.core.designsystem.WloSettingsGroup {
+            MoreDestination("Your profile", "Personal details used by WLO", "more-profile", onOpenProfile)
+        }
+        androidx.compose.foundation.layout
+            .Spacer(Modifier.padding(top = WloSpacing.SCREEN))
+        app.wlo.core.designsystem.WloSettingsGroup {
+            MoreDestination("Settings", "Preferences, privacy and data", "more-settings", onOpenSettings)
+        }
     }
 }
 

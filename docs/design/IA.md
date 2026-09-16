@@ -32,7 +32,7 @@ top-level chrome and use a Material 3 top app bar with Up navigation.
 | **Weight** | F06 + F07 | **Default and primary surface**; trend/raw chart, goal state, weigh-in, history, forecast, and logbook |
 | **Hub** | F10 | Optional broader day surface; Adaptive Day Model card stack and quick-action rail |
 | **Plan** | F03 + F04 | Segmented: **Plan** (week grid) · **Recipes** · **List** · **Pantry** — the plan→shop→stock pipeline in one place, because the Week loop crosses it end-to-end |
-| **More** | cross-feature | Archive, Digestion, Exercise, Data Vault, AI and Settings; each keeps its own named destination and discretion gate |
+| **More** | cross-feature | Your profile and Settings. Archive, Digestion and Exercise join when implemented |
 
 **Decisions and rationale:**
 
@@ -52,11 +52,11 @@ top-level chrome and use a Material 3 top app bar with Up navigation.
 - **F06/F07 own Weight.** Weigh-in, trend, goal progress, forecast, history,
   and logbook form one primary destination. Advanced body metrics stay below
   the core weight loop and follow the release matrix.
-- **F01 (Plan Studio)** lives in Settings → Plan Studio, plus its flow
+- **F01 (Diet plan)** lives in Plan → Diet plan, plus its flow
   roles: first-run wizard, F07 check-in "adjust plan" deep link (pre-filled
   diff), F10 30-day review nudge, post-import CTA.
 - **F12 (AI Studio)** = Settings → AI. **F13 (Data Vault, Scales, backup)**
-  = Settings → Data Vault / Scales. Neither is a tab: consent and plumbing
+  = Settings → Data & backup / Health Connect. Neither is a tab: consent and plumbing
   are visited deliberately, not browsed (F12's point-of-use sheets carry
   consent to where the data is instead).
 - **Settings** is in More and remains reachable from every top-level surface's
@@ -149,7 +149,7 @@ Release 1 shape (zero account, zero network): one welcome card → app-wide
 body-mass unit (`kg`/`lb`) → optional loss/maintenance/gain goal → choose
 Health Connect/file import or manual first weigh-in → **Weight**. If goal or
 measurement is skipped, Weight renders an honest empty state with the relevant
-single action. Diet-plan setup is offered later from Hub/Plan/Settings and is
+single action. Diet-plan setup is offered later from Hub/Plan and is
 never required to complete first run.
 
 Rules: every step after unit is skippable — skipped fields are absent rather
@@ -195,9 +195,15 @@ appears within 30 s of entering a goal (F01 objective).
 
 ## 7. What this IA deliberately does not have
 
-No drawer, no second nav axis, no "More" tab, no per-feature bottom sheets
+No navigation drawer, no second navigation axis, no per-feature bottom sheets
 stacked on tabs, no notification-center-style in-app inbox (nudges live as
-cards on the Hub), no settings search (Settings is one screen deep + Data
-Vault/AI Studio), no social layer of any kind. If a future feature needs
+cards on the Hub), no settings search (Settings uses grouped preferences and focused detail screens), no social layer of any kind. If a future feature needs
 discoverability, it earns a Hub card through the Nudge Contract — not a new
 navigation surface.
+
+
+### WLO-0119 — settings hierarchy amendment (17 September 2026)
+
+More contains Your profile and Settings. Goals remain in Weight; Diet plan is reached from Plan. AI and Data & backup have one administrative home under Settings. Legacy destinations remain registered; placeholder features are omitted from More until usable.
+
+Settings groups Everyday use (weight unit dialog, reminder), Privacy (app lock, AI, diagnostics), and Data (Data & backup, Health Connect). Native M3 list rows show current simple preference values; filled surfaces group related rows without individual outlined cards. Health Connect is independent from file operations. Backup owns scheduling; Storage names attachment deletion explicitly and requires confirmation. Cloud permissions remain independent per capability and distinct from installed local models.

@@ -683,3 +683,26 @@ features depend only on the projection, never on Targets internals.
 ### Weight overview owner amendment — WLO-0104 (2026-09-16)
 
 The approved page-based layout replaces the overview's stacked cards. Show individual raw weigh-in dots behind the trend, an always-in-domain yellow goal line, and date/weight-only point tooltips. Remove inline debug details, legend prose, persistent tuning/math controls and opaque policy jargon. Settings keeps accessible algorithm explanations and preview reset; goal/history remain navigable. Derived provenance is available on demand rather than requiring a badge on every overview number. The weigh-in action has reserved space and must not cover content. This supersedes earlier fixed30-day overview-change and visible-tuner requirements; weekly/canonical metrics used elsewhere retain their named horizons.
+
+### Owner refinement — WLO-0117: reference target editing
+
+A user-entered target weight is a personal reference, distinct from automated
+pace, calorie-plan or forecast recommendations. Weight's goal sheet accepts a
+positive finite target without requiring pace, a desired date, mode selection,
+calorie budget or screening. This supersedes A.2 #4's eligibility prerequisite
+only for this target-only operation. All forecast/recommendation eligibility
+checks remain in force. Do not infer health answers or enable forecasts from
+saving a reference target.
+
+Target-only writes use the existing Studio writer and immutable Targets
+versions. Existing plan fields (including legacy pace/date) are preserved;
+first reference targets have pace zero, no date and no calorie budget. Saving
+a target never silently adjusts calorie intake. Above/below/at-target copy is
+computed from the current trend; it is not an automatic plan change. The
+routine sheet has one target input, live comparison, Done/Save, and dismiss to
+discard. Milestones, planning and forecast setup are absent from this surface.
+
+
+#### Owner navigation amendment — WLO-0119 (17 September 2026)
+
+App preferences and data administration live under More → Settings: AI, diagnostics, Data & backup, and Health Connect. Personal profile belongs directly under More; Diet plan belongs under Plan; target weight is edited from Weight. This supersedes earlier Settings placement for these product workflows. Unimplemented secondary features are omitted from the More directory while existing routes remain compatible. Per-capability AI consent and data transaction semantics are unchanged.
