@@ -1,6 +1,7 @@
 package app.wlo.core.designsystem
 
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.focusable
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
@@ -240,6 +241,8 @@ public fun WloTrendChart(
                 onSelect = { selectedKey = it.stableKey },
                 onPrevious = { selectOffset(-1) },
                 onNext = { selectOffset(1) },
+                onFirst = { selectable.firstOrNull()?.let { selectedKey = it.stableKey } },
+                onLast = { selectable.lastOrNull()?.let { selectedKey = it.stableKey } },
             )
             Text(
                 text = "Measured points · Trend line",
@@ -249,13 +252,13 @@ public fun WloTrendChart(
             Row(verticalAlignment = Alignment.CenterVertically) {
                 IconButton(
                     onClick = { selectOffset(-1) },
-                    enabled = selected != null && selectable.indexOf(selected) > 0,
+                    enabled = selectable.isNotEmpty() && (selected == null || selectable.indexOf(selected) > 0),
                 ) {
                     Icon(WloIcons.ArrowBack, contentDescription = "Previous sample")
                 }
                 IconButton(
                     onClick = { selectOffset(1) },
-                    enabled = selected != null && selectable.indexOf(selected) < selectable.lastIndex,
+                    enabled = selectable.isNotEmpty() && (selected == null || selectable.indexOf(selected) < selectable.lastIndex),
                 ) {
                     Icon(WloIcons.ChevronRight, contentDescription = "Next sample")
                 }
@@ -284,10 +287,23 @@ public fun WloTrendChart(
                     ListItem(
                         headlineContent = { Text(chartPointDate(point)) },
                         supportingContent = { Text(chartPointDescription(point, formatWeight)) },
+                        trailingContent = {
+                            TextButton(
+                                onClick = {
+                                    selectedKey = point.stableKey
+                                    showData = false
+                                    onExplain?.invoke(point)
+                                },
+                            ) { Text("Explain") }
+                        },
                         modifier =
-                            Modifier.semantics {
-                                contentDescription = chartPointDescription(point, formatWeight)
-                            },
+                            Modifier
+                                .clickable {
+                                    selectedKey = point.stableKey
+                                    showData = false
+                                }.semantics {
+                                    contentDescription = chartPointDescription(point, formatWeight)
+                                },
                     )
                     HorizontalDivider()
                 }
@@ -349,7 +365,7 @@ private fun chartPointDescription(
     point: ChartPoint,
     formatWeight: (Double) -> String,
 ): String {
-    val value = if (point.displayUnit.isBlank()) formatWeight(point.value) else "${point.value} ${point.displayUnit}"
+    val value = formatWeight(point.value)
     val role =
         point.methodLabel ?: point.role.name
             .lowercase()
@@ -372,6 +388,8 @@ private fun WeightChartCanvas(
     onSelect: (ChartPoint) -> Unit,
     onPrevious: () -> Unit,
     onNext: () -> Unit,
+    onFirst: () -> Unit,
+    onLast: () -> Unit,
 ) {
     val textMeasurer = rememberTextMeasurer()
     val axisStyle =
@@ -411,6 +429,14 @@ private fun WeightChartCanvas(
                         }
                         Key.DirectionRight -> {
                             onNext()
+                            true
+                        }
+                        Key.MoveHome -> {
+                            onFirst()
+                            true
+                        }
+                        Key.MoveEnd -> {
+                            onLast()
                             true
                         }
                         else -> false

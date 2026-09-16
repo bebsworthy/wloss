@@ -966,11 +966,21 @@ public class WeighInViewModel(
                                 ChartPoint(
                                     epochDay = it.dayEpochDay,
                                     value = it.valuePercent,
-                                    stableKey = "body:$methodLabel:${it.dayEpochDay}",
+                                    stableKey = it.eventId,
+                                    captureTimeEpochMs = it.capturedAt.toEpochMilliseconds(),
                                     displayUnit = "%",
                                     role = ChartSeriesRole.BODY_METHOD,
+                                    sourceEventIds = listOf(it.eventId),
                                     methodLabel = methodLabel,
-                                    provenance = it.source,
+                                    provenance =
+                                        buildString {
+                                            append(it.source)
+                                            it.methodVersion?.let { version -> append(" · $version") }
+                                            if (it.explanationInputs.isNotEmpty()) {
+                                                append(" · ")
+                                                append(it.explanationInputs.joinToString { input -> input.name })
+                                            }
+                                        },
                                 )
                             },
                         sourceLabel = methodPoints.map { it.source }.distinct().joinToString(),

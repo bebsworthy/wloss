@@ -1,13 +1,13 @@
 ---
 id: WLO-0098
 title: 'P2: Add accessible trend exploration and restrained motion'
-status: done
+status: doing
 theme: weight-core
 release:
 created: 2026-09-16T07:22:28Z
-modified: 2026-09-16T09:45:14Z
-closed: 2026-09-16T09:45:14Z
-revision: 9279afb88742b6a9
+modified: 2026-09-16T12:50:09Z
+closed:
+revision: b506d76fcc3320d8
 blocks: [WLO-0099]
 related: [WLO-0054, WLO-0087]
 ---
