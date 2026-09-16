@@ -63,6 +63,28 @@ import kotlin.test.assertTrue
 @OptIn(ExperimentalCoroutinesApi::class)
 class WeighInViewModelReliabilityTest {
     @Test
+    fun `editing a restored capture rotates its retry operation`() =
+        runTest {
+            Dispatchers.setMain(StandardTestDispatcher(testScheduler))
+            try {
+                val handle = SavedStateHandle()
+                val original = viewModel(initialSheetOpen = true, savedStateHandle = handle)
+                advanceUntilIdle()
+                original.onEvent(WeighInEvent.WeightChange("80"))
+                val retryOperation = assertNotNull(original.sheetState.value).operationId
+
+                val restored = viewModel(savedStateHandle = handle)
+                advanceUntilIdle()
+                assertEquals(retryOperation, assertNotNull(restored.sheetState.value).operationId)
+                restored.onEvent(WeighInEvent.WeightChange("81"))
+
+                assertTrue(assertNotNull(restored.sheetState.value).operationId != retryOperation)
+            } finally {
+                Dispatchers.resetMain()
+            }
+        }
+
+    @Test
     fun `section and independent windows update immediately and restore`() =
         runTest {
             Dispatchers.setMain(StandardTestDispatcher(testScheduler))
@@ -240,7 +262,7 @@ class WeighInViewModelReliabilityTest {
                         valueReal = 120.0,
                         unit = "kg",
                         source = MeasurementSource.SCALE,
-                        capturedAt = Instant.parse("2026-09-16T07:00:00Z"),
+                        capturedAt = Instant.parse("2026-09-16T07:00:45Z"),
                     )
                 val weighIns =
                     FakeWeighIns().apply {
@@ -268,10 +290,14 @@ class WeighInViewModelReliabilityTest {
                 assertEquals(0, weighIns.deleteCalls)
 
                 viewModel.onEvent(WeighInEvent.WeightChange("82"))
-                viewModel.onEvent(WeighInEvent.DismissSheet)
+                viewModel.onEvent(WeighInEvent.Save)
+                advanceUntilIdle()
                 assertEquals(null, viewModel.sheetState.value)
-                assertEquals(1, weighIns.commitCalls)
+                assertEquals(2, weighIns.commitCalls)
                 assertEquals(0, weighIns.deleteCalls)
+                val command = assertIs<WeighInWriteCommand.Correction>(weighIns.lastCommand)
+                assertEquals(original.dayEpochDay, command.dayEpochDay)
+                assertEquals(original.capturedAt, command.capturedAt)
             } finally {
                 Dispatchers.resetMain()
             }

@@ -225,6 +225,8 @@ public data class SheetUi(
     public val saveError: String? = null,
     public val intent: WeighInEditIntent = WeighInEditIntent.NewReading,
     public val operationId: String = Uuid.random().toString(),
+    public val dayEdited: Boolean = false,
+    public val timeEdited: Boolean = false,
 )
 
 public sealed interface WeighInEditIntent {
@@ -404,6 +406,7 @@ public class WeighInViewModel(
 ) : ViewModel() {
     private var profileId: String? = null
     private var activeUnit: MassUnit = MassUnit.KILOGRAM
+    private var restoredSheetNeedsNewOperation: Boolean = savedStateHandle.get<Boolean>(SHEET_OPEN_KEY) == true
 
     private val method = MutableStateFlow(TrendMethod.EWMA)
     private val alpha = MutableStateFlow(ConstantsRegistry.EWMA_ALPHA_DEFAULT)
@@ -459,6 +462,7 @@ public class WeighInViewModel(
         when (event) {
             is WeighInEvent.OpenSheet -> {
                 confirmation.value = null
+                restoredSheetNeedsNewOperation = false
                 updateSheet(openSheet(event.prefillKg))
             }
             WeighInEvent.DismissSheet -> {
@@ -470,17 +474,21 @@ public class WeighInViewModel(
             is WeighInEvent.WeightChange -> {
                 if (submission.value == WeighInSubmissionState.SAVING) return
                 sheetPrefillPending = false
-                updateSheet(sheet.value?.copy(weightText = event.text, weightError = null, saveError = null))
+                updateEditedSheet(sheet.value?.copy(weightText = event.text, weightError = null, saveError = null))
                 submission.value = WeighInSubmissionState.IDLE
             }
             is WeighInEvent.SheetDayChange -> {
                 if (submission.value == WeighInSubmissionState.SAVING) return
-                updateSheet(sheet.value?.copy(dayText = event.text, whenError = null, saveError = null))
+                updateEditedSheet(
+                    sheet.value?.copy(dayText = event.text, whenError = null, saveError = null, dayEdited = true),
+                )
                 submission.value = WeighInSubmissionState.IDLE
             }
             is WeighInEvent.SheetTimeChange -> {
                 if (submission.value == WeighInSubmissionState.SAVING) return
-                updateSheet(sheet.value?.copy(timeText = event.text, whenError = null, saveError = null))
+                updateEditedSheet(
+                    sheet.value?.copy(timeText = event.text, whenError = null, saveError = null, timeEdited = true),
+                )
                 submission.value = WeighInSubmissionState.IDLE
             }
             is WeighInEvent.WindowChange ->
@@ -570,7 +578,7 @@ public class WeighInViewModel(
                 ?.toDoubleOrNull()
                 ?: uiState.value.entryPrefillKg?.let(activeUnit::fromKilograms)
                 ?: return
-        updateSheet(sheet.value?.copy(weightText = formatDisplayInput(current + delta)))
+        updateEditedSheet(sheet.value?.copy(weightText = formatDisplayInput(current + delta)))
     }
 
     private fun save() {
@@ -595,7 +603,16 @@ public class WeighInViewModel(
             )
             return
         }
-        val (day, at) = whenLogged
+        val (day, at) =
+            when (val intent = current.intent) {
+                is WeighInEditIntent.CorrectReading ->
+                    if (!current.dayEdited && !current.timeEdited) {
+                        intent.original.dayEpochDay to intent.original.capturedAt
+                    } else {
+                        whenLogged
+                    }
+                WeighInEditIntent.NewReading -> whenLogged
+            }
         submission.value = WeighInSubmissionState.SAVING
         val frozen = current.copy(weightError = null, whenError = null, saveError = null)
         updateSheet(frozen)
@@ -682,6 +699,7 @@ public class WeighInViewModel(
                     val local = original.capturedAt.toLocalDateTime(zoneProvider())
                     confirmation.value = null
                     verdict.value = null
+                    restoredSheetNeedsNewOperation = false
                     updateSheet(
                         SheetUi(
                             weightText = activeUnit.formatNumber(original.valueReal),
@@ -703,6 +721,18 @@ public class WeighInViewModel(
         persistSheet(value)
     }
 
+    /** A restored token remains valid for an unchanged retry, but never for deliberately edited input. */
+    private fun updateEditedSheet(value: SheetUi?) {
+        val edited =
+            if (value != null && restoredSheetNeedsNewOperation) {
+                value.copy(operationId = Uuid.random().toString())
+            } else {
+                value
+            }
+        restoredSheetNeedsNewOperation = false
+        updateSheet(edited)
+    }
+
     private fun persistSheet(value: SheetUi?) {
         if (value == null) {
             savedStateHandle[SHEET_OPEN_KEY] = false
@@ -714,6 +744,8 @@ public class WeighInViewModel(
         savedStateHandle[SHEET_TIME_KEY] = value.timeText
         savedStateHandle[SHEET_CONTEXT_KEY] = value.prefillContext
         savedStateHandle[SHEET_OPERATION_KEY] = value.operationId
+        savedStateHandle[SHEET_DAY_EDITED_KEY] = value.dayEdited
+        savedStateHandle[SHEET_TIME_EDITED_KEY] = value.timeEdited
         val correction = value.intent as? WeighInEditIntent.CorrectReading
         savedStateHandle[SHEET_ORIGINAL_ID_KEY] = correction?.original?.eventId
         savedStateHandle[SHEET_ORIGINAL_DAY_KEY] = correction?.original?.dayEpochDay
@@ -753,6 +785,8 @@ public class WeighInViewModel(
             prefillContext = savedStateHandle.get<String>(SHEET_CONTEXT_KEY).orEmpty(),
             intent = intent,
             operationId = operationId,
+            dayEdited = savedStateHandle.get<Boolean>(SHEET_DAY_EDITED_KEY) ?: false,
+            timeEdited = savedStateHandle.get<Boolean>(SHEET_TIME_EDITED_KEY) ?: false,
         )
     }
 
@@ -1275,6 +1309,8 @@ public class WeighInViewModel(
         private const val SHEET_TIME_KEY: String = "weighIn.sheet.time"
         private const val SHEET_CONTEXT_KEY: String = "weighIn.sheet.context"
         private const val SHEET_OPERATION_KEY: String = "weighIn.sheet.operation"
+        private const val SHEET_DAY_EDITED_KEY: String = "weighIn.sheet.dayEdited"
+        private const val SHEET_TIME_EDITED_KEY: String = "weighIn.sheet.timeEdited"
         private const val SHEET_ORIGINAL_ID_KEY: String = "weighIn.sheet.original.id"
         private const val SHEET_ORIGINAL_DAY_KEY: String = "weighIn.sheet.original.day"
         private const val SHEET_ORIGINAL_KG_KEY: String = "weighIn.sheet.original.kg"
