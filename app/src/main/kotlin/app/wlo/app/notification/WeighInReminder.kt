@@ -78,7 +78,8 @@ public class WeighInReminderWorker(
             )
         }
 
-        public fun notificationsPermitted(context: Context): Boolean = availability(context) == ReminderAvailability.AVAILABLE
+        public fun notificationsPermitted(context: Context): Boolean =
+            availability(context) == ReminderAvailability.AVAILABLE
 
         public fun availability(context: Context): ReminderAvailability {
             if (Build.VERSION.SDK_INT >= 33 &&
@@ -89,7 +90,9 @@ public class WeighInReminderWorker(
             val manager = NotificationManagerCompat.from(context)
             if (!manager.areNotificationsEnabled()) return ReminderAvailability.APP_BLOCKED
             if (Build.VERSION.SDK_INT >= 26) {
-                val channel = context.getSystemService(NotificationManager::class.java)?.getNotificationChannel(CHANNEL_ID)
+                val channel =
+                    context.getSystemService(NotificationManager::class.java)
+                        ?.getNotificationChannel(CHANNEL_ID)
                 if (channel != null && channel.importance == NotificationManager.IMPORTANCE_NONE) {
                     return ReminderAvailability.CHANNEL_BLOCKED
                 }

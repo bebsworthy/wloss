@@ -333,7 +333,8 @@ private fun reminderAvailabilityCopy(availability: ReminderAvailability): String
         ReminderAvailability.AVAILABLE -> "Android schedules this approximately; it is not an exact alarm."
         ReminderAvailability.PERMISSION_REQUIRED -> "Notification permission is off. Your reminder time is still saved."
         ReminderAvailability.APP_BLOCKED -> "Notifications are off for WLO. Your reminder time is still saved."
-        ReminderAvailability.CHANNEL_BLOCKED -> "Weigh-in reminders are off in Android settings. Your time is still saved."
+        ReminderAvailability.CHANNEL_BLOCKED ->
+            "Weigh-in reminders are off in Android settings. Your time is still saved."
     }
 
 private fun timeoutLabel(timeout: LockTimeout): String =
