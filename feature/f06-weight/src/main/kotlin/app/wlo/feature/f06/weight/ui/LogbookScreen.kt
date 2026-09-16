@@ -104,7 +104,7 @@ public fun LogbookScreen(viewModel: LogbookViewModel) {
     val snackbarHostState = remember { SnackbarHostState() }
     val accessibility = LocalAccessibilityManager.current
     val lifecycle = LocalLifecycleOwner.current.lifecycle
-    LaunchedEffect(deleted?.operationId, deleted?.restoreFailed) {
+    LaunchedEffect(deleted?.operationId, deleted?.restoreFailed, deleted?.restoreAttempt) {
         val pending = deleted ?: return@LaunchedEffect
         val timeoutMillis =
             accessibility?.calculateRecommendedTimeoutMillis(
@@ -117,10 +117,14 @@ public fun LogbookScreen(viewModel: LogbookViewModel) {
         // the delay after STOPPED intentionally gives back any partial slice;
         // background time can never consume the Undo opportunity.
         val expiry =
-            launch {
-                lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) {
-                    delay(timeoutMillis)
-                    snackbarHostState.currentSnackbarData?.dismiss()
+            if (pending.restoreFailed) {
+                null
+            } else {
+                launch {
+                    lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                        delay(timeoutMillis)
+                        snackbarHostState.currentSnackbarData?.dismiss()
+                    }
                 }
             }
         val result =
@@ -135,10 +139,10 @@ public fun LogbookScreen(viewModel: LogbookViewModel) {
                 withDismissAction = true,
                 duration = SnackbarDuration.Indefinite,
             )
-        expiry.cancel()
+        expiry?.cancel()
         if (result == SnackbarResult.ActionPerformed) {
             viewModel.onEvent(LogbookEvent.Undo)
-        } else {
+        } else if (!pending.restoreFailed) {
             viewModel.onEvent(LogbookEvent.FinalizeDelete)
         }
     }

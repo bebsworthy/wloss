@@ -143,6 +143,7 @@ public data class DeletedUi(
     public val dayEpochDay: Long,
     public val operationId: String,
     public val restoreFailed: Boolean = false,
+    public val restoreAttempt: Int = 0,
 )
 
 /** The open edit sheet, prefilled from the entry being corrected (F06 §5). */
@@ -188,6 +189,8 @@ public class LogbookViewModel(
     private val deleted = MutableStateFlow<DeletedUi?>(null)
     private val edit = MutableStateFlow<EditSheetUi?>(null)
     private var pendingDeletion: PendingLogbookDeletion? = null
+    private var deleteInFlight: Boolean = false
+    private var recoveryInFlight: Boolean = false
     private val routeStart = savedStateHandle.get<Long>(F06Routes.ARG_RANGE_START)
     private val routeEnd = savedStateHandle.get<Long>(F06Routes.ARG_RANGE_END)
     private var range: HistoryRange? =
@@ -497,16 +500,18 @@ public class LogbookViewModel(
      */
     private fun deleteWeighIn(eventId: String) {
         profileId ?: return
-        if (pendingDeletion != null) {
+        if (pendingDeletion != null || deleteInFlight) {
             notice.value = "Undo or dismiss the current deletion before deleting another entry."
             return
         }
+        deleteInFlight = true
         viewModelScope.launch {
             val snapshot =
                 when (val prepared = weighIns.deletionSnapshot(eventId)) {
                     is WloResult.Ok -> prepared.value
                     is WloResult.Err -> {
                         notice.value = "That didn't delete — nothing changed."
+                        deleteInFlight = false
                         return@launch
                     }
                 }
@@ -519,6 +524,7 @@ public class LogbookViewModel(
                 recovery?.write(record)
             } catch (_: Throwable) {
                 notice.value = "That didn't delete — recovery could not be prepared."
+                deleteInFlight = false
                 return@launch
             }
             when (val outcome = weighIns.deleteWeighIn(eventId, clock.now())) {
@@ -531,11 +537,13 @@ public class LogbookViewModel(
                             dayEpochDay = event.dayEpochDay,
                             operationId = record.operationId,
                         )
+                    deleteInFlight = false
                     reload()
                 }
 
                 is WloResult.Err -> {
                     recovery?.clear(snapshot.event.profileId)
+                    deleteInFlight = false
                     notice.value = "That didn't delete — nothing changed."
                 }
             }
@@ -545,6 +553,8 @@ public class LogbookViewModel(
     private fun undoDelete() {
         profileId ?: return
         val record = pendingDeletion ?: return
+        if (recoveryInFlight) return
+        recoveryInFlight = true
         viewModelScope.launch {
             when (weighIns.restoreWeighIn(record.snapshot)) {
                 is WloResult.Ok -> {
@@ -552,11 +562,16 @@ public class LogbookViewModel(
                     pendingDeletion = null
                     deleted.value = null
                     notice.value = "Weigh-in restored."
+                    recoveryInFlight = false
                     reload()
                 }
 
                 is WloResult.Err -> {
-                    deleted.value = deleted.value?.copy(restoreFailed = true)
+                    deleted.value =
+                        deleted.value?.let {
+                            it.copy(restoreFailed = true, restoreAttempt = it.restoreAttempt + 1)
+                        }
+                    recoveryInFlight = false
                     notice.value = "Restore failed. The recovery copy is safe; choose Retry."
                 }
             }
@@ -565,10 +580,13 @@ public class LogbookViewModel(
 
     private fun finalizeDelete() {
         val record = pendingDeletion ?: return
+        if (recoveryInFlight || deleted.value?.restoreFailed == true) return
+        recoveryInFlight = true
         viewModelScope.launch {
             recovery?.clear(record.snapshot.event.profileId)
             pendingDeletion = null
             deleted.value = null
+            recoveryInFlight = false
         }
     }
 
