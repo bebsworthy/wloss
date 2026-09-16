@@ -100,6 +100,7 @@ public class ExportViewModel(
 }
 
 /** One editable CSV mapping row in the import wizard. */
+@Serializable
 public data class CsvMappingRow(
     public val sourceColumn: String,
     /** Null = unmapped/ignored; "day" = the day column; otherwise a kind wire name. */
@@ -159,6 +160,8 @@ public class ImportViewModel(
     private var stagingPath: String? = savedStateHandle[KEY_STAGING_PATH]
     private var sourceRevision: Long = 0L
     private var stageAttempt: Long = 0L
+    private var restorePhaseOnce: ImportUiState.Step? =
+        savedStateHandle.get<String>(KEY_PHASE)?.let { runCatching { ImportUiState.Step.valueOf(it) }.getOrNull() }
 
     init {
         val recoveredPath = stagingPath
@@ -172,6 +175,7 @@ public class ImportViewModel(
     public fun onSourcePicked(uri: String) {
         sourceRevision++
         stageAttempt++
+        clearSessionState()
         pendingUri = uri
         stagePickedUri(uri)
     }
@@ -207,6 +211,7 @@ public class ImportViewModel(
         fileName: String,
         bytes: ByteArray,
     ) {
+        clearSessionState()
         if (bytes.size > MAX_IMPORT_BYTES) {
             recoverable(
                 ImportUiState.Step.Pick,
@@ -235,7 +240,10 @@ public class ImportViewModel(
         if (looksLikeBundle) {
             // Bundles carry their own schema — straight to staging (the same
             // funnel as restore; the report is the mapping step's stand-in).
-            stage { stateFlow.value = it.copy(step = ImportUiState.Step.Reviewing) }
+            stage {
+                stateFlow.value = it.copy(step = ImportUiState.Step.Reviewing)
+                savedStateHandle[KEY_PHASE] = ImportUiState.Step.Reviewing.name
+            }
         } else {
             buildCsvPreview()
         }
@@ -247,15 +255,19 @@ public class ImportViewModel(
             try {
                 val preview = vault.previewCsv(bytes)
                 val remembered = rememberedMappingFor(preview)
+                val sessionMapping = restoredSessionMapping(preview.columns)
                 val rows =
                     preview.columns.map { column ->
-                        val hit = remembered.firstOrNull { candidate -> candidate?.sourceColumn == column }
-                        CsvMappingRow(
-                            sourceColumn = column,
-                            targetKind = hit?.takeIf { it.isDay }?.let { "day" } ?: hit?.kind,
-                            unit = hit?.unit,
-                            customName = hit?.customName,
-                        )
+                        sessionMapping?.firstOrNull { it.sourceColumn == column }
+                            ?: run {
+                                val hit = remembered.firstOrNull { candidate -> candidate?.sourceColumn == column }
+                                CsvMappingRow(
+                                    sourceColumn = column,
+                                    targetKind = hit?.takeIf { it.isDay }?.let { "day" } ?: hit?.kind,
+                                    unit = hit?.unit,
+                                    customName = hit?.customName,
+                                )
+                            }
                     }
                 stateFlow.value =
                     stateFlow.value.copy(
@@ -265,6 +277,14 @@ public class ImportViewModel(
                         failure = null,
                         recoverTo = null,
                     )
+                persistSessionMapping(rows)
+                val restoredPhase = restorePhaseOnce
+                restorePhaseOnce = null
+                if (restoredPhase == ImportUiState.Step.Reviewing || restoredPhase == ImportUiState.Step.Applying) {
+                    stage()
+                } else {
+                    savedStateHandle[KEY_PHASE] = ImportUiState.Step.Mapping.name
+                }
             } catch (failure: VaultOperationException) {
                 recoverable(ImportUiState.Step.Reading, failure.message ?: "The CSV could not be parsed.")
             }
@@ -311,6 +331,8 @@ public class ImportViewModel(
                 }
             }
         stateFlow.value = stateFlow.value.copy(mapping = rows, staged = null, mappingError = null)
+        persistSessionMapping(rows)
+        savedStateHandle[KEY_PHASE] = ImportUiState.Step.Mapping.name
     }
 
     public fun stage() {
@@ -376,6 +398,7 @@ public class ImportViewModel(
                             recoverTo = null,
                             mappingError = null,
                         )
+                    savedStateHandle[KEY_PHASE] = ImportUiState.Step.Reviewing.name
                 }
                 onStaged(stateFlow.value)
             } catch (failure: VaultOperationException) {
@@ -394,6 +417,7 @@ public class ImportViewModel(
         if (stateFlow.value.step == ImportUiState.Step.Applying) return
         val reviewToken = stateFlow.value.staged?.reviewToken
         stateFlow.value = stateFlow.value.copy(step = ImportUiState.Step.Applying)
+        savedStateHandle[KEY_PHASE] = ImportUiState.Step.Applying.name
         viewModelScope.launch {
             try {
                 val result =
@@ -479,12 +503,30 @@ public class ImportViewModel(
     }
 
     private fun discardStaging() {
-        val path = stagingPath ?: return
+        val path = stagingPath
         stagingPath = null
         savedStateHandle.remove<String>(KEY_STAGING_PATH)
         savedStateHandle.remove<String>(KEY_FILE_NAME)
-        viewModelScope.launch { reader.discard(path) }
+        savedStateHandle.remove<String>(KEY_MAPPING)
+        savedStateHandle.remove<String>(KEY_PHASE)
+        if (path != null) viewModelScope.launch { reader.discard(path) }
     }
+
+    private fun persistSessionMapping(mapping: List<CsvMappingRow>) {
+        savedStateHandle[KEY_MAPPING] = Json.encodeToString(mapping)
+    }
+
+    private fun clearSessionState() {
+        restorePhaseOnce = null
+        savedStateHandle.remove<String>(KEY_MAPPING)
+        savedStateHandle.remove<String>(KEY_PHASE)
+    }
+
+    private fun restoredSessionMapping(columns: List<String>): List<CsvMappingRow>? =
+        savedStateHandle
+            .get<String>(KEY_MAPPING)
+            ?.let { runCatching { Json.decodeFromString<List<CsvMappingRow>>(it) }.getOrNull() }
+            ?.takeIf { mapping -> mapping.map { it.sourceColumn } == columns }
 
     private fun recoverable(
         recoverTo: ImportUiState.Step,
@@ -509,6 +551,8 @@ public class ImportViewModel(
     private companion object {
         const val KEY_STAGING_PATH: String = "f13.import.stagingPath"
         const val KEY_FILE_NAME: String = "f13.import.fileName"
+        const val KEY_MAPPING: String = "f13.import.mapping"
+        const val KEY_PHASE: String = "f13.import.phase"
         const val MAX_IMPORT_BYTES: Int = 20 * 1024 * 1024
     }
 }
