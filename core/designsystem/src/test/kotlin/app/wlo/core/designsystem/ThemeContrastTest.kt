@@ -41,6 +41,7 @@ class ThemeContrastTest {
             assertContrast("$name $role", colors.first, colors.second, MIN_TEXT_CONTRAST)
         }
         assertContrast("$name outline", scheme.outline, scheme.surface, MIN_COMPONENT_CONTRAST)
+        assertContrast("$name chart boundary", extended.chartBoundary, scheme.surface, MIN_COMPONENT_CONTRAST)
 
         val selectedContainer = scheme.primary.compositeOver(scheme.surface, SELECTED_CONTAINER_ALPHA)
         assertContrast("$name selected chip", scheme.primary, selectedContainer, MIN_TEXT_CONTRAST)
@@ -63,10 +64,11 @@ private data class ExtendedForTest(
     val developing: Color,
     val info: Color,
     val textTertiary: Color,
+    val chartBoundary: Color,
 )
 
 private fun darkExtendedColorsForTest(): ExtendedForTest =
-    ExtendedForTest(WloColors.Held, WloColors.Developing, WloColors.Info, WloColors.TextTertiary)
+    ExtendedForTest(WloColors.Held, WloColors.Developing, WloColors.Info, WloColors.TextTertiary, WloColors.Accent)
 
 private fun lightExtendedColorsForTest(): ExtendedForTest =
     ExtendedForTest(
@@ -74,6 +76,7 @@ private fun lightExtendedColorsForTest(): ExtendedForTest =
         WloColors.DevelopingLight,
         WloColors.InfoLight,
         WloColors.TextTertiaryLight,
+        WloColors.PrimaryLight,
     )
 
 private fun contrastRatio(

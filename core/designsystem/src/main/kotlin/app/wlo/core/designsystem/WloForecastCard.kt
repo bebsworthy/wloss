@@ -331,6 +331,7 @@ public fun WloForecastChart(
     val outline = MaterialTheme.colorScheme.outline
     val centerLine = MaterialTheme.colorScheme.onSurface
     val accentDim = wloExtendedColors.accentDim
+    val chartBoundary = wloExtendedColors.chartBoundary
     val accent = MaterialTheme.colorScheme.primary
     val chrome = wloExtendedColors.textTertiary
     val axisStyle =
@@ -456,8 +457,8 @@ public fun WloForecastChart(
             return path
         }
 
-        drawPath(line(fast), accentDim, style = Stroke(1.5f))
-        drawPath(line(slow), accentDim, style = Stroke(1.5f))
+        drawPath(line(fast), chartBoundary, style = Stroke(1.5f))
+        drawPath(line(slow), chartBoundary, style = Stroke(1.5f))
         drawPath(line(mid), centerLine, style = Stroke(2.8f, cap = StrokeCap.Round))
 
         // Goal line: hairline across at the target weight.

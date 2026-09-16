@@ -77,6 +77,7 @@ public object WloColors {
 /** Semantic tokens M3's scheme cannot express (wells, deltas, quality states). */
 public data class WloExtendedColors(
     val accentDim: Color,
+    val chartBoundary: Color,
     val neutralDelta: Color,
     val held: Color,
     val developing: Color,
@@ -93,6 +94,7 @@ public val LocalWloExtendedColors: ProvidableCompositionLocal<WloExtendedColors>
 private val darkExtendedColors =
     WloExtendedColors(
         accentDim = WloColors.AccentDim,
+        chartBoundary = WloColors.Accent,
         neutralDelta = WloColors.NeutralDelta,
         held = WloColors.Held,
         developing = WloColors.Developing,
@@ -105,6 +107,7 @@ private val darkExtendedColors =
 
 private val lightExtendedColors =
     darkExtendedColors.copy(
+        chartBoundary = WloColors.PrimaryLight,
         held = WloColors.HeldLight,
         developing = WloColors.DevelopingLight,
         info = WloColors.InfoLight,
