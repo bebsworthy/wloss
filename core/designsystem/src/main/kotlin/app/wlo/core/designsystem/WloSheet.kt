@@ -8,8 +8,10 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.paneTitle
 import androidx.compose.ui.semantics.semantics
 
@@ -25,9 +27,7 @@ import androidx.compose.ui.semantics.semantics
  * [ExperimentalMaterial3Api] opt-in so callers never see it.
  *
  * @param onDismissRequest called when the user dismisses the sheet
- * @param title optional sheet title, rendered as a [WloCardHeader] at the top
- *   of the sheet column (the same uppercase micro-label cards wear) — sheets
- *   stop hand-stacking a `Text(wloType.title)` first child
+ * @param title optional sentence-case sheet heading using M3's title role
  * @param content sheet body, [ColumnScope] so callers can weight/space
  */
 @OptIn(ExperimentalMaterial3Api::class)
@@ -58,7 +58,13 @@ public fun WloSheet(
                     .padding(bottom = WloSpacing.SCREEN),
             verticalArrangement = Arrangement.spacedBy(WloSpacing.CARD),
         ) {
-            title?.let { WloCardHeader(title = it) }
+            title?.let {
+                Text(
+                    text = it,
+                    style = MaterialTheme.typography.titleLarge,
+                    modifier = Modifier.semantics { heading() },
+                )
+            }
             content()
         }
     }

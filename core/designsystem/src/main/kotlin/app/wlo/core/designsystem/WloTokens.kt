@@ -28,7 +28,7 @@ public object WloSpacing {
     public val ROW_MIN: Dp = 40.dp
 
     /** Secondary interactive rows. */
-    public val ROW_INTERACTIVE: Dp = 44.dp
+    public val ROW_INTERACTIVE: Dp = 48.dp
 
     /** All primary daily-use targets (shutter, confirm, check-off...). */
     public val TOUCH_PRIMARY: Dp = 48.dp

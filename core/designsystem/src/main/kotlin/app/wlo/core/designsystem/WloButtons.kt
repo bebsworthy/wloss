@@ -11,8 +11,7 @@ import androidx.compose.ui.Modifier
  * WLO's primary action (owner review WLO-0030, defect 4: bordered Surfaces
  * with left-aligned text are not buttons). A real Material 3 filled
  * [Button]: centered label, WLO type via the mapped Material typography,
- * `WloShape.Chip` (8 dp — §1.4's chip/stamp radius, the closest WLO token
- * for controls), and the §3 `touch-primary` 48 dp floor for daily-use
+ * native M3 shape role, and the §3 `touch-primary` 48 dp floor for daily-use
  * targets. Label copy is the caller's job (sentence case, zero guilt, §8).
  *
  * Fill comes from the theme's `primary` (WLO accent); use
@@ -31,14 +30,13 @@ public fun WloButton(
         onClick = onClick,
         modifier = modifier.heightIn(min = WloSpacing.TOUCH_PRIMARY),
         enabled = enabled,
-        shape = WloShape.Chip,
     ) {
         Text(text = label)
     }
 
 /**
  * WLO's secondary action — a real Material 3 [OutlinedButton] with the same
- * geometry as [WloButton] (centered label, 8 dp shape, 48 dp touch floor);
+ * geometry as [WloButton] (centered label, native shape, 48 dp touch floor);
  * the hairline `outline` stroke is M3's own. Use for config, secondary and
  * destructive-adjacent actions; the filled button stays primary (§3: primary
  * actions bottom-third, config top-right or behind long-press).
@@ -56,7 +54,6 @@ public fun WloSecondaryButton(
         onClick = onClick,
         modifier = modifier.heightIn(min = WloSpacing.TOUCH_PRIMARY),
         enabled = enabled,
-        shape = WloShape.Chip,
     ) {
         Text(text = label)
     }

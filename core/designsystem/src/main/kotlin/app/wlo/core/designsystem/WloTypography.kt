@@ -174,18 +174,18 @@ public fun wloTypography(): WloTypography =
 public fun wloMaterialTypography(wlo: WloTypography = wloTypography()): Typography =
     Typography(
         displayLarge = wlo.hero,
-        displayMedium = wlo.hero,
-        displaySmall = wlo.hero,
+        displayMedium = wlo.statL,
+        displaySmall = wlo.statM,
         headlineLarge = wlo.statL,
         headlineMedium = wlo.statL,
         headlineSmall = wlo.statM,
-        titleLarge = wlo.title.copy(fontSize = 18.sp),
+        titleLarge = wlo.titleL,
         titleMedium = wlo.title,
         titleSmall = wlo.title.copy(fontWeight = FontWeight.Medium, fontSize = 15.sp),
         bodyLarge = wlo.body,
         bodyMedium = wlo.body.copy(fontSize = 14.sp),
         bodySmall = wlo.body.copy(fontSize = 12.sp),
-        labelLarge = wlo.label.copy(fontSize = 13.sp),
+        labelLarge = wlo.body.copy(fontWeight = FontWeight.Medium, fontSize = 14.sp),
         labelMedium = wlo.label,
         labelSmall = wlo.label.copy(fontSize = 10.5.sp),
     )

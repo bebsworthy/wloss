@@ -24,7 +24,8 @@ public object WloColors {
     public val Surface: Color = Color(0xFF151A21)
     public val SurfaceRaised: Color = Color(0xFF1B222B)
     public val SurfaceSunken: Color = Color(0xFF0A0D11)
-    public val Outline: Color = Color(0xFF2A323D)
+    public val Outline: Color = Color(0xFF84909D)
+    public val OutlineVariant: Color = Color(0xFF46515E)
     public val TextPrimary: Color = Color(0xFFE8ECF1)
     public val TextSecondary: Color = Color(0xFF9AA6B5)
 
@@ -38,13 +39,32 @@ public object WloColors {
     public val Held: Color = Color(0xFFE8B34B)
     public val Developing: Color = Color(0xFF7FA6C9)
     public val Info: Color = Color(0xFF6FB7FF)
+    public val ErrorContainer: Color = Color(0xFF5B4500)
+    public val OnErrorContainer: Color = Color(0xFFFFE08A)
 
     // Light theme inversions (§1.1).
     public val BgLight: Color = Color(0xFFF7F8FA)
     public val SurfaceLight: Color = Color(0xFFFFFFFF)
     public val SurfaceSunkenLight: Color = Color(0xFFEEF1F4)
     public val TextPrimaryLight: Color = Color(0xFF171C23)
-    public val TextTertiaryLight: Color = Color(0xFF5C6875)
+    public val TextSecondaryLight: Color = Color(0xFF46525F)
+    public val TextTertiaryLight: Color = Color(0xFF4D5966)
+    public val OutlineLight: Color = Color(0xFF66717D)
+    public val OutlineVariantLight: Color = Color(0xFFB8C1CB)
+    public val PrimaryLight: Color = Color(0xFF006B50)
+    public val PrimaryContainerLight: Color = Color(0xFFB8F1DB)
+    public val OnPrimaryContainerLight: Color = Color(0xFF002117)
+    public val SecondaryLight: Color = Color(0xFF405E76)
+    public val SecondaryContainerLight: Color = Color(0xFFD2E5F5)
+    public val OnSecondaryContainerLight: Color = Color(0xFF0B1E2C)
+    public val TertiaryLight: Color = Color(0xFF205D7A)
+    public val TertiaryContainerLight: Color = Color(0xFFC9E9FF)
+    public val OnTertiaryContainerLight: Color = Color(0xFF001E2C)
+    public val HeldLight: Color = Color(0xFF725500)
+    public val HeldContainerLight: Color = Color(0xFFFFE08A)
+    public val OnHeldContainerLight: Color = Color(0xFF251A00)
+    public val DevelopingLight: Color = Color(0xFF365F7D)
+    public val InfoLight: Color = Color(0xFF1E5F8A)
 
     // Data-viz series (§1.3, Okabe-Ito).
     public val Series1: Color = Color(0xFF56B4E9)
@@ -85,50 +105,93 @@ private val darkExtendedColors =
 
 private val lightExtendedColors =
     darkExtendedColors.copy(
+        held = WloColors.HeldLight,
+        developing = WloColors.DevelopingLight,
+        info = WloColors.InfoLight,
         textTertiary = WloColors.TextTertiaryLight,
         surfaceRaised = WloColors.SurfaceLight,
         surfaceSunken = WloColors.SurfaceSunkenLight,
     )
 
-private val darkScheme: ColorScheme =
+internal val WloDarkColorScheme: ColorScheme =
     darkColorScheme(
         primary = WloColors.Accent,
         onPrimary = WloColors.SurfaceSunken,
+        primaryContainer = WloColors.AccentDim,
+        onPrimaryContainer = WloColors.TextPrimary,
         secondary = WloColors.Developing,
         onSecondary = WloColors.SurfaceSunken,
+        secondaryContainer = Color(0xFF253C50),
+        onSecondaryContainer = Color(0xFFD2E5F5),
         tertiary = WloColors.Info,
         onTertiary = WloColors.SurfaceSunken,
+        tertiaryContainer = Color(0xFF194566),
+        onTertiaryContainer = Color(0xFFC9E9FF),
         background = WloColors.Bg,
         onBackground = WloColors.TextPrimary,
         surface = WloColors.Surface,
         onSurface = WloColors.TextPrimary,
         surfaceVariant = WloColors.SurfaceRaised,
         onSurfaceVariant = WloColors.TextSecondary,
+        surfaceDim = WloColors.SurfaceSunken,
+        surfaceBright = WloColors.SurfaceRaised,
         surfaceContainerLowest = WloColors.SurfaceSunken,
         surfaceContainerLow = WloColors.SurfaceSunken,
         surfaceContainer = WloColors.Surface,
         surfaceContainerHigh = WloColors.SurfaceRaised,
         surfaceContainerHighest = WloColors.SurfaceRaised,
         outline = WloColors.Outline,
-        outlineVariant = WloColors.Outline,
+        outlineVariant = WloColors.OutlineVariant,
         error = WloColors.Held,
         onError = WloColors.SurfaceSunken,
+        errorContainer = WloColors.ErrorContainer,
+        onErrorContainer = WloColors.OnErrorContainer,
+        inverseSurface = WloColors.TextPrimary,
+        inverseOnSurface = WloColors.SurfaceSunken,
+        inversePrimary = WloColors.AccentDim,
+        surfaceTint = WloColors.Accent,
+        scrim = Color.Black,
     )
 
-private val lightScheme: ColorScheme =
+internal val WloLightColorScheme: ColorScheme =
     lightColorScheme(
-        primary = WloColors.AccentDim,
-        onPrimary = WloColors.BgLight,
+        primary = WloColors.PrimaryLight,
+        onPrimary = Color.White,
+        primaryContainer = WloColors.PrimaryContainerLight,
+        onPrimaryContainer = WloColors.OnPrimaryContainerLight,
+        secondary = WloColors.SecondaryLight,
+        onSecondary = Color.White,
+        secondaryContainer = WloColors.SecondaryContainerLight,
+        onSecondaryContainer = WloColors.OnSecondaryContainerLight,
+        tertiary = WloColors.TertiaryLight,
+        onTertiary = Color.White,
+        tertiaryContainer = WloColors.TertiaryContainerLight,
+        onTertiaryContainer = WloColors.OnTertiaryContainerLight,
         background = WloColors.BgLight,
         onBackground = WloColors.TextPrimaryLight,
         surface = WloColors.SurfaceLight,
         onSurface = WloColors.TextPrimaryLight,
         surfaceVariant = WloColors.SurfaceSunkenLight,
-        onSurfaceVariant = WloColors.TextSecondary,
-        outline = WloColors.Outline,
+        onSurfaceVariant = WloColors.TextSecondaryLight,
+        surfaceDim = WloColors.SurfaceSunkenLight,
+        surfaceBright = WloColors.SurfaceLight,
+        surfaceContainerLowest = WloColors.SurfaceLight,
+        surfaceContainerLow = Color(0xFFF2F4F7),
+        surfaceContainer = WloColors.BgLight,
+        surfaceContainerHigh = WloColors.SurfaceSunkenLight,
+        surfaceContainerHighest = Color(0xFFE5E9ED),
+        outline = WloColors.OutlineLight,
+        outlineVariant = WloColors.OutlineVariantLight,
         // Red does not exist in WLO's theme; `held` amber is the strongest state color.
-        error = WloColors.Held,
-        onError = WloColors.TextPrimaryLight,
+        error = WloColors.HeldLight,
+        onError = Color.White,
+        errorContainer = WloColors.HeldContainerLight,
+        onErrorContainer = WloColors.OnHeldContainerLight,
+        inverseSurface = WloColors.TextPrimaryLight,
+        inverseOnSurface = WloColors.BgLight,
+        inversePrimary = WloColors.Accent,
+        surfaceTint = WloColors.PrimaryLight,
+        scrim = Color.Black,
     )
 
 /** Convenience accessor. */
@@ -155,7 +218,7 @@ public fun WloTheme(
         LocalWloTypography provides typography,
     ) {
         MaterialTheme(
-            colorScheme = if (darkTheme) darkScheme else lightScheme,
+            colorScheme = if (darkTheme) WloDarkColorScheme else WloLightColorScheme,
             typography = wloMaterialTypography(typography),
             content = content,
         )

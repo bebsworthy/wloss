@@ -35,6 +35,11 @@ color (Material You) is **opt-in and surfaces-only** — semantic and data-viz
 roles are never wallpaper-sourced (R-D1; rationale in research
 synthesis §3/C1, §2.2).
 
+The release app still explicitly selects the dark scheme in `MainActivity`.
+The light scheme and previews are maintained and contrast-tested so a future
+theme policy can enable them; this foundation does not add a preference,
+follow the system, or enable dynamic color.
+
 ### 1.1 Neutral core (dark values; light theme inverts tones, keeps roles)
 
 | Token | Dark | Role |
@@ -43,14 +48,19 @@ synthesis §3/C1, §2.2).
 | `surface` | `#151A21` | Cards |
 | `surface-raised` | `#1B222B` | Sheets, elevated cards, viewfinder chrome |
 | `surface-sunken` | `#0A0D11` | Wells: charts, number pads, code/receipt blocks |
-| `outline` | `#2A323D` | Hairlines, dividers (1 dp) |
+| `outline` | `#84909D` | Essential component boundaries (≥ 3:1) |
+| `outline-variant` | `#46515E` | Decorative hairlines and dividers |
 | `text-primary` | `#E8ECF1` | Body & numerals (≥ 13:1 on `bg`) |
 | `text-secondary` | `#9AA6B5` | Labels, axis text (≥ 4.5:1) |
 | `text-tertiary` | `#808C9A` | Secondary receipts and faint gaps (R-U13 dots); 4.68:1 minimum on dark surfaces |
 
 Light theme: `bg #F7F8FA`, `surface #FFFFFF`, `surface-sunken #EEF1F4`,
-`text-primary #171C23`. Both themes: text ≥ 4.5:1 (WCAG AA), large numerals
-and chart lines ≥ 3:1 (WCAG 1.4.11).
+`text-primary #171C23`, `text-secondary #46525F`, `text-tertiary #4D5966`,
+and `outline #66717D`. Light semantic foregrounds are deliberately darker:
+`held #725500`, `developing #365F7D`, `info #1E5F8A`. Both themes: normal
+text ≥ 4.5:1, large text ≥ 3:1, and essential component boundaries ≥ 3:1.
+Tests enumerate effective role pairs, including the selected-chip alpha
+composite. Decorative `outline-variant` dividers are not treated as controls.
 
 ### 1.2 Semantic states — no moral valence
 
@@ -92,9 +102,10 @@ opacity outward (darkest at center — fan-chart grammar). Chart chrome is
 Dark elevation is expressed as surface tint steps (`bg → surface →
 surface-raised`) plus 1 dp `outline` hairlines — **no drop shadows in dark
 theme** (they read as dirt at low luminance); light theme may use soft
-shadows. Radii: cards 20 dp, chips/stamps 8 dp, sheets 28 dp top, full-round
-for pills and the shutter FAB. Cards are bordered (`outline` hairline) not
-shadowed — density stays legible without depth noise.
+shadows. Radii: cards 20 dp, static status stamps 8 dp, sheets 28 dp top,
+full-round for pills and the shutter FAB. Buttons, interactive chips, dialogs,
+and other controls use their native Material 3 shape roles. Cards are bordered
+(`outline` hairline) rather than shadowed in dark mode.
 
 ---
 
@@ -120,6 +131,7 @@ width, not from font changes.
 | `stat-m` | 20 sp, wght 550, `tnum` | Row-level stat (trend rows, deltas) |
 | `stat-s` / `receipt` | 13–15 sp, wght 450–500, `tnum` | Dense stat lines ("785 cal · 52g P · 96g C · 21g F"), table cells |
 | `title` | 16–18 sp, wght 600 | Card titles, nav labels |
+| `title-l` | 24 sp, wght 600 | Screen, sheet and dialog hierarchy |
 | `body` | 14–15 sp, wght 400 | Prose, explainers |
 | `label` | 11–12 sp, wght 500, +2% tracking, sentence case | Chips, axis labels, provenance chips |
 
@@ -143,7 +155,7 @@ research §2.1):
 | `gap-tight` | 4 dp | Stat row pairs, chip clusters |
 | `pad-card` | 14–16 dp | Card padding |
 | `row-min` | 40 dp | Display-only dense list rows (density −2) |
-| `row-interactive` | 44 dp | Secondary interactive rows |
+| `row-interactive` | **48 dp** | Interactive list and preference rows |
 | `touch-primary` | **48 dp** | All primary daily-use targets: shutter, weigh-in confirm, Apply/Keep, check-off, Bristol confirm, quick-action rail |
 
 Floors: never below 24 dp (WCAG 2.2 §2.5.8 AA); flow-critical controls in

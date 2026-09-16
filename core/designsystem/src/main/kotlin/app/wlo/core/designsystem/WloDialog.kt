@@ -37,7 +37,6 @@ public fun WloDialog(
         onDismissRequest = { onDismiss?.invoke() },
         modifier = modifier,
         containerColor = MaterialTheme.colorScheme.surface,
-        shape = WloShape.Card,
         title = { Text(text = title, style = wloType.title) },
         text =
             text?.let { copyLine ->
