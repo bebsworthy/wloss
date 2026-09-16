@@ -15,7 +15,12 @@ the app, and uninstalling removes local data.
 
 Both channels derive a monotonic `versionCode` from the full Git commit count.
 The CI workflow runs the build, architecture checks, build-logic self-tests,
-and API-29 instrumented suite before the publish job becomes eligible.
+and a bounded API-29 release-smoke suite before the publish job becomes
+eligible. The smoke set covers launch, weight-first onboarding, weigh-in entry
+and confirmation, forecast rendering, and backup—the critical dogfood/update
+path. The complete instrumented suite runs nightly and on manual dispatch,
+with reports retained even on failure; it is deliberately not an unbounded
+per-push publication lock.
 
 ## Signing identity
 

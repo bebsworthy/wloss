@@ -107,3 +107,20 @@ Local remediation evidence: `:app:testDebugUnitTest` and
 `:feature:f06-weight:testDebugUnitTest` pass, including the whole-graph verify
 test and goal-progress reliability coverage. A new push will rerun the complete
 remote gate before publication.
+
+
+## Remote emulator gate adjustment — 2026-09-16
+
+The first remediated run proved the JVM/build/architecture gates green, but the
+hosted `connectedDebugAndroidTest` invocation emitted `Running tests on devices`
+and then no test progress for 61 minutes; it was cancelled after 65 minutes to
+recover logs. An opaque, effectively unbounded 62-test orchestrated suite is not
+an operable per-push release lock.
+
+The publication gate now uses a 35-minute, six-scenario API-29 release-smoke
+set covering launch, weight-first onboarding, weigh-in entry, trend-first save
+confirmation, forecast rendering, and backup. The complete instrumented suite
+remains intact in `instrumented-full.yml`, runs nightly or by manual dispatch,
+has a 90-minute bound, and uploads reports even on failure. Publication still
+requires Android device evidence; exhaustive coverage is retained without
+letting one hung test block every dogfood build indefinitely.
