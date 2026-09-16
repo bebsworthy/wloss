@@ -949,10 +949,12 @@ public class WeighInViewModel(
                 measurements.rangeOfKind(id, MeasurementKind.WEIGHT, floor, today),
                 emptyList(),
             )
+        val historySelections = reads.value(weighIns.dailySelections(id, floor, today), emptyList())
+        val rawCountByDay = historyEvents.groupingBy { it.dayEpochDay }.eachCount()
         val history =
-            historyEvents
-                .map { WeightSample(it.dayEpochDay, it.valueReal) }
-                .let { WeightHistory.build(it, today) }
+            historySelections
+                .map { WeightSample(it.dayEpochDay, it.kg) }
+                .let { WeightHistory.build(it, today, rawCountByDay = rawCountByDay) }
                 .map { bucket ->
                     HistoryBucketUi(
                         tier = bucket.tier,

@@ -300,7 +300,8 @@ public class LogbookViewModel(
 
         val attrsResult = measurements.attrsInRange(id, queryStart, queryEnd)
         val eventsResult = measurements.rangeOfKind(id, MeasurementKind.WEIGHT, queryStart, queryEnd)
-        if (attrsResult is WloResult.Err || eventsResult is WloResult.Err) {
+        val selectionsResult = weighIns.dailySelections(id, queryStart, queryEnd)
+        if (attrsResult is WloResult.Err || eventsResult is WloResult.Err || selectionsResult is WloResult.Err) {
             data.value = data.value.copy(contentState = LogbookContentState.Error, range = activeRange)
             return
         }
@@ -314,6 +315,7 @@ public class LogbookViewModel(
         val flaggedSet = flaggedIds.filter { it.attr == WeighInAttribute.OUTLIER.wireName }.map { it.eventId }.toSet()
         val editedSet = flaggedIds.filter { it.attr == WeighInAttribute.EDITED.wireName }.map { it.eventId }.toSet()
         val events = (eventsResult as WloResult.Ok).value.sortedByDescending { it.capturedAt }
+        val selections = (selectionsResult as WloResult.Ok).value.associateBy { it.dayEpochDay }
         val total =
             if (activeRange == null) {
                 measurements.countOfKind(id, MeasurementKind.WEIGHT, 0, today).getOrNull() ?: events.size
@@ -331,7 +333,8 @@ public class LogbookViewModel(
 
         fun flushMonth() {
             if (monthDays.isEmpty()) return
-            val canonical = monthDays.associate { (day, dayEvents) -> day to dayEvents.minOf { it.valueReal } }
+            val canonical = monthDays.mapNotNull { (day, _) -> selections[day]?.let { day to it.kg } }.toMap()
+            if (canonical.isEmpty()) return
             val newest = canonical.keys.max()
             val oldest = canonical.keys.min()
             val monthBegin = monthStart(oldest).toEpochDays()
@@ -353,7 +356,7 @@ public class LogbookViewModel(
                     statLabel = statLabel,
                     rows =
                         monthDays.flatMap { (day, dayEvents) ->
-                            val lowestId = dayEvents.minByOrNull { it.valueReal }?.id
+                            val selectedIds = selections[day]?.contributingEventIds.orEmpty().toSet()
                             dayEvents.map { event ->
                                 LogbookRowUi(
                                     id = event.id,
@@ -361,7 +364,7 @@ public class LogbookViewModel(
                                     timeLabel = timeLabel(event.capturedAt),
                                     weightLabel = unit.format(event.valueReal),
                                     sourceLabel = event.source.replace('-', ' '),
-                                    isLowest = event.id == lowestId && dayEvents.size > 1,
+                                    isLowest = event.id in selectedIds && dayEvents.size > 1,
                                     flagged = event.id in flaggedSet,
                                     edited = event.id in editedSet,
                                 )

@@ -58,6 +58,7 @@ public object WeightHistory {
     public fun build(
         samples: List<WeightSample>,
         today: Long,
+        rawCountByDay: Map<Long, Int>? = null,
         dailyDays: Int = DAILY_DAYS,
         weeklyWeeks: Int = WEEKLY_WEEKS,
         monthlyMonths: Int = MONTHLY_MONTHS,
@@ -109,7 +110,7 @@ public object WeightHistory {
             .asReversed()
             .map { range ->
                 val days = (range.start..range.end).filter { canonical.containsKey(it) }
-                val count = days.sumOf { day -> byDay.getValue(day).size }
+                val count = days.sumOf { day -> rawCountByDay?.get(day) ?: byDay.getValue(day).size }
                 val endValue = days.maxOrNull()?.let { canonical.getValue(it) }
                 val delta = if (endValue != null && previous != null) endValue - previous!! else null
                 previous = endValue ?: previous
