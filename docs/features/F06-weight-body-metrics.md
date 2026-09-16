@@ -67,10 +67,11 @@ Core objectives:
   collapsed, overwritten, or judged (owner note: people re-weigh after coffee,
   a walk, or the bathroom to "get their win"; that psychology is supported and
   recorded, and it is partly why the gut tracker exists beside the scale). The
-  **daily scalar is a versioned derived view**, never an ingestion rule. The
-  lowest-of-day/noon-normalized candidate remains available for benchmarking,
-  but WLO-0072 compares it with first-of-day, consistent-time-window, and
-  median candidates before Release 1 freezes a policy. Girths use last-in-day.
+  **daily scalar is a versioned derived view**, never an ingestion rule.
+  WLO-0072 froze the Release 1 policy as a fixed, versioned
+  consistent-time-window anchored per profile, with median fallback when the
+  window has no reading. Minimum and first-of-day remain benchmark comparators,
+  not identity or default-selection rules. Girths use last-in-day.
   Raw events and durable source identity are preserved; only a repeat delivery
   of the same source record updates an existing event.
 - **Trend weight — selectable smoothers (the math is in-app documentation):**
@@ -188,10 +189,14 @@ ritual with F13's mechanics per R-B7 — F06 only renders both.)
 
 - **Zero-phase smoother spec:** centered MA vs. double-exponential-with-backward-pass vs. Happy Scale's proprietary equivalent — needs an implementation decision plus a documented-behavior spec (the "revises recent values" UX must be designed, not discovered).
 - **Default α for EWMA:** 0.1 (stable, laggy) vs. 0.25 (responsive) — propose shipping 0.15 with the tuner visible; master doc should ratify. *(Resolved: R-A2 — default 0.15, tuner visible.)*
-- **Daily-scalar edge cases:** fasting days and timezone shifts remain benchmark
-  scenarios for WLO-0072. Health Connect dedup is resolved by durable source
-  identity; it is not part of scalar selection.
+- **Daily-scalar edge cases:** WLO-0072's versioned benchmark covers multiple
+  attempts, low outliers, missing days, mixed times, backfills, travel/timezone,
+  edits, and deletes. The selected consistent-time-window policy and its known
+  misses are published in
+  [`weight-policy-benchmark-v1.md`](../research/weight-policy-benchmark-v1.md).
+  Health Connect dedup is resolved by durable source identity; it is not part
+  of scalar selection.
 - **F07 contract:** resolved by R-B5 — versioned daily scalars + trend +
-  residual σ + coverage % + provenance flags; WLO-0072 selects the Release 1
-  scalar policy.
+  residual σ + coverage % + provenance flags; WLO-0072 selected the Release 1
+  consistent-time-window scalar policy with median fallback.
 - **Milestone date rendering:** confirmed dependency on F07's forecast engine — if F07 is in DEVELOPING state, F06 milestones show ranges only; boundary behavior to be locked jointly.

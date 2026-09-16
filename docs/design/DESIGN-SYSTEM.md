@@ -388,7 +388,8 @@ Aisle-ordered list (user-order respected forever; headers collapse) · Check-off
 **Release 1:** trend confirmation card (`Weight trend`, raw small beneath;
 identical neutral motion in either direction) · accessible entry in kg/lb ·
 honest raw+trend chart · logbook and import identity · loss/maintenance/gain
-goal state · goal editor/progress · Health Connect weight import. **Release 2:**
+goal state · goal editor/progress · Health Connect weight/body-fat import.
+**Release 2:**
 OCR viewfinder · progress ribbon · widget · Fresh Start · discreet mode ·
 optional 10-day-best · measurement-condition insights. **Deferred:** smoother
 comparison/tuning · body-fat/girth/EAV custom metrics · milestone celebration ·

@@ -14,3 +14,12 @@ Availability, permission denial/revocation, initial and incremental sync, retry,
 
 # Acceptance
 Replaying a cursor is idempotent; updates do not create duplicates; deletions are reflected without destroying unrelated events; provenance survives export/restore; F06 and Hub show the same recomputed answer.
+
+
+## Implementation evidence (2026-09-16)
+
+- Added the stable Android Health Connect 1.1 client behind the F13 port boundary for Weight and Body Fat, with explicit availability and per-datatype permission states.
+- Added durable per-datatype change cursors, source identity/version upsert, source deletion, expired-token full reconciliation, retry state, and visible import logs. Distinct cross-source events remain distinct.
+- Persisted Health Connect provenance and sync state through process restart and explicit backup/restore; Room schema advanced with an exported migration.
+- Fake-provider tests cover permission denial/revocation, initial/incremental sync, duplicate delivery, update/delete, retry, timezone travel, token expiry, and restart.
+- Verification passed: focused vault/database tests, compile, ktlint, detekt, architecture, aggregate lint, and API 29 unavailable/update-required UI behavior without a crash.

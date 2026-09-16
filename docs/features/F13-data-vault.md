@@ -122,14 +122,19 @@ per-bundle opt-in — R-U18, matching R-U14's posture).
 Security: biometric app lock (BiometricPrompt, PIN fallback) with a
 configurable timeout; optional attachment encryption [v1.x].
 
-**Health Connect.** Release 1 imports weight with explicit datatype consent;
-later releases may add two-way sync and body composition, steps, exercise, and
-nutrition. HC is single-profile per device: the sole Release 1 profile owns the
-connection (R-B9). Identity uses the Health Connect record ID, data origin,
-recording method, version/update metadata, timestamp, and zone offset so a
-re-delivered record updates rather than duplicates its local event. WLO never
-uses min/lowest-of-day as deduplication: all distinct source events remain in
-the log, while F06 computes a separate versioned daily scalar for trends.
+**Health Connect.** Release 1 manually synchronizes weight and body-fat records
+after explicit per-datatype consent. It exposes unavailable, permission-held,
+syncing, success, retry, and failure states; background scheduling and two-way
+sync remain later work, as do steps, exercise, and nutrition. HC is
+single-profile per device: the sole Release 1 profile owns the connection
+(R-B9). Each datatype has a durable change cursor. Identity uses the Health
+Connect record ID, data origin, recording method, client/version metadata,
+timestamp, and zone offset so re-delivery updates rather than duplicates its
+local event and source deletion removes only the matching event. Expired change
+tokens trigger a full identity reconciliation. WLO never uses min/lowest-of-day
+as deduplication: all distinct source events remain in the log, while F06
+computes a separate versioned daily scalar for trends. Provenance, source
+identity, and cursor state survive process restart and explicit backup/restore.
 
 **Bluetooth scales.** A driver layer for BIA scales. *(Owner amendment
 2026-09-11, R-S1/R-S13: WLO is Apache-2.0, so openScale's GPLv3 driver code

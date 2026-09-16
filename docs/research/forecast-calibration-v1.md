@@ -1,8 +1,10 @@
 # Weight forecast calibration v1
 
-Status: Release 1 engineering evidence for WLO-0073. This validates the
-existing loss forecast and its eligibility boundary; it does not validate
-weight-gain forecasting, which remains explicitly withheld for WLO-0083.
+Status: Release 1 engineering evidence for WLO-0073. This validates the loss
+forecast and its eligibility boundary. WLO-0083 subsequently added a separately
+evidenced direction-specific gain path; see
+[`weight-gain-forecast-v1.md`](weight-gain-forecast-v1.md). The loss calibration
+metrics below were not retroactively relabeled as gain evidence.
 
 ## Release decision
 
@@ -15,7 +17,7 @@ structurally ineligible to expose the central/on-trend date; only measured
 
 | Result | Minimum evidence | What UI may show |
 | --- | --- | --- |
-| `Withheld` | WLO-0080 safety eligibility does not allow goal math, including gain mode | No target-derived bands or dates |
+| `Withheld` | WLO-0080 safety eligibility does not allow goal math | No target-derived bands or dates |
 | `Developing` | Fewer than 10 usable paired days in 21, or no measured-TDEE solve | Neutral provisional outer range only; central/on-trend date suppressed; no measured claim |
 | `Held` | Three trailing unmarked intake days, weigh-in gap over four days, atypical-week flag, or failed outlier screen | No newly calculated dates; an optional last-good forecast is visibly frozen with its reason |
 | `Available` | WLO-0080 eligible, `EngineState.Updating` with at least 10 usable paired days, and a measured-TDEE solve | Measured three-band forecast with range-first copy |
@@ -46,7 +48,9 @@ Run:
 Each profile is evaluated at day 0 in cold-start/developing mode and again at
 day 14 in measured/available mode. Holdouts are scored 28 and 56 days after
 each cutoff. The executable snapshot also tests missing-data holds, outlier
-sensitivity, a 9→10 usable-day backfill transition, and gain withholding.
+sensitivity and a 9→10 usable-day backfill transition. The shared executable
+harness now also carries WLO-0083's direction-correct gain benchmark, whose
+physiological assumptions and limitations live in the separate gain report.
 
 ## Inputs and metrics
 

@@ -47,3 +47,12 @@ Current parallel wave is dependency-safe: WLO-0069 owns entry ergonomics in F06 
 Completed with device/static evidence: WLO-0069 M3 weigh-in ergonomics, WLO-0053 honest selected-window chart, WLO-0073 calibrated forecast quality contract with cold-start point-date suppression, and WLO-0074 shared goal-editor parity. The unchanged ≤28-day cold-start revision gate remains an explicit 39-day failure; Release 1 mitigates it by making developing forecasts range-only until measured availability.
 
 Next dependency-safe order: WLO-0070 post-save feedback, then WLO-0045 shared goal/milestone progress (both touch F06 and should not run concurrently); amended WLO-0038 Health Connect ingestion may run in parallel because it owns Android ingestion/data boundaries. WLO-0083 remains Release 2.
+
+
+## Release 1 implementation checkpoint (2026-09-16)
+
+Completed with isolated commits and ticket evidence: WLO-0070 trend-first post-save confirmation; WLO-0045 shared goal and milestone progress; WLO-0038 durable Health Connect weight/body-fat synchronization; WLO-0084 haptic permission contract; and WLO-0083 direction-correct gain forecasting. The final aggregate gate passed lint, ktlint, detekt, architecture, focused unit/benchmark/property/golden tests, and API 29 UI coverage.
+
+The scoped Release 1 weight-core implementation is now complete. The remaining Release 1 program step is WLO-0029: establish signed alpha/stable distribution and begin real-device dogfooding without breaking data continuity. Findings from dogfooding should create focused defects rather than reopening completed contracts.
+
+After dogfood distribution, the recommended Release 2 order is privacy/trust and daily utility first: WLO-0047 discreet mode, WLO-0046 Fresh Start, WLO-0042 progress ribbon, WLO-0041 home-screen widget, then WLO-0037 OCR input, WLO-0077 measurement-condition insights, and WLO-0076 optional 10-day-best. Advanced tickets remain gated on dogfood evidence.

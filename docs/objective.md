@@ -83,6 +83,9 @@ matrix are in `docs/features/FEATURES.md` §2.0.
 
 ## Current phase
 
-Implementation is in progress. Competitive and product research remains in
-`docs/research/`; the weight-first release contract in `FEATURES.md` governs
-sequencing when older research or prototypes describe a broader v1.
+The Release 1 weight-core implementation is complete against its scoped
+tickets and quality gates. Distribution and real-device dogfooding are next;
+their evidence may still produce focused hardening work before a stable tag.
+Competitive and product research remains in `docs/research/`; the weight-first
+release contract in `FEATURES.md` governs sequencing when older research or
+prototypes describe a broader v1.
