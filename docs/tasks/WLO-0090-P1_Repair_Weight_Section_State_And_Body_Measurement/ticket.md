@@ -1,13 +1,13 @@
 ---
 id: WLO-0090
 title: 'P1: Repair weight section state and body-measurement integrity'
-status: doing
+status: done
 theme: weight-core
 release:
 created: 2026-09-16T07:22:28Z
-modified: 2026-09-16T12:56:58Z
-closed:
-revision: 6888a9d374eb38db
+modified: 2026-09-16T14:02:51Z
+closed: 2026-09-16T14:02:51Z
+revision: 966818d6aef602b3
 blocks: [WLO-0092, WLO-0095, WLO-0098, WLO-0099]
 related: [WLO-0087]
 ---
