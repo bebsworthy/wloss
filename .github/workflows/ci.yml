@@ -156,11 +156,13 @@ jobs:
         run: |
           apksigner="$ANDROID_HOME/build-tools/$(ls "$ANDROID_HOME/build-tools" | sort -V | tail -1)/apksigner"
           "$apksigner" verify --verbose app/build/outputs/apk/release/app-release.apk
-          actual="$($apksigner verify --print-certs app/build/outputs/apk/release/app-release.apk \
-            | sed -n 's/^Signer #1 certificate SHA-256 digest: //p' \
-            | tr '[:lower:]' '[:upper:]')"
+          certs="$("$apksigner" verify --print-certs app/build/outputs/apk/release/app-release.apk)"
+          printf '%s\n' "$certs"
+          actual="$(printf '%s\n' "$certs" \
+            | awk -F': ' '/^Signer #1 certificate SHA-256 digest:/ { print toupper($2); exit }' \
+            | tr -d '[:space:]')"
           if [ "$actual" != "$EXPECTED_CERT_SHA256" ]; then
-            echo "::error::Signing certificate does not match WLO's pinned channel identity"
+            echo "::error::Signing certificate '$actual' does not match WLO's pinned channel identity"
             exit 1
           fi
       - name: Stage release asset
