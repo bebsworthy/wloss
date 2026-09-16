@@ -39,9 +39,16 @@ fun commitCount(): Int =
         workingDir = rootDir
     }.standardOutput.asText.get().trim().toIntOrNull() ?: 1
 
-fun versionOverride(name: String): String? =
-    providers.gradleProperty("wlo.$name").orNull
-        ?: providers.environmentVariable("WLO_${name.uppercase()}").orNull
+fun versionOverride(name: String): String? {
+    val environmentName =
+        when (name) {
+            "versionCode" -> "WLO_VERSION_CODE"
+            "versionName" -> "WLO_VERSION_NAME"
+            else -> error("Unsupported version override: $name")
+        }
+    return providers.gradleProperty("wlo.$name").orNull
+        ?: providers.environmentVariable(environmentName).orNull
+}
 
 android {
     namespace = app.wlo.buildlogic.AndroidConfig.namespaceFor(project.path)

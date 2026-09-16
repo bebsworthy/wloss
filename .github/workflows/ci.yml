@@ -153,16 +153,29 @@ jobs:
       - name: Verify signing identity
         env:
           EXPECTED_CERT_SHA256: 191A90BC4AC61C36647316ED748FE1C70940FDC06A0D8AD32C632A8288EA8EC5
+          EXPECTED_VERSION_CODE: ${{ steps.channel.outputs.version_code }}
+          EXPECTED_VERSION_NAME: ${{ steps.channel.outputs.version_name }}
         run: |
-          apksigner="$ANDROID_HOME/build-tools/$(ls "$ANDROID_HOME/build-tools" | sort -V | tail -1)/apksigner"
-          "$apksigner" verify --verbose app/build/outputs/apk/release/app-release.apk
-          certs="$("$apksigner" verify --print-certs app/build/outputs/apk/release/app-release.apk)"
+          build_tools="$ANDROID_HOME/build-tools/$(ls "$ANDROID_HOME/build-tools" | sort -V | tail -1)"
+          apksigner="$build_tools/apksigner"
+          aapt="$build_tools/aapt"
+          apk="app/build/outputs/apk/release/app-release.apk"
+          "$apksigner" verify --verbose "$apk"
+          certs="$("$apksigner" verify --print-certs "$apk")"
           printf '%s\n' "$certs"
           actual="$(printf '%s\n' "$certs" \
             | awk -F': ' '/certificate SHA-256 digest:/ { print toupper($NF); exit }' \
             | tr -d '[:space:]')"
           if [ "$actual" != "$EXPECTED_CERT_SHA256" ]; then
             echo "::error::Signing certificate '$actual' does not match WLO's pinned channel identity"
+            exit 1
+          fi
+          package="$("$aapt" dump badging "$apk" | sed -n '1p')"
+          printf '%s\n' "$package"
+          actual_code="$(printf '%s\n' "$package" | sed -n "s/.*versionCode='\([^']*\)'.*/\1/p")"
+          actual_name="$(printf '%s\n' "$package" | sed -n "s/.*versionName='\([^']*\)'.*/\1/p")"
+          if [ "$actual_code" != "$EXPECTED_VERSION_CODE" ] || [ "$actual_name" != "$EXPECTED_VERSION_NAME" ]; then
+            echo "::error::APK version '$actual_code/$actual_name' does not match channel '$EXPECTED_VERSION_CODE/$EXPECTED_VERSION_NAME'"
             exit 1
           fi
       - name: Stage release asset
