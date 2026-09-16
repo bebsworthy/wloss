@@ -284,7 +284,7 @@ class WeighInViewModelReliabilityTest {
                 viewModel.onEvent(WeighInEvent.CorrectFlagged)
                 advanceUntilIdle()
                 val correction = assertNotNull(viewModel.sheetState.value)
-                assertEquals("120.0", correction.weightText)
+                assertEquals("82.0", correction.weightText)
                 assertIs<WeighInEditIntent.CorrectReading>(correction.intent)
                 assertEquals(1, weighIns.commitCalls)
                 assertEquals(0, weighIns.deleteCalls)

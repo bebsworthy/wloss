@@ -700,12 +700,15 @@ public class WeighInViewModel(
                     confirmation.value = null
                     verdict.value = null
                     restoredSheetNeedsNewOperation = false
+                    val safePrefillKg = uiState.value.entryPrefillKg ?: original.valueReal
                     updateSheet(
                         SheetUi(
-                            weightText = activeUnit.formatNumber(original.valueReal),
+                            weightText = activeUnit.formatNumber(safePrefillKg),
                             dayText = local.date.toString(),
                             timeText = "%02d:%02d".format(local.hour, local.minute),
-                            prefillContext = "Correcting the saved ${activeUnit.format(original.valueReal)} reading.",
+                            prefillContext =
+                                "Correcting the saved ${activeUnit.format(original.valueReal)} reading; " +
+                                    "prefilled from your latest reliable trend.",
                             intent = WeighInEditIntent.CorrectReading(original.toCorrectionSnapshot()),
                             operationId = Uuid.random().toString(),
                         ),
