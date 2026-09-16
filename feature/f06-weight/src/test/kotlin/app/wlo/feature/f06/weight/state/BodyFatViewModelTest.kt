@@ -40,6 +40,43 @@ import kotlin.test.assertNull
 @OptIn(ExperimentalCoroutinesApi::class)
 class BodyFatViewModelTest {
     @Test
+    fun `unit toggles preserve canonical tape precision`() =
+        runTest {
+            Dispatchers.setMain(StandardTestDispatcher(testScheduler))
+            try {
+                val directory = Files.createTempDirectory("body-fat-units")
+                val settings =
+                    SettingsStoreFactory.create(
+                        directory.resolve("settings.preferences_pb").toString().toPath(),
+                    )
+                settings.setMassUnit(MassUnit.POUND)
+                val measurements = RecordingMeasurements()
+                val viewModel =
+                    BodyFatViewModel(FixedBodyClock, BodyProfileRepository, measurements, settings)
+                advanceUntilIdle()
+                viewModel.onEvent(BodyFatEvent.WaistChange("40"))
+                viewModel.onEvent(BodyFatEvent.NeckChange("15"))
+
+                settings.setMassUnit(MassUnit.KILOGRAM)
+                advanceUntilIdle()
+                settings.setMassUnit(MassUnit.POUND)
+                advanceUntilIdle()
+                viewModel.onEvent(BodyFatEvent.Compute)
+                viewModel.onEvent(BodyFatEvent.SaveToLogbook)
+                advanceUntilIdle()
+
+                val waist =
+                    measurements.commands
+                        .single()
+                        .inputs
+                        .single { it.name == "waist" }
+                assertEquals(101.6, waist.centimeters, 1e-9)
+            } finally {
+                Dispatchers.resetMain()
+            }
+        }
+
+    @Test
     fun `editing a restored committed draft starts a new operation`() =
         runTest {
             Dispatchers.setMain(StandardTestDispatcher(testScheduler))

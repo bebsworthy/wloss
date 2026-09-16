@@ -97,6 +97,14 @@ public class BodyFatViewModel(
     private val zone: TimeZone = TimeZone.currentSystemDefault()
     private var profileId: String? = null
     private var computed: ComputedBodySnapshot? = null
+    private val restoredLengthUnit: LengthUnit =
+        savedStateHandle.get<String>(LENGTH_UNIT_KEY)?.let(LengthUnit::valueOf) ?: LengthUnit.CENTIMETER
+    private var canonicalWaistCm: Double? =
+        parseNumber(savedStateHandle.get<String>(WAIST_KEY).orEmpty())?.let(restoredLengthUnit::toCentimeters)
+    private var canonicalNeckCm: Double? =
+        parseNumber(savedStateHandle.get<String>(NECK_KEY).orEmpty())?.let(restoredLengthUnit::toCentimeters)
+    private var canonicalHipCm: Double? =
+        parseNumber(savedStateHandle.get<String>(HIP_KEY).orEmpty())?.let(restoredLengthUnit::toCentimeters)
     private var operationId: String = savedStateHandle[OPERATION_KEY] ?: Uuid.random().toString()
     private var restoredDraftNeedsNewOperation: Boolean = savedStateHandle.get<String>(OPERATION_KEY) != null
 
@@ -109,6 +117,7 @@ public class BodyFatViewModel(
                 waistText = savedStateHandle[WAIST_KEY] ?: "",
                 neckText = savedStateHandle[NECK_KEY] ?: "",
                 hipText = savedStateHandle[HIP_KEY] ?: "",
+                lengthUnit = restoredLengthUnit,
                 committedOperationId = savedStateHandle[COMMITTED_OPERATION_KEY],
             ),
         )
@@ -137,6 +146,27 @@ public class BodyFatViewModel(
                 if (next != state.value.lengthUnit) changeUnit(next)
             }
         }
+        viewModelScope.launch {
+            profiles.observeActive().collectLatest { result ->
+                val profile = result.getOrNull() ?: return@collectLatest
+                val factsChanged =
+                    profileId != null &&
+                        (state.value.heightCm != profile.heightCm || state.value.sex != profile.sex)
+                profileId = profile.id
+                if (factsChanged) {
+                    computed = null
+                    state.value =
+                        state.value.copy(
+                            heightCm = profile.heightCm,
+                            sex = profile.sex,
+                            revision = state.value.revision + 1,
+                            computedRevision = null,
+                            estimate = null,
+                            notice = "Profile facts changed. Calculate again before saving.",
+                        )
+                }
+            }
+        }
     }
 
     public fun onEvent(event: BodyFatEvent) {
@@ -146,9 +176,18 @@ public class BodyFatViewModel(
                 invalidate { it.copy(method = event.method) }
                 viewModelScope.launch { settings.setBodyFatHeadlineMethod(event.method.wireName) }
             }
-            is BodyFatEvent.WaistChange -> invalidate { it.copy(waistText = event.text) }
-            is BodyFatEvent.NeckChange -> invalidate { it.copy(neckText = event.text) }
-            is BodyFatEvent.HipChange -> invalidate { it.copy(hipText = event.text) }
+            is BodyFatEvent.WaistChange -> {
+                canonicalWaistCm = canonical(event.text, state.value.lengthUnit)
+                invalidate { it.copy(waistText = event.text) }
+            }
+            is BodyFatEvent.NeckChange -> {
+                canonicalNeckCm = canonical(event.text, state.value.lengthUnit)
+                invalidate { it.copy(neckText = event.text) }
+            }
+            is BodyFatEvent.HipChange -> {
+                canonicalHipCm = canonical(event.text, state.value.lengthUnit)
+                invalidate { it.copy(hipText = event.text) }
+            }
             BodyFatEvent.Compute -> compute()
             BodyFatEvent.SaveToLogbook -> saveToLogbook()
         }
@@ -177,17 +216,15 @@ public class BodyFatViewModel(
 
     private fun changeUnit(next: LengthUnit) {
         val previous = state.value.lengthUnit
-
-        fun convert(text: String): String {
-            val value = parseNumber(text) ?: return text
-            return formatInput(next.fromCentimeters(previous.toCentimeters(value)))
-        }
+        canonicalWaistCm = canonicalWaistCm ?: canonical(state.value.waistText, previous)
+        canonicalNeckCm = canonicalNeckCm ?: canonical(state.value.neckText, previous)
+        canonicalHipCm = canonicalHipCm ?: canonical(state.value.hipText, previous)
         invalidate(rotateRestoredOperation = false) {
             it.copy(
                 lengthUnit = next,
-                waistText = convert(it.waistText),
-                neckText = convert(it.neckText),
-                hipText = convert(it.hipText),
+                waistText = canonicalWaistCm?.let { value -> formatInput(next.fromCentimeters(value)) }.orEmpty(),
+                neckText = canonicalNeckCm?.let { value -> formatInput(next.fromCentimeters(value)) }.orEmpty(),
+                hipText = canonicalHipCm?.let { value -> formatInput(next.fromCentimeters(value)) }.orEmpty(),
             )
         }
     }
@@ -208,11 +245,14 @@ public class BodyFatViewModel(
         }
         if (latest.isEmpty()) return
         val unit = state.value.lengthUnit
+        canonicalWaistCm = latest["waist"]?.valueReal
+        canonicalNeckCm = latest["neck"]?.valueReal
+        canonicalHipCm = latest["hip"]?.valueReal
         state.value =
             state.value.copy(
-                waistText = latest["waist"]?.let { formatInput(unit.fromCentimeters(it.valueReal)) }.orEmpty(),
-                neckText = latest["neck"]?.let { formatInput(unit.fromCentimeters(it.valueReal)) }.orEmpty(),
-                hipText = latest["hip"]?.let { formatInput(unit.fromCentimeters(it.valueReal)) }.orEmpty(),
+                waistText = canonicalWaistCm?.let { formatInput(unit.fromCentimeters(it)) }.orEmpty(),
+                neckText = canonicalNeckCm?.let { formatInput(unit.fromCentimeters(it)) }.orEmpty(),
+                hipText = canonicalHipCm?.let { formatInput(unit.fromCentimeters(it)) }.orEmpty(),
             )
         persistDraft(state.value)
     }
@@ -220,9 +260,9 @@ public class BodyFatViewModel(
     private fun compute() {
         val current = state.value
         val height = current.heightCm ?: return fail("Add height in Profile before calculating.")
-        val waist = canonical(current.waistText, current.lengthUnit) ?: return fail("Enter a valid waist value.")
-        val neck = canonical(current.neckText, current.lengthUnit)
-        val hip = canonical(current.hipText, current.lengthUnit)
+        val waist = canonicalWaistCm ?: return fail("Enter a valid waist value.")
+        val neck = canonicalNeckCm
+        val hip = canonicalHipCm
         val estimate =
             runCatching {
                 BodyFatEngine.estimate(current.method, current.sex, height, waist, neck, hip, clock.now())
@@ -302,6 +342,7 @@ public class BodyFatViewModel(
         savedStateHandle[WAIST_KEY] = value.waistText
         savedStateHandle[NECK_KEY] = value.neckText
         savedStateHandle[HIP_KEY] = value.hipText
+        savedStateHandle[LENGTH_UNIT_KEY] = value.lengthUnit.name
         savedStateHandle[OPERATION_KEY] = operationId
         savedStateHandle[COMMITTED_OPERATION_KEY] = value.committedOperationId
     }
@@ -335,6 +376,7 @@ public class BodyFatViewModel(
         private const val WAIST_KEY: String = "body.waist"
         private const val NECK_KEY: String = "body.neck"
         private const val HIP_KEY: String = "body.hip"
+        private const val LENGTH_UNIT_KEY: String = "body.lengthUnit"
         private const val OPERATION_KEY: String = "body.operation"
         private const val COMMITTED_OPERATION_KEY: String = "body.committedOperation"
     }
