@@ -20,6 +20,7 @@ import app.wlo.core.model.WeightGoalSafety
 import app.wlo.core.model.WeightGoalSafetyInput
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
+import org.koin.core.annotation.Provided
 import kotlin.math.abs
 
 /** Neutral, recomputed goal progress; milestone celebration belongs to WLO-0075. */
@@ -50,7 +51,7 @@ public class GoalProgressLoader(
     private val clock: ClockPort,
     private val targets: TargetsRepository,
     private val dayProjection: DayProjectionRepository,
-    private val readGoalSafetyInput: suspend (String) -> WeightGoalSafetyInput?,
+    @Provided private val readGoalSafetyInput: suspend (String) -> WeightGoalSafetyInput?,
     private val zoneProvider: () -> TimeZone = { TimeZone.currentSystemDefault() },
 ) {
     public suspend fun load(

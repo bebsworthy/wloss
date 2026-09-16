@@ -35,6 +35,7 @@ import kotlinx.datetime.LocalTime
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toInstant
 import kotlinx.datetime.toLocalDateTime
+import org.koin.core.annotation.Provided
 import kotlin.math.abs
 import kotlin.math.roundToLong
 import app.wlo.core.engines.WeightSample as EngineWeightSample
@@ -353,7 +354,7 @@ public class WeighInViewModel(
     private val weighIns: WeighInRepository,
     private val measurements: MeasurementRepository,
     private val goalProgressLoader: GoalProgressLoader,
-    private val massUnits: Flow<MassUnit>,
+    @Provided private val massUnits: Flow<MassUnit>,
     initialSheetOpen: Boolean,
     initialSection: BodySectionUi = BodySectionUi.WEIGHT,
     private val zoneProvider: () -> TimeZone = { TimeZone.currentSystemDefault() },

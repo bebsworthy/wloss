@@ -20,26 +20,28 @@ import org.koin.dsl.module
  */
 public val f06WeightModule: Module =
     module {
-        viewModel { (initialSheetOpen: Boolean, initialSection: BodySectionUi) ->
+        factory {
             val documents = get<JsonDocumentStore>()
+            GoalProgressLoader(
+                clock = get(),
+                targets = get(),
+                dayProjection = get(),
+                readGoalSafetyInput = { profileId ->
+                    documents.readText("weight/goal-safety-v1/$profileId")?.let { text ->
+                        runCatching {
+                            DocumentCodec.json.decodeFromString(WeightGoalSafetyInput.serializer(), text)
+                        }.getOrNull()
+                    }
+                },
+            )
+        }
+        viewModel { (initialSheetOpen: Boolean, initialSection: BodySectionUi) ->
             WeighInViewModel(
                 clock = get(),
                 profiles = get(),
                 weighIns = get(),
                 measurements = get(),
-                goalProgressLoader =
-                    GoalProgressLoader(
-                        clock = get(),
-                        targets = get(),
-                        dayProjection = get(),
-                        readGoalSafetyInput = { profileId ->
-                            documents.readText("weight/goal-safety-v1/$profileId")?.let { text ->
-                                runCatching {
-                                    DocumentCodec.json.decodeFromString(WeightGoalSafetyInput.serializer(), text)
-                                }.getOrNull()
-                            }
-                        },
-                    ),
+                goalProgressLoader = get(),
                 massUnits = get<SettingsStore>().massUnit,
                 initialSheetOpen = initialSheetOpen,
                 initialSection = initialSection,

@@ -91,3 +91,19 @@ distribution documents.
 Remaining completion evidence: create/push the public repository, configure
 its signing secrets, observe the first green CI-published alpha, and validate
 an update on the owner's real device through Obtainium.
+
+
+## First remote gate finding — 2026-09-16
+
+The first GitHub Actions run correctly blocked publication because
+`KoinModuleVerifyTest` exposed that the WLO-0045 goal-progress loader was built
+inline inside the ViewModel definition and therefore invisible to Koin's graph
+verifier. The feature graph now owns `GoalProgressLoader` as an explicit
+factory. Its document-reader closure and the derived mass-unit flow are marked
+`@Provided`, accurately documenting values supplied by module code rather than
+looked up as graph definitions.
+
+Local remediation evidence: `:app:testDebugUnitTest` and
+`:feature:f06-weight:testDebugUnitTest` pass, including the whole-graph verify
+test and goal-progress reliability coverage. A new push will rerun the complete
+remote gate before publication.

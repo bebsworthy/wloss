@@ -15,6 +15,7 @@ dependencies {
     // lifecycle-viewmodel types the state holder extends).
     implementation(libs.koin.core)
     implementation(libs.koin.android)
+    implementation(libs.koin.annotations)
 
     // D6: numbers render only via designsystem provenance components.
     implementation(project(":core:designsystem"))

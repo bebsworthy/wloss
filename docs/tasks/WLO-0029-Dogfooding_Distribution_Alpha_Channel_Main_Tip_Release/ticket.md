@@ -5,9 +5,9 @@ status: doing
 theme: weight-core
 release: 1
 created: 2026-09-13T11:50:29Z
-modified: 2026-09-16T02:22:43Z
+modified: 2026-09-16T02:40:04Z
 closed:
-revision: c99db92b8a9e9626
+revision: 76459c15fd940c13
 blocks: []
 related: [WLO-0065, WLO-0079]
 ---
