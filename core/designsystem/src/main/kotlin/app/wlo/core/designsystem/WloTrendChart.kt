@@ -258,7 +258,9 @@ public fun WloTrendChart(
                 }
                 IconButton(
                     onClick = { selectOffset(1) },
-                    enabled = selectable.isNotEmpty() && (selected == null || selectable.indexOf(selected) < selectable.lastIndex),
+                    enabled =
+                        selectable.isNotEmpty() &&
+                            (selected == null || selectable.indexOf(selected) < selectable.lastIndex),
                 ) {
                     Icon(WloIcons.ChevronRight, contentDescription = "Next sample")
                 }
