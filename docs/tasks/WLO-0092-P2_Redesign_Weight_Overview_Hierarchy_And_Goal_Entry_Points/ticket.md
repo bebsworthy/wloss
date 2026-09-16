@@ -1,13 +1,13 @@
 ---
 id: WLO-0092
 title: 'P2: Redesign Weight overview hierarchy and goal entry points'
-status: doing
+status: done
 theme: weight-core
 release:
 created: 2026-09-16T07:22:28Z
-modified: 2026-09-16T13:02:14Z
-closed:
-revision: 8c5c267dfd7bff51
+modified: 2026-09-16T14:02:51Z
+closed: 2026-09-16T14:02:51Z
+revision: 1587acaa4f44d372
 blocks: [WLO-0096, WLO-0098, WLO-0099]
 related: [WLO-0087]
 ---
