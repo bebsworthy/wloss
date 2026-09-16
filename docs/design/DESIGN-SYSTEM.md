@@ -390,7 +390,7 @@ honest raw+trend chart · logbook and import identity · loss/maintenance/gain
 goal state · goal editor/progress · Health Connect weight/body-fat import.
 **Release 2:**
 Progress ribbon ·
-optional 10-day-best · measurement-condition insights. **Deferred:** smoother
+optional 10-day-best. **Deferred:** smoother
 comparison/tuning · body-fat/girth/EAV custom metrics · milestone celebration ·
 Bluetooth scale drivers · multi-profile lock · advanced correlations.
 

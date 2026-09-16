@@ -65,7 +65,7 @@ This is a product-support boundary, not medical advice or diagnosis.
 | Horizon | Included capability |
 |---|---|
 | **Release 1 — weight core** | correct kg/lb entry and display; event log and edit/delete; honest trend/chart states; accessible entry; post-save trend result; lifecycle/error reliability; Health Connect weight/body-fat import with durable source identity; benchmarked daily-scalar policy; calibrated forecast ranges; loss/maintenance/gain safety and direction-correct forecasting; goal editing and progress |
-| **Release 2 — weight experience** | progress ribbon; optional 10-day-best view; measurement-condition insights |
+| **Release 2 — weight experience** | progress ribbon; optional 10-day-best view |
 | **Deferred / advanced** | user-tunable smoothing and smoother comparison; custom metrics; elaborate milestone celebrations; Bluetooth-scale drivers; multi-profile vault partitions; broader food, planning, exercise, silhouette, digestion, and AI suite release work |
 
 Release 1 stores one profile while keeping `profileId` in every row. Body mass
@@ -227,8 +227,8 @@ these are binding until amended *here* (feature docs must not re-litigate them).
   including the post-bathroom "now I get my win" re-weigh — are kept verbatim**,
   never collapsed, overwritten, or judged. "One value per day" semantics
   (a versioned daily policy for weight, last-in for girths) are **derived views** consumed
-  by trend math, F07, and exports; the raw points stay queryable (time-of-day
-  lens, weigh-count stats) and ship in exports. *Amendment (owner ruling,
+  by trend math, F07, and exports; the raw points stay queryable and ship in
+  exports. *Amendment (owner ruling,
   2026-09-14, WLO-0035):* the verbatim rule governs ingestion and automatic
   processing — a **user-initiated delete of their own entry is an explicit
   act, not silent collapsing**: the store exposes a hard delete (no tombstone
