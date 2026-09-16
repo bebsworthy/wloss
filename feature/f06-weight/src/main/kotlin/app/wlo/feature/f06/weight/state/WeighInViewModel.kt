@@ -1,5 +1,6 @@
 package app.wlo.feature.f06.weight.state
 
+import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import app.wlo.core.common.ClockPort
@@ -10,6 +11,7 @@ import app.wlo.core.common.getOrNull
 import app.wlo.core.data.MeasurementRepository
 import app.wlo.core.data.ProfileRepository
 import app.wlo.core.data.WeighInRepository
+import app.wlo.core.data.WeighInWriteCommand
 import app.wlo.core.designsystem.ChartPoint
 import app.wlo.core.engines.BmiEngine
 import app.wlo.core.engines.GirthRatiosEngine
@@ -17,8 +19,8 @@ import app.wlo.core.engines.OutlierVerdict
 import app.wlo.core.engines.SmoothingEngine
 import app.wlo.core.model.ConstantsRegistry
 import app.wlo.core.model.DerivedValue
+import app.wlo.core.model.MeasurementEvent
 import app.wlo.core.model.MeasurementKind
-import app.wlo.core.model.MeasurementSource
 import app.wlo.core.model.Provenance
 import app.wlo.core.model.TrendMethod
 import kotlinx.coroutines.Job
@@ -38,6 +40,7 @@ import kotlinx.datetime.toLocalDateTime
 import org.koin.core.annotation.Provided
 import kotlin.math.abs
 import kotlin.math.roundToLong
+import kotlin.uuid.Uuid
 import app.wlo.core.engines.WeightSample as EngineWeightSample
 
 /** Weigh-in intents (MVI-lite). */
@@ -206,6 +209,25 @@ public data class SheetUi(
     public val weightError: String? = null,
     public val whenError: String? = null,
     public val saveError: String? = null,
+    public val intent: WeighInEditIntent = WeighInEditIntent.NewReading,
+    public val operationId: String = Uuid.random().toString(),
+)
+
+public sealed interface WeighInEditIntent {
+    public data object NewReading : WeighInEditIntent
+
+    public data class CorrectReading(
+        public val original: CorrectionSnapshot,
+    ) : WeighInEditIntent
+}
+
+public data class CorrectionSnapshot(
+    public val eventId: String,
+    public val dayEpochDay: Long,
+    public val weightKg: Double,
+    public val capturedAt: Instant,
+    public val source: String,
+    public val note: String?,
 )
 
 /** Explicit lifecycle for one save attempt; repeat taps are ignored while saving. */
@@ -290,9 +312,9 @@ public data class WeighInUiState(
     public val goalProgress: GoalProgressUi,
 ) {
     public companion object {
-        /** Lowest-of-day copy (Happy Scale's rule, spoken kindly and once). */
+        /** Canonical daily-selection copy, spoken kindly and once. */
         public const val LOWEST_COPY: String =
-            "the lowest reading of the day stands as the day's weight — re-weighs stay in the log untouched"
+            "the reading nearest 07:00 in your fixed morning window stands for the day; otherwise the median is used"
 
         public val LOADING: WeighInUiState =
             WeighInUiState(
@@ -345,10 +367,11 @@ internal object SheetWhenParser {
 
 /**
  * The weigh-in surface's state holder (F06 §3–4). Events append VERBATIM;
- * the daily scalar is the derived lowest-of-day view; the trend is the user's
+ * the daily scalar is the versioned consistent-window view; the trend is the user's
  * smoother selection ([TrendMethod] + α, R-A2 default 0.15) computed over the
  * window. The outlier guard only informs the UI — it never drops data.
  */
+@Suppress("LargeClass") // Owns one cohesive screen state machine; split by WLO-0092 after its overview redesign.
 public class WeighInViewModel(
     private val clock: ClockPort,
     private val profiles: ProfileRepository,
@@ -359,6 +382,7 @@ public class WeighInViewModel(
     initialSheetOpen: Boolean,
     initialSection: BodySectionUi = BodySectionUi.WEIGHT,
     private val zoneProvider: () -> TimeZone = { TimeZone.currentSystemDefault() },
+    private val savedStateHandle: SavedStateHandle = SavedStateHandle(),
 ) : ViewModel() {
     private var profileId: String? = null
     private var activeUnit: MassUnit = MassUnit.KILOGRAM
@@ -368,7 +392,10 @@ public class WeighInViewModel(
     private val window = MutableStateFlow(ChartWindowUi.D90)
     private val section = MutableStateFlow(initialSection)
     private var sheetPrefillPending: Boolean = initialSheetOpen
-    private val sheet = MutableStateFlow<SheetUi?>(initialSheetOpen.takeIf { it }?.let { freshSheet() })
+    private val sheet =
+        MutableStateFlow(
+            restoreSheet() ?: initialSheetOpen.takeIf { it }?.let { freshSheet() },
+        )
     private val verdict = MutableStateFlow<VerdictUi?>(null)
     private val confirmation = MutableStateFlow<WeighInConfirmationUi?>(null)
     private val notice = MutableStateFlow<String?>(null)
@@ -397,6 +424,7 @@ public class WeighInViewModel(
     public val submissionState: StateFlow<WeighInSubmissionState> = submission
 
     init {
+        sheet.value?.let(::persistSheet)
         viewModelScope.launch {
             massUnits
                 .catch { data.value = data.value.copy(loadState = WeightLoadState.Error(LOAD_FAILED_NOTICE)) }
@@ -412,24 +440,28 @@ public class WeighInViewModel(
         when (event) {
             is WeighInEvent.OpenSheet -> {
                 confirmation.value = null
-                sheet.value = openSheet(event.prefillKg)
+                updateSheet(openSheet(event.prefillKg))
             }
             WeighInEvent.DismissSheet -> {
-                sheet.value = null
+                if (submission.value == WeighInSubmissionState.SAVING) return
+                updateSheet(null)
                 sheetPrefillPending = false
                 submission.value = WeighInSubmissionState.IDLE
             }
             is WeighInEvent.WeightChange -> {
+                if (submission.value == WeighInSubmissionState.SAVING) return
                 sheetPrefillPending = false
-                sheet.value = sheet.value?.copy(weightText = event.text, weightError = null, saveError = null)
+                updateSheet(sheet.value?.copy(weightText = event.text, weightError = null, saveError = null))
                 submission.value = WeighInSubmissionState.IDLE
             }
             is WeighInEvent.SheetDayChange -> {
-                sheet.value = sheet.value?.copy(dayText = event.text, whenError = null, saveError = null)
+                if (submission.value == WeighInSubmissionState.SAVING) return
+                updateSheet(sheet.value?.copy(dayText = event.text, whenError = null, saveError = null))
                 submission.value = WeighInSubmissionState.IDLE
             }
             is WeighInEvent.SheetTimeChange -> {
-                sheet.value = sheet.value?.copy(timeText = event.text, whenError = null, saveError = null)
+                if (submission.value == WeighInSubmissionState.SAVING) return
+                updateSheet(sheet.value?.copy(timeText = event.text, whenError = null, saveError = null))
                 submission.value = WeighInSubmissionState.IDLE
             }
             is WeighInEvent.WindowChange ->
@@ -451,9 +483,7 @@ public class WeighInViewModel(
             WeighInEvent.KeepFlagged -> verdict.value = null
             WeighInEvent.CorrectFlagged ->
                 verdict.value?.let { flagged ->
-                    verdict.value = null
-                    confirmation.value = null
-                    deleteFlagged(flagged.eventId)
+                    openCorrection(flagged.eventId)
                 }
 
             is WeighInEvent.MethodChange ->
@@ -479,6 +509,7 @@ public class WeighInViewModel(
             dayText = now.date.toString(),
             timeText = "%02d:%02d".format(now.hour, now.minute),
             prefillContext = prefillContext,
+            operationId = Uuid.random().toString(),
         )
     }
 
@@ -499,6 +530,7 @@ public class WeighInViewModel(
     }
 
     private fun step(delta: Double) {
+        if (submission.value == WeighInSubmissionState.SAVING) return
         val current =
             sheet.value
                 ?.weightText
@@ -506,7 +538,7 @@ public class WeighInViewModel(
                 ?.toDoubleOrNull()
                 ?: uiState.value.entryPrefillKg?.let(activeUnit::fromKilograms)
                 ?: return
-        sheet.value = sheet.value?.copy(weightText = formatDisplayInput(current + delta))
+        updateSheet(sheet.value?.copy(weightText = formatDisplayInput(current + delta)))
     }
 
     private fun save() {
@@ -515,45 +547,63 @@ public class WeighInViewModel(
         val parsed = WeighInInputParser.parse(current.weightText, activeUnit)
         if (parsed.isFailure) {
             submission.value = WeighInSubmissionState.INVALID
-            sheet.value = current.copy(weightError = parsed.exceptionOrNull()?.message, saveError = null)
+            updateSheet(current.copy(weightError = parsed.exceptionOrNull()?.message, saveError = null))
             return
         }
         val whenLogged =
             SheetWhenParser.parse(current.dayText, current.timeText, zoneProvider(), clock.now())
         if (whenLogged == null) {
             submission.value = WeighInSubmissionState.INVALID
-            sheet.value =
+            updateSheet(
                 current.copy(
                     weightError = null,
                     whenError = "Use YYYY-MM-DD and HH:MM, today or earlier.",
                     saveError = null,
-                )
+                ),
+            )
             return
         }
         val (day, at) = whenLogged
         submission.value = WeighInSubmissionState.SAVING
-        sheet.value = current.copy(weightError = null, whenError = null, saveError = null)
+        val frozen = current.copy(weightError = null, whenError = null, saveError = null)
+        updateSheet(frozen)
         viewModelScope.launch {
             val id = profileId ?: profiles.active().getOrNull()?.id
             if (id == null) {
                 submission.value = WeighInSubmissionState.FAILURE
-                sheet.value = sheet.value?.copy(saveError = "No active profile. Finish setup, then try again.")
+                updateSheet(frozen.copy(saveError = "No active profile. Finish setup, then try again."))
                 return@launch
             }
             profileId = id
-            val outcome =
-                weighIns.appendWeighIn(
-                    profileId = id,
-                    dayEpochDay = day,
-                    weightKg = parsed.getOrThrow().kilograms,
-                    capturedAt = at,
-                    source = MeasurementSource.MANUAL,
-                )
+            val kilograms = parsed.getOrThrow().kilograms
+            val command =
+                when (val intent = frozen.intent) {
+                    WeighInEditIntent.NewReading ->
+                        WeighInWriteCommand.New(
+                            operationId = frozen.operationId,
+                            profileId = id,
+                            dayEpochDay = day,
+                            weightKg = kilograms,
+                            capturedAt = at,
+                        )
+                    is WeighInEditIntent.CorrectReading ->
+                        WeighInWriteCommand.Correction(
+                            operationId = frozen.operationId,
+                            profileId = id,
+                            originalEventId = intent.original.eventId,
+                            dayEpochDay = day,
+                            weightKg = kilograms,
+                            capturedAt = at,
+                            editedDescription = "Corrected manual reading",
+                        )
+                }
+            val outcome = weighIns.commitWeighIn(command)
             when (outcome) {
                 is WloResult.Ok -> {
-                    val canonical = weighIns.currentTrend(id, day).getOrNull()
+                    val canonicalResult = weighIns.currentTrend(id, day)
+                    val canonical = canonicalResult.getOrNull()
                     submission.value = WeighInSubmissionState.SUCCESS
-                    sheet.value = null
+                    updateSheet(null)
                     confirmation.value =
                         WeighInConfirmationUi(
                             eventId = outcome.value.event.id,
@@ -572,14 +622,106 @@ public class WeighInViewModel(
                             )
                     }
                     refresh()
+                    if (canonicalResult is WloResult.Err) {
+                        notice.value = "Saved; unable to refresh. Retry to update the dashboard."
+                    }
                 }
 
                 is WloResult.Err -> {
                     submission.value = WeighInSubmissionState.FAILURE
-                    sheet.value = sheet.value?.copy(saveError = "That didn't save. Nothing changed — try again.")
+                    updateSheet(frozen.copy(saveError = "That didn't save. Nothing changed — try again."))
                 }
             }
         }
+    }
+
+    private fun openCorrection(eventId: String) {
+        if (submission.value == WeighInSubmissionState.SAVING) return
+        viewModelScope.launch {
+            when (val result = measurements.byId(eventId)) {
+                is WloResult.Ok -> {
+                    val original = result.value
+                    if (original == null || original.kind != MeasurementKind.WEIGHT) {
+                        verdict.value = null
+                        notice.value = "That reading changed elsewhere. Refresh and choose it again."
+                        refresh()
+                        return@launch
+                    }
+                    val local = original.capturedAt.toLocalDateTime(zoneProvider())
+                    confirmation.value = null
+                    verdict.value = null
+                    updateSheet(
+                        SheetUi(
+                            weightText = activeUnit.formatNumber(original.valueReal),
+                            dayText = local.date.toString(),
+                            timeText = "%02d:%02d".format(local.hour, local.minute),
+                            prefillContext = "Correcting the saved ${activeUnit.format(original.valueReal)} reading.",
+                            intent = WeighInEditIntent.CorrectReading(original.toCorrectionSnapshot()),
+                            operationId = Uuid.random().toString(),
+                        ),
+                    )
+                }
+                is WloResult.Err -> notice.value = "That reading couldn't be opened. Nothing changed."
+            }
+        }
+    }
+
+    private fun updateSheet(value: SheetUi?) {
+        sheet.value = value
+        persistSheet(value)
+    }
+
+    private fun persistSheet(value: SheetUi?) {
+        if (value == null) {
+            savedStateHandle[SHEET_OPEN_KEY] = false
+            return
+        }
+        savedStateHandle[SHEET_OPEN_KEY] = true
+        savedStateHandle[SHEET_WEIGHT_KEY] = value.weightText
+        savedStateHandle[SHEET_DAY_KEY] = value.dayText
+        savedStateHandle[SHEET_TIME_KEY] = value.timeText
+        savedStateHandle[SHEET_CONTEXT_KEY] = value.prefillContext
+        savedStateHandle[SHEET_OPERATION_KEY] = value.operationId
+        val correction = value.intent as? WeighInEditIntent.CorrectReading
+        savedStateHandle[SHEET_ORIGINAL_ID_KEY] = correction?.original?.eventId
+        savedStateHandle[SHEET_ORIGINAL_DAY_KEY] = correction?.original?.dayEpochDay
+        savedStateHandle[SHEET_ORIGINAL_KG_KEY] = correction?.original?.weightKg
+        savedStateHandle[SHEET_ORIGINAL_AT_KEY] = correction?.original?.capturedAt?.toEpochMilliseconds()
+        savedStateHandle[SHEET_ORIGINAL_SOURCE_KEY] = correction?.original?.source
+        savedStateHandle[SHEET_ORIGINAL_NOTE_KEY] = correction?.original?.note
+    }
+
+    private fun restoreSheet(): SheetUi? {
+        if (savedStateHandle.get<Boolean>(SHEET_OPEN_KEY) != true) return null
+        val operationId = savedStateHandle.get<String>(SHEET_OPERATION_KEY) ?: return null
+        val originalId = savedStateHandle.get<String>(SHEET_ORIGINAL_ID_KEY)
+        val intent =
+            if (originalId == null) {
+                WeighInEditIntent.NewReading
+            } else {
+                val originalDay = savedStateHandle.get<Long>(SHEET_ORIGINAL_DAY_KEY) ?: return null
+                val originalKg = savedStateHandle.get<Double>(SHEET_ORIGINAL_KG_KEY) ?: return null
+                val originalAt = savedStateHandle.get<Long>(SHEET_ORIGINAL_AT_KEY) ?: return null
+                val originalSource = savedStateHandle.get<String>(SHEET_ORIGINAL_SOURCE_KEY) ?: return null
+                WeighInEditIntent.CorrectReading(
+                    CorrectionSnapshot(
+                        eventId = originalId,
+                        dayEpochDay = originalDay,
+                        weightKg = originalKg,
+                        capturedAt = Instant.fromEpochMilliseconds(originalAt),
+                        source = originalSource,
+                        note = savedStateHandle.get(SHEET_ORIGINAL_NOTE_KEY),
+                    ),
+                )
+            }
+        return SheetUi(
+            weightText = savedStateHandle.get<String>(SHEET_WEIGHT_KEY).orEmpty(),
+            dayText = savedStateHandle.get<String>(SHEET_DAY_KEY).orEmpty(),
+            timeText = savedStateHandle.get<String>(SHEET_TIME_KEY).orEmpty(),
+            prefillContext = savedStateHandle.get<String>(SHEET_CONTEXT_KEY).orEmpty(),
+            intent = intent,
+            operationId = operationId,
+        )
     }
 
     /** Latest tuner/window intent wins; stale Room reads never overwrite it. */
@@ -666,26 +808,6 @@ public class WeighInViewModel(
                         preview = !atDefaults,
                     ),
             )
-    }
-
-    /**
-     * R-B8 amendment (WLO-0035): the flagged entry's delete is an explicit
-     * act confirmed from the banner. The correction path is the sheet that
-     * reopens prefilled from the day that remains — never the deleted value.
-     * The logbook's swipe-delete undo lives on the logbook screen (WLO-0055).
-     */
-    private fun deleteFlagged(eventId: String) {
-        val id = profileId ?: return
-        viewModelScope.launch {
-            when (weighIns.deleteWeighIn(eventId, clock.now())) {
-                is WloResult.Ok -> {
-                    val refreshed = reload(nextGeneration())
-                    if (refreshed) sheet.value = openSheet(prefillKg = null)
-                }
-
-                is WloResult.Err -> notice.value = "that didn't delete — nothing changed"
-            }
-        }
     }
 
     private fun refresh() {
@@ -953,11 +1075,12 @@ public class WeighInViewModel(
         val openSheet = sheet.value ?: return
         if (openSheet.weightText.isNotBlank()) return
         val kilograms = prefill.kilograms ?: return
-        sheet.value =
+        updateSheet(
             openSheet.copy(
                 weightText = unit.formatNumber(kilograms),
                 prefillContext = prefill.context,
-            )
+            ),
+        )
         sheetPrefillPending = false
     }
 
@@ -1011,8 +1134,31 @@ public class WeighInViewModel(
 
         private const val LOAD_FAILED_NOTICE: String =
             "Weight data couldn't refresh. Your last loaded data is still shown."
+
+        private const val SHEET_OPEN_KEY: String = "weighIn.sheet.open"
+        private const val SHEET_WEIGHT_KEY: String = "weighIn.sheet.weight"
+        private const val SHEET_DAY_KEY: String = "weighIn.sheet.day"
+        private const val SHEET_TIME_KEY: String = "weighIn.sheet.time"
+        private const val SHEET_CONTEXT_KEY: String = "weighIn.sheet.context"
+        private const val SHEET_OPERATION_KEY: String = "weighIn.sheet.operation"
+        private const val SHEET_ORIGINAL_ID_KEY: String = "weighIn.sheet.original.id"
+        private const val SHEET_ORIGINAL_DAY_KEY: String = "weighIn.sheet.original.day"
+        private const val SHEET_ORIGINAL_KG_KEY: String = "weighIn.sheet.original.kg"
+        private const val SHEET_ORIGINAL_AT_KEY: String = "weighIn.sheet.original.at"
+        private const val SHEET_ORIGINAL_SOURCE_KEY: String = "weighIn.sheet.original.source"
+        private const val SHEET_ORIGINAL_NOTE_KEY: String = "weighIn.sheet.original.note"
     }
 }
+
+private fun MeasurementEvent.toCorrectionSnapshot(): CorrectionSnapshot =
+    CorrectionSnapshot(
+        eventId = id,
+        dayEpochDay = dayEpochDay,
+        weightKg = valueReal,
+        capturedAt = capturedAt,
+        source = source,
+        note = note,
+    )
 
 /** Collects repository failures without publishing default values as a successful empty snapshot. */
 private data class ChartWindowState(

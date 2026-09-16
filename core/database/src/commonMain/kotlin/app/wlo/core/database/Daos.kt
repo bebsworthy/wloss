@@ -162,6 +162,16 @@ public interface MeasurementEventAttrDao {
     @Query("SELECT * FROM measurement_event_attrs WHERE eventId = :eventId")
     public suspend fun forEvent(eventId: String): List<MeasurementEventAttrEntity>
 
+    @Query(
+        "SELECT e.* FROM measurement_events e " +
+            "JOIN measurement_event_attrs a ON a.eventId = e.id " +
+            "WHERE a.attr = :attr AND a.valueText = :value LIMIT 1",
+    )
+    public suspend fun eventForAttribute(
+        attr: String,
+        value: String,
+    ): MeasurementEventEntity?
+
     /** Sidecar rows of one profile's events in a day range (logbook flags, EAV metrics). */
     @Query(
         "SELECT attr.* FROM measurement_event_attrs attr " +

@@ -45,6 +45,7 @@ public val f06WeightModule: Module =
                 massUnits = get<SettingsStore>().massUnit,
                 initialSheetOpen = initialSheetOpen,
                 initialSection = initialSection,
+                savedStateHandle = get(),
             )
         }
         viewModel { BodyFatViewModel(clock = get(), profiles = get(), measurements = get(), settings = get()) }

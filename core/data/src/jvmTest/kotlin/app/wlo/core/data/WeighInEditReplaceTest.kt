@@ -109,4 +109,34 @@ class WeighInEditReplaceTest {
             assertTrue(attrs.none { it.eventId == original.event.id }, "the original is gone with its sidecar")
         }
     }
+
+    @Test
+    fun correctionOperationTokenIsDurableAndIdempotent() =
+        runTest {
+            val profile = aProfile()
+            val day = today()
+            val original = weighIn(profile, day, 120.0)
+            val command =
+                WeighInWriteCommand.Correction(
+                    operationId = "correct-once",
+                    profileId = profile,
+                    originalEventId = original.event.id,
+                    dayEpochDay = day,
+                    weightKg = 82.0,
+                    capturedAt = clock.now(),
+                    editedDescription = "Corrected manual reading",
+                )
+
+            val first = weighIns.commitWeighIn(command).okOrDie()
+            val replay = weighIns.commitWeighIn(command).okOrDie()
+
+            assertEquals(first.event.id, replay.event.id)
+            val raw = measurements.rangeOfKind(profile, MeasurementKind.WEIGHT, day, day).okOrDie()
+            assertEquals(listOf(82.0), raw.map { it.valueReal })
+            assertTrue(
+                measurements.attrsOf(first.event.id).okOrDie().any {
+                    it.attr == WeighInAttribute.OPERATION_ID.wireName && it.valueText == "correct-once"
+                },
+            )
+        }
 }

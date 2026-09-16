@@ -38,10 +38,12 @@ internal fun WeightDatePickerButton(
     onValueChange: (String) -> Unit,
     modifier: Modifier = Modifier,
     testTag: String,
+    enabled: Boolean = true,
 ) {
     var open by rememberSaveable { mutableStateOf(false) }
     OutlinedButton(
         onClick = { open = true },
+        enabled = enabled,
         modifier =
             modifier
                 .semantics { contentDescription = "Date, $value. Choose date" }
@@ -90,10 +92,12 @@ internal fun WeightTimePickerButton(
     onValueChange: (String) -> Unit,
     modifier: Modifier = Modifier,
     testTag: String,
+    enabled: Boolean = true,
 ) {
     var open by rememberSaveable { mutableStateOf(false) }
     OutlinedButton(
         onClick = { open = true },
+        enabled = enabled,
         modifier =
             modifier
                 .semantics { contentDescription = "Time, $value. Choose time" }

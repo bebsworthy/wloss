@@ -50,6 +50,31 @@ public interface WeighInRepository {
         note: String? = null,
     ): WloResult<WeighInOutcome>
 
+    /**
+     * Durable one-shot submission door. A retry reuses [WeighInWriteCommand.operationId];
+     * the Room implementation stores that token in the same transaction as the event.
+     */
+    public suspend fun commitWeighIn(command: WeighInWriteCommand): WloResult<WeighInOutcome> =
+        when (command) {
+            is WeighInWriteCommand.New ->
+                appendWeighIn(
+                    profileId = command.profileId,
+                    dayEpochDay = command.dayEpochDay,
+                    weightKg = command.weightKg,
+                    capturedAt = command.capturedAt,
+                    source = command.source,
+                    note = command.note,
+                )
+            is WeighInWriteCommand.Correction ->
+                replaceWeighIn(
+                    eventId = command.originalEventId,
+                    dayEpochDay = command.dayEpochDay,
+                    weightKg = command.weightKg,
+                    capturedAt = command.capturedAt,
+                    editedDescription = command.editedDescription,
+                ).map { it.replacement }
+        }
+
     /** Every raw weigh-in of one day, capture order — the time-of-day lens (R-B8). */
     public suspend fun dayWeighIns(
         profileId: String,
@@ -145,6 +170,35 @@ public enum class WeighInAttribute(
 ) {
     OUTLIER("outlier"),
     EDITED("edited"),
+    OPERATION_ID("operationId"),
+}
+
+public sealed interface WeighInWriteCommand {
+    public val operationId: String
+    public val profileId: String
+    public val dayEpochDay: Long
+    public val weightKg: Double
+    public val capturedAt: Instant
+
+    public data class New(
+        override val operationId: String,
+        override val profileId: String,
+        override val dayEpochDay: Long,
+        override val weightKg: Double,
+        override val capturedAt: Instant,
+        public val source: String = MeasurementSource.MANUAL,
+        public val note: String? = null,
+    ) : WeighInWriteCommand
+
+    public data class Correction(
+        override val operationId: String,
+        override val profileId: String,
+        public val originalEventId: String,
+        override val dayEpochDay: Long,
+        override val weightKg: Double,
+        override val capturedAt: Instant,
+        public val editedDescription: String,
+    ) : WeighInWriteCommand
 }
 
 /** The undo snapshot: what was deleted, sidecar included. */
@@ -227,6 +281,101 @@ public class RoomWeighInRepository internal constructor(
                 WeighInOutcome(entity.toDomain(), verdict)
             }
         }
+    }
+
+    override suspend fun commitWeighIn(command: WeighInWriteCommand): WloResult<WeighInOutcome> {
+        invalidWeight(command.weightKg)?.let { return WloResult.err(it) }
+        return weighInMutationGuard("weighIn.commit") {
+            db.withWriteTransaction {
+                val existing =
+                    db.measurementEventAttrs().eventForAttribute(
+                        WeighInAttribute.OPERATION_ID.wireName,
+                        command.operationId,
+                    )
+                if (existing != null) return@withWriteTransaction existingOutcome(existing)
+
+                when (command) {
+                    is WeighInWriteCommand.New -> commitNew(command)
+                    is WeighInWriteCommand.Correction -> commitCorrection(command)
+                }
+            }
+        }
+    }
+
+    private suspend fun commitNew(command: WeighInWriteCommand.New): WeighInOutcome {
+        val verdict = outlierVerdict(command.profileId, command.dayEpochDay, command.weightKg)
+        val entity =
+            weightEntity(
+                command.profileId,
+                command.dayEpochDay,
+                command.weightKg,
+                command.capturedAt,
+                command.source,
+                command.note,
+            )
+        db.measurementEvents().insert(entity)
+        mutationProbe(WeighInMutationStage.RAW_EVENT_WRITTEN)
+        writeOperationAttribute(entity.id, command.operationId)
+        writeOutlierAttribute(entity.id, verdict)
+        mutationProbe(WeighInMutationStage.ATTRIBUTES_WRITTEN)
+        repairTrendSuffix(command.profileId, command.dayEpochDay, command.capturedAt)
+        return WeighInOutcome(entity.toDomain(), verdict)
+    }
+
+    private suspend fun commitCorrection(command: WeighInWriteCommand.Correction): WeighInOutcome {
+        val original = requireWeightEntity(command.originalEventId)
+        if (original.profileId != command.profileId) throw InvalidWeighInMutation("correction profile changed")
+        val originalAttrs = db.measurementEventAttrs().forEvent(original.id).map { it.toDomain() }
+        val verdict = outlierVerdict(original.profileId, command.dayEpochDay, command.weightKg, original.id)
+        val replacement =
+            weightEntity(
+                profileId = original.profileId,
+                dayEpochDay = command.dayEpochDay,
+                weightKg = command.weightKg,
+                capturedAt = command.capturedAt,
+                source = MeasurementSource.MANUAL,
+                note = original.note,
+            )
+        db.measurementEvents().insert(replacement)
+        mutationProbe(WeighInMutationStage.RAW_EVENT_WRITTEN)
+        val carried =
+            originalAttrs
+                .filterNot {
+                    it.attr in
+                        setOf(
+                            WeighInAttribute.OUTLIER.wireName,
+                            WeighInAttribute.EDITED.wireName,
+                            WeighInAttribute.OPERATION_ID.wireName,
+                        )
+                }.map {
+                    it.copy(eventId = replacement.id)
+                }
+        writeAttributes(
+            carried +
+                MeasurementAttr(replacement.id, WeighInAttribute.EDITED.wireName, command.editedDescription) +
+                MeasurementAttr(replacement.id, WeighInAttribute.OPERATION_ID.wireName, command.operationId),
+        )
+        writeOutlierAttribute(replacement.id, verdict)
+        mutationProbe(WeighInMutationStage.ATTRIBUTES_WRITTEN)
+        db.measurementEventAttrs().deleteForEvent(original.id)
+        db.measurementEvents().deleteById(original.id)
+        mutationProbe(WeighInMutationStage.ORIGINAL_DELETED)
+        repairTrendSuffix(original.profileId, minOf(original.dayEpochDay, command.dayEpochDay), command.capturedAt)
+        return WeighInOutcome(replacement.toDomain(), verdict)
+    }
+
+    private suspend fun existingOutcome(entity: MeasurementEventEntity): WeighInOutcome {
+        val outlier =
+            db.measurementEventAttrs().forEvent(entity.id).firstOrNull {
+                it.attr == WeighInAttribute.OUTLIER.wireName
+            }
+        val verdict =
+            if (outlier != null) {
+                OutlierVerdict.Flagged(residualKg = outlier.valueReal ?: 0.0, boundKg = 0.0, sigma = 0.0)
+            } else {
+                OutlierVerdict.Quiet(residualKg = 0.0, sigma = 0.0)
+            }
+        return WeighInOutcome(entity.toDomain(), verdict)
     }
 
     override suspend fun deleteWeighIn(
@@ -478,6 +627,15 @@ public class RoomWeighInRepository internal constructor(
                 ),
             )
         }
+    }
+
+    private suspend fun writeOperationAttribute(
+        eventId: String,
+        operationId: String,
+    ) {
+        writeAttributes(
+            listOf(MeasurementAttr(eventId, WeighInAttribute.OPERATION_ID.wireName, valueText = operationId)),
+        )
     }
 
     private suspend fun writeAttributes(attrs: List<MeasurementAttr>) {

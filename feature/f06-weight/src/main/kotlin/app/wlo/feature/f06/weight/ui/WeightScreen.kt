@@ -16,6 +16,7 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Slider
 import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -73,6 +74,7 @@ import app.wlo.feature.f06.weight.state.RatiosUi
 import app.wlo.feature.f06.weight.state.SheetUi
 import app.wlo.feature.f06.weight.state.VerdictUi
 import app.wlo.feature.f06.weight.state.WeighInConfirmationUi
+import app.wlo.feature.f06.weight.state.WeighInEditIntent
 import app.wlo.feature.f06.weight.state.WeighInEvent
 import app.wlo.feature.f06.weight.state.WeighInSubmissionState
 import app.wlo.feature.f06.weight.state.WeighInUiState
@@ -327,7 +329,7 @@ public fun WeightScreen(
         WloSheet(
             onDismissRequest = { viewModel.onEvent(WeighInEvent.DismissSheet) },
             modifier = Modifier.testTag("f06-weighin-sheet"),
-            title = "Weigh in",
+            title = if (current.intent is WeighInEditIntent.CorrectReading) "Correct weigh-in" else "Weigh in",
         ) {
             WeighInSheetContent(
                 sheet = current,
@@ -339,6 +341,7 @@ public fun WeightScreen(
                 onStepUp = { viewModel.onEvent(WeighInEvent.StepperUp) },
                 onStepDown = { viewModel.onEvent(WeighInEvent.StepperDown) },
                 onSave = { viewModel.onEvent(WeighInEvent.Save) },
+                onCancel = { viewModel.onEvent(WeighInEvent.DismissSheet) },
             )
         }
     }
@@ -741,6 +744,7 @@ private fun WeighInSheetContent(
     onStepUp: () -> Unit,
     onStepDown: () -> Unit,
     onSave: () -> Unit,
+    onCancel: () -> Unit,
 ) {
     val focusManager: FocusManager = LocalFocusManager.current
     Column(
@@ -762,8 +766,15 @@ private fun WeighInSheetContent(
             onValueChange = onChange,
             modifier = Modifier.fillMaxWidth().testTag("f06-weight-field"),
             singleLine = true,
+            enabled = submission != WeighInSubmissionState.SAVING,
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal, imeAction = ImeAction.Done),
-            keyboardActions = KeyboardActions(onDone = { focusManager.clearFocus() }),
+            keyboardActions =
+                KeyboardActions(
+                    onDone = {
+                        focusManager.clearFocus()
+                        if (submission != WeighInSubmissionState.SAVING) onSave()
+                    },
+                ),
             textStyle = wloType.statL,
             label = { Text("Weight ($unitSymbol)") },
             placeholder = { Text("Enter weight", style = wloType.body, color = wloExtendedColors.textTertiary) },
@@ -786,12 +797,14 @@ private fun WeighInSheetContent(
             onValueChange = onDayChange,
             modifier = Modifier.fillMaxWidth(),
             testTag = "f06-day-field",
+            enabled = submission != WeighInSubmissionState.SAVING,
         )
         WeightTimePickerButton(
             value = sheet.timeText,
             onValueChange = onTimeChange,
             modifier = Modifier.fillMaxWidth(),
             testTag = "f06-time-field",
+            enabled = submission != WeighInSubmissionState.SAVING,
         )
         sheet.whenError?.let { message ->
             Text(
@@ -808,6 +821,7 @@ private fun WeighInSheetContent(
             WloSecondaryButton(
                 label = "−0.1",
                 onClick = onStepDown,
+                enabled = submission != WeighInSubmissionState.SAVING,
                 modifier =
                     Modifier
                         .weight(1f)
@@ -819,6 +833,7 @@ private fun WeighInSheetContent(
             WloSecondaryButton(
                 label = "+0.1",
                 onClick = onStepUp,
+                enabled = submission != WeighInSubmissionState.SAVING,
                 modifier =
                     Modifier
                         .weight(1f)
@@ -848,6 +863,13 @@ private fun WeighInSheetContent(
                     .semantics { liveRegion = LiveRegionMode.Polite }
                     .testTag("f06-save-weighin"),
         )
+        TextButton(
+            onClick = onCancel,
+            enabled = submission != WeighInSubmissionState.SAVING,
+            modifier = Modifier.fillMaxWidth().testTag("f06-cancel-weighin"),
+        ) {
+            Text("Cancel")
+        }
     }
 }
 

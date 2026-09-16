@@ -16,6 +16,7 @@ import app.wlo.core.data.ReplacedWeighIn
 import app.wlo.core.data.TargetsRepository
 import app.wlo.core.data.WeighInOutcome
 import app.wlo.core.data.WeighInRepository
+import app.wlo.core.data.WeighInWriteCommand
 import app.wlo.core.documents.Energy
 import app.wlo.core.documents.Goal
 import app.wlo.core.documents.MacroSplit
@@ -193,6 +194,57 @@ class WeighInViewModelReliabilityTest {
                 assertEquals(null, viewModel.confirmationState.value)
                 assertEquals(null, viewModel.sheetState.value)
                 assertEquals(WeighInSubmissionState.IDLE, viewModel.submissionState.value)
+            } finally {
+                Dispatchers.resetMain()
+            }
+        }
+
+    @Test
+    fun `flagged correction opens an immutable draft without deleting the original`() =
+        runTest {
+            Dispatchers.setMain(StandardTestDispatcher(testScheduler))
+            try {
+                val original =
+                    MeasurementEvent(
+                        id = "flagged",
+                        profileId = "profile",
+                        dayEpochDay = 20_712,
+                        kind = MeasurementKind.WEIGHT,
+                        valueReal = 120.0,
+                        unit = "kg",
+                        source = MeasurementSource.SCALE,
+                        capturedAt = Instant.parse("2026-09-16T07:00:00Z"),
+                    )
+                val weighIns =
+                    FakeWeighIns().apply {
+                        appendSucceeds = true
+                        appendVerdict = OutlierVerdict.Flagged(40.0, 6.0, 2.0)
+                        savedEventId = original.id
+                    }
+                val viewModel =
+                    viewModel(
+                        weighIns = weighIns,
+                        measurements = SingleMeasurement(original),
+                        initialSheetOpen = true,
+                    )
+                advanceUntilIdle()
+                viewModel.onEvent(WeighInEvent.WeightChange("120"))
+                viewModel.onEvent(WeighInEvent.Save)
+                advanceUntilIdle()
+
+                viewModel.onEvent(WeighInEvent.CorrectFlagged)
+                advanceUntilIdle()
+                val correction = assertNotNull(viewModel.sheetState.value)
+                assertEquals("120.0", correction.weightText)
+                assertIs<WeighInEditIntent.CorrectReading>(correction.intent)
+                assertEquals(1, weighIns.commitCalls)
+                assertEquals(0, weighIns.deleteCalls)
+
+                viewModel.onEvent(WeighInEvent.WeightChange("82"))
+                viewModel.onEvent(WeighInEvent.DismissSheet)
+                assertEquals(null, viewModel.sheetState.value)
+                assertEquals(1, weighIns.commitCalls)
+                assertEquals(0, weighIns.deleteCalls)
             } finally {
                 Dispatchers.resetMain()
             }
@@ -563,6 +615,7 @@ class WeighInViewModelReliabilityTest {
         weighIns: FakeWeighIns = FakeWeighIns(),
         massUnits: Flow<MassUnit> = flowOf(MassUnit.KILOGRAM),
         targets: TargetsRepository = EmptyTargets,
+        measurements: MeasurementRepository = EmptyMeasurements,
         initialSheetOpen: Boolean = false,
         zoneProvider: () -> TimeZone = { TimeZone.UTC },
     ): WeighInViewModel =
@@ -570,7 +623,7 @@ class WeighInViewModelReliabilityTest {
             clock = clock,
             profiles = FakeProfiles,
             weighIns = weighIns,
-            measurements = EmptyMeasurements,
+            measurements = measurements,
             goalProgressLoader =
                 GoalProgressLoader(
                     clock = clock,
@@ -758,6 +811,11 @@ private class FakeWeighIns(
     var canonicalTrendKg: Double? = null
     var canonicalDeltaKg: Double? = null
     var canonicalDelta30Kg: Double? = null
+    var appendVerdict: OutlierVerdict = OutlierVerdict.Quiet(residualKg = 0.0, sigma = 0.0)
+    var savedEventId: String = "saved-event"
+    var commitCalls: Int = 0
+    var deleteCalls: Int = 0
+    var lastCommand: WeighInWriteCommand? = null
     val requestedDays = mutableListOf<Long>()
     private var dailyScalarCalls = 0
 
@@ -774,7 +832,7 @@ private class FakeWeighIns(
                 WeighInOutcome(
                     event =
                         MeasurementEvent(
-                            id = "saved-event",
+                            id = savedEventId,
                             profileId = profileId,
                             dayEpochDay = dayEpochDay,
                             kind = MeasurementKind.WEIGHT,
@@ -784,12 +842,37 @@ private class FakeWeighIns(
                             capturedAt = capturedAt,
                             note = note,
                         ),
-                    verdict = OutlierVerdict.Quiet(residualKg = 0.0, sigma = 0.0),
+                    verdict = appendVerdict,
                 ),
             )
         } else {
             failure()
         }
+
+    override suspend fun commitWeighIn(command: WeighInWriteCommand): WloResult<WeighInOutcome> {
+        commitCalls += 1
+        lastCommand = command
+        return when (command) {
+            is WeighInWriteCommand.New ->
+                appendWeighIn(
+                    command.profileId,
+                    command.dayEpochDay,
+                    command.weightKg,
+                    command.capturedAt,
+                    command.source,
+                    command.note,
+                )
+            is WeighInWriteCommand.Correction ->
+                appendWeighIn(
+                    command.profileId,
+                    command.dayEpochDay,
+                    command.weightKg,
+                    command.capturedAt,
+                    MeasurementSource.MANUAL,
+                    null,
+                )
+        }
+    }
 
     override suspend fun dayWeighIns(
         profileId: String,
@@ -857,7 +940,10 @@ private class FakeWeighIns(
     override suspend fun deleteWeighIn(
         eventId: String,
         at: Instant,
-    ): WloResult<DeletedWeighIn> = failure()
+    ): WloResult<DeletedWeighIn> {
+        deleteCalls += 1
+        return failure()
+    }
 
     override suspend fun replaceWeighIn(
         eventId: String,
@@ -868,6 +954,15 @@ private class FakeWeighIns(
     ): WloResult<ReplacedWeighIn> = failure()
 
     override suspend fun restoreWeighIn(snapshot: DeletedWeighIn): WloResult<MeasurementEvent> = failure()
+}
+
+private class SingleMeasurement(
+    private val event: MeasurementEvent,
+) : MeasurementRepository by EmptyMeasurements {
+    @Suppress("ktlint:standard:function-expression-body")
+    override suspend fun byId(eventId: String): WloResult<MeasurementEvent?> {
+        return WloResult.ok(event.takeIf { it.id == eventId })
+    }
 }
 
 private fun <T> failure(): WloResult<T> = WloResult.err(AppError.Storage(cause = null, detail = "test failure"))
