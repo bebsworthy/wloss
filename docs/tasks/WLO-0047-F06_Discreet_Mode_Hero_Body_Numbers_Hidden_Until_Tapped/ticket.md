@@ -1,15 +1,15 @@
 ---
 id: WLO-0047
 title: 'F06 discreet mode: hero body numbers hidden until tapped'
-status: backlog
+status: canceled
 theme: weight-experience
 release: 2
 created: 2026-09-14T13:38:55Z
-modified: 2026-09-15T21:28:45Z
-closed:
-revision: b5e8ab99623c886b
+modified: 2026-09-16T05:29:17Z
+closed: 2026-09-16T05:29:17Z
+revision: 4d975d4355f45e78
 blocks: []
-related: [WLO-0041]
+related: []
 ---
 
 # Description
@@ -35,3 +35,7 @@ Screenshots both states on Hub + weight surface; arch/ktlint/detekt green.
 - Spec: [F06 §9](docs/features/F06-weight-body-metrics.md) (discreet mode: hero number hidden until tapped; biometric lock context)
 - Design: [DESIGN-SYSTEM.md F06 inventory](docs/design/DESIGN-SYSTEM.md) ("Discreet mode (hero hidden until tapped)")
 - Surfaces: Hub hero (f10) + F06 hero (feature/f06-weight/ui/WeightScreen.kt) + widget when built (WLO-0041)
+
+## Product decision (2026-09-16)
+
+Canceled by owner: concealing weight hero numbers behind an extra reveal interaction is not useful for this product. Do not implement or carry this behavior into the widget. Existing app-lock and sensitive photo/archive protections remain in scope.

@@ -115,8 +115,8 @@ not app code (Compose implementation is a later phase).
    (F01 wizard is a flow, not a modal gauntlet).
 4. **Accessibility & pragmatics**: WCAG AA contrast for the neutral
    palette, one-handed reach zones (in-store F04, gym F05), touch target
-   floor for sweaty-hands contexts (F05), discreet mode (F06 hero-number
-   hiding), RTL note, locale-sensitivity where specs flag it (F04 aisles).
+   floor for sweaty-hands contexts (F05), sensitive archive/photo-surface
+   protection, RTL note, locale-sensitivity where specs flag it (F04 aisles).
 
 ## Phase C — key flows as prototypes (deliverable: `docs/design/flows/`)
 

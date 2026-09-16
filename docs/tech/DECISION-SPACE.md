@@ -164,7 +164,7 @@ options, and what constrains it. "▸ leans" = a provisional default to validate
 | T-H3 | **Bluetooth** | Android BLE stack + scale-driver architecture (F13 §3, as amended): **clean-room** drivers for popular BIA scales (protocol knowledge credited to openScale; GPL code not reusable under Apache-2.0), Health Connect as the interim bridge to vendor apps; driver interface shape; foreground-service lifecycle for HR straps (F05). |
 | T-H4 | **SAF / storage** | Backup-folder persistence, photo offload [v1.x], document-tree integrity manifest writing (F13 §3). |
 | T-H5 | **Notifications** | Single-channel discipline per R-U1 (silent, ≤2 actions, self-dismissing), Android-13 permission ask-in-context-once (F10 §9), quiet-hours enforcement. |
-| T-H6 | **Biometric / lock gate** | BiometricPrompt + PIN fallback, lock-timeout, FLAG_SECURE surfaces, discreet app-switcher mode (F13 §3; IA §6) — implementation surface for `wlo://archive/capture` gate. |
+| T-H6 | **Biometric / lock gate** | BiometricPrompt + PIN fallback, lock-timeout, FLAG_SECURE surfaces, app-switcher protection (F13 §3; IA §6) — implementation surface for `wlo://archive/capture` gate. |
 
 ### T-J. Quality engineering
 

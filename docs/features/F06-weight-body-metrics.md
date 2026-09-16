@@ -176,7 +176,7 @@ ritual with F13's mechanics per R-B7 — F06 only renders both.)
 
 ## 9. Guardrails, Privacy & Sensitivity
 
-- **Highest-sensitivity data in the app.** Weight history can signal an eating disorder, pregnancy, or illness. Protections: biometric lock on the metrics area (per-profile, Happy Scale pattern); discreet mode (hero number hidden until tapped); exports are explicit user actions only.
+- **Sensitive health data.** Weight history can signal an eating disorder, pregnancy, or illness. Protections: the app lock gates access when enabled, and exports are explicit user actions only. Hero values remain directly readable; an extra tap-to-reveal mode was considered and rejected as unnecessary complexity (owner ruling 2026-09-16).
 - **No cloud path exists** — no consent category, no network call, no telemetry. The scale photo is processed in memory and never persisted unless the user saves it deliberately.
 - **Body-image hard rules:** no ideal-weight moralizing, no BMI lectures, no red gain-alarms, no comparisons to other humans or populations; eating-disorder-adjacent patterns (rapid loss, obsessive frequency) trigger a gentle, dismissable info card with professional-resource pointers — once, never nagged.
 - Raw tracking remains available when the shared

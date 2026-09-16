@@ -85,7 +85,7 @@
   <div class="flowunit">
     <div class="phone wf"><div class="screen">
       <div class="wf-box solid row">status bar</div>
-      <div class="wf-box row">Trend header · 👁 discreet eye · range chips 30d/90d/1y/all</div>
+      <div class="wf-box row">Trend header · range chips 30d/90d/1y/all</div>
       <div class="wf-box tall">Chart: scale dots + trend line + ribbon (N-day scrubber)</div>
       <div class="wf-box row">weekly rate · 10-day-best · smoother chip (compare modes)</div>
       <div class="wf-box row">body-fat (estimated ±3–4 %) · BMI behind “on request”</div>
@@ -285,7 +285,6 @@
         <div class="apphead">
           <div class="brand">Weight trend</div>
           <div class="actions">
-            <span class="chip" title="discreet mode — hides heroes until tapped">👁</span>
             <span class="chip" title="smoother settings + compare modes">smoother</span>
           </div>
         </div>
@@ -355,20 +354,18 @@
           <div class="tab"><span class="ic">•••</span>More</div>
         </div>
       </div>
-      <span class="pin" style="top:34px; right:100px;">9</span>
-      <span class="pin" style="top:170px; right:26px;">10</span>
-      <span class="pin" style="top:566px; left:28px;">11</span>
-      <span class="pin" style="top:472px; right:30px;">12</span>
-      <span class="pin" style="bottom:46px; right:12px;">13</span>
+      <span class="pin" style="top:170px; right:26px;">9</span>
+      <span class="pin" style="top:566px; left:28px;">10</span>
+      <span class="pin" style="top:472px; right:30px;">11</span>
+      <span class="pin" style="bottom:46px; right:12px;">12</span>
     </div>
     <div class="caption annotation">
       <b>Trend history — honest smoothing, gated lines.</b>
       <ol>
-        <li><span class="pin-ref">9</span>Discreet mode: the eye toggles hero-numeral hiding across F06 surfaces (until tapped); with the widget’s lock-screen dots (flow 01) and the Archive gate (<a href="09-silhouette-f08.html" style="color:var(--info); text-decoration:none;">flow 09</a>), the discretion ladder is complete.</li>
-        <li><span class="pin-ref">10</span>Chart = scale dots (raw, always queryable) + trend line + ribbon; 30d/90d/1y/all; the ribbon’s N-day reference is user-adjustable with a scrubber. Provenance chip names the smoother (α 0.15 per R-A2); “smoother” opens selector + compare-modes overlay with each smoother’s lag and failure modes documented in-app.</li>
-        <li><span class="pin-ref">11</span>Data-quality gate: the trend line needs ≥3 points in the trailing 7 days — below that, dots only and the kindest true sentence in the app: “keep weighing — trend forms in a few days”.</li>
-        <li><span class="pin-ref">12</span>Body-fat carries its honest ±3–4 % chip (estimated, never merged with measured series); BMI renders only behind “on request” — computed, badged derived, ranges not verdicts, no lectures.</li>
-        <li><span class="pin-ref">13</span>Weight is the default primary destination. Archive and Digestion retain their neutral, renamable names within More and keep their discretion gates.</li>
+        <li><span class="pin-ref">9</span>Chart = scale dots (raw, always queryable) + trend line + ribbon; 30d/90d/1y/all; the ribbon’s N-day reference is user-adjustable with a scrubber. Provenance chip names the smoother (α 0.15 per R-A2); “smoother” opens selector + compare-modes overlay with each smoother’s lag and failure modes documented in-app.</li>
+        <li><span class="pin-ref">10</span>Data-quality gate: the trend line needs ≥3 points in the trailing 7 days — below that, dots only and the kindest true sentence in the app: “keep weighing — trend forms in a few days”.</li>
+        <li><span class="pin-ref">11</span>Body-fat carries its honest ±3–4 % chip (estimated, never merged with measured series); BMI renders only behind “on request” — computed, badged derived, ranges not verdicts, no lectures.</li>
+        <li><span class="pin-ref">12</span>Weight is the default primary destination. Archive and Digestion retain their neutral, renamable names within More and keep their discretion gates.</li>
       </ol>
     </div>
   </div>
@@ -388,7 +385,7 @@
         <li><b>Tone</b> — “keep or correct?”, “keep weighing — trend forms in a few days”. Deltas described, never judged; “over”, “missed”, “welcome back, you gained” absent from every string. ✓</li>
         <li><b>No red / gains neutral</b> — gain-day variant uses <span class="up">neutral-delta</span> with the identical tick and motion; the outlier guard renders flat. ✓</li>
         <li><b>R-U15</b> — three equal paths on one surface; the pad is prefilled, back-datable, one tap from either assist; OCR failure lands silently on the pad. ✓</li>
-        <li><b>Discretion ladder (F06 side)</b> — discreet-mode eye, lock-screen dots (flow 01), BMI on request; the Archive half of the ladder (gate, FLAG_SECURE, silent shutter) lives in flow 09. ✓</li>
+        <li><b>Sensitive-data restraint</b> — BMI stays on request, while the Archive uses its appropriate gate, FLAG_SECURE, and silent shutter in flow 09. ✓</li>
         <li><b>Local-first</b> — “on-device OCR · no cloud”; no spinner, no network state anywhere. ✓</li>
       </ol>
       <b style="display:block; margin-top:8px;">Round 10 split:</b> the Archive ritual (F08) moved to <a href="09-silhouette-f08.html" style="color:var(--info); text-decoration:none;">flow 09</a> — wireframes 5–8 and mocks 5–8 verbatim, pins renumbered; its self-review (R-U16 “checked twice”, R-U7/R-D9 naming, R-U13 coverage streaks) moved with it.

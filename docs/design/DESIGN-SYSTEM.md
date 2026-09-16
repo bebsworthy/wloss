@@ -390,7 +390,7 @@ identical neutral motion in either direction) · accessible entry in kg/lb ·
 honest raw+trend chart · logbook and import identity · loss/maintenance/gain
 goal state · goal editor/progress · Health Connect weight/body-fat import.
 **Release 2:**
-OCR viewfinder · progress ribbon · widget · Fresh Start · discreet mode ·
+OCR viewfinder · progress ribbon · widget · Fresh Start ·
 optional 10-day-best · measurement-condition insights. **Deferred:** smoother
 comparison/tuning · body-fat/girth/EAV custom metrics · milestone celebration ·
 Bluetooth scale drivers · multi-profile lock · advanced correlations.
@@ -426,7 +426,7 @@ AI Studio (Settings → AI; six frozen category rows; status glyphs on-device/cl
 
 ### 7.14 F13 — Data Vault
 
-Storage dashboard (per-category tiles; shrink/purge/age-based cleanup; R-U14) · Network audit page [v1.x] ("every egress path, consent state, last-used") · Biometric app lock (PIN fallback; timeout) · Backup-health dot (F10) · Restore prompt ("Restore found a backup") · Validation report / staging ("nothing was changed" failure state) · Column-mapping wizard (remembers) · Export flow (versioned JSON; CSV; keys blanked; plaintext explicit R-U5; attachments per-bundle opt-in R-U18) · PDF reports (journey + F09 doctor export, on-device) · Deletion flow (type-to-confirm with counts: "3,412 entries · 187 photos") · User-folder photo offload [v1.x] · Encrypted backups (R-U5) · Health Connect consent UI (per-datatype; visible paused state) · Scale pairing dialog (tick per metric; openScale credits) · Consent ledger · Attachments registry (sensitivity classes) · Hidden gallery / Discreet mode (app-switcher hiding) · EAV custom metrics UI · Fresh Start hand-off · Multi-device sync / signed exports / plain-SQLite mode [future] · Journaled vault [moonshot].
+Storage dashboard (per-category tiles; shrink/purge/age-based cleanup; R-U14) · Network audit page [v1.x] ("every egress path, consent state, last-used") · Biometric app lock (PIN fallback; timeout) · Backup-health dot (F10) · Restore prompt ("Restore found a backup") · Validation report / staging ("nothing was changed" failure state) · Column-mapping wizard (remembers) · Export flow (versioned JSON; CSV; keys blanked; plaintext explicit R-U5; attachments per-bundle opt-in R-U18) · PDF reports (journey + F09 doctor export, on-device) · Deletion flow (type-to-confirm with counts: "3,412 entries · 187 photos") · User-folder photo offload [v1.x] · Encrypted backups (R-U5) · Health Connect consent UI (per-datatype; visible paused state) · Scale pairing dialog (tick per metric; openScale credits) · Consent ledger · Attachments registry (sensitivity classes) · Hidden gallery / app-switcher protection · EAV custom metrics UI · Fresh Start hand-off · Multi-device sync / signed exports / plain-SQLite mode [future] · Journaled vault [moonshot].
 
 ---
 

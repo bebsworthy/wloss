@@ -184,9 +184,10 @@ Ranked by (value to the numbers-geek) × (fit with local-first) × (cost).
 16. **Data portability as a feature** *(Waistline's versioned JSON export/import,
     plop's PDF doctor report)* — "Mealime is shutting down; your data isn't" is a
     marketing wedge WLO gets for free by being local.
-17. **Fresh Start + discreet mode** *(Happy Scale, Happy Poop)* —
-    hide-not-delete for relapses and sensitive-number controls fit Release 2;
-    multi-profile is deferred while the schema remains partition-ready.
+17. **Fresh Start** *(Happy Scale)* — hide-not-delete for relapses fits
+    Release 2; multi-profile is deferred while the schema remains
+    partition-ready. A tap-to-reveal weight-number mode was evaluated and
+    rejected as unnecessary product complexity (owner ruling 2026-09-16).
 
 ---
 

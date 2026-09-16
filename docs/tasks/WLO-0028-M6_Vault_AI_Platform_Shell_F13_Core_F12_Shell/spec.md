@@ -31,8 +31,7 @@
 ## Relevant documentation
 - `docs/features/F13-data-vault.md` (§3 all, §4 flows, §9 hard invariants)
 - `docs/features/F12-ai-platform.md` §3.1, §3.4, §3.6, §4, §5
-- `docs/design/` onboarding/vault-related flows; `docs/design/IA.md` §6 (settings,
-  discreet mode)
+- `docs/design/` onboarding/vault-related flows; `docs/design/IA.md` §6 (settings and privacy)
 - Rulings: R-U5, R-U7 (discretion), R-U18, R-C7 (no nag when consent off), R-B9
 - DECISION-SPACE: T-C3, T-C6, T-F1–F4, T-K4, T-G3; ARCHITECTURE §2.4 (documents pattern)
 

@@ -157,7 +157,7 @@ Legend: ✅ strength · ⚠ defect · · minor. Screen IDs: `w` = wireframe,
   fixed, not judged". ⚠ unit mixing: lb persona, sheet says "4.2 kg above
   yesterday" (deliberately spec-verbatim, but should localize to persona).
   · pin floats unanchored; dimmed background mostly empty.
-- **m4 Trend history** ✅ range chips, discreet eye, honest smoothing chips,
+- **m4 Trend history** ✅ range chips, honest smoothing chips,
   body-fat `estimated · impedance ±3–4 %`, BMI "on request — ranges, not
   verdicts", week-1 dots-only teaching state. ⚠ "Progress number" row wraps
   awkwardly; logbook caption clips under the nav.

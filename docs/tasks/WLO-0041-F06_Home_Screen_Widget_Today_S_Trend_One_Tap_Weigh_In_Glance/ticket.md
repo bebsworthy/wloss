@@ -5,11 +5,11 @@ status: backlog
 theme: weight-experience
 release: 2
 created: 2026-09-14T13:37:55Z
-modified: 2026-09-15T21:28:45Z
+modified: 2026-09-16T05:29:16Z
 closed:
-revision: 57fd04770f09b44c
+revision: 60bce0db9203b5b6
 blocks: []
-related: [WLO-0047]
+related: []
 ---
 
 # Description
@@ -22,7 +22,6 @@ The "today's trend" home-screen widget (F06 §4 entry points; IA.md widget surfa
 
 - Glance appwidget in :app; small/flexible sizes (single-cell = trend number + delta only, honest at a glance).
 - Updates on data change (observe the canonical currentTrend flow → AppWidgetManager) + day rollover; coalesce to avoid update storms.
-- Respect discreet mode once it lands (WLO-0047): hidden values stay hidden on the widget.
 - Empty states: no weigh-ins → kind "weigh in" prompt; pre-onboarding → widget inert.
 - Screenshot proofs with the demo seed (WLO-0036 seeder).
 

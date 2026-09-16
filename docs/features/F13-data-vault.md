@@ -70,8 +70,8 @@ is reformulated; items are archived, never orphaned).
 storage, excluded from the gallery/MediaStore. Android system cloud backup and
 implicit device-to-device transfer are disabled for the entire app; there is
 no per-category OS-backup opt-in. Data moves only through the explicit,
-user-selected SAF export/backup flow. Discreet mode (with
-F08/F09) hides sensitive entries from the app switcher; originals are never
+user-selected SAF export/backup flow. F08/F09 sensitive surfaces are hidden
+from the app switcher; originals are never
 downscaled without retaining the original. **Retention follows R-U14:** food
 and stool photos default to discard-at-save. **Silhouette generates no photo
 attachments at all (R-U16):** F08's capture derives vector outlines in memory
