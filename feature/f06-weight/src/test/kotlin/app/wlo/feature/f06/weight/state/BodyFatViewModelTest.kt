@@ -1,5 +1,6 @@
 package app.wlo.feature.f06.weight.state
 
+import androidx.lifecycle.SavedStateHandle
 import app.wlo.core.common.ClockPort
 import app.wlo.core.common.MassUnit
 import app.wlo.core.common.WloResult
@@ -32,11 +33,57 @@ import java.nio.file.Files
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
+import kotlin.test.assertNotEquals
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class BodyFatViewModelTest {
+    @Test
+    fun `editing a restored committed draft starts a new operation`() =
+        runTest {
+            Dispatchers.setMain(StandardTestDispatcher(testScheduler))
+            try {
+                val directory = Files.createTempDirectory("body-fat-replay")
+                val settings =
+                    SettingsStoreFactory.create(
+                        directory.resolve("settings.preferences_pb").toString().toPath(),
+                    )
+                settings.setMassUnit(MassUnit.POUND)
+                val measurements = RecordingMeasurements()
+                val handle = SavedStateHandle()
+
+                fun viewModel() =
+                    BodyFatViewModel(
+                        clock = FixedBodyClock,
+                        profiles = BodyProfileRepository,
+                        measurements = measurements,
+                        settings = settings,
+                        savedStateHandle = handle,
+                    )
+
+                val first = viewModel()
+                advanceUntilIdle()
+                first.onEvent(BodyFatEvent.WaistChange("40"))
+                first.onEvent(BodyFatEvent.NeckChange("15"))
+                first.onEvent(BodyFatEvent.Compute)
+                first.onEvent(BodyFatEvent.SaveToLogbook)
+                advanceUntilIdle()
+
+                val restored = viewModel()
+                advanceUntilIdle()
+                restored.onEvent(BodyFatEvent.WaistChange("41"))
+                restored.onEvent(BodyFatEvent.Compute)
+                restored.onEvent(BodyFatEvent.SaveToLogbook)
+                advanceUntilIdle()
+
+                assertEquals(2, measurements.commands.size)
+                assertNotEquals(measurements.commands[0].operationId, measurements.commands[1].operationId)
+            } finally {
+                Dispatchers.resetMain()
+            }
+        }
+
     @Test
     fun `formula edit invalidates result and inches save once as canonical centimeters`() =
         runTest {

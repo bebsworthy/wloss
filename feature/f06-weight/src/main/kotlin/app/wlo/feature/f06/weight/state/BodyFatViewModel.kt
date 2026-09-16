@@ -98,6 +98,7 @@ public class BodyFatViewModel(
     private var profileId: String? = null
     private var computed: ComputedBodySnapshot? = null
     private var operationId: String = savedStateHandle[OPERATION_KEY] ?: Uuid.random().toString()
+    private var restoredDraftNeedsNewOperation: Boolean = savedStateHandle.get<String>(OPERATION_KEY) != null
 
     private val state =
         MutableStateFlow(
@@ -108,6 +109,7 @@ public class BodyFatViewModel(
                 waistText = savedStateHandle[WAIST_KEY] ?: "",
                 neckText = savedStateHandle[NECK_KEY] ?: "",
                 hipText = savedStateHandle[HIP_KEY] ?: "",
+                committedOperationId = savedStateHandle[COMMITTED_OPERATION_KEY],
             ),
         )
 
@@ -152,9 +154,15 @@ public class BodyFatViewModel(
         }
     }
 
-    private fun invalidate(transform: (BodyFatUiState) -> BodyFatUiState) {
+    private fun invalidate(
+        rotateRestoredOperation: Boolean = true,
+        transform: (BodyFatUiState) -> BodyFatUiState,
+    ) {
         val changed = transform(state.value)
-        if (changed.committedOperationId != null) operationId = Uuid.random().toString()
+        if (changed.committedOperationId != null || (rotateRestoredOperation && restoredDraftNeedsNewOperation)) {
+            operationId = Uuid.random().toString()
+        }
+        if (rotateRestoredOperation) restoredDraftNeedsNewOperation = false
         computed = null
         state.value =
             changed.copy(
@@ -174,7 +182,7 @@ public class BodyFatViewModel(
             val value = parseNumber(text) ?: return text
             return formatInput(next.fromCentimeters(previous.toCentimeters(value)))
         }
-        invalidate {
+        invalidate(rotateRestoredOperation = false) {
             it.copy(
                 lengthUnit = next,
                 waistText = convert(it.waistText),
@@ -281,6 +289,7 @@ public class BodyFatViewModel(
                             notice = "That didn't save. Nothing changed — try again.",
                         )
                 }
+            persistDraft(state.value)
         }
     }
 
@@ -294,6 +303,7 @@ public class BodyFatViewModel(
         savedStateHandle[NECK_KEY] = value.neckText
         savedStateHandle[HIP_KEY] = value.hipText
         savedStateHandle[OPERATION_KEY] = operationId
+        savedStateHandle[COMMITTED_OPERATION_KEY] = value.committedOperationId
     }
 
     private fun canonical(
@@ -326,5 +336,6 @@ public class BodyFatViewModel(
         private const val NECK_KEY: String = "body.neck"
         private const val HIP_KEY: String = "body.hip"
         private const val OPERATION_KEY: String = "body.operation"
+        private const val COMMITTED_OPERATION_KEY: String = "body.committedOperation"
     }
 }
