@@ -231,7 +231,6 @@ decision. († = easing/spring unspecified in spec — token supplies it.)
 | Progress ribbon breathe | F06 | thickness ease 200 ms on new data | — | S4 |
 | Back-fill recompute | F06 | zero-phase recent values re-settle, visible 300 ms ease | — | M2 |
 | Milestone moment | F06 | giant numeral count-up | two-note celebration | count-up |
-| OCR lock | F06 | brackets snap green; recognized value flies into field | lock tick | snap |
 | Check-in reveal | F07 | 500 ms sequence: status chip stamps → trend odometer-rolls → expenditure line draws L→R → proposal row rises | — | choreographed 500 ms |
 | Apply commit | F07 | crisp tick-tick; numerals count old → new; thin ledger line items itself beneath | double-tick | commit |
 | Keep | F07 | proposal row folds away ("rolling over") | single soft tick | fold |
@@ -390,7 +389,7 @@ identical neutral motion in either direction) · accessible entry in kg/lb ·
 honest raw+trend chart · logbook and import identity · loss/maintenance/gain
 goal state · goal editor/progress · Health Connect weight/body-fat import.
 **Release 2:**
-OCR viewfinder · progress ribbon ·
+Progress ribbon ·
 optional 10-day-best · measurement-condition insights. **Deferred:** smoother
 comparison/tuning · body-fat/girth/EAV custom metrics · milestone celebration ·
 Bluetooth scale drivers · multi-profile lock · advanced correlations.

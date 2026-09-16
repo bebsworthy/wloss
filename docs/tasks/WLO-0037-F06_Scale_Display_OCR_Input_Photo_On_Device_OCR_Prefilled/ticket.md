@@ -1,13 +1,13 @@
 ---
 id: WLO-0037
 title: 'F06 scale-display OCR input: photo -> on-device OCR -> prefilled weigh-in (v1 blue-sky)'
-status: backlog
+status: canceled
 theme: weight-experience
 release: 2
 created: 2026-09-14T13:37:55Z
-modified: 2026-09-15T21:28:45Z
-closed:
-revision: b7dd7b48932868bc
+modified: 2026-09-16T05:44:26Z
+closed: 2026-09-16T05:44:26Z
+revision: 8ca9505e3843d5e9
 blocks: []
 related: []
 ---
@@ -36,3 +36,7 @@ Parser unit tests green; arch enforce 0; ktlint + detekt; manual capture demo. N
 - Research: [gyroscope.md](docs/research/gyroscope.md) (photo-of-display input origin)
 - Mockup: [flows/04-weigh-in-trend-f06-f08.html](docs/design/flows/04-weigh-in-trend-f06-f08.html) — OCR path / OCR lock / OCR thumb annotations ("OCR failure lands silently on the pad")
 - Precedent: :core:media WloViewfinder + WloShutterBridge wired in app/navigation/WloApp.kt for F02 capture
+
+## Product decision (2026-09-16)
+
+Canceled by owner. Photographing and verifying a short scale value is not a better default than entering a few digits, and Health Connect remains the automation path for connected scales. Shared OCR infrastructure remains available to features where the photographed text is materially larger.

@@ -48,14 +48,13 @@
     <div class="phone wf"><div class="screen">
       <div class="wf-box solid row">status bar</div>
       <div class="wf-box row">Weigh-in header · app-wide unit label (kg/lb; change in Settings)</div>
-      <div class="wf-box row">Release 1: Type · Health Connect import</div>
-      <div class="wf-box row">Release 2 assist: Snap/OCR · deferred: Bluetooth</div>
+      <div class="wf-box row">Type · Health Connect import</div>
       <div class="wf-box">Display: 81.2 · kg · ±0.1 stepper</div>
       <div class="wf-box tall">Number pad 1–9 · . · 0 · ⌫</div>
       <div class="wf-box row">date chip: this morning · back-date</div>
       <div class="wf-box row">Save weigh-in</div>
     </div></div>
-    <div class="caption annotation"><b>Weigh-in entry.</b> Three equal first-class paths on one surface (R-U15); typing is never a fallback. Zero typing in the common case; ≤5 s.</div>
+    <div class="caption annotation"><b>Weigh-in entry.</b> Manual entry is short and direct; Health Connect removes typing when a connected scale is available.</div>
   </div>
 
   <div class="flowunit">
@@ -114,32 +113,6 @@
           <div class="actions"><span class="receipt" title="display unit; change in Settings">kg</span></div>
         </div>
 
-        <div class="seg">
-          <div class="s">⌁ Scale</div>
-          <div class="s">📷 Snap</div>
-          <div class="s on">♯ Type</div>
-        </div>
-
-        <div class="assist">
-          <div class="a">
-            <div class="t">Scale · paired</div>
-            <div class="stat-m" style="margin-top:2px;">81.0<span class="unit">kg</span> <span class="faint" style="font-size:13px;">arriving…</span></div>
-          </div>
-          <div class="a">
-            <div class="t">Snap display</div>
-            <div class="minivf">
-              <svg width="100%" height="100%" viewBox="0 0 170 60">
-                <path d="M8 18 V8 H22" fill="none" stroke="var(--accent)" stroke-width="2.5" stroke-linecap="round"/>
-                <path d="M148 8 H162 V18" fill="none" stroke="var(--accent)" stroke-width="2.5" stroke-linecap="round"/>
-                <path d="M162 42 V52 H148" fill="none" stroke="var(--accent)" stroke-width="2.5" stroke-linecap="round"/>
-                <path d="M22 52 H8 V42" fill="none" stroke="var(--accent)" stroke-width="2.5" stroke-linecap="round"/>
-                <text x="85" y="37" text-anchor="middle" fill="var(--text-primary)" font-size="16" font-weight="600" style="font-variant-numeric: var(--tnum);">80.9</text>
-              </svg>
-            </div>
-            <div class="receipt faint" style="margin-top:4px;">on-device OCR · no cloud</div>
-          </div>
-        </div>
-
         <div class="disp">
           <div class="hero" style="font-size:48px;">81.2</div>
           <span class="chip">kg</span>
@@ -161,16 +134,12 @@
         <a class="btn primary block" href="#" style="text-decoration:none;">Save weigh-in</a>
         <div class="receipt faint" style="margin-top:8px; text-align:center;">prefilled with your trend</div>
       </div>
-      <span class="pin" style="top:148px; left:14px;">1</span>
-      <span class="pin" style="top:148px; right:14px;">2</span>
-      <span class="pin" style="top:282px; right:42px;">3</span>
+      <span class="pin" style="top:282px; right:42px;">1</span>
     </div>
     <div class="caption annotation">
-      <b>Weigh-in entry — three equal paths (R-U15).</b>
+      <b>Weigh-in entry — direct manual capture.</b>
       <ol>
-        <li><span class="pin-ref">1</span>Bluetooth path: the value arrives live while you watch (the ruling’s own example, mid-arrival) — a tick per metric lands (F13 pairing); saving writes the same event as any other path.</li>
-        <li><span class="pin-ref">2</span>OCR path: brackets snap green on lock and the recognized value flies into the field; processed in memory, never persisted; on failure it lands silently on the pad — nothing lost (F06 §4).</li>
-        <li><span class="pin-ref">3</span>The pad is an equal, first-class path — prefilled with the trend, ±0.1 stepper for the decimal, back-datable for missed-day fill-ins (editing history is honest and visible, never silent). Assists sit above the pad, never instead of it.</li>
+        <li><span class="pin-ref">1</span>The pad is prefilled with the trend, has a ±0.1 stepper for the decimal, and is back-datable for missed-day fill-ins. Health Connect entries feed the same event store without adding another capture UI.</li>
       </ol>
     </div>
   </div>
@@ -384,9 +353,9 @@
         <li><b>Provenance chips on every derived number</b> — trend (derived · EWMA α 0.15, R-A2), raw weight (measured · scale), body-fat (estimated · impedance ±3–4 %, honest uncertainty), ribbon (derived area). None missing; measured and estimated never silently merged. ✓</li>
         <li><b>Tone</b> — “keep or correct?”, “keep weighing — trend forms in a few days”. Deltas described, never judged; “over”, “missed”, “welcome back, you gained” absent from every string. ✓</li>
         <li><b>No red / gains neutral</b> — gain-day variant uses <span class="up">neutral-delta</span> with the identical tick and motion; the outlier guard renders flat. ✓</li>
-        <li><b>R-U15</b> — three equal paths on one surface; the pad is prefilled, back-datable, one tap from either assist; OCR failure lands silently on the pad. ✓</li>
+        <li><b>Direct capture</b> — the pad is prefilled, back-datable, and uses the same event store as Health Connect imports. ✓</li>
         <li><b>Sensitive-data restraint</b> — BMI stays on request, while the Archive uses its appropriate gate, FLAG_SECURE, and silent shutter in flow 09. ✓</li>
-        <li><b>Local-first</b> — “on-device OCR · no cloud”; no spinner, no network state anywhere. ✓</li>
+        <li><b>Local-first</b> — no spinner and no network state anywhere. ✓</li>
       </ol>
       <b style="display:block; margin-top:8px;">Round 10 split:</b> the Archive ritual (F08) moved to <a href="09-silhouette-f08.html" style="color:var(--info); text-decoration:none;">flow 09</a> — wireframes 5–8 and mocks 5–8 verbatim, pins renumbered; its self-review (R-U16 “checked twice”, R-U7/R-D9 naming, R-U13 coverage streaks) moved with it.
     </div></div>
@@ -396,7 +365,7 @@
         <li>Odometer numerals: trend hero rolls digit-by-digit, 400 ms, tabular digits — confirmation card + Hub hero. ✓ (noted, static by medium)</li>
         <li>Progress ribbon: area between trend and N-days-ago; thickness breathe 200 ms on new data; accent band above / neutral half shown where a day pops above the reference. ✓</li>
         <li>Back-fill: long-press chart → pad → zero-phase recent values re-settle with a visible 300 ms ease; editing history honest and visible. ✓</li>
-        <li>Confirmation haptics: single soft tick on save; gain = same tick, same motion, neutral color; OCR lock = brackets snap green + value flies. ✓</li>
+        <li>Confirmation haptics: single soft tick on save; gain = same tick, same motion, neutral color. ✓</li>
         <li>Frozen orders respected: F06 confirmation anatomy (trend → raw small → ribbon), the ≥3-points-in-7-days trend gate, R-B8 re-weighs join quietly. ✓</li>
       </ol>
       <b>Open items surfaced:</b> zero-phase smoother UX — the “recent values revise” re-settle needs its implementation + documented-behavior spec (F06 §10) · import-rule edges (fasting-day weigh-ins, timezone shifts) remain open in F06 · Archive-side open items (derivation budget, multi-profile R-B9) live in flow 09’s self-review.

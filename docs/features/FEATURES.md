@@ -65,7 +65,7 @@ This is a product-support boundary, not medical advice or diagnosis.
 | Horizon | Included capability |
 |---|---|
 | **Release 1 — weight core** | correct kg/lb entry and display; event log and edit/delete; honest trend/chart states; accessible entry; post-save trend result; lifecycle/error reliability; Health Connect weight/body-fat import with durable source identity; benchmarked daily-scalar policy; calibrated forecast ranges; loss/maintenance/gain safety and direction-correct forecasting; goal editing and progress |
-| **Release 2 — weight experience** | progress ribbon; OCR scale display; optional 10-day-best view; measurement-condition insights |
+| **Release 2 — weight experience** | progress ribbon; optional 10-day-best view; measurement-condition insights |
 | **Deferred / advanced** | user-tunable smoothing and smoother comparison; custom metrics; elaborate milestone celebrations; Bluetooth-scale drivers; multi-profile vault partitions; broader food, planning, exercise, silhouette, digestion, and AI suite release work |
 
 Release 1 stores one profile while keeping `profileId` in every row. Body mass
@@ -114,8 +114,7 @@ store), **Nudge Contract** (F10's app-wide notification policy).
 
 ### 2.2 The Day loop (daily rhythm, orchestrated by F10)
 
-Morning: Bluetooth scale, photo-of-display, **or simply typing 92.1 — all
-equal first-class paths** (R-U15). F06 answers with the trend card ("Trend
+Morning: Health Connect import or simply typing 92.1. F06 answers with the trend card ("Trend
 179.1, down 0.6") and the Hub's hero number; a second weigh-in later in the
 day is kept as its own data point. Meals: F03's planned card → one-tap
 "log as planned" or F02's photo ladder (≤10 s, corrections optional).
@@ -317,7 +316,7 @@ these are binding until amended *here* (feature docs must not re-litigate them).
   there is nothing to leak from a lost phone, a hostile import, or a
   compromised cloud backup, because the artifact does not exist.
 - **R-U15 — Assists never gate (owner ruling).** Every capture assist —
-  scale-display OCR, photo recognition, stool classifier, barcode — has an
+  photo recognition, stool classifier, barcode — has an
   equal-status manual path one tap away, offered but never forced, with a
   graceful landing on manual when recognition fails. Sometimes typing 92.1 is
   genuinely the fastest input, and the app must honor that.
@@ -558,7 +557,7 @@ not override the sequenced Release 1 matrix in §2.0: zero-account onboarding + 
 (F01) · full input ladder with correction loop + sanity rails (F02) · planner +
 generation + swaps (F03) · generated list, pantry, staples, reconciliation
 (F04) · logging loop, rule engine, heatmap (F05) · trend weight, smoothers,
-measurements, EAV, scale OCR (F06) · Transparent engine, check-in, 3-band
+measurements and EAV (F06) · Transparent engine, check-in, 3-band
 decelerating forecast, Algorithms page (F07) · capture ritual, vector-silhouette Archive,
 timeline/compare (F08) · Bristol logging, on-device classifier pre-select, fiber
 target, red flags, doctor export (F09) · Hub, Adaptive Day Model, Nudge

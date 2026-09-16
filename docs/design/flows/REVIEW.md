@@ -144,12 +144,10 @@ Legend: ✅ strength · ⚠ defect · · minor. Screen IDs: `w` = wireframe,
 
 ### Flow 04 — Weigh-in + trend (F06) & Archive (F08)
 
-- **w1–w8** ✅ all eight states; R-U15 three equal paths; R-U16 zero-photo
+- **w1–w8** ✅ all eight states; direct manual/Health Connect entry; R-U16 zero-photo
   discipline throughout (verified: no `<img>` on the page).
-- **m1 Entry** ✅ Scale·Snap·Type equal segments; assist cards *above* the
-  pad ("never instead"); ±0.1 steppers; date chips; "scale path
-  auto-confirms: 0 taps". ⚠ stray persona value: scale card shows "92.1
-  arriving…" — a kg number in the lb persona (mirror is 81.2).
+- **m1 Entry** ✅ short manual entry, ±0.1 steppers, date chips, and
+  Health Connect feeding the same event store.
 - **m2 Confirmation** ✅ **the set's best artifact**: frozen anatomy (trend
   hero odometer, raw as small print, ribbon) plus the gain-day variant —
   "a gain day feels identical in effort, different only in the small print."

@@ -9,7 +9,7 @@
 | **Feature ID** | F06 — Weight & Body Metrics |
 | **Provides** | The weigh-in ritual and the body's full measurement store: trend-first weight framing with documented smoothers, provenance-tagged body-fat and girth numbers, arbitrary custom metrics — the clean data foundation F07's engine computes on. |
 | **User problems solved** | • The scale says +0.8 kg today; WLO answers "Trend 179.1, down 0.6" — fluctuation stops being demoralizing • Body-fat % from a scale is a guess; WLO labels *how* every body number was obtained • "Weight flat but jeans fit" is finally visible: weight vs. circumference side by side • Geeks track neck, ketones, wake-time, anything — without waiting for a developer |
-| **AI consent category** | Owns none. The scale-display photo path uses on-device OCR (classical text recognition); no cloud call exists, so no consent category is consumed. Everything is local math. |
+| **AI consent category** | Owns none. Weight capture and calculations require no AI or cloud call. Everything is local math. |
 | **Primary evidence** | `docs/research/happy-scale.md` (deep: 4 smoothers, lowest-of-day rule, progress ribbon, 10-day-best, Fresh Start, "How we got here"), `docs/research/openscale.md` (formula registry with citations, EAV schema, ~68 scale drivers), `docs/research/gyroscope.md` (photo-of-display input), `docs/research/methreesixty.md` (moving-average trend, circumference semantics), `docs/research/synthesis.md` §1.5, §2 Tier A #2 |
 
 ## 1. Purpose & Core Objectives
@@ -24,7 +24,7 @@ Every value it emits carries provenance — measured / estimated / derived — a
 
 Core objectives:
 
-- **A weigh-in is captured in ≤ 5 s, zero typing in the common case** (Bluetooth scale via F13, or photo-of-display, or one number-pad entry).
+- **A weigh-in is captured in seconds:** zero typing through Health Connect when available, otherwise one short number-pad entry.
 - **Trend-first framing on every surface**: the raw scale number is data; the *trend* is the message ("Trend 179.1, down 0.6").
 - **At least two selectable smoothers with in-app documented math**: trailing EWMA (default) and a zero-phase (centered, past+future) smoother, plus a plain 7-day MA — each with its lag and failure modes written out, Happy Scale FAQ-style.
 - **Every derived number is explainable and provenance-badged**; measured vs. estimated series are never silently merged.
@@ -39,7 +39,7 @@ Core objectives:
 - **Physical/emotional context:** half-awake, barefoot, slightly vulnerable. This is the highest-tension moment of the user's day — the design must remove the verdict feeling entirely.
 - **Episodic:** pairing a new scale (F13), a plateau (correlation views), a doctor visit (export).
 - **The single most common flow:**
-  1. User steps on the Bluetooth scale → entry appears in WLO via F13 (or: user snaps a photo of the display → on-device OCR fills the field).
+  1. User steps on a connected scale and the entry arrives through Health Connect, or opens the manual weigh-in sheet.
   2. A confirmation card animates in: **"Trend 179.1 ↓ 0.6"**, raw 178.4 shown small beneath; single soft haptic.
   3. Done — under 5 seconds, no keyboard. The chart ribbon has grown imperceptibly.
 
@@ -47,7 +47,7 @@ Core objectives:
 
 **Inputs**
 
-- Manual entry (number pad, one decimal, back-datable); Bluetooth scale telemetry via **F13** (openScale-class driver strategy: reuse/port drivers, credit openScale); Health Connect weight/fat/girth via **F13**; **photo-of-the-scale-display** (crop + on-device OCR, Gyroscope's trick); tape-measurement entry; optional caliper entry.
+- Manual entry (number pad, one decimal, back-datable); Bluetooth scale telemetry via **F13** (openScale-class driver strategy: reuse/port drivers, credit openScale); Health Connect weight/fat/girth via **F13**; tape-measurement entry; optional caliper entry.
 - From features: **F01** goal weight and target date (milestone math); **F05** one-tap bodyweight writes; **F13** backup/export.
 
 **The built-in metric catalog**
@@ -99,11 +99,9 @@ ritual with F13's mechanics per R-B7 — F06 only renders both.)
 **Primary flows**
 
 - *Happy path:* scale → auto-import → trend confirmation card → done (0 taps if auto-confirm is on; 1 tap otherwise).
-- *No smart scale:* open card → **type 92.1 on the number pad — an equal,
-  first-class path one tap away, not a fallback** (R-U15: some days typing is
-  simply faster) → confirm. The camera/OCR assist is offered *above* the pad,
-  never instead of it; OCR failure lands silently on the pad and nothing is
-  lost.
+- *No smart scale:* open card → **type 92.1 on the number pad** → confirm.
+  The pad is prefilled from the latest trustworthy value and remains
+  back-datable; entering a few digits is the primary path, not a fallback.
 - *Outlier guard:* an entry ±3σ off recent residual triggers a one-line confirm — "4.2 kg above yesterday — keep or correct?" — one tap either way; "correct" means delete the bad entry and re-enter (R-B8 amendment, WLO-0035), and a deleted entry cannot stand as the day's scalar. An admitted typo is fixed, not judged.
 - *Back-fill:* missed a day? Long-press the chart on that date → number pad → the trend recomputes and, for the zero-phase smoother, recent values re-settle with a visible 300 ms ease. Editing history is honest and visible, never silent.
 - *Multi-profile [deferred]:* Release 1 has one profile; rows are
@@ -112,7 +110,7 @@ ritual with F13's mechanics per R-B7 — F06 only renders both.)
 
 **Input minimization**
 
-- Never typed in the common case: weight (OCR/Health Connect or manual entry),
+- Never typed when Health Connect supplies the reading; otherwise weight uses the short manual entry,
   body-fat (import), girth increments (new tape entries prefill last values),
   unit (app-wide and sticky in Release 1).
 - One-tap shortcuts: "same as yesterday" for girths; long-press chart to back-fill a missed day from memory; re-pair scale from the failure card in one tap.
@@ -126,7 +124,6 @@ ritual with F13's mechanics per R-B7 — F06 only renders both.)
 - **Odometer numerals:** trend value rolls digit-by-digit (400 ms) on the confirmation card and Hub hero number.
 - **Progress ribbon:** green band above / neutral band below the trend line; thickness = change vs. N days ago (default 30, user-adjustable with a scrubber). New data makes the band *breathe* — a 200 ms thickness ease. The user literally watches progress accumulate as area.
 - **Milestone moment:** full-bleed card, giant numeral count-up, distinct two-note celebration haptic, shareable card render (F11 may attach a badge).
-- **OCR capture:** viewfinder brackets snap green on lock; the recognized value flies from the photo into the field.
 
 **Data-quality gating**
 
@@ -152,7 +149,7 @@ ritual with F13's mechanics per R-B7 — F06 only renders both.)
 
 ## 7. Relations to Other Features
 
-- **Consumes from:** **F13** — Bluetooth scale drivers, Health Connect import/export, backup; **F01** — goal weight, start weight, target date; **F05** — explicit bodyweight writes from bodyweight exercises; **F12** — nothing (no cloud call exists in F06; OCR is on-device by design).
+- **Consumes from:** **F13** — Bluetooth scale drivers, Health Connect import/export, backup; **F01** — goal weight, start weight, target date; **F05** — explicit bodyweight writes from bodyweight exercises; **F12** — nothing (no AI or cloud call exists in F06).
 - **Feeds into:** **F07** — the versioned daily-scalar and trend series, the
   core engine input; **F05** — bodyweight for lift scaling; **F08** —
   weight/girth context; **F10** — trend and reminder; **F11** — progress data.
@@ -161,7 +158,6 @@ ritual with F13's mechanics per R-B7 — F06 only renders both.)
 
 ## 8. Blue Sky Ideas
 
-- **[v1] Photo-of-the-scale display** — on-device OCR input for any scale, smart or dumb; the cheapest zero-typing win for the majority without Bluetooth scales.
 - **[v1] Provenance badges + "How we got here" everywhere** — openScale computes provenance but never surfaces it; WLO makes it a first-class UI atom.
 - **[v1.x] Weight ↔ circumference correlation view** — paired scatter + per-interval deltas ("losing size not weight" made quantitative); extends to any EAV metric the user defines.
 - **[v1.x] Impedance decoder library** — port/credit openScale's per-vendor decoders and published formula set (Navy, RFM, Deurenberg, Gallagher…) with citations in-app; measured-vs-estimated overlay charts with uncertainty bands.
