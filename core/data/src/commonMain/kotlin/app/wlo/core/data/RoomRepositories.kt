@@ -180,6 +180,7 @@ public class RoomProfileRepository public constructor(
 public class RoomMeasurementRepository public constructor(
     private val db: WloDatabase,
     private val projector: DayProjector,
+    private val bodyMutationProbe: (BodyMeasurementMutationStage) -> Unit = {},
 ) : MeasurementRepository {
     private val dao = db.measurementEvents()
     private val attrDao = db.measurementEventAttrs()
@@ -221,6 +222,106 @@ public class RoomMeasurementRepository public constructor(
                 },
             )
         }
+
+    override suspend fun saveBodyMeasurement(command: BodyMeasurementCommand): WloResult<BodyMeasurementResult> {
+        if (
+            command.operationId.isBlank() ||
+            command.methodId.isBlank() ||
+            command.methodVersion.isBlank() ||
+            !command.estimatePercent.isFinite() ||
+            command.estimatePercent !in 0.0..100.0 ||
+            command.inputs.any { it.name.isBlank() || !it.centimeters.isFinite() || it.centimeters <= 0.0 }
+        ) {
+            return WloResult.err(AppError.InvalidInput("Invalid body measurement"))
+        }
+        return storageGuard("measurement.saveBodyMeasurement") {
+            db.withWriteTransaction {
+                val existing = attrDao.eventForAttribute(BODY_OPERATION_ATTR, command.operationId)
+                if (existing != null) return@withWriteTransaction bodyMeasurementResult(existing)
+
+                val bundleId = Uuid.random().toString()
+                val tapeEvents =
+                    command.inputs
+                        .filter { it.name in BODY_TAPE_METRICS }
+                        .map { input ->
+                            MeasurementEventEntity(
+                                id = Uuid.random().toString(),
+                                profileId = command.profileId,
+                                dayEpochDay = command.dayEpochDay,
+                                kind = MeasurementKind.CUSTOM.wireName,
+                                valueReal = input.centimeters,
+                                unit = "cm",
+                                source = app.wlo.core.model.MeasurementSource.MANUAL,
+                                capturedAtEpochMs = command.capturedAt.toEpochMilliseconds(),
+                                note = command.note,
+                            ) to input
+                        }
+                tapeEvents.forEach { (entity, _) ->
+                    dao.insert(entity)
+                    bodyMutationProbe(BodyMeasurementMutationStage.TAPE_EVENT_WRITTEN)
+                }
+                val estimate =
+                    MeasurementEventEntity(
+                        id = Uuid.random().toString(),
+                        profileId = command.profileId,
+                        dayEpochDay = command.dayEpochDay,
+                        kind = MeasurementKind.BODY_FAT.wireName,
+                        valueReal = command.estimatePercent,
+                        unit = MeasurementKind.BODY_FAT.unit,
+                        source = app.wlo.core.model.MeasurementSource.ENGINE,
+                        capturedAtEpochMs = command.capturedAt.toEpochMilliseconds(),
+                        note = command.note,
+                    )
+                dao.insert(estimate)
+                bodyMutationProbe(BodyMeasurementMutationStage.ESTIMATE_EVENT_WRITTEN)
+
+                val eventIds = tapeEvents.map { it.first.id } + estimate.id
+                val attrs =
+                    tapeEvents.flatMap { (entity, input) ->
+                        listOf(
+                            MeasurementEventAttrEntity(entity.id, BODY_METRIC_ATTR, input.name, null),
+                            MeasurementEventAttrEntity(entity.id, BODY_BUNDLE_ATTR, bundleId, null),
+                            MeasurementEventAttrEntity(entity.id, BODY_METHOD_ATTR, command.methodId, null),
+                            MeasurementEventAttrEntity(entity.id, BODY_METHOD_VERSION_ATTR, command.methodVersion, null),
+                        )
+                    } +
+                        listOf(
+                            MeasurementEventAttrEntity(estimate.id, BODY_OPERATION_ATTR, command.operationId, null),
+                            MeasurementEventAttrEntity(estimate.id, BODY_BUNDLE_ATTR, bundleId, null),
+                            MeasurementEventAttrEntity(estimate.id, BODY_BUNDLE_IDS_ATTR, eventIds.joinToString(","), null),
+                            MeasurementEventAttrEntity(estimate.id, BODY_METHOD_ATTR, command.methodId, null),
+                            MeasurementEventAttrEntity(estimate.id, BODY_METHOD_VERSION_ATTR, command.methodVersion, null),
+                        ) +
+                        command.inputs.map { input ->
+                            MeasurementEventAttrEntity(
+                                estimate.id,
+                                BODY_INPUT_PREFIX + input.name,
+                                null,
+                                input.centimeters,
+                            )
+                        }
+                attrDao.upsertAll(attrs)
+                bodyMutationProbe(BodyMeasurementMutationStage.ATTRIBUTES_WRITTEN)
+                projector.refresh(command.profileId, command.dayEpochDay, command.dayEpochDay)
+                bodyMutationProbe(BodyMeasurementMutationStage.PROJECTION_REBUILT)
+                BodyMeasurementResult(estimate.id, tapeEvents.map { it.first.id })
+            }
+        }
+    }
+
+    private suspend fun bodyMeasurementResult(estimate: MeasurementEventEntity): BodyMeasurementResult {
+        val ids =
+            attrDao
+                .forEvent(estimate.id)
+                .firstOrNull { it.attr == BODY_BUNDLE_IDS_ATTR }
+                ?.valueText
+                ?.split(',')
+                .orEmpty()
+        return BodyMeasurementResult(
+            estimateEventId = estimate.id,
+            tapeEventIds = ids.filter { it.isNotBlank() && it != estimate.id },
+        )
+    }
 
     override suspend fun range(
         profileId: String,
@@ -301,6 +402,15 @@ public class RoomMeasurementRepository public constructor(
                 .map { MeasurementAttr(it.eventId, it.attr, it.valueText, it.valueReal) }
         }
 }
+
+public enum class BodyMeasurementMutationStage {
+    TAPE_EVENT_WRITTEN,
+    ESTIMATE_EVENT_WRITTEN,
+    ATTRIBUTES_WRITTEN,
+    PROJECTION_REBUILT,
+}
+
+private val BODY_TAPE_METRICS: Set<String> = setOf("waist", "neck", "hip")
 
 // --- day projection (Appendix A.3 — the only door, the only writer) --------
 

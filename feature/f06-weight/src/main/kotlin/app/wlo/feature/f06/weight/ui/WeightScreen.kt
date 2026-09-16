@@ -13,6 +13,9 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.SegmentedButton
+import androidx.compose.material3.SegmentedButtonDefaults
+import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.Slider
 import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.Text
@@ -63,6 +66,7 @@ import app.wlo.core.designsystem.wloExtendedColors
 import app.wlo.core.designsystem.wloType
 import app.wlo.core.engines.MilestoneLadder
 import app.wlo.core.model.TrendMethod
+import app.wlo.feature.f06.weight.state.BodyFatUiState
 import app.wlo.feature.f06.weight.state.BodyFatViewModel
 import app.wlo.feature.f06.weight.state.BodySectionUi
 import app.wlo.feature.f06.weight.state.ChartWindowUi
@@ -115,6 +119,7 @@ public fun WeightScreen(
     val confirmation: WeighInConfirmationUi? by viewModel.confirmationState.collectAsStateWithLifecycle()
     val notice: String? by viewModel.noticeState.collectAsStateWithLifecycle()
     val submission: WeighInSubmissionState by viewModel.submissionState.collectAsStateWithLifecycle()
+    val bodyFatState: BodyFatUiState by bodyFatViewModel.uiState.collectAsStateWithLifecycle()
     val haptics = rememberWloHaptics()
     WeightLifecycleRefresh(viewModel)
 
@@ -124,6 +129,9 @@ public fun WeightScreen(
             haptics.perform(WloHaptic.Tick)
             viewModel.onEvent(WeighInEvent.ConfirmationHapticConsumed(current.eventId))
         }
+    }
+    LaunchedEffect(bodyFatState.committedOperationId) {
+        if (bodyFatState.committedOperationId != null) viewModel.onEvent(WeighInEvent.Refresh)
     }
 
     Column(
@@ -154,25 +162,25 @@ public fun WeightScreen(
         }
 
         // One screen, different series (R2, WLO-0035) — segments, not routes.
-        Row(horizontalArrangement = Arrangement.spacedBy(WloSpacing.TIGHT)) {
-            SelectChip(
-                label = "Weight",
-                selected = state.section == BodySectionUi.WEIGHT,
-                onClick = { viewModel.onEvent(WeighInEvent.SectionChange(BodySectionUi.WEIGHT)) },
-                modifier = Modifier.testTag("f06-section-weight"),
-            )
-            SelectChip(
-                label = "Body fat",
-                selected = state.section == BodySectionUi.BODY_FAT,
-                onClick = { viewModel.onEvent(WeighInEvent.SectionChange(BodySectionUi.BODY_FAT)) },
-                modifier = Modifier.testTag("f06-section-bodyfat"),
-            )
+        SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
+            listOf(BodySectionUi.WEIGHT to "Weight", BodySectionUi.BODY_FAT to "Body fat")
+                .forEachIndexed { index, (section, label) ->
+                    SegmentedButton(
+                        selected = state.section == section,
+                        onClick = { viewModel.onEvent(WeighInEvent.SectionChange(section)) },
+                        shape = SegmentedButtonDefaults.itemShape(index, BodySectionUi.entries.size),
+                        modifier = Modifier.testTag("f06-section-${section.name.lowercase()}"),
+                    ) {
+                        Text(label)
+                    }
+                }
         }
 
         if (state.section == BodySectionUi.BODY_FAT) {
             BodyFatSection(
                 state = state,
                 bodyFatViewModel = bodyFatViewModel,
+                onWindowChange = { viewModel.onEvent(WeighInEvent.BodyFatWindowChange(it)) },
             )
         } else {
             // Weight segment: the weigh-in ritual, the trend, the logbook.
@@ -560,16 +568,11 @@ private fun WeightTrendCard(
     val trend = state.trend ?: return
     WloCard(modifier = Modifier.testTag("f06-trend-card")) {
         WloCardHeader(title = "Trend")
-        Row(horizontalArrangement = Arrangement.spacedBy(WloSpacing.TIGHT)) {
-            for (candidate in ChartWindowUi.entries) {
-                SelectChip(
-                    label = candidate.label,
-                    selected = candidate == state.window,
-                    onClick = { viewModel.onEvent(WeighInEvent.WindowChange(candidate)) },
-                    modifier = Modifier.testTag("f06-window-${candidate.name.lowercase()}"),
-                )
-            }
-        }
+        WindowSegmentedControl(
+            selected = state.window,
+            onSelect = { viewModel.onEvent(WeighInEvent.WindowChange(it)) },
+            testPrefix = "f06-window",
+        )
         WloTrendChart(
             samples = trend.samples,
             trend = trend.trend,
@@ -892,10 +895,16 @@ private const val ALPHA_MAX = 0.5f
 private fun BodyFatSection(
     state: WeighInUiState,
     bodyFatViewModel: BodyFatViewModel,
+    onWindowChange: (ChartWindowUi) -> Unit,
 ) {
     var showWaist by rememberSaveable { mutableStateOf(false) }
     WloCard(modifier = Modifier.testTag("f06-bfseries-card")) {
         WloCardHeader(title = "Body fat")
+        WindowSegmentedControl(
+            selected = state.bodyFatWindow,
+            onSelect = onWindowChange,
+            testPrefix = "f06-body-window",
+        )
         Row(horizontalArrangement = Arrangement.spacedBy(WloSpacing.TIGHT)) {
             SelectChip(
                 label = "Body fat %",
@@ -927,20 +936,28 @@ private fun BodyFatSection(
                 )
             }
         } else {
-            if (state.bodyFatPoints.isEmpty()) {
+            if (state.bodyFatSeries.isEmpty()) {
                 Text(
-                    text = "No estimates yet — compute and save one below.",
+                    text = "No estimates yet. Add a body measurement below with Navy tape or RFM.",
                     style = wloType.caption,
                     color = wloExtendedColors.textTertiary,
                 )
             } else {
-                WloTrendChart(
-                    samples = state.bodyFatPoints,
-                    trend = emptyList(),
-                    currentTrend = null,
-                    formatWeight = { pct -> "${format1(pct)} %" },
-                    describe = "Body-fat estimates in percent — every method is an estimate, ±3–4 % typical.",
-                )
+                state.bodyFatSeries.forEach { series ->
+                    Text(
+                        text = "${series.methodLabel} · ${series.sourceLabel}",
+                        style = MaterialTheme.typography.titleSmall,
+                    )
+                    WloTrendChart(
+                        samples = series.points,
+                        trend = emptyList(),
+                        currentTrend = null,
+                        formatWeight = { pct -> "${format1(pct)} %" },
+                        describe =
+                            "${series.methodLabel} body-fat estimates in percent. " +
+                                "Different methods are shown as separate series and are not directly comparable.",
+                    )
+                }
             }
         }
     }
@@ -949,6 +966,26 @@ private fun BodyFatSection(
         modifier = Modifier.testTag("f06-ratios-card"),
     )
     BodyFatCalculatorCard(viewModel = bodyFatViewModel)
+}
+
+@Composable
+private fun WindowSegmentedControl(
+    selected: ChartWindowUi,
+    onSelect: (ChartWindowUi) -> Unit,
+    testPrefix: String,
+) {
+    SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
+        ChartWindowUi.entries.forEachIndexed { index, candidate ->
+            SegmentedButton(
+                selected = candidate == selected,
+                onClick = { onSelect(candidate) },
+                shape = SegmentedButtonDefaults.itemShape(index, ChartWindowUi.entries.size),
+                modifier = Modifier.testTag("$testPrefix-${candidate.name.lowercase()}"),
+            ) {
+                Text(candidate.label)
+            }
+        }
+    }
 }
 
 /**

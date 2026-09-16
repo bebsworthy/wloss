@@ -1,5 +1,6 @@
 package app.wlo.core.data
 
+import app.wlo.core.common.AppError
 import app.wlo.core.common.WloResult
 import app.wlo.core.model.ActivityLevel
 import app.wlo.core.model.MeasurementAttr
@@ -86,6 +87,46 @@ public data class NewMeasurement(
     public val unitOverride: String? = null,
 )
 
+/** One canonical input captured with a revisioned body-fat estimate. */
+public data class BodyCanonicalInput(
+    public val name: String,
+    public val centimeters: Double,
+)
+
+/** Atomic, idempotent body-measurement submission (WLO-0090). */
+public data class BodyMeasurementCommand(
+    public val operationId: String,
+    public val profileId: String,
+    public val dayEpochDay: Long,
+    public val capturedAt: Instant,
+    public val methodId: String,
+    public val methodVersion: String,
+    public val inputs: List<BodyCanonicalInput>,
+    public val estimatePercent: Double,
+    public val note: String? = null,
+)
+
+/** IDs committed by one logical body-measurement transaction. */
+public data class BodyMeasurementResult(
+    public val estimateEventId: String,
+    public val tapeEventIds: List<String>,
+)
+
+/** Method-aware chart/read row. A null method is an explicit legacy unknown. */
+public data class BodyChartPoint(
+    public val eventId: String,
+    public val dayEpochDay: Long,
+    public val capturedAt: Instant,
+    public val valuePercent: Double,
+    public val methodId: String?,
+    public val methodVersion: String?,
+    public val source: String,
+    public val explanationInputs: List<BodyCanonicalInput>,
+) {
+    public val methodLabel: String
+        get() = methodId ?: "Method not recorded"
+}
+
 public interface MeasurementRepository {
     /**
      * Appends one timestamped event verbatim (multiple weigh-ins per day are
@@ -98,6 +139,41 @@ public interface MeasurementRepository {
         eventId: String,
         attrs: List<MeasurementAttr>,
     ): WloResult<Unit>
+
+    /** Commits tapes, estimate and provenance in one local Room transaction. */
+    public suspend fun saveBodyMeasurement(command: BodyMeasurementCommand): WloResult<BodyMeasurementResult> =
+        WloResult.err(AppError.Storage(cause = null, detail = "body measurement write unsupported"))
+
+    /** Reads body-fat estimates with their method/source/input provenance intact. */
+    public suspend fun bodyFatChart(
+        profileId: String,
+        fromDay: Long,
+        toDay: Long,
+    ): WloResult<List<BodyChartPoint>> {
+        val events = rangeOfKind(profileId, MeasurementKind.BODY_FAT, fromDay, toDay)
+        if (events is WloResult.Err) return events
+        val attrs = attrsInRange(profileId, fromDay, toDay)
+        if (attrs is WloResult.Err) return attrs
+        val attrsByEvent = (attrs as WloResult.Ok).value.groupBy { it.eventId }
+        return WloResult.ok(
+            (events as WloResult.Ok).value.map { event ->
+                val eventAttrs = attrsByEvent[event.id].orEmpty()
+                BodyChartPoint(
+                    eventId = event.id,
+                    dayEpochDay = event.dayEpochDay,
+                    capturedAt = event.capturedAt,
+                    valuePercent = event.valueReal,
+                    methodId = eventAttrs.firstOrNull { it.attr == BODY_METHOD_ATTR }?.valueText,
+                    methodVersion = eventAttrs.firstOrNull { it.attr == BODY_METHOD_VERSION_ATTR }?.valueText,
+                    source = event.source,
+                    explanationInputs =
+                        eventAttrs
+                            .filter { it.attr.startsWith(BODY_INPUT_PREFIX) && it.valueReal != null }
+                            .map { BodyCanonicalInput(it.attr.removePrefix(BODY_INPUT_PREFIX), it.valueReal!!) },
+                )
+            },
+        )
+    }
 
     public suspend fun range(
         profileId: String,
@@ -165,3 +241,11 @@ public interface MeasurementRepository {
         toDay: Long,
     ): WloResult<List<MeasurementAttr>>
 }
+
+public const val BODY_METHOD_ATTR: String = "method"
+public const val BODY_METHOD_VERSION_ATTR: String = "methodVersion"
+public const val BODY_OPERATION_ATTR: String = "bodyOperationId"
+public const val BODY_BUNDLE_IDS_ATTR: String = "bodyBundleEventIds"
+public const val BODY_INPUT_PREFIX: String = "bodyInput:"
+public const val BODY_METRIC_ATTR: String = "metric"
+public const val BODY_BUNDLE_ATTR: String = "bodyBundleId"

@@ -71,6 +71,10 @@ public sealed interface WeighInEvent {
         public val window: ChartWindowUi,
     ) : WeighInEvent
 
+    public data class BodyFatWindowChange(
+        public val window: ChartWindowUi,
+    ) : WeighInEvent
+
     /** The weight surface's segment (WLO-0035 R2: same screen, different series). */
     public data class SectionChange(
         public val section: BodySectionUi,
@@ -120,6 +124,13 @@ public data class RatiosUi(
     public val waistToHeight: DerivedValue<Double>?,
     public val waistToHip: DerivedValue<Double>?,
     public val bmi: DerivedValue<Double>?,
+)
+
+/** One method-homogeneous body-fat series; unlike methods are never joined. */
+public data class BodyFatSeriesUi(
+    public val methodLabel: String,
+    public val points: List<ChartPoint>,
+    public val sourceLabel: String,
 )
 
 /** The weight surface's segments (R2: weight and body fat live together). */
@@ -298,8 +309,10 @@ public data class WeighInUiState(
     public val massUnit: MassUnit,
     public val history: List<HistoryBucketUi>,
     public val window: ChartWindowUi,
+    public val bodyFatWindow: ChartWindowUi,
     public val section: BodySectionUi,
     public val bodyFatPoints: List<ChartPoint>,
+    public val bodyFatSeries: List<BodyFatSeriesUi>,
     public val waistPoints: List<ChartPoint>,
     public val ratios: RatiosUi?,
     public val trend: TrendUi?,
@@ -322,8 +335,10 @@ public data class WeighInUiState(
                 massUnit = MassUnit.KILOGRAM,
                 history = emptyList(),
                 window = ChartWindowUi.D90,
+                bodyFatWindow = ChartWindowUi.D90,
                 section = BodySectionUi.WEIGHT,
                 bodyFatPoints = emptyList(),
+                bodyFatSeries = emptyList(),
                 waistPoints = emptyList(),
                 ratios = null,
                 trend = null,
@@ -389,8 +404,9 @@ public class WeighInViewModel(
 
     private val method = MutableStateFlow(TrendMethod.EWMA)
     private val alpha = MutableStateFlow(ConstantsRegistry.EWMA_ALPHA_DEFAULT)
-    private val window = MutableStateFlow(ChartWindowUi.D90)
-    private val section = MutableStateFlow(initialSection)
+    private val window = MutableStateFlow(savedEnum(WINDOW_KEY, ChartWindowUi.D90))
+    private val bodyFatWindow = MutableStateFlow(savedEnum(BODY_WINDOW_KEY, ChartWindowUi.D90))
+    private val section = MutableStateFlow(savedEnum(SECTION_KEY, initialSection))
     private var sheetPrefillPending: Boolean = initialSheetOpen
     private val sheet =
         MutableStateFlow(
@@ -465,9 +481,22 @@ public class WeighInViewModel(
                 submission.value = WeighInSubmissionState.IDLE
             }
             is WeighInEvent.WindowChange ->
-                requestPreviewReload { window.value = event.window }
+                requestPreviewReload {
+                    window.value = event.window
+                    savedStateHandle[WINDOW_KEY] = event.window.name
+                }
 
-            is WeighInEvent.SectionChange -> section.value = event.section
+            is WeighInEvent.BodyFatWindowChange ->
+                requestPreviewReload {
+                    bodyFatWindow.value = event.window
+                    savedStateHandle[BODY_WINDOW_KEY] = event.window.name
+                }
+
+            is WeighInEvent.SectionChange -> {
+                section.value = event.section
+                savedStateHandle[SECTION_KEY] = event.section.name
+                data.value = data.value.copy(section = event.section)
+            }
             WeighInEvent.StepperUp -> step(STEP_DISPLAY_UNIT)
             WeighInEvent.StepperDown -> step(-STEP_DISPLAY_UNIT)
             WeighInEvent.Save -> save()
@@ -732,6 +761,7 @@ public class WeighInViewModel(
         data.value =
             data.value.copy(
                 window = window.value,
+                bodyFatWindow = bodyFatWindow.value,
                 method = method.value,
                 alpha = alpha.value,
             )
@@ -827,6 +857,7 @@ public class WeighInViewModel(
 
     private fun nextGeneration(): Long = ++loadGeneration
 
+    @Suppress("CyclomaticComplexMethod") // One snapshot load keeps related reads generation-consistent.
     private suspend fun reload(generation: Long): Boolean {
         val reads = WeightReadAccumulator()
         val profile = reads.value(profiles.active(), null)
@@ -841,6 +872,7 @@ public class WeighInViewModel(
                         loadState = WeightLoadState.Empty,
                         massUnit = activeUnit,
                         window = window.value,
+                        bodyFatWindow = bodyFatWindow.value,
                         section = section.value,
                         method = method.value,
                         alpha = alpha.value,
@@ -855,6 +887,8 @@ public class WeighInViewModel(
         val today = DayBoundary.epochDay(clock.now(), zone)
         val selectedWindow = window.value
         val from = selectedWindow.days?.let { today - it + 1 } ?: 0L
+        val selectedBodyWindow = bodyFatWindow.value
+        val bodyFrom = selectedBodyWindow.days?.let { today - it + 1 } ?: 0L
 
         val dayEvents = reads.value(weighIns.dayWeighIns(id, today), emptyList())
 
@@ -883,9 +917,9 @@ public class WeighInViewModel(
                 }
 
         // The companion series (WLO-0035 R2): body-fat estimates in % and the
-        // waist tape in cm — same store, same window, no cap anywhere.
-        val windowEvents = reads.value(measurements.range(id, from, today), emptyList())
-        val windowAttrs = reads.value(measurements.attrsInRange(id, from, today), emptyList())
+        // waist tape in cm — same store, independently selected body window.
+        val windowEvents = reads.value(measurements.range(id, bodyFrom, today), emptyList())
+        val windowAttrs = reads.value(measurements.attrsInRange(id, bodyFrom, today), emptyList())
         val waistEventIds =
             windowAttrs
                 .filter { it.attr == "metric" && it.valueText == "waist" }
@@ -895,6 +929,17 @@ public class WeighInViewModel(
             windowEvents
                 .filter { it.kind == MeasurementKind.BODY_FAT }
                 .map { ChartPoint(it.dayEpochDay, it.valueReal) }
+        val bodyFatSeries =
+            reads
+                .value(measurements.bodyFatChart(id, bodyFrom, today), emptyList())
+                .groupBy { it.methodLabel }
+                .map { (methodLabel, methodPoints) ->
+                    BodyFatSeriesUi(
+                        methodLabel = methodLabel,
+                        points = methodPoints.map { ChartPoint(it.dayEpochDay, it.valuePercent) },
+                        sourceLabel = methodPoints.map { it.source }.distinct().joinToString(),
+                    )
+                }
         val waistPoints =
             windowEvents
                 .filter { it.kind == MeasurementKind.CUSTOM && it.id in waistEventIds }
@@ -1014,8 +1059,10 @@ public class WeighInViewModel(
                 massUnit = unit,
                 history = history,
                 window = window.value,
+                bodyFatWindow = bodyFatWindow.value,
                 section = section.value,
                 bodyFatPoints = bodyFatPoints,
+                bodyFatSeries = bodyFatSeries,
                 waistPoints = waistPoints,
                 ratios = ratios,
                 trend =
@@ -1147,7 +1194,19 @@ public class WeighInViewModel(
         private const val SHEET_ORIGINAL_AT_KEY: String = "weighIn.sheet.original.at"
         private const val SHEET_ORIGINAL_SOURCE_KEY: String = "weighIn.sheet.original.source"
         private const val SHEET_ORIGINAL_NOTE_KEY: String = "weighIn.sheet.original.note"
+        private const val SECTION_KEY: String = "weight.section"
+        private const val WINDOW_KEY: String = "weight.window"
+        private const val BODY_WINDOW_KEY: String = "weight.bodyWindow"
     }
+
+    private inline fun <reified T : Enum<T>> savedEnum(
+        key: String,
+        fallback: T,
+    ): T =
+        savedStateHandle
+            .get<String>(key)
+            ?.let { name -> enumValues<T>().firstOrNull { it.name == name } }
+            ?: fallback
 }
 
 private fun MeasurementEvent.toCorrectionSnapshot(): CorrectionSnapshot =

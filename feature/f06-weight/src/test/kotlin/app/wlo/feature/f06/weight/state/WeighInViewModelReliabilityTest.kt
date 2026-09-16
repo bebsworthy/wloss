@@ -1,5 +1,6 @@
 package app.wlo.feature.f06.weight.state
 
+import androidx.lifecycle.SavedStateHandle
 import app.wlo.core.common.AppError
 import app.wlo.core.common.ClockPort
 import app.wlo.core.common.MassUnit
@@ -61,6 +62,32 @@ import kotlin.test.assertTrue
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class WeighInViewModelReliabilityTest {
+    @Test
+    fun `section and independent windows update immediately and restore`() =
+        runTest {
+            Dispatchers.setMain(StandardTestDispatcher(testScheduler))
+            try {
+                val handle = SavedStateHandle()
+                val viewModel = viewModel(savedStateHandle = handle)
+                advanceUntilIdle()
+
+                viewModel.onEvent(WeighInEvent.SectionChange(BodySectionUi.BODY_FAT))
+                assertEquals(BodySectionUi.BODY_FAT, viewModel.uiState.value.section)
+                viewModel.onEvent(WeighInEvent.WindowChange(ChartWindowUi.D30))
+                viewModel.onEvent(WeighInEvent.BodyFatWindowChange(ChartWindowUi.Y1))
+                assertEquals(ChartWindowUi.D30, viewModel.uiState.value.window)
+                assertEquals(ChartWindowUi.Y1, viewModel.uiState.value.bodyFatWindow)
+
+                val restored = viewModel(savedStateHandle = handle)
+                advanceUntilIdle()
+                assertEquals(BodySectionUi.BODY_FAT, restored.uiState.value.section)
+                assertEquals(ChartWindowUi.D30, restored.uiState.value.window)
+                assertEquals(ChartWindowUi.Y1, restored.uiState.value.bodyFatWindow)
+            } finally {
+                Dispatchers.resetMain()
+            }
+        }
+
     @Test
     fun `goal progress handles no goal forming trend loss maintenance and gain`() =
         runTest {
@@ -617,6 +644,7 @@ class WeighInViewModelReliabilityTest {
         targets: TargetsRepository = EmptyTargets,
         measurements: MeasurementRepository = EmptyMeasurements,
         initialSheetOpen: Boolean = false,
+        savedStateHandle: SavedStateHandle = SavedStateHandle(),
         zoneProvider: () -> TimeZone = { TimeZone.UTC },
     ): WeighInViewModel =
         WeighInViewModel(
@@ -635,6 +663,7 @@ class WeighInViewModelReliabilityTest {
             massUnits = massUnits,
             initialSheetOpen = initialSheetOpen,
             zoneProvider = zoneProvider,
+            savedStateHandle = savedStateHandle,
         )
 }
 

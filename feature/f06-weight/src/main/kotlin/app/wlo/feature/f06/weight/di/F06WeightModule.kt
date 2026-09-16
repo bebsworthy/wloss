@@ -48,7 +48,15 @@ public val f06WeightModule: Module =
                 savedStateHandle = get(),
             )
         }
-        viewModel { BodyFatViewModel(clock = get(), profiles = get(), measurements = get(), settings = get()) }
+        viewModel {
+            BodyFatViewModel(
+                clock = get(),
+                profiles = get(),
+                measurements = get(),
+                settings = get(),
+                savedStateHandle = get(),
+            )
+        }
         viewModel {
             LogbookViewModel(
                 clock = get(),

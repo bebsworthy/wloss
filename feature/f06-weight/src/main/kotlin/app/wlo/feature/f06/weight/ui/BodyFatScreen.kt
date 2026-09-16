@@ -2,13 +2,15 @@ package app.wlo.feature.f06.weight.ui
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.SegmentedButton
+import androidx.compose.material3.SegmentedButtonDefaults
+import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -17,7 +19,6 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import app.wlo.core.designsystem.ProvenanceChip
-import app.wlo.core.designsystem.SelectChip
 import app.wlo.core.designsystem.WloButton
 import app.wlo.core.designsystem.WloCard
 import app.wlo.core.designsystem.WloCardHeader
@@ -78,51 +79,60 @@ public fun BodyFatCalculatorCard(viewModel: BodyFatViewModel) {
 
     Column(verticalArrangement = Arrangement.spacedBy(WloSpacing.SCREEN)) {
         WloCard(modifier = Modifier.testTag("f06-bodyfat-card")) {
-            Row(horizontalArrangement = Arrangement.spacedBy(WloSpacing.TIGHT)) {
-                for (method in BodyFatMethod.entries) {
-                    SelectChip(
-                        label = methodLabel(method),
+            SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
+                BodyFatMethod.entries.forEachIndexed { index, method ->
+                    SegmentedButton(
                         selected = method == state.method,
                         onClick = { viewModel.onEvent(BodyFatEvent.MethodChange(method)) },
+                        shape = SegmentedButtonDefaults.itemShape(index, BodyFatMethod.entries.size),
                         modifier = Modifier.testTag("f06-bf-method-${method.wireName}"),
-                    )
+                        enabled = !state.isSaving,
+                    ) {
+                        Text(methodLabel(method))
+                    }
                 }
             }
 
             state.heightCm?.let { height ->
                 Text(
-                    text = "Height ${BodyFatViewModel.format1(height)} cm (from your profile)",
+                    text =
+                        "Height ${BodyFatViewModel.format1(height)} cm (from your profile) · " +
+                            "tape in ${state.lengthUnit.symbol}",
                     style = wloType.label,
                     color = wloExtendedColors.textTertiary,
                 )
             }
 
-            Row(horizontalArrangement = Arrangement.spacedBy(WloSpacing.TIGHT)) {
+            Column(verticalArrangement = Arrangement.spacedBy(WloSpacing.TIGHT)) {
                 NumberField(
-                    label = "Waist cm",
+                    label = "Waist (${state.lengthUnit.symbol})",
                     value = state.waistText,
-                    modifier = Modifier.weight(1f).testTag("f06-bf-waist"),
+                    modifier = Modifier.fillMaxWidth().testTag("f06-bf-waist"),
+                    enabled = !state.isSaving,
                 ) { viewModel.onEvent(BodyFatEvent.WaistChange(it)) }
                 if (state.method == BodyFatMethod.NAVY_TAPE) {
                     NumberField(
-                        label = "Neck cm",
+                        label = "Neck (${state.lengthUnit.symbol})",
                         value = state.neckText,
-                        modifier = Modifier.weight(1f).testTag("f06-bf-neck"),
+                        modifier = Modifier.fillMaxWidth().testTag("f06-bf-neck"),
+                        enabled = !state.isSaving,
                     ) { viewModel.onEvent(BodyFatEvent.NeckChange(it)) }
                     if (state.sex == app.wlo.core.model.Sex.FEMALE) {
                         NumberField(
-                            label = "Hip cm",
+                            label = "Hip (${state.lengthUnit.symbol})",
                             value = state.hipText,
-                            modifier = Modifier.weight(1f).testTag("f06-bf-hip"),
+                            modifier = Modifier.fillMaxWidth().testTag("f06-bf-hip"),
+                            enabled = !state.isSaving,
                         ) { viewModel.onEvent(BodyFatEvent.HipChange(it)) }
                     }
                 }
             }
 
             WloButton(
-                label = "Estimate",
+                label = if (state.estimate == null) "Calculate" else "Calculate again",
                 onClick = { viewModel.onEvent(BodyFatEvent.Compute) },
                 modifier = Modifier.fillMaxWidth().testTag("f06-bf-compute"),
+                enabled = !state.isSaving,
             )
         }
 
@@ -145,9 +155,10 @@ public fun BodyFatCalculatorCard(viewModel: BodyFatViewModel) {
                     )
                 }
                 WloSecondaryButton(
-                    label = "Save measurement",
+                    label = if (state.isSaving) "Saving…" else "Save measurement",
                     onClick = { viewModel.onEvent(BodyFatEvent.SaveToLogbook) },
                     modifier = Modifier.fillMaxWidth().testTag("f06-bf-save"),
+                    enabled = state.canSave,
                 )
             }
         }
@@ -167,16 +178,18 @@ private fun NumberField(
     label: String,
     value: String,
     modifier: Modifier = Modifier,
+    enabled: Boolean = true,
     onChange: (String) -> Unit,
 ): Unit =
     OutlinedTextField(
         value = value,
         onValueChange = onChange,
         modifier = modifier,
+        enabled = enabled,
         singleLine = true,
         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
         textStyle = wloType.statS,
-        placeholder = { Text(label, style = wloType.caption) },
+        label = { Text(label) },
     )
 
 private fun methodLabel(method: BodyFatMethod): String =

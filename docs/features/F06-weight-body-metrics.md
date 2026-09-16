@@ -85,6 +85,14 @@ Core objectives:
   - *7-day moving average (option):* maximum simplicity, maximum lag.
   - A "compare modes" view overlays all smoothers on one chart for the geek.
 - **Body-fat % — a method registry, never one number:** US Navy (neck/waist/hip girths), RFM (height/waist, no neck tape), BMI-based (Deurenberg, labeled crude), smart-scale impedance decoded per vendor family (openScale pattern: per-device decoder first, published-formula fallback second), photo-scan estimates from **F08** [future]. Each method keeps its **own series**; the user picks a headline method; all are chartable together on the weight surface — same screen, different series (owner ruling, WLO-0035; no separate body-fat route).
+- **Body-measurement commit contract:** a calculator submission carries one
+  idempotency token and writes its canonical-centimeter tape inputs, estimate,
+  method ID/version, source and explanation attributes in one transaction.
+  A failed write leaves no partial rows; repeating the token returns the same
+  logical bundle. Calculator results are revision-bound and become unsaveable
+  after any method, tape, profile-input or unit change until recalculated.
+  Legacy estimates without method metadata are labeled “Method not recorded”;
+  their method is never inferred from the value.
 - **Derived ratios:** BMI, waist-to-height, waist-to-hip — computed, badged *derived*, evaluated against published healthy ranges (openScale pattern).
 - **EAV metric store:** `Measurement / MeasurementType / MeasurementValue` — weight and the built-ins are just pre-registered types; the user can define arbitrary metrics (ketones, neck, waking pulse, coffee…) each getting charts, stats, and CSV columns. This one schema choice quietly powers F09 and any future tracker.
 
@@ -112,6 +120,11 @@ ritual with F13's mechanics per R-B7 — F06 only renders both.)
 - *Multi-profile [deferred]:* Release 1 has one profile; rows are
   partition-ready. Per-profile stores, locks, unit preferences, and routing
   arrive together in a later multi-profile release.
+- *Weight/Body fat switching:* the selected section changes locally on the
+  first tap and survives recreation. Each section remembers its own visible
+  chart period (Weight defaults to 30 days; Body fat to 90 days), so changing
+  one never silently refilters the other. Body-fat methods render as separate
+  named series rather than one continuous comparable line.
 
 **Input minimization**
 
