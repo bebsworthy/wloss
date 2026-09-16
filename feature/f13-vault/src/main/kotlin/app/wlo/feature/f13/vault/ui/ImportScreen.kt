@@ -9,16 +9,24 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExposedDropdownMenuAnchorType
+import androidx.compose.material3.ExposedDropdownMenuBox
+import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.ListItem
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import app.wlo.core.designsystem.SelectChip
 import app.wlo.core.designsystem.WloBadge
 import app.wlo.core.designsystem.WloBadgeTone
 import app.wlo.core.designsystem.WloButton
@@ -42,28 +50,15 @@ import app.wlo.feature.f13.vault.state.ImportViewModel
  * skipped WITH reasons; nothing fatal, nothing guessed.
  */
 @Composable
+@OptIn(ExperimentalMaterial3Api::class)
 public fun ImportScreen(
     viewModel: ImportViewModel,
     onDone: () -> Unit,
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
-    val context = LocalContext.current
-
     val filePicker =
         rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
-            if (uri != null) {
-                val bytes =
-                    runCatching {
-                        context.contentResolver.openInputStream(uri)?.use { stream -> stream.readBytes() }
-                    }.getOrNull()
-                if (bytes != null) {
-                    val name =
-                        uri.lastPathSegment
-                            ?.substringAfterLast('/')
-                            ?.substringBefore('?') ?: "import"
-                    viewModel.onFilePicked(name, bytes)
-                }
-            }
+            uri?.let { viewModel.onSourcePicked(it.toString()) }
         }
 
     Column(
@@ -97,6 +92,13 @@ public fun ImportScreen(
                 )
             }
 
+            ImportUiState.Step.Reading ->
+                WloProgress(
+                    progress = null,
+                    label = "Reading and staging file…",
+                    modifier = Modifier.testTag("f13-import-reading"),
+                )
+
             ImportUiState.Step.Mapping ->
                 Column(verticalArrangement = Arrangement.spacedBy(WloSpacing.CARD)) {
                     Text(
@@ -111,31 +113,41 @@ public fun ImportScreen(
                     state.mapping.forEach { row ->
                         MappingRowEditor(
                             row = row,
+                            examples =
+                                state.csvPreview
+                                    ?.samples
+                                    ?.get(row.sourceColumn)
+                                    .orEmpty(),
                             targets =
                                 listOf(
-                                    "day" to "Day",
-                                    "weight" to "Weight (kg)",
-                                    "trend" to "Trend (kg)",
-                                    "intake" to "kcal in",
-                                    "burn" to "kcal out",
-                                    "body-fat" to "Body fat (%)",
-                                    "custom" to "Custom metric…",
                                     null to "Ignore",
+                                    "day" to "Date",
+                                    "weight" to "Weight",
+                                    "intake" to "Energy in",
+                                    "burn" to "Energy out",
+                                    "body-fat" to "Body fat",
+                                    "custom" to "Custom metric…",
                                 ),
                             onSelect = { kind, unit, customName ->
                                 viewModel.setMapping(row.sourceColumn, kind, unit, customName)
                             },
                         )
                     }
+                    state.mappingError?.let { error ->
+                        Text(error, color = MaterialTheme.colorScheme.error, style = wloType.body)
+                    }
                     WloButton(
-                        label = "Validate rows",
+                        label = "Review import",
                         onClick = viewModel::stage,
-                        enabled = state.mapping.any { it.targetKind != null },
                         modifier = Modifier.testTag("f13-import-stage"),
+                    )
+                    WloSecondaryButton(
+                        label = "Choose another file",
+                        onClick = viewModel::chooseAnotherFile,
                     )
                 }
 
-            ImportUiState.Step.Report -> {
+            ImportUiState.Step.Reviewing -> {
                 val staged = state.staged
                 WloCard(
                     accent = WloCardAccent.Primary,
@@ -146,9 +158,13 @@ public fun ImportScreen(
                         provenance = { WloBadge(text = "Staged", tone = WloBadgeTone.Accent) },
                     )
                     Text(
+                        text = "File: ${state.fileName}",
+                        style = wloType.receipt,
+                    )
+                    Text(
                         text =
-                            "${staged?.stagedRows ?: 0} row(s) parsed and ready" +
-                                (if (state.isBundle) " (bundle import)" else ""),
+                            "${staged?.stagedRows ?: 0} measurement(s) accepted; " +
+                                "${staged?.rejectedRows ?: 0} source row(s) need attention.",
                         style = wloType.body,
                         modifier = Modifier.testTag("f13-import-staged-count"),
                     )
@@ -161,20 +177,34 @@ public fun ImportScreen(
                         )
                     }
                     Text(
-                        text = "Weak rows are skipped with reasons — never guessed, never fatal.",
+                        text =
+                            if (state.isBundle) {
+                                "This bundle follows its versioned staged-restore rules."
+                            } else {
+                                "Dates are ISO YYYY-MM-DD. Weight is converted once to kg. " +
+                                    "CSV has no capture-time metadata, so imported rows use the import capture time."
+                            },
+                        style = wloType.caption,
+                        color = wloExtendedColors.textTertiary,
+                    )
+                    Text(
+                        text = staged?.duplicatePolicy.orEmpty(),
                         style = wloType.caption,
                         color = wloExtendedColors.textTertiary,
                     )
                 }
                 Row(horizontalArrangement = Arrangement.spacedBy(WloSpacing.TIGHT)) {
-                    WloSecondaryButton(
-                        label = "Back",
-                        onClick = viewModel::reset,
-                        modifier = Modifier.testTag("f13-import-back"),
-                    )
+                    if (!state.isBundle) {
+                        WloSecondaryButton(
+                            label = "Back to mapping",
+                            onClick = viewModel::backToMapping,
+                            modifier = Modifier.testTag("f13-import-back"),
+                        )
+                    }
                     WloButton(
-                        label = "Apply ${state.staged?.stagedRows ?: 0} rows",
+                        label = "Import ${state.staged?.stagedRows ?: 0}",
                         onClick = viewModel::commit,
+                        enabled = (state.staged?.stagedRows ?: 0) > 0,
                         modifier = Modifier.testTag("f13-import-commit"),
                     )
                 }
@@ -200,7 +230,7 @@ public fun ImportScreen(
                     WloButton(label = "Done", onClick = onDone)
                 }
 
-            ImportUiState.Step.Failed ->
+            ImportUiState.Step.RecoverableError ->
                 WloCard(
                     accent = WloCardAccent.Warning,
                     modifier = Modifier.fillMaxWidth().testTag("f13-import-failed"),
@@ -214,7 +244,7 @@ public fun ImportScreen(
                             if (state.recoveryPending) {
                                 "Room data may already be committed. Recovery is queued and will safely continue."
                             } else {
-                                "Nothing was changed. Your data on this device is exactly as it was."
+                                "The import did not finish. The staged source and your choices are still available."
                             },
                         style = wloType.body,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -229,17 +259,19 @@ public fun ImportScreen(
                     }
                     Row(horizontalArrangement = Arrangement.spacedBy(WloSpacing.TIGHT)) {
                         WloSecondaryButton(
-                            label = "Try another file",
-                            onClick = viewModel::reset,
+                            label = "Retry",
+                            onClick = viewModel::retry,
                             modifier = Modifier.testTag("f13-import-retry"),
                         )
-                        WloSecondaryButton(label = "Done", onClick = onDone)
+                        WloSecondaryButton(label = "Choose another file", onClick = viewModel::chooseAnotherFile)
                     }
                 }
         }
 
-        HorizontalDivider()
-        WloButton(label = "Close", onClick = onDone)
+        if (state.step != ImportUiState.Step.Applying) {
+            HorizontalDivider()
+            WloSecondaryButton(label = "Close", onClick = onDone)
+        }
         Text(
             text = "CSV imports need one date column — every other column is optional.",
             style = wloType.receipt,
@@ -252,27 +284,102 @@ public fun ImportScreen(
 @Composable
 private fun MappingRowEditor(
     row: CsvMappingRow,
+    examples: List<String>,
     targets: List<Pair<String?, String>>,
     onSelect: (String?, String?, String?) -> Unit,
 ) {
-    Column(Modifier.fillMaxWidth().padding(vertical = WloSpacing.TIGHT).testTag("f13-map-${row.sourceColumn}")) {
-        Text(text = row.sourceColumn, style = wloType.statS)
-        Row(horizontalArrangement = Arrangement.spacedBy(WloSpacing.TIGHT)) {
-            targets.forEach { (kind, label) ->
-                val selected =
-                    when {
-                        kind == null -> row.targetKind == null
-                        kind == "custom" -> row.targetKind == "custom"
-                        else -> row.targetKind == kind
-                    }
-                SelectChip(label = label, selected = selected, onClick = {
-                    when (kind) {
-                        // Custom metrics have no known unit yet — a blank unit
-                        // stores the metric bare (no unit suffix in its name).
-                        "custom" -> onSelect("custom", null, row.sourceColumn)
-                        else -> onSelect(kind, kind?.let { defaultUnitFor(it) }, null)
-                    }
-                })
+    Column(Modifier.fillMaxWidth().testTag("f13-map-${row.sourceColumn}")) {
+        ListItem(
+            headlineContent = { Text(row.sourceColumn) },
+            supportingContent = {
+                Text(
+                    examples.takeIf { it.isNotEmpty() }?.joinToString(prefix = "Examples: ")
+                        ?: "No non-empty example values",
+                )
+            },
+        )
+        MappingDropdown(row, targets, onSelect)
+        if (row.targetKind == "weight") {
+            UnitDropdown(row, onSelect)
+        } else if (row.targetKind == "custom") {
+            OutlinedTextField(
+                value = row.unit.orEmpty(),
+                onValueChange = { onSelect("custom", it, row.customName ?: row.sourceColumn) },
+                label = { Text("Unit") },
+                singleLine = true,
+                modifier = Modifier.fillMaxWidth(),
+            )
+        }
+    }
+}
+
+@Composable
+@OptIn(ExperimentalMaterial3Api::class)
+private fun MappingDropdown(
+    row: CsvMappingRow,
+    targets: List<Pair<String?, String>>,
+    onSelect: (String?, String?, String?) -> Unit,
+) {
+    var expanded by remember { mutableStateOf(false) }
+    val label = targets.firstOrNull { it.first == row.targetKind }?.second ?: "Ignore"
+    ExposedDropdownMenuBox(expanded = expanded, onExpandedChange = { expanded = it }) {
+        OutlinedTextField(
+            value = label,
+            onValueChange = {},
+            readOnly = true,
+            label = { Text("Destination") },
+            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded) },
+            modifier =
+                Modifier
+                    .menuAnchor(ExposedDropdownMenuAnchorType.PrimaryNotEditable)
+                    .fillMaxWidth(),
+        )
+        ExposedDropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
+            targets.forEach { (kind, title) ->
+                DropdownMenuItem(
+                    text = { Text(title) },
+                    onClick = {
+                        expanded = false
+                        if (kind == "custom") {
+                            onSelect(kind, row.unit.orEmpty(), row.sourceColumn)
+                        } else {
+                            onSelect(kind, kind?.let(::defaultUnitFor), null)
+                        }
+                    },
+                )
+            }
+        }
+    }
+}
+
+@Composable
+@OptIn(ExperimentalMaterial3Api::class)
+private fun UnitDropdown(
+    row: CsvMappingRow,
+    onSelect: (String?, String?, String?) -> Unit,
+) {
+    var expanded by remember { mutableStateOf(false) }
+    ExposedDropdownMenuBox(expanded = expanded, onExpandedChange = { expanded = it }) {
+        OutlinedTextField(
+            value = if (row.unit == "lb") "lb" else "kg",
+            onValueChange = {},
+            readOnly = true,
+            label = { Text("Source unit") },
+            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded) },
+            modifier =
+                Modifier
+                    .menuAnchor(ExposedDropdownMenuAnchorType.PrimaryNotEditable)
+                    .fillMaxWidth(),
+        )
+        ExposedDropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
+            listOf("kg", "lb").forEach { unit ->
+                DropdownMenuItem(
+                    text = { Text(unit) },
+                    onClick = {
+                        expanded = false
+                        onSelect("weight", unit, null)
+                    },
+                )
             }
         }
     }

@@ -195,7 +195,7 @@ public data class CsvColumnMapping(
 
 /** Import targets: the day column or a metric (built-in or custom). */
 public sealed interface CsvTarget {
-    /** The date/day column (any ISO-ish date or epoch-day integer). */
+    /** The date/day column (strict ISO YYYY-MM-DD or an explicitly numeric epoch day). */
     public data object Day : CsvTarget
 
     /**
@@ -219,12 +219,9 @@ public object CsvMappingSniffer {
         mapOf(
             "date" to CsvTarget.Day,
             "day" to CsvTarget.Day,
-            "timestamp" to CsvTarget.Day,
             "weight" to CsvTarget.Metric("weight", "kg"),
             "weight_kg" to CsvTarget.Metric("weight", "kg"),
             "weight (kg)" to CsvTarget.Metric("weight", "kg"),
-            "trend" to CsvTarget.Metric("trend", "kg"),
-            "trend_kg" to CsvTarget.Metric("trend", "kg"),
             "kcal_in" to CsvTarget.Metric("intake", "kcal"),
             "calories" to CsvTarget.Metric("intake", "kcal"),
             "kcal" to CsvTarget.Metric("intake", "kcal"),
@@ -271,21 +268,39 @@ public object CsvMeasurementImporter {
         timeZone: TimeZone = TimeZone.currentSystemDefault(),
     ): Parsed {
         val warnings = mutableListOf<String>()
-        val dayIndex = mapping.firstOrNull { it.target == CsvTarget.Day }?.let { table.column(it.sourceColumn) }
-        if (dayIndex == null || dayIndex < 0) {
+        val dayMappings = mapping.filter { it.target == CsvTarget.Day }
+        if (dayMappings.size != 1) {
+            return Parsed(emptyList(), listOf("map exactly one Date column before review"))
+        }
+        val requestedMetrics = mapping.filter { it.target is CsvTarget.Metric }
+        if (requestedMetrics.isEmpty()) {
+            return Parsed(emptyList(), listOf("map at least one measurement column before review"))
+        }
+        val duplicateTargets =
+            requestedMetrics
+                .groupBy { mapping -> (mapping.target as CsvTarget.Metric).identity() }
+                .filterValues { columns -> columns.size > 1 }
+                .keys
+        if (duplicateTargets.isNotEmpty()) {
+            return Parsed(emptyList(), listOf("each destination can be mapped once: ${duplicateTargets.joinToString()}"))
+        }
+        val dayIndex = dayMappings.single().let { table.column(it.sourceColumn) }
+        if (dayIndex < 0) {
             warnings.add("no day column mapped — rows cannot be placed")
             return Parsed(emptyList(), warnings)
         }
         val metricMappings =
-            mapping
-                .filter { it.target is CsvTarget.Metric }
+            requestedMetrics
                 .mapNotNull { m -> table.column(m.sourceColumn).takeIf { it >= 0 }?.let { it to m } }
 
         val rows = mutableListOf<StagedMeasurement>()
         table.rows.forEachIndexed { rowIndex, cells ->
             val day = parseDay(cells.getOrNull(dayIndex))
             if (day == null) {
-                warnings.add("row ${rowIndex + 2}: unparseable date '${cells.getOrNull(dayIndex)}' — skipped")
+                warnings.add(
+                    "row ${rowIndex + 2}: unparseable date '${cells.getOrNull(dayIndex)}'; " +
+                        "use YYYY-MM-DD or an epoch day — skipped",
+                )
                 return@forEachIndexed
             }
             for ((index, m) in metricMappings) {
@@ -293,8 +308,21 @@ public object CsvMeasurementImporter {
                 if (raw.isEmpty()) continue
                 val value = raw.toDoubleOrNull()
                 val target = m.target as CsvTarget.Metric
+                if (target.kind == "trend") {
+                    warnings.add(
+                        "row ${rowIndex + 2}: '${m.sourceColumn}' is a derived trend; WLO recomputes it — skipped",
+                    )
+                    continue
+                }
                 if (value == null) {
                     warnings.add("row ${rowIndex + 2}: '$raw' is not a number for column '${m.sourceColumn}' — skipped")
+                    continue
+                }
+                val canonical = target.canonical(value)
+                if (canonical == null) {
+                    warnings.add(
+                        "row ${rowIndex + 2}: unsupported unit '${target.unit}' for '${m.sourceColumn}' — skipped",
+                    )
                     continue
                 }
                 rows +=
@@ -306,15 +334,15 @@ public object CsvMeasurementImporter {
                                     m.sourceColumn,
                                     day,
                                     target.kind,
-                                    raw,
-                                    target.unit,
+                                    canonical.first,
+                                    canonical.second,
                                     target.customName,
                                 ).joinToString("|").toByteArray(),
                             ),
                         dayEpochDay = day,
                         kind = if (target.customName == null) target.kind else "custom",
-                        valueReal = value,
-                        unit = target.unit,
+                        valueReal = canonical.first,
+                        unit = canonical.second,
                         customName = target.customName,
                     )
             }
@@ -322,11 +350,31 @@ public object CsvMeasurementImporter {
         return Parsed(rows, warnings)
     }
 
-    /** Accepts ISO yyyy-MM-dd, yyyy/MM/dd and bare epoch days (openScale dialects). */
+    /** Accepts explicit ISO yyyy-MM-dd or a bare epoch day; locale-shaped dates are never guessed. */
     public fun parseDay(raw: String?): Long? {
         raw ?: return null
-        raw.toLongOrNull()?.let { return it }
-        val normalized = raw.replace('/', '-').trim()
+        val normalized = raw.trim()
+        normalized.toLongOrNull()?.let { return it }
+        if (!ISO_DATE.matches(normalized)) return null
         return runCatching { LocalDate.parse(normalized).toEpochDays() }.getOrNull()
     }
+
+    private fun CsvTarget.Metric.identity(): String = customName?.let { "custom:$it" } ?: kind
+
+    private fun CsvTarget.Metric.canonical(value: Double): Pair<Double, String>? =
+        when (kind) {
+            "weight" ->
+                when (unit.lowercase()) {
+                    "kg" -> value to "kg"
+                    "lb", "lbs" -> value * LB_TO_KG to "kg"
+                    else -> null
+                }
+
+            "body-fat" -> if (unit == "%") value to "%" else null
+            "trend" -> null
+            else -> value to unit
+        }
+
+    private val ISO_DATE: Regex = Regex("\\d{4}-\\d{2}-\\d{2}")
+    private const val LB_TO_KG: Double = 0.45359237
 }

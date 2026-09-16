@@ -73,7 +73,7 @@ class MetricCsvTest {
             CsvTable.parse(
                 "date,weight_kg,kcal_in,bad\r\n" +
                     "2026-09-10,84.2,1800,\r\n" +
-                    "2026/09/11,84.0,not-a-number\r\n" +
+                    "2026-09-11,84.0,not-a-number\r\n" +
                     "garbage,1,1\r\n",
             )
         val mapping =
@@ -93,6 +93,59 @@ class MetricCsvTest {
     }
 
     @Test
+    fun importer_convertsPoundsOnce_andRejectsAmbiguousDates() {
+        val table =
+            CsvTable.parse(
+                "date,weight\r\n" +
+                    "2026-09-10,220.46226218487757\r\n" +
+                    "01/02/2026,150\r\n",
+            )
+        val parsed =
+            CsvMeasurementImporter.parse(
+                table,
+                listOf(
+                    CsvColumnMapping("date", CsvTarget.Day),
+                    CsvColumnMapping("weight", CsvTarget.Metric("weight", "lb")),
+                ),
+                utc,
+            )
+
+        assertEquals(1, parsed.rows.size)
+        assertEquals(100.0, parsed.rows.single().valueReal, absoluteTolerance = 1e-6)
+        assertEquals("kg", parsed.rows.single().unit)
+        assertTrue(parsed.warnings.single().contains("row 3"))
+    }
+
+    @Test
+    fun importer_rejectsDerivedTrendAndConflictingMappings() {
+        val table = CsvTable.parse("date,a,b,trend\r\n2026-09-10,80,81,80.5\r\n")
+        val duplicate =
+            CsvMeasurementImporter.parse(
+                table,
+                listOf(
+                    CsvColumnMapping("date", CsvTarget.Day),
+                    CsvColumnMapping("a", CsvTarget.Metric("weight", "kg")),
+                    CsvColumnMapping("b", CsvTarget.Metric("weight", "kg")),
+                ),
+                utc,
+            )
+        assertTrue(duplicate.rows.isEmpty())
+        assertTrue(duplicate.warnings.single().contains("mapped once"))
+
+        val trend =
+            CsvMeasurementImporter.parse(
+                table,
+                listOf(
+                    CsvColumnMapping("date", CsvTarget.Day),
+                    CsvColumnMapping("trend", CsvTarget.Metric("trend", "kg")),
+                ),
+                utc,
+            )
+        assertTrue(trend.rows.isEmpty())
+        assertTrue(trend.warnings.single().contains("recomputes"))
+    }
+
+    @Test
     fun importer_withoutDayColumn_neverPlacesRows() {
         val table = CsvTable.parse("weight_kg\r\n84.2\r\n")
         val parsed =
@@ -102,7 +155,7 @@ class MetricCsvTest {
                 utc,
             )
         assertTrue(parsed.rows.isEmpty())
-        assertTrue(parsed.warnings.single().contains("no day column mapped"))
+        assertTrue(parsed.warnings.single().contains("exactly one Date"))
     }
 
     @Test

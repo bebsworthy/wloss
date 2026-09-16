@@ -92,12 +92,19 @@ public data class VaultCsvPreview(
     public val columns: List<String>,
     public val rowCount: Int,
     public val proposed: List<VaultCsvMappingView>,
+    /** Up to three non-empty source values per column; never logged. */
+    public val samples: Map<String, List<String>> = emptyMap(),
 )
 
 /** The staged CSV import: rows parsed + per-row skip warnings (never fatal). */
 public data class VaultCsvStagedReport(
     public val stagedRows: Int,
     public val warnings: List<String>,
+    public val sourceRows: Int = stagedRows,
+    public val rejectedRows: Int = warnings.size,
+    public val duplicatePolicy: String = "Retrying the same staged rows keeps the existing imported copies.",
+    /** Opaque proof that commit applies the currently reviewed mapping/source. */
+    public val reviewToken: String? = null,
 )
 
 /** Fresh Start (R-B7): what the hide-not-delete pass archived. */
@@ -245,7 +252,7 @@ public interface DataVaultPort {
     ): VaultCsvStagedReport
 
     /** Applies the last staged CSV import. */
-    public suspend fun commitCsvImport(): VaultCsvStagedReport
+    public suspend fun commitCsvImport(reviewToken: String): VaultCsvStagedReport
 
     // --- Fresh Start (R-B7; the F13 mechanics half of F01's ritual) ----------
 

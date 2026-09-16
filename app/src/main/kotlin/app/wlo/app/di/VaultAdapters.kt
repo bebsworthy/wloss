@@ -143,6 +143,7 @@ public class VaultPortAdapter(
 ) : DataVaultPort {
     private var pendingRestore: StagedRestore? = null
     private var pendingCsv: List<CsvMeasurementImporter.StagedMeasurement> = emptyList()
+    private var pendingCsvToken: String? = null
     private val restorePending = MutableStateFlow(false)
 
     // --- storage dashboard ---------------------------------------------------
@@ -367,6 +368,11 @@ public class VaultPortAdapter(
             columns = table.header,
             rowCount = table.rows.size,
             proposed = CsvMappingSniffer.sniff(table.header).toViews(),
+            samples =
+                table.header.associateWith { column ->
+                    val index = table.column(column)
+                    table.rows.mapNotNull { row -> row.getOrNull(index)?.takeIf(String::isNotBlank) }.take(3)
+                },
         )
     }
 
@@ -377,10 +383,30 @@ public class VaultPortAdapter(
         val table = parseTable(bytes)
         val parsed = CsvMeasurementImporter.parse(table, mapping.toCore())
         pendingCsv = parsed.rows
-        return VaultCsvStagedReport(stagedRows = parsed.rows.size, warnings = parsed.warnings)
+        pendingCsvToken =
+            app.wlo.core.vault.BackupCodec.sha256(
+                bytes + mapping.joinToString("|").toByteArray(),
+            )
+        return VaultCsvStagedReport(
+            stagedRows = parsed.rows.size,
+            warnings = parsed.warnings,
+            sourceRows = table.rows.size,
+            rejectedRows =
+                parsed.warnings
+                    .mapNotNull(::warningRowNumber)
+                    .distinct()
+                    .size,
+            reviewToken = pendingCsvToken,
+        )
     }
 
-    override suspend fun commitCsvImport(): VaultCsvStagedReport {
+    override suspend fun commitCsvImport(reviewToken: String): VaultCsvStagedReport {
+        if (reviewToken != pendingCsvToken) {
+            throw VaultOperationException(
+                VaultFailure.BAD_HEADER,
+                "This review is no longer current. Review the mapping again before importing.",
+            )
+        }
         val rows = pendingCsv
         if (rows.isEmpty()) {
             throw VaultOperationException(VaultFailure.BAD_HEADER, "nothing staged — validate a CSV first")
@@ -392,6 +418,7 @@ public class VaultPortAdapter(
                 ?: throw VaultOperationException(VaultFailure.BAD_HEADER, "no profile to import against")
         val result = csvCommitter.commit(profileId, rows)
         pendingCsv = emptyList()
+        pendingCsvToken = null
         return VaultCsvStagedReport(
             stagedRows = result.inserted,
             warnings =
@@ -413,6 +440,11 @@ public class VaultPortAdapter(
                 failure,
             )
         }
+
+    private fun warningRowNumber(warning: String): Int? {
+        val rowToken = warning.removePrefix("row ").substringBefore(':')
+        return rowToken.toIntOrNull()
+    }
 
     // --- Fresh Start (R-B7) -------------------------------------------------------------
 

@@ -13,9 +13,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
@@ -27,7 +25,6 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import app.wlo.core.common.formatBytes
 import app.wlo.core.designsystem.WloCard
 import app.wlo.core.designsystem.WloCardHeader
-import app.wlo.core.designsystem.WloDialog
 import app.wlo.core.designsystem.WloListRow
 import app.wlo.core.designsystem.WloScreenTitle
 import app.wlo.core.designsystem.WloSecondaryButton
@@ -42,7 +39,7 @@ import app.wlo.feature.f13.vault.state.VaultDashboardViewModel
  * The Data Vault dashboard (F13 §3): per-partition storage accounting with
  * one-tap reclaim, the backup posture (folder, auto toggle, last backup),
  * and the wizard entry points (backup · restore · export · import) plus the
- * Fresh Start row. Everything on this surface is FLAG_SECURE (IA §6).
+ * data-movement controls. Everything on this surface is FLAG_SECURE (IA §6).
  */
 @Composable
 public fun VaultDashboardScreen(
@@ -53,7 +50,6 @@ public fun VaultDashboardScreen(
     onOpenImport: () -> Unit,
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
-    var freshStartAsking by remember { mutableStateOf(false) }
     val healthPermissions =
         remember {
             setOf(
@@ -236,55 +232,11 @@ public fun VaultDashboardScreen(
             }
         }
 
-        // --- Fresh Start (R-B7) ---------------------------------------------------
-        WloCard(modifier = Modifier.fillMaxWidth().testTag("f13-fresh-start-card")) {
-            WloCardHeader(title = "Fresh Start")
-            Text(
-                text =
-                    "Starting over after a relapse is a feature, not a failure. Fresh start hides " +
-                        "your history — nothing is deleted — and walks you through onboarding again. " +
-                        "Your backups keep everything.",
-                style = wloType.body,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-            state.freshStartDone?.let { done ->
-                Text(
-                    text = "Hidden ${done.archivedDiaryEntries} diary entries. Setup runs again on next launch.",
-                    style = wloType.receipt,
-                    color = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.testTag("f13-fresh-start-done"),
-                )
-            }
-            WloSecondaryButton(
-                label = "Hide history & start fresh…",
-                onClick = { freshStartAsking = true },
-                modifier = Modifier.testTag("f13-fresh-start"),
-            )
-        }
         Text(
             text = "Exports are versioned and documented. Secrets and keys never enter a backup or an export.",
             style = wloType.receipt,
             color = wloExtendedColors.textTertiary,
             modifier = Modifier.padding(bottom = WloSpacing.SCREEN),
-        )
-    }
-
-    if (freshStartAsking) {
-        WloDialog(
-            title = "Hide history & start fresh?",
-            text =
-                "Your ${state.freshStartPreview?.archivedDiaryEntries ?: 0} diary entries will be " +
-                    "hidden — never deleted — and the active profile retires. Everything stays in " +
-                    "your backups. This is reversible from a restore.",
-            confirmLabel = "Hide & start fresh",
-            onConfirm = {
-                freshStartAsking = false
-                viewModel.freshStart()
-            },
-            dismissLabel = "Keep everything",
-            onDismiss = { freshStartAsking = false },
-            destructive = true,
-            modifier = Modifier.testTag("f13-fresh-start-confirm"),
         )
     }
 }

@@ -169,6 +169,13 @@ onboarding "coming from another app?" path; notification after a failed backup.
 column mappings; scale pairing is a single dialog; deletion requires only a
 typed confirmation phrase. Nothing in F13 ever asks for a login.
 
+**Fresh Start release deferral (WLO-0095).** R-B7 remains a required but
+unimplemented reversible-ledger workflow. The release Data Vault does not show
+or route to Fresh Start and does not call the legacy hide/profile-retirement
+helper. This avoids promising a guaranteed backup or reversibility the current
+mechanics do not provide. Ordinary export, staged restore, and explicit record
+deletion are unaffected.
+
 **Micro-interactions.** Backup success: the vault glyph morphs to a check for
 800 ms — silent, no toast spam. Restore validation: staged progress with
 per-stage ticks and a "validated" stamp on pass. Biometric unlock: fast 200 ms

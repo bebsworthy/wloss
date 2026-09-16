@@ -232,7 +232,11 @@ these are binding until amended *here* (feature docs must not re-litigate them).
   on-device fine-tuning is [future], pending an F12 platform ruling.
 - **R-B7 — Fresh Start ledger:** badges/milestones retained; streaks reset;
   charts shaded at the marker; everything reversible. (F01 ritual, F11 economy,
-  F13 mechanics.)
+  F13 mechanics.) **Release disposition (WLO-0095): not implemented.** Until a
+  reviewed workflow can satisfy every reversible-ledger requirement, release UI
+  and direct routing expose no Fresh Start action. Export, restore, and explicit
+  record deletion remain available; the legacy hide/profile-retirement helper is
+  not a compliant implementation and must not be invoked from release UI.
 - **R-B8 — Event-level storage, day-level rendering (owner ruling).** Every
   measurement is stored as a timestamped event; **multiple weigh-ins per day —
   including the post-bathroom "now I get my win" re-weigh — are kept verbatim**,

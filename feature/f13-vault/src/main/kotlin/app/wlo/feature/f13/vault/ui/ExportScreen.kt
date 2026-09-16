@@ -13,7 +13,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -24,13 +23,14 @@ import app.wlo.core.designsystem.WloButton
 import app.wlo.core.designsystem.WloCard
 import app.wlo.core.designsystem.WloCardAccent
 import app.wlo.core.designsystem.WloCardHeader
+import app.wlo.core.designsystem.WloProgress
 import app.wlo.core.designsystem.WloScreenTitle
+import app.wlo.core.designsystem.WloSecondaryButton
 import app.wlo.core.designsystem.WloSpacing
 import app.wlo.core.designsystem.wloExtendedColors
 import app.wlo.core.designsystem.wloType
 import app.wlo.feature.f13.vault.state.ExportUiState
 import app.wlo.feature.f13.vault.state.ExportViewModel
-import kotlinx.coroutines.launch
 
 /**
  * The export wizard (F13 §3): pick the documented format — the versioned JSON
@@ -44,17 +44,10 @@ public fun ExportScreen(
     onDone: () -> Unit,
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
-    val scope = rememberCoroutineScope()
-
     // CREATE propagates the user's chosen destination + the file name.
     val createDocument =
         rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("application/octet-stream")) { uri ->
-            if (uri != null) {
-                scope.launch {
-                    val (name, bytes) = viewModel.render()
-                    viewModel.onDestinationPicked(uri.toString(), name, bytes)
-                }
-            }
+            viewModel.onDestinationPicked(uri?.toString())
         }
 
     Column(
@@ -127,8 +120,13 @@ public fun ExportScreen(
                     if (state.format == ExportUiState.FORMAT_CSV) "wlo_metrics.csv" else "wlo_export.json"
                 createDocument.launch(suggestion)
             },
+            enabled = !state.busy,
             modifier = Modifier.testTag("f13-export-write"),
         )
+
+        if (state.busy) {
+            WloProgress(progress = null, label = "Writing export…")
+        }
 
         state.lastFileName?.let {
             Text(
@@ -145,6 +143,7 @@ public fun ExportScreen(
                 color = MaterialTheme.colorScheme.error,
                 modifier = Modifier.testTag("f13-export-failure"),
             )
+            WloSecondaryButton(label = "Retry write", onClick = viewModel::retryWrite)
         }
         HorizontalDivider()
         WloButton(label = "Done", onClick = onDone)

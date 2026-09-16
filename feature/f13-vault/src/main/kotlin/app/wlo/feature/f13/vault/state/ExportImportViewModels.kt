@@ -1,5 +1,6 @@
 package app.wlo.feature.f13.vault.state
 
+import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import app.wlo.core.datastore.SettingsStore
@@ -26,6 +27,7 @@ public data class ExportUiState(
     public val lastFileName: String? = null,
     public val lastSizeBytes: Long = 0,
     public val failure: String? = null,
+    public val busy: Boolean = false,
 ) {
     public companion object {
         public const val FORMAT_BUNDLE: String = "bundle"
@@ -41,6 +43,7 @@ public class ExportViewModel(
     public val state: StateFlow<ExportUiState> = stateFlow.asStateFlow()
 
     private var bundleBytes: ByteArray? = null
+    private var retryDestination: String? = null
 
     init {
         viewModelScope.launch {
@@ -67,24 +70,32 @@ public class ExportViewModel(
         }
 
     /** The screen's SAF create-document launcher produced a destination. */
-    public fun onDestinationPicked(
-        destination: String,
-        fileName: String,
-        bytes: ByteArray,
-    ) {
+    public fun onDestinationPicked(destination: String?) {
+        if (destination == null) {
+            stateFlow.value = stateFlow.value.copy(busy = false)
+            return
+        }
+        retryDestination = destination
         viewModelScope.launch {
+            stateFlow.value = stateFlow.value.copy(busy = true, failure = null, lastFileName = null)
             try {
+                val (fileName, bytes) = render()
                 val outcome = vault.writeToDestination(destination, fileName, bytes)
                 stateFlow.value =
                     stateFlow.value.copy(
                         lastFileName = outcome.fileName,
                         lastSizeBytes = outcome.sizeBytes,
                         failure = null,
+                        busy = false,
                     )
             } catch (failure: VaultOperationException) {
-                stateFlow.value = stateFlow.value.copy(failure = failure.message)
+                stateFlow.value = stateFlow.value.copy(failure = failure.message, busy = false)
             }
         }
+    }
+
+    public fun retryWrite() {
+        onDestinationPicked(retryDestination)
     }
 }
 
@@ -109,18 +120,21 @@ public data class ImportUiState(
     public val failure: String? = null,
     /** Room may be committed and the durable restore journal still pending. */
     public val recoveryPending: Boolean = false,
+    public val recoverTo: Step? = null,
+    public val mappingError: String? = null,
 ) {
     public enum class Step {
         Pick,
+        Reading,
 
         /** CSV only: map columns onto WLO's metric vocabulary (R-S4). */
         Mapping,
 
         /** The staged report (rows parsed / skipped with reasons). */
-        Report,
+        Reviewing,
         Applying,
         Done,
-        Failed,
+        RecoverableError,
     }
 }
 
@@ -132,6 +146,8 @@ public data class ImportUiState(
 public class ImportViewModel(
     private val vault: DataVaultPort,
     private val settings: SettingsStore,
+    private val reader: ImportSourceReader,
+    private val savedStateHandle: SavedStateHandle,
 ) : ViewModel() {
     private val stateFlow = MutableStateFlow(ImportUiState())
 
@@ -139,8 +155,65 @@ public class ImportViewModel(
 
     private var pendingBytes: ByteArray? = null
     private var pendingName: String? = null
+    private var pendingUri: String? = null
+    private var stagingPath: String? = savedStateHandle[KEY_STAGING_PATH]
 
+    init {
+        val recoveredPath = stagingPath
+        val recoveredName = savedStateHandle.get<String>(KEY_FILE_NAME)
+        if (recoveredPath != null && recoveredName != null) {
+            stateFlow.value = ImportUiState(step = ImportUiState.Step.Reading, fileName = recoveredName)
+            viewModelScope.launch { loadStagedSource(recoveredPath, recoveredName) }
+        }
+    }
+
+    public fun onSourcePicked(uri: String) {
+        pendingUri = uri
+        stagePickedUri(uri)
+    }
+
+    private fun stagePickedUri(uri: String) {
+        stateFlow.value = ImportUiState(step = ImportUiState.Step.Reading)
+        viewModelScope.launch {
+            try {
+                val source = reader.stage(uri)
+                stagingPath = source.path
+                savedStateHandle[KEY_STAGING_PATH] = source.path
+                savedStateHandle[KEY_FILE_NAME] = source.fileName
+                loadStagedSource(source.path, source.fileName)
+            } catch (failure: ImportSourceException) {
+                recoverable(ImportUiState.Step.Pick, failure.message ?: "The selected file could not be read.")
+            }
+        }
+    }
+
+    private suspend fun loadStagedSource(
+        path: String,
+        fileName: String,
+    ) {
+        try {
+            beginSource(fileName, reader.load(path))
+        } catch (failure: ImportSourceException) {
+            recoverable(ImportUiState.Step.Pick, failure.message ?: "The staged file could not be read.")
+        }
+    }
+
+    /** Test/support entry point; the release picker uses bounded private staging above. */
     public fun onFilePicked(
+        fileName: String,
+        bytes: ByteArray,
+    ) {
+        if (bytes.size > MAX_IMPORT_BYTES) {
+            recoverable(
+                ImportUiState.Step.Pick,
+                "This file is larger than 20 MiB. Split it into smaller files and import them separately.",
+            )
+            return
+        }
+        beginSource(fileName, bytes)
+    }
+
+    private fun beginSource(
         fileName: String,
         bytes: ByteArray,
     ) {
@@ -148,11 +221,15 @@ public class ImportViewModel(
         pendingName = fileName
         val looksLikeBundle = fileName.endsWith(".json", ignoreCase = true)
         stateFlow.value =
-            ImportUiState(step = ImportUiState.Step.Mapping, fileName = fileName, isBundle = looksLikeBundle)
+            ImportUiState(
+                step = ImportUiState.Step.Reading,
+                fileName = fileName,
+                isBundle = looksLikeBundle,
+            )
         if (looksLikeBundle) {
             // Bundles carry their own schema — straight to staging (the same
             // funnel as restore; the report is the mapping step's stand-in).
-            stage { stateFlow.value = it.copy(step = ImportUiState.Step.Report) }
+            stage { stateFlow.value = it.copy(step = ImportUiState.Step.Reviewing) }
         } else {
             buildCsvPreview()
         }
@@ -174,9 +251,16 @@ public class ImportViewModel(
                             customName = hit?.customName,
                         )
                     }
-                stateFlow.value = stateFlow.value.copy(csvPreview = preview, mapping = rows)
+                stateFlow.value =
+                    stateFlow.value.copy(
+                        step = ImportUiState.Step.Mapping,
+                        csvPreview = preview,
+                        mapping = rows,
+                        failure = null,
+                        recoverTo = null,
+                    )
             } catch (failure: VaultOperationException) {
-                stateFlow.value = stateFlow.value.copy(step = ImportUiState.Step.Failed, failure = failure.message)
+                recoverable(ImportUiState.Step.Reading, failure.message ?: "The CSV could not be parsed.")
             }
         }
     }
@@ -218,10 +302,15 @@ public class ImportViewModel(
                     row
                 }
             }
-        stateFlow.value = stateFlow.value.copy(mapping = rows)
+        stateFlow.value = stateFlow.value.copy(mapping = rows, staged = null, mappingError = null)
     }
 
     public fun stage() {
+        val validation = validateCsvMapping(stateFlow.value.mapping)
+        if (validation != null) {
+            stateFlow.value = stateFlow.value.copy(mappingError = validation)
+            return
+        }
         stage { stateFlow.value = it }
     }
 
@@ -265,11 +354,22 @@ public class ImportViewModel(
                         }
                     val staged = vault.stageCsvImport(bytes, mapping)
                     remember(mapping)
-                    stateFlow.value = stateFlow.value.copy(staged = staged, failure = null, recoveryPending = false)
+                    stateFlow.value =
+                        stateFlow.value.copy(
+                            step = ImportUiState.Step.Reviewing,
+                            staged = staged,
+                            failure = null,
+                            recoveryPending = false,
+                            recoverTo = null,
+                            mappingError = null,
+                        )
                 }
                 onStaged(stateFlow.value)
             } catch (failure: VaultOperationException) {
-                stateFlow.value = stateFlow.value.copy(step = ImportUiState.Step.Failed, failure = failure.message)
+                recoverable(
+                    if (isBundle) ImportUiState.Step.Reading else ImportUiState.Step.Mapping,
+                    failure.message ?: "The source could not be reviewed.",
+                )
             }
         }
     }
@@ -277,30 +377,62 @@ public class ImportViewModel(
     private suspend fun stageBundle(bytes: ByteArray) = vault.stageBundleImport(bytes)
 
     public fun commit() {
+        if (stateFlow.value.step == ImportUiState.Step.Applying) return
+        val reviewToken = stateFlow.value.staged?.reviewToken
+        stateFlow.value = stateFlow.value.copy(step = ImportUiState.Step.Applying)
         viewModelScope.launch {
-            stateFlow.value = stateFlow.value.copy(step = ImportUiState.Step.Applying)
             try {
                 val result =
                     if (stateFlow.value.isBundle) {
                         val commit = vault.commitStaged()
                         VaultCsvStagedReport(stagedRows = commit.inserted, warnings = commit.warnings)
                     } else {
-                        vault.commitCsvImport()
+                        vault.commitCsvImport(
+                            reviewToken
+                                ?: throw VaultOperationException(
+                                    VaultFailure.BAD_HEADER,
+                                    "Review the current mapping before importing.",
+                                ),
+                        )
                     }
                 stateFlow.value =
                     stateFlow.value.copy(
                         step = ImportUiState.Step.Done,
                         committedRows = result.stagedRows,
                         recoveryPending = false,
+                        recoverTo = null,
                     )
+                discardStaging()
             } catch (failure: VaultOperationException) {
                 stateFlow.value =
                     stateFlow.value.copy(
-                        step = ImportUiState.Step.Failed,
+                        step = ImportUiState.Step.RecoverableError,
                         failure = failure.message,
                         recoveryPending = failure.failure == VaultFailure.RECOVERY_PENDING,
+                        recoverTo = ImportUiState.Step.Reviewing,
                     )
             }
+        }
+    }
+
+    public fun backToMapping() {
+        if (!stateFlow.value.isBundle) {
+            stateFlow.value = stateFlow.value.copy(step = ImportUiState.Step.Mapping, failure = null, recoverTo = null)
+        }
+    }
+
+    public fun retry() {
+        when (stateFlow.value.recoverTo) {
+            ImportUiState.Step.Pick -> pendingUri?.let(::stagePickedUri) ?: chooseAnotherFile()
+            ImportUiState.Step.Reading ->
+                if (stateFlow.value.isBundle) {
+                    stage { stateFlow.value = it.copy(step = ImportUiState.Step.Reviewing) }
+                } else {
+                    buildCsvPreview()
+                }
+            ImportUiState.Step.Mapping -> stage()
+            ImportUiState.Step.Reviewing -> commit()
+            else -> Unit
         }
     }
 
@@ -320,10 +452,36 @@ public class ImportViewModel(
         settings.setRememberedCsvMapping(json)
     }
 
-    public fun reset() {
+    public fun chooseAnotherFile() {
+        discardStaging()
         pendingBytes = null
         pendingName = null
+        pendingUri = null
         stateFlow.value = ImportUiState()
+    }
+
+    public fun reset() {
+        chooseAnotherFile()
+    }
+
+    private fun discardStaging() {
+        val path = stagingPath ?: return
+        stagingPath = null
+        savedStateHandle.remove<String>(KEY_STAGING_PATH)
+        savedStateHandle.remove<String>(KEY_FILE_NAME)
+        viewModelScope.launch { reader.discard(path) }
+    }
+
+    private fun recoverable(
+        recoverTo: ImportUiState.Step,
+        message: String,
+    ) {
+        stateFlow.value =
+            stateFlow.value.copy(
+                step = ImportUiState.Step.RecoverableError,
+                failure = message,
+                recoverTo = recoverTo,
+            )
     }
 
     @Serializable
@@ -333,4 +491,27 @@ public class ImportViewModel(
         val unit: String? = null,
         val customName: String? = null,
     )
+
+    private companion object {
+        const val KEY_STAGING_PATH: String = "f13.import.stagingPath"
+        const val KEY_FILE_NAME: String = "f13.import.fileName"
+        const val MAX_IMPORT_BYTES: Int = 20 * 1024 * 1024
+    }
+}
+
+public fun validateCsvMapping(mapping: List<CsvMappingRow>): String? {
+    val dates = mapping.count { it.targetKind == "day" }
+    if (dates != 1) return "Choose exactly one Date column. Dates must use YYYY-MM-DD."
+    val measurements = mapping.filter { it.targetKind != null && it.targetKind != "day" }
+    if (measurements.isEmpty()) return "Choose at least one measurement column."
+    if (measurements.any { it.targetKind == "trend" }) return "Trend is derived by WLO and cannot be imported."
+    val duplicates =
+        measurements
+            .groupBy { row -> row.customName?.let { "custom:$it" } ?: row.targetKind }
+            .filterValues { rows -> rows.size > 1 }
+    if (duplicates.isNotEmpty()) return "Each destination can be mapped only once."
+    if (measurements.any { it.targetKind == "weight" && it.unit !in setOf("kg", "lb") }) {
+        return "Choose kg or lb for every Weight column."
+    }
+    return null
 }
