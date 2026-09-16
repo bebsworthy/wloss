@@ -304,7 +304,9 @@ public fun WeightScreen(
                                 }
                                 if (current == null) {
                                     Text(
-                                        text = trend?.stateCopy ?: "Trend is forming from your canonical daily weights.",
+                                        text =
+                                            trend?.stateCopy
+                                                ?: "Trend is forming from your canonical daily weights.",
                                         style = wloType.caption,
                                         color = wloExtendedColors.textTertiary,
                                     )

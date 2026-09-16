@@ -168,7 +168,10 @@ public fun LogbookScreen(viewModel: LogbookViewModel) {
                     }
                     when (state.contentState) {
                         LogbookContentState.Loading ->
-                            Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { CircularProgressIndicator() }
+                            Box(
+                                Modifier.fillMaxSize(),
+                                contentAlignment = Alignment.Center,
+                            ) { CircularProgressIndicator() }
                         LogbookContentState.Error ->
                             LogbookMessage("Couldn't load the logbook.", "Retry") {
                                 viewModel.onEvent(LogbookEvent.RetryLoad)
