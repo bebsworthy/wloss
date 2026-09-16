@@ -10,8 +10,7 @@ import androidx.compose.ui.graphics.vector.path
 import androidx.compose.ui.unit.dp
 
 /**
- * The five top-level destinations (R-D2 / IA.md §1): Weight · Hub · Plan ·
- * Insights · More. Capture is a flow-over-context, never a destination.
+ * The four functioning release destinations (WLO-0096): Weight · Hub · Plan · More.
  */
 public object WloTabs {
     public const val WEIGHT: String = "f06/weight"
@@ -32,13 +31,12 @@ public data class WloTab(
     val icon: ImageVector,
 )
 
-/** The tab list in navigation order (R-D2). */
+/** The release tab list in navigation order. */
 public val WLO_TABS: List<WloTab> =
     listOf(
         WloTab(WloTabs.WEIGHT, "Weight", WloTabIcons.Weight),
         WloTab(WloTabs.HUB, "Hub", WloTabIcons.Hub),
         WloTab(WloTabs.PLAN, "Plan", WloTabIcons.Plan),
-        WloTab(WloTabs.INSIGHTS, "Insights", WloTabIcons.Insights),
         WloTab(WloTabs.MORE, "More", WloTabIcons.More),
     )
 

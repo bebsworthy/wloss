@@ -33,7 +33,6 @@ import app.wlo.core.designsystem.WloEmptyState
 import app.wlo.core.designsystem.WloFitBadge
 import app.wlo.core.designsystem.WloListRow
 import app.wlo.core.designsystem.WloPrimaryRow
-import app.wlo.core.designsystem.WloScreenTitle
 import app.wlo.core.designsystem.WloSegmentedBar
 import app.wlo.core.designsystem.WloSheet
 import app.wlo.core.designsystem.WloSpacing
@@ -75,7 +74,6 @@ public fun PlanScreen(
                     .padding(horizontal = WloSpacing.SCREEN),
             verticalArrangement = Arrangement.spacedBy(WloSpacing.CARD),
         ) {
-            WloScreenTitle(title = "Plan", modifier = Modifier.testTag("title-plan"))
             WloSegmentedBar(
                 segments = SEGMENT_LABELS,
                 selected = segment.ordinal,

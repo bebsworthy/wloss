@@ -14,13 +14,13 @@ public class WloDeepLinksTest {
     @Test
     public fun tabRootsResolveToTheirRoute() {
         assertEquals(
-            listOf("f06/weight", "hub", "plan", "insights", "more"),
+            listOf("f06/weight", "hub", "plan", "more"),
             WloDeepLinks.TAB_ROUTES,
         )
         assertEquals("f06/weight", WloDeepLinks.routeFor("wlo://weight"))
         assertEquals("hub", WloDeepLinks.routeFor("wlo://hub"))
         assertEquals("plan", WloDeepLinks.routeFor("wlo://plan"))
-        assertEquals("insights", WloDeepLinks.routeFor("wlo://insights"))
+        assertEquals(WloDeepLinks.INSIGHTS_UNAVAILABLE, WloDeepLinks.routeFor("wlo://insights"))
         assertEquals("archive", WloDeepLinks.routeFor("wlo://archive"))
         assertEquals("digestion", WloDeepLinks.routeFor("wlo://digestion"))
         assertEquals("more", WloDeepLinks.routeFor("wlo://more"))

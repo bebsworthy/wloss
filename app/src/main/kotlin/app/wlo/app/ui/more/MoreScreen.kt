@@ -14,8 +14,9 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
+import app.wlo.core.designsystem.WloBanner
+import app.wlo.core.designsystem.WloBannerTone
 import app.wlo.core.designsystem.WloIcons
-import app.wlo.core.designsystem.WloScreenTitle
 import app.wlo.core.designsystem.WloSpacing
 
 /**
@@ -31,6 +32,7 @@ public fun MoreScreen(
     onOpenVault: () -> Unit,
     onOpenAi: () -> Unit,
     onOpenSettings: () -> Unit,
+    notice: String? = null,
 ) {
     Column(
         modifier =
@@ -39,7 +41,9 @@ public fun MoreScreen(
                 .verticalScroll(rememberScrollState())
                 .padding(horizontal = WloSpacing.SCREEN),
     ) {
-        WloScreenTitle(title = "More", modifier = Modifier.testTag("title-more"))
+        notice?.let {
+            WloBanner(text = it, tone = WloBannerTone.Info, modifier = Modifier.testTag("more-notice"))
+        }
         MoreDestination("Archive", "Private vector-outline history", "more-archive", onOpenArchive)
         HorizontalDivider()
         MoreDestination("Digestion", "Gut and fiber tracking", "more-digestion", onOpenDigestion)

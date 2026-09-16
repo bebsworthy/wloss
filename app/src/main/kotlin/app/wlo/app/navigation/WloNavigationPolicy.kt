@@ -10,7 +10,24 @@ import app.wlo.feature.f06.weight.F06Routes
 import app.wlo.feature.f12.consent.F12Routes
 import app.wlo.feature.f13.vault.F13Routes
 
-/** True only for the five destinations that own persistent app navigation. */
+public data class RouteMetadata(
+    public val destinationId: String,
+    public val label: String,
+    public val topLevelOwner: String,
+    public val appBarTitle: String,
+    public val showsUp: Boolean,
+    public val paneTitle: String = appBarTitle,
+)
+
+private val TOP_LEVEL_METADATA: Map<String, RouteMetadata> =
+    mapOf(
+        WloTabs.WEIGHT to RouteMetadata(WloTabs.WEIGHT, "Weight", WloTabs.WEIGHT, "Weight", false),
+        WloTabs.HUB to RouteMetadata(WloTabs.HUB, "Hub", WloTabs.HUB, "Hub", false),
+        WloTabs.PLAN to RouteMetadata(WloTabs.PLAN, "Plan", WloTabs.PLAN, "Plan", false),
+        WloTabs.MORE to RouteMetadata(WloTabs.MORE, "More", WloTabs.MORE, "More", false),
+    )
+
+/** True only for destinations that own persistent app navigation. */
 internal fun isTopLevelRoute(route: String?): Boolean = route != null && WLO_TABS.any { it.route == route }
 
 /** Material compact/medium boundary used to choose navigation bar or rail. */
@@ -18,6 +35,24 @@ internal fun useNavigationRail(
     width: Dp,
     showTopLevelNavigation: Boolean,
 ): Boolean = showTopLevelNavigation && width >= 600.dp
+
+internal fun useSupportingPane(width: Dp): Boolean = width >= 840.dp
+
+internal fun routeMetadata(route: String?): RouteMetadata? {
+    if (route == null) return null
+    TOP_LEVEL_METADATA[route]?.let { return it }
+    if (route == WloDeepLinks.INSIGHTS_UNAVAILABLE) {
+        return RouteMetadata(route, "More", WloTabs.MORE, "More", false)
+    }
+    val title = routeTitle(route) ?: return null
+    val owner =
+        when {
+            route.startsWith("f03/") || route.startsWith("f04/") -> WloTabs.PLAN
+            route.startsWith("f06/") -> WloTabs.WEIGHT
+            else -> WloTabs.MORE
+        }
+    return RouteMetadata(route, title, owner, title, true)
+}
 
 /** User-facing app-bar title for nested routes. */
 internal fun routeTitle(route: String?): String? =
@@ -37,6 +72,8 @@ internal fun routeTitle(route: String?): String? =
         F06Routes.MATH -> "Weight calculation"
         F06Routes.BODY_FAT -> "Body fat"
         F06Routes.LOGBOOK -> "Weight logbook"
+        F06Routes.LOGBOOK_RANGE -> "Weight logbook"
+        WloDeepLinks.INSIGHTS_UNAVAILABLE -> "More"
         "ai/models" -> "On-device models"
         "app/settings" -> "Settings"
         "app/profile" -> "Profile"

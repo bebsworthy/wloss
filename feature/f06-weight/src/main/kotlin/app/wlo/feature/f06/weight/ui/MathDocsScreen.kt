@@ -13,7 +13,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import app.wlo.core.designsystem.WloCard
 import app.wlo.core.designsystem.WloCardHeader
-import app.wlo.core.designsystem.WloScreenTitle
 import app.wlo.core.designsystem.WloSpacing
 import app.wlo.core.designsystem.wloExtendedColors
 import app.wlo.core.designsystem.wloType
@@ -37,10 +36,6 @@ public fun MathDocsScreen(modifier: Modifier = Modifier) {
                 .padding(bottom = WloSpacing.SCREEN),
         verticalArrangement = Arrangement.spacedBy(WloSpacing.SCREEN),
     ) {
-        WloScreenTitle(
-            title = "How the trend math works",
-            modifier = Modifier.testTag("f06-math-title"),
-        )
         Text(
             text =
                 "Each daily weight uses the reading nearest 07:00 inside the profile-fixed " +

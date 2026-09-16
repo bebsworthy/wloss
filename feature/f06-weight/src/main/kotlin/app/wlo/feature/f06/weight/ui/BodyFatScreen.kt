@@ -23,7 +23,6 @@ import app.wlo.core.designsystem.WloButton
 import app.wlo.core.designsystem.WloCard
 import app.wlo.core.designsystem.WloCardHeader
 import app.wlo.core.designsystem.WloListRow
-import app.wlo.core.designsystem.WloScreenTitle
 import app.wlo.core.designsystem.WloSecondaryButton
 import app.wlo.core.designsystem.WloSpacing
 import app.wlo.core.designsystem.wloExtendedColors
@@ -53,10 +52,6 @@ public fun BodyFatScreen(
                 .padding(bottom = WloSpacing.SCREEN),
         verticalArrangement = Arrangement.spacedBy(WloSpacing.SCREEN),
     ) {
-        WloScreenTitle(
-            title = "Body fat",
-            modifier = Modifier.testTag("f06-bodyfat-title"),
-        )
         Text(
             text =
                 "Every method is an estimate — ±3–4 % is typical, and each method keeps its " +

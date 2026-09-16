@@ -188,14 +188,25 @@ public class LogbookViewModel(
     private val deleted = MutableStateFlow<DeletedUi?>(null)
     private val edit = MutableStateFlow<EditSheetUi?>(null)
     private var pendingDeletion: PendingLogbookDeletion? = null
+    private val routeStart = savedStateHandle.get<Long>(F06Routes.ARG_RANGE_START)
+    private val routeEnd = savedStateHandle.get<Long>(F06Routes.ARG_RANGE_END)
     private var range: HistoryRange? =
         initialRange ?: run {
-            val start = savedStateHandle.get<Long>(F06Routes.ARG_RANGE_START)
-            val end = savedStateHandle.get<Long>(F06Routes.ARG_RANGE_END)
-            if (start != null && end != null && start < end) HistoryRange(start, end) else null
+            if (routeStart != null && routeEnd != null && routeStart < routeEnd) {
+                HistoryRange(routeStart, routeEnd)
+            } else {
+                null
+            }
         }
     private var recoveryReconciled: Boolean = false
-    private val notice = MutableStateFlow<String?>(null)
+    private val notice =
+        MutableStateFlow(
+            if (routeStart != null && routeEnd != null && routeStart >= routeEnd) {
+                "That date range was invalid, so the full logbook is shown."
+            } else {
+                null
+            },
+        )
 
     /** Renderable feed state. */
     public val uiState: StateFlow<LogbookUiState> = data

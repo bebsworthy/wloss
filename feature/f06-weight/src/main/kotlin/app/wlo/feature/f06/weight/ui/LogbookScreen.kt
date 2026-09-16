@@ -64,7 +64,6 @@ import app.wlo.core.designsystem.WloHaptic
 import app.wlo.core.designsystem.WloIcons
 import app.wlo.core.designsystem.WloListRow
 import app.wlo.core.designsystem.WloMotion
-import app.wlo.core.designsystem.WloScreenTitle
 import app.wlo.core.designsystem.WloSecondaryButton
 import app.wlo.core.designsystem.WloSheet
 import app.wlo.core.designsystem.WloSpacing
@@ -156,11 +155,8 @@ public fun LogbookScreen(viewModel: LogbookViewModel) {
                     .padding(bottom = WloSpacing.SCREEN),
             verticalArrangement = Arrangement.spacedBy(WloSpacing.SCREEN),
         ) {
-            WloScreenTitle(
-                title = state.rangeLabel?.let { range -> "Logbook · $range" } ?: "Logbook",
-                modifier = Modifier.testTag("f06-logbook-title"),
-            )
             state.range?.let {
+                Text("Filtered to ${state.rangeLabel}", style = MaterialTheme.typography.titleMedium)
                 TextButton(onClick = { viewModel.onEvent(LogbookEvent.ClearRange) }) { Text("Clear filter") }
             }
             when (state.contentState) {

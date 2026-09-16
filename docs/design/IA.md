@@ -10,8 +10,10 @@ R-U17 (hero-slot promotion).*
 
 ## 1. Navigation model
 
-**Five top-level destinations + flow-over-context capture layers**
-(R-D2): compact windows use a Material 3 navigation bar; windows at 600 dp
+**Four functioning release destinations + flow-over-context capture layers**
+(R-D2 release amendment, WLO-0096): Weight · Hub · Plan · More. Insights
+returns when it has a usable landing screen; legacy Insights links explain
+that deferral on More. Compact windows use a Material 3 navigation bar; windows at 600 dp
 or wider use a Material 3 navigation rail. Nested destinations hide that
 top-level chrome and use a Material 3 top app bar with Up navigation.
 
@@ -21,7 +23,7 @@ top-level chrome and use a Material 3 top app bar with Up navigation.
 │   < surface >                                  │
 │                                                │
 ├────────────────────────────────────────────────┤
-│ Weight    Hub    Plan    Insights     More     │
+│ Weight         Hub          Plan          More │
 └────────────────────────────────────────────────┘
 ```
 
@@ -30,7 +32,6 @@ top-level chrome and use a Material 3 top app bar with Up navigation.
 | **Weight** | F06 + F07 | **Default and primary surface**; trend/raw chart, goal state, weigh-in, history, forecast, and logbook |
 | **Hub** | F10 | Optional broader day surface; Adaptive Day Model card stack and quick-action rail |
 | **Plan** | F03 + F04 | Segmented: **Plan** (week grid) · **Recipes** · **List** · **Pantry** — the plan→shop→stock pipeline in one place, because the Week loop crosses it end-to-end |
-| **Insights** | F11 | Report card, stats hub, streaks, badges, share cards |
 | **More** | cross-feature | Archive, Digestion, Exercise, Data Vault, AI and Settings; each keeps its own named destination and discretion gate |
 
 **Decisions and rationale:**

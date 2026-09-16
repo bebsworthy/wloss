@@ -119,7 +119,9 @@ public fun WloApp(
     val shellState: ShellState by shell.state.collectAsStateWithLifecycle()
     val backStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = backStackEntry?.destination?.route
-    val isTopLevel = isTopLevelRoute(currentRoute)
+    val metadata = routeMetadata(currentRoute)
+    val isTopLevel = metadata?.showsUp == false
+    val selectedTopLevel = metadata?.topLevelOwner.orEmpty()
     val navigationItems =
         remember {
             WLO_TABS.map { tab ->
@@ -158,27 +160,31 @@ public fun WloApp(
     BoxWithConstraints(modifier = modifier) {
         val showTopLevelNavigation = shellState == ShellState.Onboarded && isTopLevel
         val useNavigationRail = useNavigationRail(maxWidth, showTopLevelNavigation)
-        val nestedTitle = if (shellState == ShellState.Onboarded && !isTopLevel) routeTitle(currentRoute) else null
+        val appBarMetadata = metadata?.takeIf { shellState == ShellState.Onboarded }
 
         Scaffold(
             modifier = Modifier.fillMaxSize(),
             containerColor = MaterialTheme.colorScheme.background,
             contentColor = MaterialTheme.colorScheme.onBackground,
             topBar = {
-                if (nestedTitle != null) {
+                if (appBarMetadata != null) {
                     TopAppBar(
-                        title = { Text(text = nestedTitle) },
+                        title = { Text(text = appBarMetadata.appBarTitle) },
                         navigationIcon = {
-                            IconButton(
-                                onClick = {
-                                    if (!navController.navigateUp()) {
-                                        navController.navigate(WloTabs.WEIGHT) {
-                                            popUpTo(navController.graph.findStartDestination().id) { inclusive = true }
+                            if (appBarMetadata.showsUp) {
+                                IconButton(
+                                    onClick = {
+                                        if (!navController.navigateUp()) {
+                                            navController.navigate(appBarMetadata.topLevelOwner) {
+                                                popUpTo(navController.graph.findStartDestination().id) {
+                                                    inclusive = true
+                                                }
+                                            }
                                         }
-                                    }
-                                },
-                            ) {
-                                Icon(imageVector = WloIcons.ArrowBack, contentDescription = "Navigate up")
+                                    },
+                                ) {
+                                    Icon(imageVector = WloIcons.ArrowBack, contentDescription = "Navigate up")
+                                }
                             }
                         },
                     )
@@ -187,7 +193,7 @@ public fun WloApp(
             bottomBar = {
                 if (showTopLevelNavigation && !useNavigationRail) {
                     WloBottomBar(
-                        selected = currentRoute.orEmpty(),
+                        selected = selectedTopLevel,
                         onSelect = selectTopLevel,
                         items = navigationItems,
                         modifier = Modifier.testTag("top-level-navigation-bar"),
@@ -198,7 +204,7 @@ public fun WloApp(
             Row(modifier = Modifier.fillMaxSize().padding(innerPadding)) {
                 if (useNavigationRail) {
                     WloNavigationRail(
-                        selected = currentRoute.orEmpty(),
+                        selected = selectedTopLevel,
                         onSelect = selectTopLevel,
                         items = navigationItems,
                         modifier = Modifier.testTag("top-level-navigation-rail"),
@@ -210,7 +216,7 @@ public fun WloApp(
                     modifier =
                         Modifier
                             .weight(1f)
-                            .semantics { nestedTitle?.let { paneTitle = it } },
+                            .semantics { appBarMetadata?.paneTitle?.let { paneTitle = it } },
                 ) {
                     for ((route, patterns) in WloDeepLinks.patternsByRoute) {
                         composable(
@@ -399,6 +405,17 @@ private fun RouteSurface(
     val entryArg: String? = arguments?.getString(ENTRY_ARG)
     val entryArgSecond: String? = arguments?.getString(SLOT_ARG)
     when (route) {
+        WloDeepLinks.INSIGHTS_UNAVAILABLE ->
+            MoreScreen(
+                onOpenArchive = { navController.navigate(WloTabs.ARCHIVE) },
+                onOpenDigestion = { navController.navigate(WloTabs.DIGESTION) },
+                onOpenExercise = { navController.navigate("stub/exercise") },
+                onOpenVault = { navController.navigate(F13Routes.VAULT) },
+                onOpenAi = { navController.navigate(F12Routes.STUDIO) },
+                onOpenSettings = { navController.navigate("app/settings") },
+                notice = "Insights is not available yet. Your available data and settings are below.",
+            )
+
         WloTabs.ARCHIVE -> PlaceholderScreen(title = "Archive", body = PlaceholderCopy.ARCHIVE)
         WloTabs.DIGESTION -> PlaceholderScreen(title = "Digestion", body = PlaceholderCopy.DIGESTION)
 
@@ -593,7 +610,6 @@ private fun TopLevelRouteSurface(
             }
 
         WloTabs.PLAN -> PlanTabRoute(focusDay = null, focusSlot = null, navController = navController)
-        WloTabs.INSIGHTS -> PlaceholderScreen(title = "Insights", body = PlaceholderCopy.INSIGHTS)
         WloTabs.MORE ->
             MoreScreen(
                 onOpenArchive = { navController.navigate(WloTabs.ARCHIVE) },

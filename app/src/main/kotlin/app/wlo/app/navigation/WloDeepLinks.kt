@@ -15,9 +15,9 @@ package app.wlo.app.navigation
 public object WloDeepLinks {
     public const val SCHEME: String = "wlo"
 
-    /** The five tab roots, in navigation order (R-D2). */
+    /** The four functioning release roots, in navigation order. */
     public val TAB_ROUTES: List<String> =
-        listOf(WloTabs.WEIGHT, WloTabs.HUB, WloTabs.PLAN, WloTabs.INSIGHTS, WloTabs.MORE)
+        listOf(WloTabs.WEIGHT, WloTabs.HUB, WloTabs.PLAN, WloTabs.MORE)
 
     /** The IA.md §3 registry: source · deep link · target. */
     public val REGISTRY: List<DeepLinkEntry> =
@@ -26,7 +26,7 @@ public object WloDeepLinks {
             entry("wlo://weight", WloTabs.WEIGHT),
             entry("wlo://hub", WloTabs.HUB),
             entry("wlo://plan", WloTabs.PLAN),
-            entry("wlo://insights", WloTabs.INSIGHTS),
+            entry("wlo://insights", INSIGHTS_UNAVAILABLE),
             entry("wlo://more", WloTabs.MORE),
             entry("wlo://archive", WloTabs.ARCHIVE),
             entry("wlo://digestion", WloTabs.DIGESTION),
@@ -98,6 +98,8 @@ public object WloDeepLinks {
         val path = uri.removePrefix(prefix).substringBefore('?').trimEnd('/')
         return REGISTRY.firstOrNull { registryPath(it.uriPattern) == path }?.route
     }
+
+    public const val INSIGHTS_UNAVAILABLE: String = "more/insights-unavailable"
 
     /** The canonical `wlo://` pattern for a nav route (first registration wins). */
     public fun patternForRoute(route: String): String? = patternsByRoute[route]?.firstOrNull()

@@ -416,7 +416,11 @@ Ratified 2026-09-11.*
   token exists; `held` = amber. Material You dynamic color is opt-in and
   applies to surfaces/accents only; semantic states and data-viz series
   are never wallpaper-sourced.
-- **R-D2 — Navigation: five-tab bottom nav.** Hub · Plan · Insights ·
+- **R-D2 — Navigation: five-tab target model; four destinations in this release.**
+  The release shell shows Weight · Hub · Plan · More, in that order, because
+  those destinations have functioning landing surfaces. Insights is omitted
+  until its landing screen ships; legacy Insights links land on More with an
+  availability explanation. The future target remains Hub · Plan · Insights ·
   Archive · Digestion. F02 capture is a flow-over-context, never a tab;
   F06 is reached from the Hub's numbers; F01/F12/F13 live under Settings.
   Archive and Digestion stay visible tabs — hiding discretion-gated
