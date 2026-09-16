@@ -34,7 +34,6 @@ import app.wlo.core.designsystem.WloBannerTone
 import app.wlo.core.designsystem.WloButton
 import app.wlo.core.designsystem.WloCard
 import app.wlo.core.designsystem.WloCardHeader
-import app.wlo.core.designsystem.WloScreenTitle
 import app.wlo.core.designsystem.WloSpacing
 import app.wlo.core.designsystem.wloExtendedColors
 import app.wlo.core.designsystem.wloType
@@ -240,8 +239,6 @@ public fun ProfileFactsScreen(
                 .padding(bottom = WloSpacing.SCREEN),
         verticalArrangement = Arrangement.spacedBy(WloSpacing.CARD),
     ) {
-        WloScreenTitle(title = "Profile", modifier = Modifier.testTag("profile-title"))
-
         state.notice?.let {
             WloBanner(text = it, tone = WloBannerTone.Warning, modifier = Modifier.testTag("profile-notice"))
         }

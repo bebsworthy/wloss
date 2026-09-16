@@ -1,5 +1,6 @@
 package app.wlo.feature.f13.vault.ui
 
+import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
@@ -20,6 +21,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -34,7 +36,6 @@ import app.wlo.core.designsystem.WloCard
 import app.wlo.core.designsystem.WloCardAccent
 import app.wlo.core.designsystem.WloCardHeader
 import app.wlo.core.designsystem.WloProgress
-import app.wlo.core.designsystem.WloScreenTitle
 import app.wlo.core.designsystem.WloSecondaryButton
 import app.wlo.core.designsystem.WloSpacing
 import app.wlo.core.designsystem.wloExtendedColors
@@ -54,8 +55,16 @@ import app.wlo.feature.f13.vault.state.ImportViewModel
 public fun ImportScreen(
     viewModel: ImportViewModel,
     onDone: () -> Unit,
+    registerUpHandler: ((() -> Unit)?) -> Unit = {},
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
+    val exitBlocked = state.step == ImportUiState.Step.Reading || state.step == ImportUiState.Step.Applying
+    val requestBack: () -> Unit = { if (!exitBlocked) onDone() }
+    BackHandler(onBack = requestBack)
+    DisposableEffect(exitBlocked) {
+        registerUpHandler(requestBack)
+        onDispose { registerUpHandler(null) }
+    }
     val filePicker =
         rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
             uri?.let { viewModel.onSourcePicked(it.toString()) }
@@ -70,7 +79,6 @@ public fun ImportScreen(
                 .testTag("f13-import"),
         verticalArrangement = Arrangement.spacedBy(WloSpacing.CARD),
     ) {
-        WloScreenTitle(title = "Import", modifier = Modifier.testTag("f13-import-title"))
         Text(
             text =
                 "Bring data in from a WLO export bundle or any CSV. Everything lands in a staging " +

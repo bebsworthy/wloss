@@ -146,6 +146,7 @@ public fun WeightScreen(
     val scrollState = rememberScrollState()
     BoxWithConstraints(modifier = modifier.fillMaxWidth()) {
         val useBottomAction = maxHeight < 600.dp || LocalDensity.current.fontScale >= 1.5f
+        val useSupportingPane = maxWidth >= 840.dp
         val openSheet = { viewModel.onEvent(WeighInEvent.OpenSheet()) }
         Scaffold(
             floatingActionButton = {
@@ -172,210 +173,246 @@ public fun WeightScreen(
                 }
             },
         ) { scaffoldPadding ->
-            Column(
-                modifier =
-                    Modifier
-                        .fillMaxWidth()
-                        .verticalScroll(scrollState)
-                        .padding(scaffoldPadding)
-                        .padding(horizontal = WloSpacing.SCREEN)
-                        .padding(bottom = WloSpacing.SCREEN),
-                verticalArrangement = Arrangement.spacedBy(WloSpacing.SCREEN),
-            ) {
-                when (val load = state.loadState) {
-                    WeightLoadState.Loading -> CircularProgressIndicator(modifier = Modifier.testTag("f06-loading"))
-                    is WeightLoadState.Error ->
-                        WloBanner(
-                            text = load.message,
-                            tone = WloBannerTone.Warning,
-                            actionLabel = "Retry",
-                            action = { viewModel.onEvent(WeighInEvent.Refresh) },
-                            modifier = Modifier.testTag("f06-load-error"),
-                        )
-                    WeightLoadState.Content, WeightLoadState.Empty -> Unit
-                }
-
-                // One screen, different series (R2, WLO-0035) — segments, not routes.
-                SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
-                    listOf(BodySectionUi.WEIGHT to "Weight", BodySectionUi.BODY_FAT to "Body fat")
-                        .forEachIndexed { index, (section, label) ->
-                            SegmentedButton(
-                                selected = state.section == section,
-                                onClick = { viewModel.onEvent(WeighInEvent.SectionChange(section)) },
-                                shape = SegmentedButtonDefaults.itemShape(index, BodySectionUi.entries.size),
-                                modifier = Modifier.testTag("f06-section-${section.name.lowercase()}"),
-                            ) {
-                                Text(label)
-                            }
-                        }
-                }
-
-                if (state.section == BodySectionUi.BODY_FAT) {
-                    BodyFatSection(
-                        state = state,
-                        bodyFatViewModel = bodyFatViewModel,
-                        onWindowChange = { viewModel.onEvent(WeighInEvent.BodyFatWindowChange(it)) },
-                    )
-                } else {
-                    // Weight segment: the weigh-in ritual, the trend, the logbook.
-
-                    confirmation?.let { current ->
-                        WeighInConfirmationCard(
-                            confirmation = current,
-                            state = state,
-                            onDone = { viewModel.onEvent(WeighInEvent.DismissConfirmation) },
-                        )
-                    }
-
-                    verdict?.let { current ->
-                        // The outlier guard's one line (F06 §4): describe, offer both taps,
-                        // never judge. The event is already stored — this only confirms.
-                        Column(verticalArrangement = Arrangement.spacedBy(WloSpacing.TIGHT)) {
+            Row(modifier = Modifier.fillMaxWidth().padding(scaffoldPadding)) {
+                Column(
+                    modifier =
+                        Modifier
+                            .weight(if (useSupportingPane) 0.64f else 1f)
+                            .verticalScroll(scrollState)
+                            .padding(horizontal = WloSpacing.SCREEN)
+                            .padding(bottom = WloSpacing.SCREEN),
+                    verticalArrangement = Arrangement.spacedBy(WloSpacing.SCREEN),
+                ) {
+                    when (val load = state.loadState) {
+                        WeightLoadState.Loading -> CircularProgressIndicator(modifier = Modifier.testTag("f06-loading"))
+                        is WeightLoadState.Error ->
                             WloBanner(
-                                text =
-                                    "${current.weightLabel} is ${current.residualLabel} vs your trend — " +
-                                        "keep or correct?",
+                                text = load.message,
                                 tone = WloBannerTone.Warning,
-                                modifier = Modifier.testTag("f06-outlier-banner"),
+                                actionLabel = "Retry",
+                                action = { viewModel.onEvent(WeighInEvent.Refresh) },
+                                modifier = Modifier.testTag("f06-load-error"),
                             )
-                            Row(horizontalArrangement = Arrangement.spacedBy(WloSpacing.CARD)) {
-                                WloButton(
-                                    label = "Keep",
-                                    onClick = { viewModel.onEvent(WeighInEvent.KeepFlagged) },
-                                    modifier = Modifier.weight(1f).testTag("f06-outlier-keep"),
-                                )
-                                WloSecondaryButton(
-                                    label = "Correct",
-                                    onClick = { viewModel.onEvent(WeighInEvent.CorrectFlagged) },
-                                    modifier = Modifier.weight(1f).testTag("f06-outlier-correct"),
-                                )
-                            }
-                        }
+                        WeightLoadState.Content, WeightLoadState.Empty -> Unit
                     }
 
-                    run {
-                        WloCard(modifier = Modifier.testTag("f06-hero-card")) {
-                            val trend = state.trend
-                            val current = trend?.current
-                            val delta7 = trend?.delta7
-                            WloCardHeader(
-                                title = "Weight trend",
-                                provenance =
-                                    if (current != null) {
-                                        {
-                                            // The chip opens the math sheet — real "how we got
-                                            // here" content, never a dead info mark.
-                                            ProvenanceChip(
-                                                value = current,
-                                                format = state.massUnit::format,
-                                                onClick = onOpenMath,
-                                            )
-                                        }
-                                    } else {
-                                        null
-                                    },
+                    // One screen, different series (R2, WLO-0035) — segments, not routes.
+                    SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
+                        listOf(BodySectionUi.WEIGHT to "Weight", BodySectionUi.BODY_FAT to "Body fat")
+                            .forEachIndexed { index, (section, label) ->
+                                SegmentedButton(
+                                    selected = state.section == section,
+                                    onClick = { viewModel.onEvent(WeighInEvent.SectionChange(section)) },
+                                    shape = SegmentedButtonDefaults.itemShape(index, BodySectionUi.entries.size),
+                                    modifier = Modifier.testTag("f06-section-${section.name.lowercase()}"),
+                                ) {
+                                    Text(label)
+                                }
+                            }
+                    }
+
+                    if (state.section == BodySectionUi.BODY_FAT) {
+                        BodyFatSection(
+                            state = state,
+                            bodyFatViewModel = bodyFatViewModel,
+                            onWindowChange = { viewModel.onEvent(WeighInEvent.BodyFatWindowChange(it)) },
+                        )
+                    } else {
+                        // Weight segment: the weigh-in ritual, the trend, the logbook.
+
+                        confirmation?.let { current ->
+                            WeighInConfirmationCard(
+                                confirmation = current,
+                                state = state,
+                                onDone = { viewModel.onEvent(WeighInEvent.DismissConfirmation) },
                             )
-                            if (current != null) {
-                                WloHeroStat(
-                                    value = current,
-                                    format = state.massUnit::formatNumber,
-                                    unit = state.massUnit.symbol,
-                                    delta =
-                                        if (delta7 != null) {
+                        }
+
+                        verdict?.let { current ->
+                            // The outlier guard's one line (F06 §4): describe, offer both taps,
+                            // never judge. The event is already stored — this only confirms.
+                            Column(verticalArrangement = Arrangement.spacedBy(WloSpacing.TIGHT)) {
+                                WloBanner(
+                                    text =
+                                        "${current.weightLabel} is ${current.residualLabel} vs your trend — " +
+                                            "keep or correct?",
+                                    tone = WloBannerTone.Warning,
+                                    modifier = Modifier.testTag("f06-outlier-banner"),
+                                )
+                                Row(horizontalArrangement = Arrangement.spacedBy(WloSpacing.CARD)) {
+                                    WloButton(
+                                        label = "Keep",
+                                        onClick = { viewModel.onEvent(WeighInEvent.KeepFlagged) },
+                                        modifier = Modifier.weight(1f).testTag("f06-outlier-keep"),
+                                    )
+                                    WloSecondaryButton(
+                                        label = "Correct",
+                                        onClick = { viewModel.onEvent(WeighInEvent.CorrectFlagged) },
+                                        modifier = Modifier.weight(1f).testTag("f06-outlier-correct"),
+                                    )
+                                }
+                            }
+                        }
+
+                        run {
+                            WloCard(modifier = Modifier.testTag("f06-hero-card")) {
+                                val trend = state.trend
+                                val current = trend?.current
+                                val delta7 = trend?.delta7
+                                WloCardHeader(
+                                    title = "Weight trend",
+                                    provenance =
+                                        if (current != null) {
                                             {
-                                                WloDeltaChip(
-                                                    value = delta7,
-                                                    format = { magnitude ->
-                                                        val weight = state.massUnit.formatNumber(magnitude)
-                                                        "$weight ${state.massUnit.symbol} / 7 d"
-                                                    },
-                                                    style = wloType.statM,
-                                                    context = "trend delta",
+                                                // The chip opens the math sheet — real "how we got
+                                                // here" content, never a dead info mark.
+                                                ProvenanceChip(
+                                                    value = current,
+                                                    format = state.massUnit::format,
+                                                    onClick = onOpenMath,
                                                 )
                                             }
                                         } else {
                                             null
                                         },
-                                    // The card header owns the single provenance chip (top-right).
-                                    provenance = {},
-                                    modifier = Modifier.testTag("f06-trend-stat"),
+                                )
+                                if (current != null) {
+                                    WloHeroStat(
+                                        value = current,
+                                        format = state.massUnit::formatNumber,
+                                        unit = state.massUnit.symbol,
+                                        delta =
+                                            if (delta7 != null) {
+                                                {
+                                                    WloDeltaChip(
+                                                        value = delta7,
+                                                        format = { magnitude ->
+                                                            val weight = state.massUnit.formatNumber(magnitude)
+                                                            "$weight ${state.massUnit.symbol} / 7 d"
+                                                        },
+                                                        style = wloType.statM,
+                                                        context = "trend delta",
+                                                    )
+                                                }
+                                            } else {
+                                                null
+                                            },
+                                        // The card header owns the single provenance chip (top-right).
+                                        provenance = {},
+                                        modifier = Modifier.testTag("f06-trend-stat"),
+                                    )
+                                }
+                                if (current == null) {
+                                    Text(
+                                        text = trend?.stateCopy ?: "Trend is forming from your canonical daily weights.",
+                                        style = wloType.caption,
+                                        color = wloExtendedColors.textTertiary,
+                                    )
+                                }
+                                state.lastWeighInLabel?.let { last ->
+                                    Text(
+                                        text = "Last raw reading $last",
+                                        style = wloType.receipt,
+                                        color = wloExtendedColors.textTertiary,
+                                    )
+                                }
+                            }
+
+                            WeightTrendCard(
+                                state = state,
+                                viewModel = viewModel,
+                                onOpenMath = onOpenMath,
+                                onOpenLogbook = { onOpenLogbook(null) },
+                            )
+
+                            GoalProgressCard(progress = state.goalProgress, state = state, onEditGoal = onEditGoal)
+
+                            WloCard(modifier = Modifier.testTag("f06-history-card")) {
+                                WloCardHeader(title = "History")
+                                if (state.history.isEmpty()) {
+                                    Text(
+                                        text =
+                                            "No weigh-ins yet — the morning window reads steadiest, " +
+                                                "whenever you get to it.",
+                                        style = wloType.caption,
+                                        color = wloExtendedColors.textTertiary,
+                                    )
+                                }
+                                // One row per bucket, coarser with distance (WLO-0055): the
+                                // tier captions mark the compression, and every row taps
+                                // through to the verbatim feed — delete lives there, on the
+                                // raw rows, never on an aggregate. Hairline dividers inside
+                                // a tier, tier captions at the boundaries — the same list
+                                // rhythm as the logbook (WLO-0056).
+                                var previousTier: HistoryTier? = null
+                                state.history.forEach { bucket ->
+                                    if (bucket.tier != previousTier) {
+                                        previousTier = bucket.tier
+                                        Text(
+                                            text = bucket.tier.label,
+                                            style = wloType.label,
+                                            color = wloExtendedColors.textTertiary,
+                                        )
+                                    } else {
+                                        WloStatDivider()
+                                    }
+                                    HistoryRow(
+                                        bucket = bucket,
+                                        onClick = {
+                                            onOpenLogbook(
+                                                HistoryRange(bucket.startDayInclusive, bucket.endDayExclusive),
+                                            )
+                                        },
+                                    )
+                                }
+                                WloSecondaryButton(
+                                    label = "View logbook",
+                                    onClick = { onOpenLogbook(null) },
+                                    modifier = Modifier.fillMaxWidth().testTag("f06-open-logbook"),
                                 )
                             }
-                            if (current == null) {
+
+                            notice?.let {
                                 Text(
-                                    text = trend?.stateCopy ?: "Trend is forming from your canonical daily weights.",
+                                    text = it,
                                     style = wloType.caption,
-                                    color = wloExtendedColors.textTertiary,
-                                )
-                            }
-                            state.lastWeighInLabel?.let { last ->
-                                Text(
-                                    text = "Last raw reading $last",
-                                    style = wloType.receipt,
-                                    color = wloExtendedColors.textTertiary,
+                                    color = wloExtendedColors.held,
                                 )
                             }
                         }
-
-                        WeightTrendCard(
-                            state = state,
-                            viewModel = viewModel,
-                            onOpenMath = onOpenMath,
-                            onOpenLogbook = { onOpenLogbook(null) },
-                        )
-
-                        GoalProgressCard(progress = state.goalProgress, state = state, onEditGoal = onEditGoal)
-
-                        WloCard(modifier = Modifier.testTag("f06-history-card")) {
-                            WloCardHeader(title = "History")
-                            if (state.history.isEmpty()) {
-                                Text(
-                                    text =
-                                        "No weigh-ins yet — the morning window reads steadiest, " +
-                                            "whenever you get to it.",
-                                    style = wloType.caption,
-                                    color = wloExtendedColors.textTertiary,
-                                )
-                            }
-                            // One row per bucket, coarser with distance (WLO-0055): the
-                            // tier captions mark the compression, and every row taps
-                            // through to the verbatim feed — delete lives there, on the
-                            // raw rows, never on an aggregate. Hairline dividers inside
-                            // a tier, tier captions at the boundaries — the same list
-                            // rhythm as the logbook (WLO-0056).
-                            var previousTier: HistoryTier? = null
-                            state.history.forEach { bucket ->
-                                if (bucket.tier != previousTier) {
-                                    previousTier = bucket.tier
+                    }
+                }
+                if (useSupportingPane) {
+                    Column(
+                        modifier =
+                            Modifier
+                                .weight(0.36f)
+                                .padding(end = WloSpacing.SCREEN, bottom = WloSpacing.SCREEN),
+                        verticalArrangement = Arrangement.spacedBy(WloSpacing.SCREEN),
+                    ) {
+                        WloCard(modifier = Modifier.testTag("f06-supporting-pane")) {
+                            WloCardHeader(title = "At a glance")
+                            WloListRow(
+                                label = "Current trend",
+                                value = {
                                     Text(
-                                        text = bucket.tier.label,
-                                        style = wloType.label,
-                                        color = wloExtendedColors.textTertiary,
+                                        state.trend
+                                            ?.current
+                                            ?.value
+                                            ?.let(state.massUnit::format) ?: "Forming",
+                                        style = wloType.statS,
                                     )
-                                } else {
-                                    WloStatDivider()
-                                }
-                                HistoryRow(
-                                    bucket = bucket,
-                                    onClick = {
-                                        onOpenLogbook(
-                                            HistoryRange(bucket.startDayInclusive, bucket.endDayExclusive),
-                                        )
-                                    },
-                                )
-                            }
+                                },
+                            )
+                            WloSecondaryButton(
+                                label = "Edit goal",
+                                onClick = onEditGoal,
+                                modifier = Modifier.fillMaxWidth(),
+                            )
                             WloSecondaryButton(
                                 label = "View logbook",
                                 onClick = { onOpenLogbook(null) },
-                                modifier = Modifier.fillMaxWidth().testTag("f06-open-logbook"),
-                            )
-                        }
-
-                        notice?.let {
-                            Text(
-                                text = it,
-                                style = wloType.caption,
-                                color = wloExtendedColors.held,
+                                modifier = Modifier.fillMaxWidth(),
                             )
                         }
                     }

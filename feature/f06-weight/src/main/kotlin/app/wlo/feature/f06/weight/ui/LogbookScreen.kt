@@ -6,6 +6,7 @@ import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
@@ -147,69 +148,112 @@ public fun LogbookScreen(viewModel: LogbookViewModel) {
         }
     }
 
-    Scaffold(
-        snackbarHost = { SnackbarHost(snackbarHostState) },
-    ) {
-        Column(
-            modifier =
-                Modifier
-                    .fillMaxSize()
-                    .padding(it)
-                    .padding(horizontal = WloSpacing.SCREEN)
-                    .padding(bottom = WloSpacing.SCREEN),
-            verticalArrangement = Arrangement.spacedBy(WloSpacing.SCREEN),
-        ) {
-            state.range?.let {
-                Text("Filtered to ${state.rangeLabel}", style = MaterialTheme.typography.titleMedium)
-                TextButton(onClick = { viewModel.onEvent(LogbookEvent.ClearRange) }) { Text("Clear filter") }
-            }
-            when (state.contentState) {
-                LogbookContentState.Loading ->
-                    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { CircularProgressIndicator() }
-                LogbookContentState.Error ->
-                    LogbookMessage("Couldn't load the logbook.", "Retry") {
-                        viewModel.onEvent(LogbookEvent.RetryLoad)
+    BoxWithConstraints {
+        val expanded = maxWidth >= 840.dp
+        Scaffold(
+            snackbarHost = { SnackbarHost(snackbarHostState) },
+        ) { padding ->
+            Row(modifier = Modifier.fillMaxSize().padding(padding)) {
+                Column(
+                    modifier =
+                        Modifier
+                            .weight(if (expanded) 0.62f else 1f)
+                            .padding(horizontal = WloSpacing.SCREEN)
+                            .padding(bottom = WloSpacing.SCREEN),
+                    verticalArrangement = Arrangement.spacedBy(WloSpacing.SCREEN),
+                ) {
+                    state.range?.let {
+                        Text("Filtered to ${state.rangeLabel}", style = MaterialTheme.typography.titleMedium)
+                        TextButton(onClick = { viewModel.onEvent(LogbookEvent.ClearRange) }) { Text("Clear filter") }
                     }
-                LogbookContentState.Empty -> LogbookMessage("No weigh-ins yet.")
-                LogbookContentState.FilteredEmpty ->
-                    LogbookMessage("No weigh-ins in this date range.", "Clear filter") {
-                        viewModel.onEvent(LogbookEvent.ClearRange)
+                    when (state.contentState) {
+                        LogbookContentState.Loading ->
+                            Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { CircularProgressIndicator() }
+                        LogbookContentState.Error ->
+                            LogbookMessage("Couldn't load the logbook.", "Retry") {
+                                viewModel.onEvent(LogbookEvent.RetryLoad)
+                            }
+                        LogbookContentState.Empty -> LogbookMessage("No weigh-ins yet.")
+                        LogbookContentState.FilteredEmpty ->
+                            LogbookMessage("No weigh-ins in this date range.", "Clear filter") {
+                                viewModel.onEvent(LogbookEvent.ClearRange)
+                            }
+                        LogbookContentState.Ready ->
+                            LogbookFeed(
+                                state = state,
+                                deletionEnabled = deleted == null,
+                                viewModel = viewModel,
+                            )
                     }
-                LogbookContentState.Ready ->
-                    LogbookFeed(
-                        state = state,
-                        deletionEnabled = deleted == null,
-                        viewModel = viewModel,
-                    )
-            }
 
-            notice?.let { message ->
-                Text(
-                    text = message,
-                    style = wloType.caption,
-                    color = wloExtendedColors.held,
-                    modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite }.testTag("f06-logbook-notice"),
-                )
+                    notice?.let { message ->
+                        Text(
+                            text = message,
+                            style = wloType.caption,
+                            color = wloExtendedColors.held,
+                            modifier =
+                                Modifier
+                                    .semantics { liveRegion = LiveRegionMode.Polite }
+                                    .testTag("f06-logbook-notice"),
+                        )
+                    }
+                }
+                if (expanded) {
+                    Column(
+                        modifier =
+                            Modifier
+                                .weight(0.38f)
+                                .padding(end = WloSpacing.SCREEN, bottom = WloSpacing.SCREEN),
+                        verticalArrangement = Arrangement.spacedBy(WloSpacing.CARD),
+                    ) {
+                        Text("Entry details", style = MaterialTheme.typography.titleMedium)
+                        if (edit == null) {
+                            Text(
+                                "Choose Edit on a weigh-in to keep the list and editor visible together.",
+                                style = wloType.body,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        } else {
+                            val current = checkNotNull(edit)
+                            EditSheetContent(
+                                sheet = current,
+                                unitSymbol = state.massUnit.symbol,
+                                onChange = { viewModel.onEvent(LogbookEvent.EditWeightChange(it)) },
+                                onDayChange = { viewModel.onEvent(LogbookEvent.EditDayChange(it)) },
+                                onTimeChange = { viewModel.onEvent(LogbookEvent.EditTimeChange(it)) },
+                                onSave = { viewModel.onEvent(LogbookEvent.SaveEdit) },
+                            )
+                            WloSecondaryButton(
+                                label = "Close details",
+                                onClick = { viewModel.onEvent(LogbookEvent.CancelEdit) },
+                                enabled = !current.isSaving,
+                                modifier = Modifier.fillMaxWidth(),
+                            )
+                        }
+                    }
+                }
             }
         }
-    }
 
-    edit?.let { current ->
-        WloSheet(
-            onDismissRequest = {
-                if (!current.isSaving) viewModel.onEvent(LogbookEvent.CancelEdit)
-            },
-            modifier = Modifier.testTag("f06-edit-sheet"),
-            title = "Edit weigh-in",
-        ) {
-            EditSheetContent(
-                sheet = current,
-                unitSymbol = state.massUnit.symbol,
-                onChange = { viewModel.onEvent(LogbookEvent.EditWeightChange(it)) },
-                onDayChange = { viewModel.onEvent(LogbookEvent.EditDayChange(it)) },
-                onTimeChange = { viewModel.onEvent(LogbookEvent.EditTimeChange(it)) },
-                onSave = { viewModel.onEvent(LogbookEvent.SaveEdit) },
-            )
+        if (!expanded) {
+            edit?.let { current ->
+                WloSheet(
+                    onDismissRequest = {
+                        if (!current.isSaving) viewModel.onEvent(LogbookEvent.CancelEdit)
+                    },
+                    modifier = Modifier.testTag("f06-edit-sheet"),
+                    title = "Edit weigh-in",
+                ) {
+                    EditSheetContent(
+                        sheet = current,
+                        unitSymbol = state.massUnit.symbol,
+                        onChange = { viewModel.onEvent(LogbookEvent.EditWeightChange(it)) },
+                        onDayChange = { viewModel.onEvent(LogbookEvent.EditDayChange(it)) },
+                        onTimeChange = { viewModel.onEvent(LogbookEvent.EditTimeChange(it)) },
+                        onSave = { viewModel.onEvent(LogbookEvent.SaveEdit) },
+                    )
+                }
+            }
         }
     }
 }

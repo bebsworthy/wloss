@@ -24,7 +24,6 @@ import app.wlo.core.designsystem.WloCard
 import app.wlo.core.designsystem.WloCardAccent
 import app.wlo.core.designsystem.WloCardHeader
 import app.wlo.core.designsystem.WloProgress
-import app.wlo.core.designsystem.WloScreenTitle
 import app.wlo.core.designsystem.WloSecondaryButton
 import app.wlo.core.designsystem.WloSpacing
 import app.wlo.core.designsystem.wloExtendedColors
@@ -59,7 +58,6 @@ public fun ExportScreen(
                 .testTag("f13-export"),
         verticalArrangement = Arrangement.spacedBy(WloSpacing.CARD),
     ) {
-        WloScreenTitle(title = "Export", modifier = Modifier.testTag("f13-export-title"))
         Text(
             text =
                 "Formats that outlive the app: both are documented in the repo so third-party tooling " +

@@ -32,7 +32,6 @@ import app.wlo.core.designsystem.WloCardAccent
 import app.wlo.core.designsystem.WloCardHeader
 import app.wlo.core.designsystem.WloListRow
 import app.wlo.core.designsystem.WloProgress
-import app.wlo.core.designsystem.WloScreenTitle
 import app.wlo.core.designsystem.WloSecondaryButton
 import app.wlo.core.designsystem.WloSpacing
 import app.wlo.core.designsystem.wloExtendedColors
@@ -89,7 +88,6 @@ public fun RestoreWizardScreen(
                 .testTag("f13-restore"),
         verticalArrangement = Arrangement.spacedBy(WloSpacing.CARD),
     ) {
-        WloScreenTitle(title = "Restore", modifier = Modifier.testTag("f13-restore-title"))
         Text(
             text = "Step ${stepNumber(state.step)} of 4 — ${stepName(state.step)}",
             style = wloType.label,

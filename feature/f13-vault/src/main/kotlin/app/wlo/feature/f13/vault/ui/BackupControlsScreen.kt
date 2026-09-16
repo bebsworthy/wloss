@@ -30,7 +30,6 @@ import app.wlo.core.designsystem.WloCard
 import app.wlo.core.designsystem.WloCardHeader
 import app.wlo.core.designsystem.WloListRow
 import app.wlo.core.designsystem.WloProgress
-import app.wlo.core.designsystem.WloScreenTitle
 import app.wlo.core.designsystem.WloSpacing
 import app.wlo.core.designsystem.WloSwitchRow
 import app.wlo.core.designsystem.wloExtendedColors
@@ -72,7 +71,6 @@ public fun BackupControlsScreen(viewModel: BackupControlsViewModel) {
                 .testTag("f13-backup"),
         verticalArrangement = Arrangement.spacedBy(WloSpacing.CARD),
     ) {
-        WloScreenTitle(title = "Backup", modifier = Modifier.testTag("f13-backup-title"))
         Text(
             text =
                 "Backups are encrypted with your passphrase and written to a folder you own — point it " +

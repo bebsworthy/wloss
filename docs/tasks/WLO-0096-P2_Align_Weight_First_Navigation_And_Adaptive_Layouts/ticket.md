@@ -1,13 +1,13 @@
 ---
 id: WLO-0096
 title: 'P2: Align weight-first navigation and adaptive layouts'
-status: done
+status: doing
 theme: weight-core
 release:
 created: 2026-09-16T07:22:28Z
-modified: 2026-09-16T09:34:55Z
-closed: 2026-09-16T09:34:55Z
-revision: a97462cc53f20cfb
+modified: 2026-09-16T13:08:52Z
+closed:
+revision: 2775806a0fd19a42
 blocks: [WLO-0097, WLO-0099]
 related: [WLO-0087]
 ---

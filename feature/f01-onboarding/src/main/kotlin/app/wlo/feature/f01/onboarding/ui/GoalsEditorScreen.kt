@@ -20,6 +20,7 @@ import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -36,7 +37,6 @@ import app.wlo.core.designsystem.WloCardHeader
 import app.wlo.core.designsystem.WloForecastBands
 import app.wlo.core.designsystem.WloForecastCard
 import app.wlo.core.designsystem.WloListRow
-import app.wlo.core.designsystem.WloScreenTitle
 import app.wlo.core.designsystem.WloSecondaryButton
 import app.wlo.core.designsystem.WloSpacing
 import app.wlo.core.designsystem.wloExtendedColors
@@ -62,11 +62,23 @@ import kotlinx.datetime.LocalDate
 public fun GoalsEditorScreen(
     viewModel: GoalsEditorViewModel,
     onBack: () -> Unit = {},
+    registerUpHandler: ((() -> Unit)?) -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     var confirmDiscard by rememberSaveable { mutableStateOf(false) }
-    BackHandler(enabled = state.dirty) { confirmDiscard = true }
+    val requestBack: () -> Unit = {
+        when {
+            state.formState == GoalFormState.SAVING -> Unit
+            state.dirty -> confirmDiscard = true
+            else -> onBack()
+        }
+    }
+    BackHandler(onBack = requestBack)
+    DisposableEffect(state.dirty, state.formState) {
+        registerUpHandler(requestBack)
+        onDispose { registerUpHandler(null) }
+    }
 
     if (confirmDiscard) {
         AlertDialog(
@@ -97,11 +109,6 @@ public fun GoalsEditorScreen(
                 .padding(bottom = WloSpacing.SCREEN),
         verticalArrangement = Arrangement.spacedBy(WloSpacing.SCREEN),
     ) {
-        WloScreenTitle(
-            title = "Goals",
-            modifier = Modifier.testTag("f01-goals-title"),
-        )
-
         when {
             state.loading -> Unit
 

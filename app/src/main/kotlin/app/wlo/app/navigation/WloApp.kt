@@ -19,6 +19,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
@@ -121,6 +122,7 @@ public fun WloApp(
     val backStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = backStackEntry?.destination?.route
     val metadata = routeMetadata(currentRoute)
+    var guardedUpHandler by remember(currentRoute) { mutableStateOf<(() -> Unit)?>(null) }
     val isTopLevel = metadata?.showsUp == false
     val selectedTopLevel = metadata?.topLevelOwner.orEmpty()
     val navigationItems =
@@ -187,7 +189,10 @@ public fun WloApp(
                             if (appBarMetadata.showsUp) {
                                 IconButton(
                                     onClick = {
-                                        if (!navController.navigateUp()) {
+                                        val guarded = guardedUpHandler
+                                        if (guarded != null) {
+                                            guarded()
+                                        } else if (!navController.navigateUp()) {
                                             navController.navigate(appBarMetadata.topLevelOwner) {
                                                 popUpTo(navController.graph.findStartDestination().id) {
                                                     inclusive = true
@@ -243,6 +248,7 @@ public fun WloApp(
                                 shellState = shellState,
                                 onSurfaceChanged = onSurfaceChanged,
                                 navController = navController,
+                                registerUpHandler = { guardedUpHandler = it },
                             )
                         }
                     }
@@ -273,6 +279,7 @@ public fun WloApp(
                             shellState = shellState,
                             onSurfaceChanged = onSurfaceChanged,
                             navController = navController,
+                            registerUpHandler = { guardedUpHandler = it },
                         )
                     }
                     composable(route = F13Routes.BACKUP) {
@@ -282,6 +289,7 @@ public fun WloApp(
                             shellState = shellState,
                             onSurfaceChanged = onSurfaceChanged,
                             navController = navController,
+                            registerUpHandler = { guardedUpHandler = it },
                         )
                     }
                     composable(route = F13Routes.RESTORE) {
@@ -291,6 +299,7 @@ public fun WloApp(
                             shellState = shellState,
                             onSurfaceChanged = onSurfaceChanged,
                             navController = navController,
+                            registerUpHandler = { guardedUpHandler = it },
                         )
                     }
                     composable(route = F13Routes.EXPORT) {
@@ -300,6 +309,7 @@ public fun WloApp(
                             shellState = shellState,
                             onSurfaceChanged = onSurfaceChanged,
                             navController = navController,
+                            registerUpHandler = { guardedUpHandler = it },
                         )
                     }
                     composable(route = F13Routes.IMPORT) {
@@ -309,6 +319,7 @@ public fun WloApp(
                             shellState = shellState,
                             onSurfaceChanged = onSurfaceChanged,
                             navController = navController,
+                            registerUpHandler = { guardedUpHandler = it },
                         )
                     }
                     composable(route = F01Routes.PLAN_STUDIO) {
@@ -318,6 +329,7 @@ public fun WloApp(
                             shellState = shellState,
                             onSurfaceChanged = onSurfaceChanged,
                             navController = navController,
+                            registerUpHandler = { guardedUpHandler = it },
                         )
                     }
                     composable(route = F01Routes.STUDIO) {
@@ -327,6 +339,7 @@ public fun WloApp(
                             shellState = shellState,
                             onSurfaceChanged = onSurfaceChanged,
                             navController = navController,
+                            registerUpHandler = { guardedUpHandler = it },
                         )
                     }
                     composable(
@@ -404,6 +417,7 @@ private fun RouteSurface(
     shellState: ShellState,
     onSurfaceChanged: (String) -> Unit,
     navController: NavHostController,
+    registerUpHandler: ((() -> Unit)?) -> Unit,
 ) {
     if (route in WloDeepLinks.TAB_ROUTES) {
         TopLevelRouteSurface(
@@ -511,6 +525,7 @@ private fun RouteSurface(
             GoalsEditorScreen(
                 viewModel = koinViewModel(),
                 onBack = { navController.popBackStack() },
+                registerUpHandler = registerUpHandler,
             )
 
         F01Routes.PLAN_STUDIO -> OnboardingScreen(viewModel = koinViewModel())
@@ -557,6 +572,7 @@ private fun RouteSurface(
             ImportScreen(
                 viewModel = koinViewModel(),
                 onDone = { navController.popBackStack() },
+                registerUpHandler = registerUpHandler,
             )
 
         "f02/log" -> FoodLogScreen(viewModel = koinViewModel(parameters = { parametersOf(false) }))

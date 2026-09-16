@@ -26,7 +26,6 @@ import app.wlo.core.common.formatBytes
 import app.wlo.core.designsystem.WloCard
 import app.wlo.core.designsystem.WloCardHeader
 import app.wlo.core.designsystem.WloListRow
-import app.wlo.core.designsystem.WloScreenTitle
 import app.wlo.core.designsystem.WloSecondaryButton
 import app.wlo.core.designsystem.WloSpacing
 import app.wlo.core.designsystem.WloSwitchRow
@@ -71,7 +70,6 @@ public fun VaultDashboardScreen(
                 .testTag("f13-vault"),
         verticalArrangement = Arrangement.spacedBy(WloSpacing.CARD),
     ) {
-        WloScreenTitle(title = "Data Vault", modifier = Modifier.testTag("f13-title"))
         Text(
             text =
                 "Your data lives on this device — encrypted at rest, backed up where you say, " +
