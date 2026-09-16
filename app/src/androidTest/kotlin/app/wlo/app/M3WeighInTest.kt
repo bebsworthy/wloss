@@ -307,7 +307,14 @@ public class M3WeighInTest {
 
         // The method switch selects zero-phase while retaining the visible
         // preview contract. Exact series math is covered by the engine tests.
-        rule.onNodeWithTag("f06-method-ewma-zero-phase").performClick().assertIsSelected()
+        rule.onNodeWithTag("f06-method-ewma-zero-phase").performClick()
+        rule.waitUntil(TIMEOUT_MS) {
+            rule
+                .onAllNodesWithTag("f06-method-ewma-zero-phase", useUnmergedTree = true)
+                .fetchSemanticsNodes()
+                .any { it.config.getOrElse(SemanticsProperties.Selected) { false } }
+        }
+        rule.onNodeWithTag("f06-method-ewma-zero-phase").assertIsSelected()
         pollText("Preview — the saved trend keeps the default smoother", substring = true)
     }
 
