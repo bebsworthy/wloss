@@ -36,7 +36,8 @@ public class GoalsEditorParityTest {
         rule.onNodeWithTag("settings-open-goals").performScrollTo().performClick()
         TestNav.awaitRoutePumpingClock(rule, "f01/studio")
 
-        rule.onNodeWithTag("f01-goals-weight").assertIsDisplayed()
+        TestNav.awaitTag(rule, "f01-goals-card")
+        rule.onNodeWithTag("f01-goals-weight").performScrollTo().assertIsDisplayed()
         assertTrue(rule.onAllNodesWithText("lb", substring = true).fetchSemanticsNodes().isNotEmpty())
         rule.onNodeWithText("A few answers needed", substring = true).performScrollTo().assertIsDisplayed()
         rule.onAllNodesWithTag("f01-goals-forecast-card", useUnmergedTree = true).assertCountEquals(0)
@@ -48,6 +49,7 @@ public class GoalsEditorParityTest {
         rule.onNodeWithTag("settings-open-goals").performScrollTo().performClick()
         TestNav.awaitRoutePumpingClock(rule, "f01/studio")
 
+        TestNav.awaitTag(rule, "f01-goals-card")
         rule.onNodeWithTag("f01-goals-mode-gain").performScrollTo().performClick()
         rule.onNodeWithTag("f01-goals-weight").performScrollTo().performTextReplacement("90")
         rule.onNodeWithTag("f01-goals-pace").performTextReplacement("0.25")
