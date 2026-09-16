@@ -3,7 +3,6 @@ package app.wlo.core.engines
 import app.wlo.core.model.ActivityLevel
 import app.wlo.core.model.SafetyAnswer
 import app.wlo.core.model.WeightGoalEligibility
-import app.wlo.core.model.WeightGoalHoldReason
 import app.wlo.core.model.WeightGoalMode
 import app.wlo.core.model.WeightGoalSafety
 import app.wlo.core.model.WeightGoalSafetyInput
@@ -17,10 +16,10 @@ import kotlin.test.assertTrue
 
 class ForecastEligibilityTest {
     @Test
-    fun `eligible gain goal is held because numerical model is loss only`() {
+    fun `eligible gain goal produces a direction-correct forecast`() {
         val result =
             ForecastEngine.coldStart(
-                forecastInput(),
+                forecastInput().copy(goalWeightKg = 85.0, intakeKcal = 2_500.0),
                 WeightGoalEligibility.Eligible(
                     mode = WeightGoalMode.GAIN,
                     requestedPacePctPerWeek = 0.25,
@@ -28,9 +27,13 @@ class ForecastEligibilityTest {
                 ),
             )
 
-        val withheld = assertIs<GoalForecastResult.Withheld>(result)
-        val held = assertIs<WeightGoalEligibility.Held>(withheld.eligibility)
-        assertTrue(WeightGoalHoldReason.GAIN_FORECAST_UNAVAILABLE in held.reasons)
+        val developing = assertIs<GoalForecastResult.Developing>(result)
+        assertTrue(
+            developing.bands.expected.trajectoryKg
+                .zipWithNext()
+                .all { (a, b) -> b >= a },
+        )
+        assertTrue(developing.bands.expected.finishEpochDay != null)
     }
 
     @Test

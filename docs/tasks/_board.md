@@ -21,7 +21,6 @@
 - WLO-0029
 
 ## todo
-- WLO-0083
 
 ## doing
 - WLO-0079

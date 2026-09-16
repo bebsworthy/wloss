@@ -78,5 +78,21 @@
     "optimisticFinishEpochDay": 20819,
     "expectedFinishEpochDay": 20876,
     "pessimisticFinishEpochDay": 21045
+  },
+  {
+    "name": "male-light-gain",
+    "sex": "male",
+    "ageYears": 30,
+    "heightCm": 180.0,
+    "startTrendKg": 80.0,
+    "goalWeightKg": 85.0,
+    "activityLevel": "light",
+    "intakeKcal": 2747.5,
+    "startEpochDay": 20708,
+    "expectedTdeeEstimateKcal": 2447.5,
+    "expectedFirstRateKgPerWeek": -0.2727272727272727,
+    "optimisticFinishEpochDay": 20812,
+    "expectedFinishEpochDay": 20866,
+    "pessimisticFinishEpochDay": 21026
   }
 ]

@@ -112,6 +112,51 @@ class ForecastEnginePropertyTest {
         }
 
     @Test
+    fun gainBandsAreOrderedMonotonicAndDecelerating() =
+        runTest {
+            checkAll(
+                Arb.int(20..70),
+                finite(150.0, 200.0),
+                finite(60.0, 120.0),
+                finite(1.0, 10.0),
+            ) { age, heightCm, startKg, gainKg ->
+                val tdee =
+                    ForecastEngine.bmrMifflinStJeor(Sex.MALE, startKg, heightCm, age) *
+                        1.375
+                val bands =
+                    ForecastEngine.coldStart(
+                        coldStartInput(
+                            sex = Sex.MALE,
+                            age = age,
+                            heightCm = heightCm,
+                            startKg = startKg,
+                            goalKg = startKg + gainKg,
+                            level = ActivityLevel.LIGHT,
+                            intake = tdee + 400.0,
+                        ),
+                    )
+                val finishes =
+                    listOf(
+                        assertNotNull(bands.optimistic.finishEpochDay),
+                        assertNotNull(bands.expected.finishEpochDay),
+                        assertNotNull(bands.pessimistic.finishEpochDay),
+                    )
+                assertTrue(finishes.zipWithNext().all { (a, b) -> a <= b })
+                assertTrue(
+                    bands.expected.trajectoryKg
+                        .zipWithNext()
+                        .all { (a, b) -> b >= a },
+                )
+                assertTrue(bands.expected.weeklyRatesKg.all { it <= 0.0 })
+                assertTrue(
+                    bands.expected.weeklyRatesKg
+                        .zipWithNext()
+                        .all { (a, b) -> b >= a - 1e-12 },
+                )
+            }
+        }
+
+    @Test
     fun trajectoryStaysBetweenGoalAndStart() =
         runTest {
             checkAll(

@@ -50,8 +50,8 @@
   1. *Welcome & privacy statement* — one card, one sentence of value, one sentence of architecture ("no account, no server, no ads").
   2. *Goal* — current weight (prefilled or optional), target weight, pace slider. Date-anchored goals ("by June") are converted to an implied pace and shown as such.
   3. *Forecast preview* — 3 bands only after the shared WLO-0080 eligibility
-     result allows math; otherwise an explicit held state (gain dates remain
-     held while the shipped numerical integrator is loss-only).
+     result allows math; otherwise an explicit held state. Eligible gain goals
+     use F07's separately validated direction-specific model.
   4. *Template gallery* — diet templates as cards; each card names its rules in plain language.
   5. *Preference quiz* — swipe deck (see below).
   6. *Schedule* — weekday/weekend calorie bars (skippable; defaults to flat).

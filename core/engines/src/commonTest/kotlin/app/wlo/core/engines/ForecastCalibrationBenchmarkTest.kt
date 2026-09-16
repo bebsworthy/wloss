@@ -125,7 +125,7 @@ class ForecastCalibrationBenchmarkTest {
     }
 
     @Test
-    fun gainForecastRemainsExplicitlyWithheldForWlo0083() {
+    fun gainBenchmarkIsDirectionCorrectAndFiniteForWlo0083() {
         val scenario = corpus.scenarios.first()
         val gainEligibility =
             WeightGoalSafety.evaluate(
@@ -137,12 +137,30 @@ class ForecastCalibrationBenchmarkTest {
             )
         val result =
             ForecastEngine.evaluate(
-                coldStartInput = coldInput(scenario, 23_000, 80.0).copy(goalWeightKg = 85.0),
+                coldStartInput =
+                    coldInput(scenario, 23_000, 80.0).copy(
+                        goalWeightKg = 85.0,
+                        intakeKcal = 3_000.0,
+                    ),
                 eligibility = gainEligibility,
-                engineState = EngineState.Updating(usableDays = 14),
+                engineState = EngineState.Developing(usableDays = 0),
             )
 
-        assertIs<GoalForecastResult.Withheld>(result)
+        val developing = assertIs<GoalForecastResult.Developing>(result)
+        val bands = developing.bands
+        assertTrue(bands.expected.finishEpochDay != null)
+        assertTrue(
+            bands.expected.trajectoryKg
+                .zipWithNext()
+                .all { (a, b) -> b >= a },
+        )
+        assertTrue(
+            bands.expected.weeklyRatesKg
+                .zipWithNext()
+                .all { (a, b) -> b >= a },
+        )
+        assertTrue(bands.expected.weeklyRatesKg.all { it <= 0.0 })
+        assertTrue(bands.expected.weeklyRatesKg.size <= 260)
     }
 
     private fun metrics(): Metrics {

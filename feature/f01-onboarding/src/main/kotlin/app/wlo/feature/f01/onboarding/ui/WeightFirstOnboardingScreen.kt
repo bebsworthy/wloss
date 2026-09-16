@@ -166,7 +166,7 @@ private fun GoalStep(
             Text("Goal dates stay held until the required profile and safety information is complete.")
         }
         if (mode == WeightGoalMode.GAIN) {
-            Text("Gain goals are supported; a gain-date forecast is not available yet.")
+            Text("Gain dates use a direction-specific estimate and sharpen as your measured pattern forms.")
         }
     }
 }

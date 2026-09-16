@@ -4,8 +4,6 @@ import app.wlo.core.model.ConstantsRegistry
 import app.wlo.core.model.Provenance
 import app.wlo.core.model.Sex
 import app.wlo.core.model.WeightGoalEligibility
-import app.wlo.core.model.WeightGoalHoldReason
-import app.wlo.core.model.WeightGoalMode
 import kotlinx.serialization.Serializable
 import kotlin.math.max
 
@@ -15,10 +13,11 @@ import kotlin.math.max
  * caveat near goal). Pure and deterministic (D7): all time enters as epoch
  * days; the finish dates are epoch days, rendering is the caller's job.
  *
- * Deceleration core (F07 §3): future TDEE is re-estimated at future bodyweight —
- * BMR falls with weight, the Adjustment term is held, activity follows the
- * steps baseline — so the deficit shrinks along the path and the projected
- * weekly rate decays instead of staying constant.
+ * Deceleration core (F07 §3): loss re-estimates BMR at future bodyweight;
+ * gain uses Hall and Chow's adult linearized expenditure feedback (22
+ * kcal/day/kg). These are explicit direction-specific paths: gain is not loss
+ * with signs reversed. Both retain R-A6's published partition-free 7,700
+ * kcal/kg product approximation and expose that limitation in provenance.
  */
 public object ForecastEngine {
     public const val MODEL_VERSION: String = ConstantsRegistry.FORECAST_MODEL_VERSION
@@ -55,7 +54,7 @@ public object ForecastEngine {
         val bmrAtStart = bmrMifflinStJeor(input.sex, input.startTrendKg, input.heightCm, input.ageYears)
         val tdeeEstimate =
             bmrAtStart * ConstantsRegistry.activityMultiplier(input.activityLevel)
-        val expectedPace = paceOf(tdeeEstimate - input.intakeKcal)
+        val expectedPace = initialPace(input, tdeeEstimate)
         val bands =
             integrateBands(
                 input = input,
@@ -77,7 +76,7 @@ public object ForecastEngine {
             provenance =
                 Provenance.Estimated(
                     at = input.startInstant,
-                    method = "cold-start/${ConstantsRegistry.BMR_FORMULA_VERSION}",
+                    method = "cold-start/$MODEL_VERSION/${ConstantsRegistry.BMR_FORMULA_VERSION}",
                     confidence = null,
                 ),
         )
@@ -175,16 +174,7 @@ public object ForecastEngine {
     }
 
     /** The shared result consumers use before exposing any forecast-derived date. */
-    public fun eligibilityForForecast(eligibility: WeightGoalEligibility): WeightGoalEligibility =
-        if (eligibility is WeightGoalEligibility.Eligible && eligibility.mode == WeightGoalMode.GAIN) {
-            WeightGoalEligibility.Held(
-                mode = WeightGoalMode.GAIN,
-                reasons = setOf(WeightGoalHoldReason.GAIN_FORECAST_UNAVAILABLE),
-                maximumPacePctPerWeek = eligibility.maximumPacePctPerWeek,
-            )
-        } else {
-            eligibility
-        }
+    public fun eligibilityForForecast(eligibility: WeightGoalEligibility): WeightGoalEligibility = eligibility
 
     /**
      * Measured-mode forecast: expected band integrates the decaying rate from
@@ -196,7 +186,7 @@ public object ForecastEngine {
      */
     public fun measured(input: MeasuredInput): ForecastBands? {
         val tdee = input.measuredTdeeKcal ?: return null
-        val expectedPace = paceOf(tdee - input.intakeKcal)
+        val expectedPace = initialPace(input.common(), tdee)
         val fastScale =
             input.fastPaceKgPerWeek
                 ?.takeIf { expectedPace > 0 && it > 0 }
@@ -209,7 +199,6 @@ public object ForecastEngine {
                 ?: ConstantsRegistry.COLD_START_BAND_SLOW_FACTOR
 
         val stepsPerDay = input.typicalStepsPerDay
-        val activityKcalPerDay = stepsPerDay?.let { activityKcal(it, input.startTrendKg) }
         val bands =
             integrateBands(
                 input = input.common(),
@@ -238,6 +227,10 @@ public object ForecastEngine {
                             "startTrendKg=${input.startTrendKg}",
                             "fastPaceKgPerWeek=${input.fastPaceKgPerWeek}",
                             "slowPaceKgPerWeek=${input.slowPaceKgPerWeek}",
+                            "goalDirection=${goalDirection(input.common()).name.lowercase()}",
+                            "energyDensityKcalPerKg=${ConstantsRegistry.KCAL_PER_KG_FAT}",
+                            "gainExpenditureFeedbackKcalPerDayPerKg=" +
+                                ConstantsRegistry.GAIN_EXPENDITURE_FEEDBACK_KCAL_PER_DAY_PER_KG,
                         ),
                 ),
         )
@@ -270,19 +263,20 @@ public object ForecastEngine {
                 adjustment,
                 activityKcal,
                 scale = 1.0,
+                tdeeAtStartKcal = tdeeAtStartKcal,
             )
         val fast =
             if (expectedPaceKgPerWeek <= 0.0) {
                 // No deficit on trend: the optimistic band is a straight hold.
-                integrate(input, adjustment, activityKcal, scale = 0.0)
+                integrate(input, adjustment, activityKcal, tdeeAtStartKcal, scale = 0.0)
             } else {
-                integrate(input, adjustment, activityKcal, scale = max(fastScale, 0.0))
+                integrate(input, adjustment, activityKcal, tdeeAtStartKcal, scale = max(fastScale, 0.0))
             }
         val slow =
             if (expectedPaceKgPerWeek <= 0.0) {
-                integrate(input, adjustment, activityKcal, scale = 0.0)
+                integrate(input, adjustment, activityKcal, tdeeAtStartKcal, scale = 0.0)
             } else {
-                integrate(input, adjustment, activityKcal, scale = max(slowScale, 0.0))
+                integrate(input, adjustment, activityKcal, tdeeAtStartKcal, scale = max(slowScale, 0.0))
             }
         return Bands(fast = fast, expected = expected, slow = slow)
     }
@@ -292,6 +286,19 @@ public object ForecastEngine {
      * steps until goal weight, or [ConstantsRegistry.FORECAST_HORIZON_WEEKS].
      */
     private fun integrate(
+        input: ColdStartInput,
+        adjustment: Double,
+        activityKcal: Double,
+        tdeeAtStartKcal: Double,
+        scale: Double,
+    ): ForecastBand =
+        when (goalDirection(input)) {
+            GoalDirection.LOSS -> integrateLoss(input, adjustment, activityKcal, scale)
+            GoalDirection.GAIN -> integrateGain(input, tdeeAtStartKcal, scale)
+            GoalDirection.ALREADY_MET -> achievedBand(input)
+        }
+
+    private fun integrateLoss(
         input: ColdStartInput,
         adjustment: Double,
         activityKcal: Double,
@@ -305,11 +312,6 @@ public object ForecastEngine {
         var epochDay = input.startEpochDay
         var steps = 0
         val maxSteps = ConstantsRegistry.FORECAST_HORIZON_WEEKS * 7 / stepDays
-
-        if (input.goalWeightKg >= input.startTrendKg) {
-            // v1 models loss paths; an at/below-start goal is already met.
-            return ForecastBand(finishEpochDay = input.startEpochDay, weeklyRatesKg = emptyList(), trajectoryKg = emptyList())
-        }
 
         while (steps < maxSteps) {
             val tdeeNow = bmrAt(input, weight) + activityKcal + adjustment
@@ -335,12 +337,88 @@ public object ForecastEngine {
         return ForecastBand(finishEpochDay = null, weeklyRatesKg = rates, trajectoryKg = trajectory)
     }
 
+    /**
+     * Adult gain path from the linearized dynamic energy-balance equation:
+     * expenditure rises by ε·Δweight, progressively absorbing a fixed surplus.
+     * A target beyond the surplus-defined equilibrium honestly has no date.
+     */
+    private fun integrateGain(
+        input: ColdStartInput,
+        tdeeAtStartKcal: Double,
+        scale: Double,
+    ): ForecastBand {
+        val stepDays = ConstantsRegistry.FORECAST_STEP_DAYS
+        val stepFractionOfWeek = stepDays / 7.0
+        val rates = ArrayList<Double>()
+        val trajectory = ArrayList<Double>()
+        var weight = input.startTrendKg
+        var epochDay = input.startEpochDay
+        var steps = 0
+        val maxSteps = ConstantsRegistry.FORECAST_HORIZON_WEEKS * 7 / stepDays
+
+        while (steps < maxSteps) {
+            val gainedKg = weight - input.startTrendKg
+            val tdeeNow =
+                tdeeAtStartKcal +
+                    ConstantsRegistry.GAIN_EXPENDITURE_FEEDBACK_KCAL_PER_DAY_PER_KG * gainedKg
+            val surplus = max(input.intakeKcal - tdeeNow, 0.0)
+            val rate = paceOf(surplus) * scale
+            // Public rate sign stays loss-positive / gain-negative so UI and
+            // exports can state direction without inferring it from targets.
+            rates += -rate
+            val next = weight + rate * stepFractionOfWeek
+            epochDay += stepDays
+            steps += 1
+            if (next >= input.goalWeightKg) {
+                trajectory += input.goalWeightKg
+                val remaining = input.goalWeightKg - weight
+                val fraction =
+                    if (rate > 0.0) (remaining / (rate * stepFractionOfWeek)).coerceIn(0.0, 1.0) else 1.0
+                val finishDay = epochDay - stepDays + (fraction * stepDays).toLong()
+                return ForecastBand(finishEpochDay = finishDay, weeklyRatesKg = rates, trajectoryKg = trajectory)
+            }
+            weight = next
+            trajectory += weight
+        }
+        return ForecastBand(finishEpochDay = null, weeklyRatesKg = rates, trajectoryKg = trajectory)
+    }
+
+    private fun achievedBand(input: ColdStartInput): ForecastBand =
+        ForecastBand(
+            finishEpochDay = input.startEpochDay,
+            weeklyRatesKg = emptyList(),
+            trajectoryKg = emptyList(),
+        )
+
     private fun bmrAt(
         input: ColdStartInput,
         weightKg: Double,
     ): Double = bmrMifflinStJeor(input.sex, weightKg, input.heightCm, input.ageYears)
 
     private fun paceOf(deficitKcal: Double): Double = deficitKcal * 7.0 / ConstantsRegistry.KCAL_PER_KG_FAT
+
+    private fun initialPace(
+        input: ColdStartInput,
+        tdeeAtStartKcal: Double,
+    ): Double =
+        when (goalDirection(input)) {
+            GoalDirection.LOSS -> paceOf(tdeeAtStartKcal - input.intakeKcal)
+            GoalDirection.GAIN -> paceOf(input.intakeKcal - tdeeAtStartKcal)
+            GoalDirection.ALREADY_MET -> 0.0
+        }
+
+    private fun goalDirection(input: ColdStartInput): GoalDirection =
+        when {
+            input.goalWeightKg < input.startTrendKg -> GoalDirection.LOSS
+            input.goalWeightKg > input.startTrendKg -> GoalDirection.GAIN
+            else -> GoalDirection.ALREADY_MET
+        }
+
+    private enum class GoalDirection {
+        LOSS,
+        GAIN,
+        ALREADY_MET,
+    }
 
     private data class Bands(
         val fast: ForecastBand,
@@ -471,7 +549,7 @@ public enum class ForecastMode {
 public data class ForecastBand(
     /** Goal-reach day; null = not reached within the horizon (honest, not a promise). */
     public val finishEpochDay: Long?,
-    /** Decaying weekly rate at each step (kg/week) — the deceleration, visible. */
+    /** Weekly rate at each step: positive loss, negative gain, zero hold. */
     public val weeklyRatesKg: List<Double>,
     /** Projected trend weight at each step end (kg). */
     public val trajectoryKg: List<Double>,

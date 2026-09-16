@@ -91,17 +91,6 @@ public class GoalProgressLoader(
                 forecastCopy = "Maintenance has no finish date — the target is the range you are holding.",
             )
         }
-        if (mode == WeightGoalMode.GAIN) {
-            return GoalProgressUi(
-                state = GoalProgressState.GAIN,
-                currentTrend = canonical,
-                targetWeightKg = targetKg,
-                remainingKg = remaining,
-                forecastCopy =
-                    "Gain progress is tracked without dates until direction-aware forecasting is available.",
-            )
-        }
-
         val intake =
             record.document.energy.budgetKcal
                 ?: record.document.energy.weeklyBudgetKcal
@@ -147,21 +136,24 @@ public class GoalProgressLoader(
                 null,
                 -> null
             }
-        val startKg = maxOf(profile.startWeightKg ?: trendKg, trendKg)
         val rungs =
-            MilestoneLadder.loss(
-                journeyStartKg = startKg,
-                currentTrendKg = trendKg,
-                goalKg = targetKg,
-                optimistic = bands?.optimistic,
-                pessimistic = bands?.pessimistic,
-                forecastStartEpochDay = today,
-            )
+            if (mode == WeightGoalMode.LOSS) {
+                MilestoneLadder.loss(
+                    journeyStartKg = maxOf(profile.startWeightKg ?: trendKg, trendKg),
+                    currentTrendKg = trendKg,
+                    goalKg = targetKg,
+                    optimistic = bands?.optimistic,
+                    pessimistic = bands?.pessimistic,
+                    forecastStartEpochDay = today,
+                )
+            } else {
+                emptyList()
+            }
         return GoalProgressUi(
-            state = GoalProgressState.LOSS,
+            state = if (mode == WeightGoalMode.GAIN) GoalProgressState.GAIN else GoalProgressState.LOSS,
             currentTrend = canonical,
             targetWeightKg = targetKg,
-            remainingKg = (trendKg - targetKg).coerceAtLeast(0.0),
+            remainingKg = remaining,
             rungs = rungs,
             forecastCopy =
                 if (forecastResult is ForecastRead.Failed) {

@@ -56,14 +56,19 @@ class WeightGoalPreviewTest {
     }
 
     @Test
-    fun gainGoalIsSupportedButDateRemainsWithheld() {
+    fun gainGoalIsSupportedWithAProvisionalDirectionCorrectRange() {
         val result =
             WeightGoalPreview.evaluate(
                 input(mode = WeightGoalMode.GAIN, targetWeightKg = 90.0),
             )
 
         assertIs<WeightGoalEligibility.Eligible>(result.eligibility)
-        assertIs<GoalForecastResult.Withheld>(result.forecast)
+        val developing = assertIs<GoalForecastResult.Developing>(result.forecast)
+        assertTrue(
+            developing.bands.expected.trajectoryKg
+                .zipWithNext()
+                .all { (a, b) -> b >= a },
+        )
     }
 
     private fun input(

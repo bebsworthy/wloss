@@ -39,9 +39,9 @@ unanswered question as “no.”
 - **Maintenance:** target is optional. If supplied, it must sit within WLO's
   ±1% maintenance band around current weight; requested pace is zero.
 - **Gain:** target must be above current weight. WLO caps generic gain goals at
-  0.5% body weight/week. Gain goals are first-class, but the current numerical
-  integrator is loss-only; WLO therefore holds gain forecast dates until a
-  direction-correct model is implemented and validated. NHS recommends gradual gain and suggests roughly
+  0.5% body weight/week. Gain goals are first-class and use the separately
+  validated direction-specific dynamic model documented in
+  [`weight-gain-forecast-v1.md`](weight-gain-forecast-v1.md). NHS recommends gradual gain and suggests roughly
   300–500 additional kcal/day for adults, but does not prescribe a universal
   weekly weight rate; 0.5% is therefore explicitly a conservative **WLO
   product policy**, not a clinical threshold.

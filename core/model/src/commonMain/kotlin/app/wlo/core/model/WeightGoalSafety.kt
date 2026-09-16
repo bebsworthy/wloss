@@ -98,7 +98,6 @@ public enum class WeightGoalHoldReason {
     PACE_REQUIRED,
     PACE_OUTSIDE_SUPPORTED_RANGE,
     BELOW_CONFIGURED_ENERGY_FLOOR,
-    GAIN_FORECAST_UNAVAILABLE,
 }
 
 public enum class WeightGoalUnsupportedReason {
@@ -307,11 +306,6 @@ public object WeightGoalSafetyCopyPolicy {
                 WeightGoalSafetyCopy(
                     "Plan held at the energy floor",
                     "This plan falls below your configured floor. WLO will not save it or produce a forecast date.",
-                )
-            WeightGoalHoldReason.GAIN_FORECAST_UNAVAILABLE ->
-                WeightGoalSafetyCopy(
-                    "Gain date held",
-                    "The gain goal is saved, but WLO's current forecast model is loss-only and will not invent a gain date.",
                 )
             WeightGoalHoldReason.MODE_TARGET_MISMATCH,
             WeightGoalHoldReason.PACE_REQUIRED,

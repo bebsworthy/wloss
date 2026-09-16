@@ -15,7 +15,7 @@ import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 
 /**
- * Golden-file harness for the R-A5/R-A6 cold-start forecast: five scenario
+ * Golden-file harness for the R-A5/R-A6 cold-start forecast: loss and gain
  * profiles in `resources/golden/forecast_scenarios.json` run unchanged in CI;
  * every value was hand-verified against the published formulas (Mifflin-St
  * Jeor + activity multiplier + 7,700 kcal/kg deceleration integration) before
@@ -61,7 +61,7 @@ class ForecastEngineGoldenTest {
 
     @Test
     fun goldenScenariosMatch() {
-        assertTrue(scenarios.size >= 5, "fixture file should carry the five canonical profiles")
+        assertTrue(scenarios.size >= 6, "fixture file should carry loss and gain profiles")
         scenarios.forEach { scenario ->
             val bands = ForecastEngine.coldStart(input(scenario))
             assertEquals(
@@ -98,7 +98,7 @@ class ForecastEngineGoldenTest {
         assertIs<Provenance.Estimated>(bands.provenance)
         assertEquals(ForecastMode.COLD_START, bands.mode)
         assertEquals("transparent-v1", bands.engineVersion)
-        assertEquals("forecast/decel-3band-v1", bands.modelVersion)
+        assertEquals("forecast/directional-3band-v2", bands.modelVersion)
         assertEquals("bmr/mifflin-st-jeor-v1", bands.bmrVersion)
     }
 

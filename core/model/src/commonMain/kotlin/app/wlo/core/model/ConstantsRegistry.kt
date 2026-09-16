@@ -124,6 +124,14 @@ public object ConstantsRegistry {
     /** Forecast integration step (days). */
     public const val FORECAST_STEP_DAYS: Int = 7
 
+    /**
+     * Gain-path energy-expenditure feedback (kcal/day/kg gained). Hall and
+     * Chow's adult linearized energy-balance model uses ε = 22 kcal/kg/day.
+     * This makes a fixed surplus shrink as body mass rises instead of treating
+     * gain as the sign-reversed loss path.
+     */
+    public const val GAIN_EXPENDITURE_FEEDBACK_KCAL_PER_DAY_PER_KG: Double = 22.0
+
     // --- F06 smoothing + outlier guard (R-A2, F06 §3) ---
 
     /** Trailing-EWMA trend smoother (R-A2 default α; the tuner overrides it). */
@@ -253,8 +261,8 @@ public object ConstantsRegistry {
     /** v1 Transparent engine version tag (F07 §3 "Algorithm versioning"). */
     public const val ENERGY_ENGINE_VERSION: String = "transparent-v1"
 
-    /** Decelerating 3-band forecast model version (R-A5/R-A6). */
-    public const val FORECAST_MODEL_VERSION: String = "forecast/decel-3band-v1"
+    /** Direction-correct decelerating 3-band forecast model version (R-A5/R-A6). */
+    public const val FORECAST_MODEL_VERSION: String = "forecast/directional-3band-v2"
 
     /** Closed-form TDEE solve version (Zolt-lineage formula, F07 §3). */
     public const val TDEE_FORMULA_VERSION: String = "tdee/closed-form-v1"

@@ -254,7 +254,10 @@ these are binding until amended *here* (feature docs must not re-litigate them).
 - **R-A6 — Forecast energy partitioning: partition-free in v1.** The 3-band
   forecast uses the single 7,700 kcal/kg constant (R-A1) with the published
   caveat near goal; composition-aware fat-fraction rates (informed by F05
-  training context) ship [v1.x] with their own published assumptions.
+  training context) ship [v1.x] with their own published assumptions. The gain
+  path is direction-specific rather than sign-reversed loss: its expenditure
+  feedback uses the published adult linearized value of 22 kcal/day/kg gained,
+  while retaining the same partition-free product energy-density ruling.
 - **R-A7 — Check-in cadence: weekly default, opt-in daily in v1 (owner
   call).** The Sunday ritual stays the default and the weekly report card
   (R-U2) is unchanged; power users may opt into a daily check-in cadence at
