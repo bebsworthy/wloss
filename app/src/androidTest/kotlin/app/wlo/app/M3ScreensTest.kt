@@ -113,7 +113,7 @@ public class M3ScreensTest {
 
         // Weigh-in sheet, the outlier prompt, the trend chart + tuner, math docs.
         rule.onNodeWithTag("hub-trend-card", useUnmergedTree = true).performScrollTo().performClick()
-        TestNav.awaitTag(rule, "f06-title")
+        TestNav.awaitTag(rule, "f06-open-sheet")
         rule.onNodeWithTag("f06-open-sheet", useUnmergedTree = true).performClick()
         TestNav.awaitTag(rule, "f06-weighin-sheet")
         shot("m3-weighin-sheet")

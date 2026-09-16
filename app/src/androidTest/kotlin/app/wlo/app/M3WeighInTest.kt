@@ -64,12 +64,12 @@ public class M3WeighInTest {
 
     @Test
     public fun weightSurface_activityRecreationRefreshesWithoutAnErrorState() {
-        TestNav.awaitTag(rule, "f06-title")
+        TestNav.awaitTag(rule, "f06-open-sheet")
         rule.onNodeWithTag("f06-goal-progress", useUnmergedTree = true).assertExists()
 
         rule.activityRule.scenario.recreate()
 
-        TestNav.awaitTag(rule, "f06-title")
+        TestNav.awaitTag(rule, "f06-open-sheet")
         rule.onNodeWithTag("f06-goal-progress", useUnmergedTree = true).assertExists()
         assertTrue(rule.onAllNodesWithTag("f06-load-error").fetchSemanticsNodes().isEmpty())
     }
@@ -568,7 +568,7 @@ public class M3WeighInTest {
     private fun awaitWeightSurface() {
         // Weight is the primary post-onboarding destination. This also makes
         // the suite independent of Hub's day-phase quick-action rail.
-        TestNav.awaitTag(rule, "f06-title")
+        TestNav.awaitTag(rule, "f06-open-sheet")
         rule.onNodeWithTag("f06-open-sheet", useUnmergedTree = true).performClick()
         TestNav.awaitTag(rule, "f06-weighin-sheet")
     }

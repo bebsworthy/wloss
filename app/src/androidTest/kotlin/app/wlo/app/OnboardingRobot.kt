@@ -131,7 +131,7 @@ public fun ComposeTestRule.driveToHub() {
 private fun ComposeTestRule.awaitWeight() {
     repeat(HUB_POLLS) {
         waitForIdle()
-        if (onAllNodesWithTag("f06-title", useUnmergedTree = true).fetchSemanticsNodes().isNotEmpty()) return
+        if (onAllNodesWithTag("f06-open-sheet", useUnmergedTree = true).fetchSemanticsNodes().isNotEmpty()) return
         Thread.sleep(POLL_MS)
     }
     error("Weight never took over after Start")
