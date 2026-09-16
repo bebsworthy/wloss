@@ -6,6 +6,7 @@ import app.wlo.core.database.jvmDatabaseBuilder
 import app.wlo.core.datastore.SettingsStoreFactory
 import app.wlo.core.engines.WeightSample
 import app.wlo.core.model.ConstantsRegistry
+import app.wlo.core.model.MeasurementKind
 import app.wlo.core.model.Provenance
 import app.wlo.core.model.TrendMethod
 import app.wlo.core.testing.FakeClock
@@ -217,6 +218,56 @@ class CurrentTrendTest {
             assertEquals(null, shared.current)
             assertEquals(null, shared.delta7)
             assertEquals(null, shared.delta30)
+        }
+
+    @Test
+    fun legacyPersistedTrendIsRebuiltBeforeCanonicalReadReturns() =
+        runTest {
+            val profileId = profiles.create(NewProfile(), clock.now()).okOrDie().id
+            measurements
+                .append(
+                    NewMeasurement(
+                        profileId = profileId,
+                        dayEpochDay = today,
+                        kind = MeasurementKind.WEIGHT,
+                        valueReal = 80.0,
+                        source = "manual",
+                        capturedAt = Instant.parse("2026-09-12T07:00:00Z"),
+                    ),
+                ).okOrDie()
+            measurements
+                .append(
+                    NewMeasurement(
+                        profileId = profileId,
+                        dayEpochDay = today,
+                        kind = MeasurementKind.WEIGHT,
+                        valueReal = 79.0,
+                        source = "manual",
+                        capturedAt = Instant.parse("2026-09-12T18:00:00Z"),
+                    ),
+                ).okOrDie()
+            measurements
+                .append(
+                    NewMeasurement(
+                        profileId = profileId,
+                        dayEpochDay = today,
+                        kind = MeasurementKind.TREND,
+                        valueReal = 79.0,
+                        source = "engine",
+                        capturedAt = Instant.parse("2026-09-12T18:00:00Z"),
+                    ),
+                ).okOrDie()
+
+            val canonical = assertNotNull(weighIns.currentTrend(profileId, today).okOrDie().current).value
+            val persisted =
+                measurements
+                    .rangeOfKind(profileId, MeasurementKind.TREND, today, today)
+                    .okOrDie()
+                    .single()
+                    .valueReal
+
+            assertEquals(canonical, persisted, absoluteTolerance = 1e-12)
+            assertEquals(80.0, persisted, absoluteTolerance = 1e-12)
         }
 
     private companion object {

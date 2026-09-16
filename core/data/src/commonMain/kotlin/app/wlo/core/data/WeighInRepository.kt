@@ -683,7 +683,7 @@ public class RoomWeighInRepository internal constructor(
         at: Instant,
     ) {
         val dao = db.measurementEvents()
-        val timeZoneId = policyForOrThrow(profileId)
+        val timeZoneId = policyForOrThrow(profileId, reconcileLegacyTrends = false)
         val weights =
             dao.rangeOfKind(
                 profileId,
@@ -769,7 +769,10 @@ public class RoomWeighInRepository internal constructor(
             WloResult.err(AppError.Storage(cause = t, detail = "weighIn.policy"))
         }
 
-    private suspend fun policyForOrThrow(profileId: String): String {
+    private suspend fun policyForOrThrow(
+        profileId: String,
+        reconcileLegacyTrends: Boolean = true,
+    ): String {
         var profile = db.profiles().byId(profileId) ?: throw InvalidWeighInMutation("no profile $profileId")
         if (profile.weightPolicyTimeZoneId == null) {
             db.profiles().initializeWeightPolicy(
@@ -782,7 +785,36 @@ public class RoomWeighInRepository internal constructor(
         if (profile.weightPolicyVersion != DailyWeightPolicy.VERSION) {
             throw InvalidWeighInMutation("unsupported daily weight policy ${profile.weightPolicyVersion}")
         }
-        return requireNotNull(profile.weightPolicyTimeZoneId)
+        val timeZoneId = requireNotNull(profile.weightPolicyTimeZoneId)
+        if (reconcileLegacyTrends) {
+            reconcileLegacyTrends(profileId)
+        }
+        return timeZoneId
+    }
+
+    /**
+     * Policy metadata can be initialized after legacy minimum-per-day TREND rows already exist.
+     * Rebuild that suffix before a reader can observe a canonical live trend alongside stale
+     * persisted data. Current rows carry the policy version sidecar, so this repair is one-shot.
+     */
+    private suspend fun reconcileLegacyTrends(profileId: String) {
+        val dao = db.measurementEvents()
+        val trends = dao.rangeOfKind(profileId, MeasurementKind.TREND.wireName, Long.MIN_VALUE, Long.MAX_VALUE)
+        val hasLegacyTrend =
+            trends.any { trend ->
+                db
+                    .measurementEventAttrs()
+                    .forEvent(trend.id)
+                    .none { it.attr == "dailyPolicyVersion" && it.valueText == DailyWeightPolicy.VERSION }
+            }
+        if (!hasLegacyTrend) return
+
+        val weights = dao.rangeOfKind(profileId, MeasurementKind.WEIGHT.wireName, Long.MIN_VALUE, Long.MAX_VALUE)
+        val firstDay = weights.firstOrNull()?.dayEpochDay ?: return
+        val repairedAt = Instant.fromEpochMilliseconds(weights.maxOf { it.capturedAtEpochMs })
+        db.withWriteTransaction {
+            repairTrendSuffix(profileId, firstDay, repairedAt)
+        }
     }
 
     /** The series' formula version from its points' provenance (EWMA default). */
