@@ -870,7 +870,7 @@ public class WeighInViewModel(
 
     private fun nextGeneration(): Long = ++loadGeneration
 
-    @Suppress("CyclomaticComplexMethod") // One snapshot load keeps related reads generation-consistent.
+    @Suppress("CyclomaticComplexMethod", "LongMethod") // One snapshot load keeps related reads generation-consistent.
     private suspend fun reload(generation: Long): Boolean {
         val reads = WeightReadAccumulator()
         val profile = reads.value(profiles.active(), null)
@@ -1004,7 +1004,10 @@ public class WeighInViewModel(
                 ?.valueReal
 
         val samples = reads.value(weighIns.dailyScalars(id, from, today), emptyList())
-        val selections = reads.value(weighIns.dailySelections(id, from, today), emptyList()).associateBy { it.dayEpochDay }
+        val selections =
+            reads
+                .value(weighIns.dailySelections(id, from, today), emptyList())
+                .associateBy { it.dayEpochDay }
         val ratios =
             run {
                 val waistCm = waistPoints.lastOrNull()?.value

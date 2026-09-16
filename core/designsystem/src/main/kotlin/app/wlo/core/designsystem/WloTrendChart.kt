@@ -172,6 +172,7 @@ internal fun trendWindowCaption(
  */
 @Composable
 @OptIn(ExperimentalMaterial3Api::class)
+@Suppress("UnusedParameter") // Retained for source compatibility; detail uses the typed point provenance.
 public fun WloTrendChart(
     samples: List<ChartPoint>,
     trend: List<ChartPoint>,
@@ -283,7 +284,10 @@ public fun WloTrendChart(
                     ListItem(
                         headlineContent = { Text(chartPointDate(point)) },
                         supportingContent = { Text(chartPointDescription(point, formatWeight)) },
-                        modifier = Modifier.semantics { contentDescription = chartPointDescription(point, formatWeight) },
+                        modifier =
+                            Modifier.semantics {
+                                contentDescription = chartPointDescription(point, formatWeight)
+                            },
                     )
                     HorizontalDivider()
                 }
@@ -413,7 +417,9 @@ private fun WeightChartCanvas(
                     }
                 }.focusable()
                 .semantics {
-                    contentDescription = "$describe ${selectable.size} available data points. Use previous and next controls or View data."
+                    contentDescription =
+                        "$describe ${selectable.size} available data points. " +
+                        "Use previous and next controls or View data."
                 },
     ) {
         drawWeightChart(
