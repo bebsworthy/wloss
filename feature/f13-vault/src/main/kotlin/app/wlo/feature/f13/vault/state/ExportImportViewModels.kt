@@ -157,6 +157,8 @@ public class ImportViewModel(
     private var pendingName: String? = null
     private var pendingUri: String? = null
     private var stagingPath: String? = savedStateHandle[KEY_STAGING_PATH]
+    private var sourceRevision: Long = 0L
+    private var stageAttempt: Long = 0L
 
     init {
         val recoveredPath = stagingPath
@@ -168,6 +170,8 @@ public class ImportViewModel(
     }
 
     public fun onSourcePicked(uri: String) {
+        sourceRevision++
+        stageAttempt++
         pendingUri = uri
         stagePickedUri(uri)
     }
@@ -217,6 +221,8 @@ public class ImportViewModel(
         fileName: String,
         bytes: ByteArray,
     ) {
+        sourceRevision++
+        stageAttempt++
         pendingBytes = bytes
         pendingName = fileName
         val looksLikeBundle = fileName.endsWith(".json", ignoreCase = true)
@@ -294,6 +300,8 @@ public class ImportViewModel(
         unit: String? = null,
         customName: String? = null,
     ) {
+        sourceRevision++
+        stageAttempt++
         val rows =
             stateFlow.value.mapping.map { row ->
                 if (row.sourceColumn == column) {
@@ -317,12 +325,16 @@ public class ImportViewModel(
     private fun stage(onStaged: (ImportUiState) -> Unit) {
         val bytes = pendingBytes ?: return
         val isBundle = stateFlow.value.isBundle
+        val revision = sourceRevision
+        val attempt = ++stageAttempt
+        val mappingSnapshot = stateFlow.value.mapping
         viewModelScope.launch {
             try {
                 if (isBundle) {
                     // Bundle import = staged restore funnel; the vault applies
                     // it through commitStaged (the mapping UI never shows).
                     val report = stageBundle(bytes)
+                    if (revision != sourceRevision || attempt != stageAttempt) return@launch
                     stateFlow.value =
                         stateFlow.value.copy(
                             staged = VaultCsvStagedReport(stagedRows = report.totalRows, warnings = report.warnings),
@@ -331,7 +343,7 @@ public class ImportViewModel(
                         )
                 } else {
                     val mapping =
-                        stateFlow.value.mapping.mapNotNull { row ->
+                        mappingSnapshot.mapNotNull { row ->
                             when (row.targetKind) {
                                 null -> null
                                 "day" ->
@@ -353,6 +365,7 @@ public class ImportViewModel(
                             }
                         }
                     val staged = vault.stageCsvImport(bytes, mapping)
+                    if (revision != sourceRevision || attempt != stageAttempt) return@launch
                     remember(mapping)
                     stateFlow.value =
                         stateFlow.value.copy(
@@ -366,6 +379,7 @@ public class ImportViewModel(
                 }
                 onStaged(stateFlow.value)
             } catch (failure: VaultOperationException) {
+                if (revision != sourceRevision || attempt != stageAttempt) return@launch
                 recoverable(
                     if (isBundle) ImportUiState.Step.Reading else ImportUiState.Step.Mapping,
                     failure.message ?: "The source could not be reviewed.",

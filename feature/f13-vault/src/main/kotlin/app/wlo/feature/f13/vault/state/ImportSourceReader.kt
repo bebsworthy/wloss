@@ -39,23 +39,25 @@ public class AndroidImportSourceReader(
     @Suppress("TooGenericExceptionCaught")
     override suspend fun stage(uri: String): StagedImportSource =
         withContext(Dispatchers.IO) {
-            cleanupExpired()
-            val parsed = Uri.parse(uri)
-            runCatching {
-                appContext.contentResolver.takePersistableUriPermission(
-                    parsed,
-                    Intent.FLAG_GRANT_READ_URI_PERMISSION,
-                )
-            }
-            val (name, declaredSize) = queryMetadata(parsed)
-            require(declaredSize == null || declaredSize <= MAX_BYTES) {
-                "This file is larger than 20 MiB. Split it into smaller files and import them separately."
-            }
-            stagingDirectory.mkdirs()
-            val staged = File(stagingDirectory, "${System.currentTimeMillis()}-${name.hashCode().toUInt()}.stage")
+            var staged: File? = null
             try {
+                cleanupExpired()
+                val parsed = Uri.parse(uri)
+                runCatching {
+                    appContext.contentResolver.takePersistableUriPermission(
+                        parsed,
+                        Intent.FLAG_GRANT_READ_URI_PERMISSION,
+                    )
+                }
+                val (name, declaredSize) = queryMetadata(parsed)
+                require(declaredSize == null || declaredSize <= MAX_BYTES) { FILE_TOO_LARGE }
+                require(stagingDirectory.mkdirs() || stagingDirectory.isDirectory) {
+                    "The import staging area is unavailable. Try again."
+                }
+                val destination = File(stagingDirectory, "${System.currentTimeMillis()}-${name.hashCode().toUInt()}.stage")
+                staged = destination
                 appContext.contentResolver.openInputStream(parsed)?.use { input ->
-                    FileOutputStream(staged).use { output ->
+                    FileOutputStream(destination).use { output ->
                         val buffer = ByteArray(DEFAULT_BUFFER_SIZE)
                         var total = 0L
                         while (true) {
@@ -67,12 +69,12 @@ public class AndroidImportSourceReader(
                         }
                     }
                 } ?: error("The selected file could not be opened. Choose it again or select another file.")
-                StagedImportSource(staged.absolutePath, name, staged.length())
+                StagedImportSource(destination.absolutePath, name, destination.length())
             } catch (cancellation: CancellationException) {
-                staged.delete()
+                staged?.delete()
                 throw cancellation
             } catch (failure: Exception) {
-                staged.delete()
+                staged?.delete()
                 throw ImportSourceException(failure.message ?: "The selected file could not be read.", failure)
             }
         }
