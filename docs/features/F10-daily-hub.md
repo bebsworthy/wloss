@@ -54,8 +54,8 @@ data-quality state (`developing`/`updating`/`held`), check-in due flag. From F03
 today's planned meals and the next meal. From F05: scheduled workout, live
 session, PR events. From F09: last entry, regularity context. From F08: next
 silhouette capture due. From F11: streak state, "report card ready". From F01:
-goal statement, active plan name. From the device: clock, notification
-permission, widget bounds.
+goal statement, active plan name. From the device: clock and notification
+permission.
 
 **Processing (all on-device, deterministic):**
 
@@ -79,18 +79,18 @@ permission, widget bounds.
 - **Deep-link registry** — every card and action declares its owning feature,
   route, and prefill payload (e.g., "log as planned" prefills F02 from F03).
 
-**Outputs.** The rendered card stack; the home-screen widget payload; notification
+**Outputs.** The rendered card stack; notification
 intents (all deep-linking, all self-dismissing after their action completes);
 the day-closure recap artifact [v1.x]; local seconds-to-log counters for F11.
 
 **State owned.** Nudge settings, schedules, and dismissal memory; card order and
-layout preferences; widget configuration; Adaptive Day Model transitions; recap
+layout preferences; Adaptive Day Model transitions; recap
 history [v1.x].
 
 ## 4. User Interaction Model
 
-**Entry points.** Cold launch (default tab); widget zones (each deep-links);
-notification taps and action buttons; Wear OS glance [future]; app shortcuts
+**Entry points.** Cold launch (default tab); notification taps and action
+buttons; Wear OS glance [future]; app shortcuts
 (long-press icon).
 
 **Primary flows.**
@@ -178,7 +178,7 @@ sits in the Hub's overflow menu and on every notification.
   state) · F03 (today's plan, "log as planned" prefill) · F05 (sessions, PR
   events) · F06 (trend, weigh-in state, ribbon) · F07 (adaptive target, ring
   values, quality states, check-in due) · F08 (capture due) · F09 (log state) ·
-  F11 (streak chip, report-ready) · F13 (backup-health dot, widget persistence).
+  F11 (streak chip, report-ready) · F13 (backup-health dot).
 - **Feeds into:** the same features (deep-link traffic with prefills); F11
   (day-completeness events, seconds-to-log stats); F13 (recap artifacts, Hub
   settings included in backups).
@@ -196,21 +196,14 @@ sits in the Hub's overflow menu and on every notification.
 - **[v1] Nudge transparency** — long-press any notification → "Why am I seeing
   this?" plus inline tuning (frequency, categories, quiet hours) and a live
   preview of the next scheduled nudge.
-- **[v1] Home-screen widget** — 4×2 hero number + ring; every zone deep-links.
 - **[v1.x] Day-closure micro-recap** — the "Day closed" artifact with three
   chips (trend delta, meals, movement), rendered as a shareable mini-card in
   the Gyroscope card-as-artifact style.
-- **[v1.x] Interactive widget actions** — quick-log buttons inside the widget
-  (within Android RemoteViews constraints; graceful fallback to deep-links).
 - **[future] Wear OS glance + tile** — trend and calories-remaining on the
   wrist; one-tap weigh-in and workout start; complication for the ring.
 - **[future] On-device nudge-timing learner** — a private model learns the
   minutes of day *this* user actually logs and schedules nudges then; never
   more insistent, only better timed. No cloud, ever.
-- **[moonshot] Zero-open day** — a fully logged day without opening the app:
-  widget + notification actions + Wear cover the entire 5-second doctrine from
-  any surface; the Hub becomes a state machine you can traverse remotely, and
-  the app celebrates it with a "you never had to open me" recap.
 
 ## 9. Guardrails, Privacy & Sensitivity
 
@@ -222,8 +215,6 @@ sits in the Hub's overflow menu and on every notification.
   notifications, ever; every notification actionable; quiet hours absolute
   (nothing scheduled inside them except a user-chosen recap at their edge);
   default cap ≤1/day.
-- The widget can show sensitive numbers on a shared lock screen; a "hide values
-  on lock screen" toggle redacts them to dots.
 - The Hub is fully offline; it renders no spinner that implies a server.
 - Objective invariants hold: free forever, no account, no SaaS, no telemetry in
   any Hub surface.

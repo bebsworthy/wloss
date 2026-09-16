@@ -12,7 +12,7 @@ Orchestrate the weight-first implementation in dependency-safe waves and keep ve
 7. Forecast evidence: WLO-0073 after scalar and safety contracts.
 8. Goal loop: WLO-0074 → WLO-0045.
 9. Release hardening/dogfood: WLO-0029 after release-1 gates and owner publication decisions.
-10. Differentiation: WLO-0042, WLO-0076, WLO-0037, WLO-0041.
+10. Differentiation: WLO-0042, WLO-0076, WLO-0037.
 11. Advanced: WLO-0054, WLO-0075, WLO-0077, WLO-0078, WLO-0044, WLO-0039.
 
 # Orchestration rules
@@ -55,4 +55,4 @@ Completed with isolated commits and ticket evidence: WLO-0070 trend-first post-s
 
 The scoped Release 1 weight-core implementation is now complete. The remaining Release 1 program step is WLO-0029: establish signed alpha/stable distribution and begin real-device dogfooding without breaking data continuity. Findings from dogfooding should create focused defects rather than reopening completed contracts.
 
-After dogfood distribution, the recommended Release 2 order is WLO-0042 progress ribbon, WLO-0041 home-screen widget, then WLO-0037 OCR input, WLO-0077 measurement-condition insights, and WLO-0076 optional 10-day-best. Advanced tickets remain gated on dogfood evidence.
+After dogfood distribution, the recommended Release 2 order is WLO-0042 progress ribbon, then WLO-0037 OCR input, WLO-0077 measurement-condition insights, and WLO-0076 optional 10-day-best. Advanced tickets remain gated on dogfood evidence.

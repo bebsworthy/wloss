@@ -94,7 +94,7 @@ ritual with F13's mechanics per R-B7 — F06 only renders both.)
 
 ## 4. User Interaction Model
 
-**Entry points:** F10 Daily Hub weigh-in card (primary); home-screen widget "today's trend"; weigh-in reminder notification (soft, user-set); F07 check-in card's trend row (deep-link); F11 milestone celebrations (deep-link).
+**Entry points:** F10 Daily Hub weigh-in card (primary); weigh-in reminder notification (soft, user-set); F07 check-in card's trend row (deep-link); F11 milestone celebrations (deep-link).
 
 **Primary flows**
 

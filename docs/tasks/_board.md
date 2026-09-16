@@ -7,7 +7,6 @@
 
 ## backlog
 - WLO-0037
-- WLO-0041
 - WLO-0075
 - WLO-0076
 - WLO-0077

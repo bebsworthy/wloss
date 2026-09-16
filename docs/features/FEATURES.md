@@ -65,7 +65,7 @@ This is a product-support boundary, not medical advice or diagnosis.
 | Horizon | Included capability |
 |---|---|
 | **Release 1 — weight core** | correct kg/lb entry and display; event log and edit/delete; honest trend/chart states; accessible entry; post-save trend result; lifecycle/error reliability; Health Connect weight/body-fat import with durable source identity; benchmarked daily-scalar policy; calibrated forecast ranges; loss/maintenance/gain safety and direction-correct forecasting; goal editing and progress |
-| **Release 2 — weight experience** | progress ribbon; OCR scale display; home-screen weight widget; optional 10-day-best view; measurement-condition insights |
+| **Release 2 — weight experience** | progress ribbon; OCR scale display; optional 10-day-best view; measurement-condition insights |
 | **Deferred / advanced** | user-tunable smoothing and smoother comparison; custom metrics; elaborate milestone celebrations; Bluetooth-scale drivers; multi-profile vault partitions; broader food, planning, exercise, silhouette, digestion, and AI suite release work |
 
 Release 1 stores one profile while keeping `profileId` in every row. Body mass

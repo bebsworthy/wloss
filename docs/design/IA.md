@@ -133,7 +133,6 @@ gate, never on content** (F08 §4).
 
 | Widget | Tag | Shape |
 |---|---|---|
-| F10 hero widget | [v1] | 4×2: trend hero numeral + budget ring + sparkline strip; every zone deep-links; "hide values on lock screen" redacts to dots; refresh event-driven on save + daily schedule (Glance floor 30 min — see design research §2.8) |
 | F04 list widget | [v1.x] | Per-aisle count bars; tap opens list; check pulses count down; rides the same Glance stack |
 | Wear OS glance | [future] | Trend + calories remaining; weigh-in/workout one-taps |
 
@@ -177,7 +176,7 @@ appears within 30 s of entering a goal (F01 objective).
   the F05 keyboard pairing puts the plate calculator above the keyboard.
 - **Sensitive-surface protection:** Archive lock gate, F09 hold-to-reveal and
   conceal toggle. FLAG_SECURE on all F08 screens and any F09 screen showing a
-  photo. Weight heroes and widgets remain immediately readable; the proposed
+  photo. Weight heroes remain immediately readable; the proposed
   F06 tap-to-reveal mode was rejected as unnecessary complexity (2026-09-16).
 - **Reduced motion:** all animation collapses to instant/100 ms crossfade;
   haptics become the primary channel (DESIGN-SYSTEM §4).

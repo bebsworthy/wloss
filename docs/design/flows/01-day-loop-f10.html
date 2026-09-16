@@ -99,9 +99,8 @@
       <div class="wf-note">minimal night layout (Adaptive Day Model)</div>
       <div class="wf-box row">notification: silent channel · ≤2 actions · animated collapse · “Why am I seeing this?”</div>
       <div class="wf-note">Nudge Contract: cap 1/day, quiet 21:30–07:30, dismissed never re-fires</div>
-      <div class="wf-box" style="height:120px">4×2 widget: hero + ring + spark; every zone deep-links; lock-screen redaction = dots</div>
     </div></div>
-    <div class="caption annotation"><b>Night &amp; off-app surfaces.</b> Widget and nudge follow the same provenance/tone rules as in-app.</div>
+    <div class="caption annotation"><b>Night &amp; off-app surfaces.</b> Nudges follow the same provenance and tone rules as in-app.</div>
   </div>
 
 </div>
@@ -533,7 +532,7 @@
     </div>
   </div>
 
-  <!-- Notification + widget -->
+  <!-- Notification -->
   <div class="flowunit">
     <div class="phone" style="background:#08090B;">
       <div class="statusbar"><span>12:41</span><span class="icons">▮▮▮ ⌁ ▰</span></div>
@@ -547,33 +546,13 @@
           </div>
         </div>
 
-        <div style="border-radius:26px; padding:16px 15px 6px; background:linear-gradient(175deg,#141B26 0%, #0D1420 55%, #101B1C 100%); border:1px solid #1C2430;">
-          <div class="widget" style="margin:0 auto;">
-            <div style="display:flex; justify-content:space-between; align-items:baseline;">
-              <div>
-                <div class="hero" style="font-size:44px;">81.2<span class="unit">kg</span></div>
-                <div class="receipt"><span class="down">▼ 0.3 kg</span> · trend</div>
-              </div>
-              <div class="ring" style="--fill:33; width:64px; height:64px;">
-                <div class="center"><span class="stat-s">1,277</span><span class="faint" style="font-size:9px;">left</span></div>
-              </div>
-            </div>
-            <svg width="100%" height="30" viewBox="0 0 296 30">
-              <polyline class="spark" points="0,20 30,19 60,21 90,17 120,18 150,15 180,16 210,12 240,13 270,10 296,7"/>
-            </svg>
-            <div class="receipt faint">WLO · Friday · lock screen: ●●●.●</div>
-          </div>
-          <div class="faint" style="text-align:center; font-size:11px; letter-spacing:6px; margin-top:10px;">• • • •</div>
-        </div>
       </div>
       <span class="pin" style="top:110px; right:22px;">14</span>
-      <span class="pin" style="top:400px; right:26px;">15</span>
     </div>
     <div class="caption annotation">
       <b>Off-app surfaces.</b>
       <ol>
         <li><span class="pin-ref">14</span>Nudge copy is an invitation, never a verdict; ≤2 action buttons; overflow holds “Pause nudges for a week”. Permission was requested once, in context, after the first successful log.</li>
-        <li><span class="pin-ref">15</span>4×2 widget: hero + ring + sparkline; all zones deep-link; refresh is event-driven (save) + daily — never a poller (Glance 30-min floor). Lock-screen mode redacts numerals to dots.</li>
       </ol>
     </div>
   </div>
@@ -608,10 +587,9 @@
         <li>Card collapse via swipe-up + 5 s undo — reserved for the diary slice card (not shown collapsed). ✓</li>
         <li>Nudge: silent channel, ≤2 actions, animated collapse, dismissal memory, one-tap pause. ✓</li>
         <li>R-U17 promotion shown; R-U9 recap in-app only. ✓</li>
-        <li>Widget: event-driven refresh, redaction state, R-U12 single framework. ✓</li>
         <li>No confetti on logging — celebration stays geometric (ring sweep only). ✓</li>
       </ol>
-      <b>Open items surfaced:</b> widget interactivity ceiling (F10 §10 open question) stays [v1] static zones; streak-chip tick values unspecified in spec → design-system default (150 ms pop) applied.
+      <b>Open items surfaced:</b> streak-chip tick values unspecified in spec → design-system default (150 ms pop) applied.
     </div></div>
   </div>
 </div>
