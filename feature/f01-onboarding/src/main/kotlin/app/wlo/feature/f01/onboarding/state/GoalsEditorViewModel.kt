@@ -238,7 +238,9 @@ public class GoalsEditorViewModel(
                             formState = GoalFormState.EDITING,
                             dirty = true,
                             diff = differences,
-                            notice = "Current v${current.version} and your draft are shown below. Save only after review.",
+                            notice =
+                                "Current v${current.version} and your draft are shown below. " +
+                                    "Save only after review.",
                         )
                     persistDraft(state.value)
                 }
@@ -531,7 +533,7 @@ public class GoalsEditorViewModel(
                     medicallyInfluencedWeight = draft?.medicallyInfluencedWeight ?: SafetyAnswer.NOT_ANSWERED,
                     currentWeightIsStarting = trendWeight == null && activeProfile.startWeightKg != null,
                     dirty = draft != null,
-                    notice = if (draftConflict) "Your draft was based on a different version. Review differences." else null,
+                    notice = draftConflictNotice(draftConflict),
                 ),
             )
             return
@@ -590,7 +592,7 @@ public class GoalsEditorViewModel(
                         ?: SafetyAnswer.NOT_ANSWERED,
                 currentWeightIsStarting = trendWeight == null && activeProfile.startWeightKg != null,
                 dirty = draft != null,
-                notice = if (draftConflict) "Your draft was based on a different version. Review differences." else null,
+                notice = draftConflictNotice(draftConflict),
                 history = history,
             ),
         )
@@ -693,7 +695,11 @@ public class GoalsEditorViewModel(
         viewModelScope.launch { documents.writeText(draftKey(id), GoalsEditorDraftIO.encode(draft)) }
     }
 
-    private fun GoalsEditorDraft.displayWeight(unit: MassUnit): String = restoredGoalWeightText(targetWeightText, massUnit, unit)
+    private fun GoalsEditorDraft.displayWeight(unit: MassUnit): String =
+        restoredGoalWeightText(targetWeightText, massUnit, unit)
+
+    private fun draftConflictNotice(hasConflict: Boolean): String? =
+        if (hasConflict) "Your draft was based on a different version. Review differences." else null
 
     private suspend fun finishJournal(
         journal: GoalSaveJournal,
