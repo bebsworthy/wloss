@@ -1,13 +1,13 @@
 ---
 id: WLO-0094
 title: 'P1: Make logbook editing, deletion and undo accessible'
-status: doing
+status: done
 theme: weight-core
 release:
 created: 2026-09-16T07:22:28Z
-modified: 2026-09-16T12:50:56Z
-closed:
-revision: bab83f94aaef41fd
+modified: 2026-09-16T14:02:51Z
+closed: 2026-09-16T14:02:51Z
+revision: 1810b6ad3404e9f6
 blocks: [WLO-0092, WLO-0096, WLO-0099]
 related: [WLO-0087]
 ---
