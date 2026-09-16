@@ -1,13 +1,13 @@
 ---
 id: WLO-0095
 title: 'P1: Repair CSV mapping and data-movement recovery UX'
-status: doing
+status: done
 theme: weight-core
 release:
 created: 2026-09-16T07:22:28Z
-modified: 2026-09-16T12:48:17Z
-closed:
-revision: 4807a803d865ec62
+modified: 2026-09-16T14:02:52Z
+closed: 2026-09-16T14:02:52Z
+revision: 9f8382e4ab9793c3
 blocks: [WLO-0097, WLO-0099]
 related: [WLO-0087]
 ---
