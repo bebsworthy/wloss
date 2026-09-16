@@ -4,7 +4,8 @@ import androidx.room3.Database
 import androidx.room3.RoomDatabase
 
 /**
- * WLO relational core, schema v7 (weight-first onboarding makes optional
+ * WLO relational core, schema v8 (Health Connect source identity, cursors,
+ * and visible import receipts; weight-first onboarding makes optional
  * health facts nullable rather than inventing placeholder values; M5 added the
  * F03/F04 planning surface on the
  * M4 spine: recipes, grocery catalog, plan versions/slots, list items,
@@ -33,8 +34,11 @@ import androidx.room3.RoomDatabase
         ListItemEntity::class,
         PantryItemEntity::class,
         AisleCorrectionEntity::class,
+        HealthConnectRecordEntity::class,
+        HealthConnectSyncStateEntity::class,
+        HealthConnectImportLogEntity::class,
     ],
-    version = 7,
+    version = 8,
     exportSchema = true,
 )
 public abstract class WloDatabase : RoomDatabase() {
@@ -79,6 +83,8 @@ public abstract class WloDatabase : RoomDatabase() {
     public abstract fun pantryItems(): PantryItemDao
 
     public abstract fun aisleCorrections(): AisleCorrectionDao
+
+    public abstract fun healthConnect(): HealthConnectDao
 
     public companion object {
         public const val NAME: String = "wlo.db"

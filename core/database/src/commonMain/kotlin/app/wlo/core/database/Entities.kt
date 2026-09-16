@@ -89,6 +89,54 @@ public data class MeasurementEventAttrEntity(
     public val valueReal: Double? = null,
 )
 
+/** Durable Health Connect identity; source records never collapse into the daily scalar. */
+@Entity(
+    tableName = "health_connect_records",
+    indices = [Index("measurementEventId"), Index(value = ["profileId", "metric"])],
+)
+public data class HealthConnectRecordEntity(
+    @PrimaryKey public val recordId: String,
+    public val profileId: String,
+    public val measurementEventId: String,
+    public val dataOriginPackage: String,
+    public val clientRecordId: String? = null,
+    public val clientRecordVersion: Long? = null,
+    public val recordingMethod: Int,
+    public val lastModifiedAtEpochMs: Long,
+    public val capturedAtEpochMs: Long,
+    public val zoneOffsetSeconds: Int? = null,
+    public val metric: String,
+    public val canonicalValue: Double,
+)
+
+/** One independent cursor per profile and datatype, as required by Health Connect. */
+@Entity(tableName = "health_connect_sync_state", primaryKeys = ["profileId", "metric"])
+public data class HealthConnectSyncStateEntity(
+    public val profileId: String,
+    public val metric: String,
+    public val changeToken: String,
+    public val lastSyncAtEpochMs: Long,
+)
+
+/** User-visible append-only receipt for every manual sync attempt. */
+@Entity(
+    tableName = "health_connect_import_log",
+    indices = [Index(value = ["profileId", "atEpochMs"])],
+)
+public data class HealthConnectImportLogEntity(
+    @PrimaryKey public val id: String,
+    public val profileId: String,
+    public val atEpochMs: Long,
+    public val outcome: String,
+    public val inserted: Int,
+    public val updated: Int,
+    public val deleted: Int,
+    public val skipped: Int,
+    public val conflicts: Int,
+    public val retryable: Boolean,
+    public val detail: String? = null,
+)
+
 /**
  * Cached day scalars (Appendix A.3): WRITTEN ONLY BY THE PROJECTION PIPELINE
  * in `:core:data` (`DayProjector`) — features never write this table; they

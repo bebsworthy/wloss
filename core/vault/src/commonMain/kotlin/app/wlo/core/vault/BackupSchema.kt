@@ -42,6 +42,7 @@ public object BackupSchema {
     public const val SECTION_LIST: String = "list_items"
     public const val SECTION_PANTRY: String = "pantry_items"
     public const val SECTION_AISLE_CORRECTIONS: String = "aisle_corrections"
+    public const val SECTION_HEALTH_CONNECT: String = "health_connect"
     public const val SECTION_SETTINGS: String = "settings"
     public const val SECTION_DOCUMENTS: String = "documents"
     public const val SECTION_VAULT: String = "vault_blobs"
@@ -63,6 +64,7 @@ public object BackupSchema {
             SECTION_LIST,
             SECTION_PANTRY,
             SECTION_AISLE_CORRECTIONS,
+            SECTION_HEALTH_CONNECT,
             SECTION_SETTINGS,
             SECTION_DOCUMENTS,
             SECTION_VAULT,
@@ -371,6 +373,53 @@ public data class DocumentsSection(
     val values: Map<String, String> = emptyMap(),
 )
 
+/** Health Connect provenance, replay cursor, and user-visible sync receipts. */
+@Serializable
+public data class HealthConnectSection(
+    val records: List<HealthConnectRecordRow> = emptyList(),
+    val syncStates: List<HealthConnectSyncStateRow> = emptyList(),
+    val logs: List<HealthConnectLogRow> = emptyList(),
+)
+
+@Serializable
+public data class HealthConnectRecordRow(
+    val recordId: String,
+    val profileId: String,
+    val measurementEventId: String,
+    val dataOriginPackage: String,
+    val clientRecordId: String? = null,
+    val clientRecordVersion: Long? = null,
+    val recordingMethod: Int,
+    val lastModifiedAtEpochMs: Long,
+    val capturedAtEpochMs: Long,
+    val zoneOffsetSeconds: Int? = null,
+    val metric: String,
+    val canonicalValue: Double,
+)
+
+@Serializable
+public data class HealthConnectSyncStateRow(
+    val profileId: String,
+    val metric: String,
+    val changeToken: String,
+    val lastSyncAtEpochMs: Long,
+)
+
+@Serializable
+public data class HealthConnectLogRow(
+    val id: String,
+    val profileId: String,
+    val atEpochMs: Long,
+    val outcome: String,
+    val inserted: Int,
+    val updated: Int,
+    val deleted: Int,
+    val skipped: Int,
+    val conflicts: Int,
+    val retryable: Boolean,
+    val detail: String? = null,
+)
+
 /**
  * The logical payload: every restored/restored-able section, typed. Section
  * names + shapes are pinned by [BackupSchema]; evolution is additive (ADR-004).
@@ -391,6 +440,7 @@ public data class BackupPayload(
     val listItems: List<ListItemRow> = emptyList(),
     val pantryItems: List<PantryItemRow> = emptyList(),
     val aisleCorrections: List<AisleCorrectionRow> = emptyList(),
+    val healthConnect: HealthConnectSection = HealthConnectSection(),
     val settings: SettingsSection = SettingsSection(),
     val documents: DocumentsSection = DocumentsSection(),
     /** Present only when the bundle opted into attachments (R-U18). */

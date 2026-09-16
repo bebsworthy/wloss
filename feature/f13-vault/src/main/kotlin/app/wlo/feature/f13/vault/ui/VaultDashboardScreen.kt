@@ -1,5 +1,6 @@
 package app.wlo.feature.f13.vault.ui
 
+import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -18,6 +19,10 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
+import androidx.health.connect.client.PermissionController
+import androidx.health.connect.client.permission.HealthPermission
+import androidx.health.connect.client.records.BodyFatRecord
+import androidx.health.connect.client.records.WeightRecord
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import app.wlo.core.common.formatBytes
 import app.wlo.core.designsystem.WloCard
@@ -30,6 +35,7 @@ import app.wlo.core.designsystem.WloSpacing
 import app.wlo.core.designsystem.WloSwitchRow
 import app.wlo.core.designsystem.wloExtendedColors
 import app.wlo.core.designsystem.wloType
+import app.wlo.core.ports.HealthConnectAvailability
 import app.wlo.feature.f13.vault.state.VaultDashboardViewModel
 
 /**
@@ -48,6 +54,17 @@ public fun VaultDashboardScreen(
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     var freshStartAsking by remember { mutableStateOf(false) }
+    val healthPermissions =
+        remember {
+            setOf(
+                HealthPermission.getReadPermission(WeightRecord::class),
+                HealthPermission.getReadPermission(BodyFatRecord::class),
+            )
+        }
+    val healthPermissionLauncher =
+        rememberLauncherForActivityResult(PermissionController.createRequestPermissionResultContract()) {
+            viewModel.refreshHealthConnect()
+        }
 
     Column(
         modifier =
@@ -171,6 +188,52 @@ public fun VaultDashboardScreen(
                 onClick = onOpenImport,
                 modifier = Modifier.testTag("f13-open-import"),
             )
+        }
+
+        WloCard(modifier = Modifier.fillMaxWidth().testTag("f13-health-connect")) {
+            WloCardHeader(title = "Health Connect")
+            val health = state.healthConnect
+            val statusText =
+                when {
+                    health == null -> "Checking availability…"
+                    health.availability == HealthConnectAvailability.UPDATE_REQUIRED ->
+                        "Health Connect needs an update before WLO can import."
+                    health.availability == HealthConnectAvailability.UNAVAILABLE ->
+                        "Health Connect is not available on this device."
+                    health.permissions.allGranted -> "Weight and body-fat access granted."
+                    health.permissions.anyGranted -> "Partial access granted; only allowed metrics will sync."
+                    else -> "Connect to import weight and body-fat records. Nothing is written back."
+                }
+            Text(statusText, style = wloType.body, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            health?.lastLog?.let { log ->
+                Text(
+                    text =
+                        "Last sync: ${log.outcome} · ${log.inserted} added · ${log.updated} updated · " +
+                            "${log.deleted} deleted · ${log.skipped} unchanged" +
+                            if (log.conflicts > 0) " · ${log.conflicts} conflicts" else "",
+                    style = wloType.receipt,
+                    color = wloExtendedColors.textTertiary,
+                    modifier = Modifier.testTag("f13-health-connect-log"),
+                )
+                log.detail?.let { Text(it, style = wloType.receipt, color = wloExtendedColors.textTertiary) }
+            }
+            if (health?.availability == HealthConnectAvailability.AVAILABLE) {
+                if (health.permissions.anyGranted) {
+                    WloSecondaryButton(
+                        label = "Import now",
+                        onClick = viewModel::syncHealthConnect,
+                        enabled = !state.busy,
+                        modifier = Modifier.testTag("f13-health-connect-sync"),
+                    )
+                }
+                if (!health.permissions.allGranted) {
+                    WloSecondaryButton(
+                        label = if (health.permissions.anyGranted) "Review access" else "Choose access",
+                        onClick = { healthPermissionLauncher.launch(healthPermissions) },
+                        modifier = Modifier.testTag("f13-health-connect-permission"),
+                    )
+                }
+            }
         }
 
         // --- Fresh Start (R-B7) ---------------------------------------------------

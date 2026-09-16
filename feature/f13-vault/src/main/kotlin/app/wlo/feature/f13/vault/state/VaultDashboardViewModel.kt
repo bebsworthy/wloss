@@ -2,9 +2,13 @@ package app.wlo.feature.f13.vault.state
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import app.wlo.core.common.WloResult
+import app.wlo.core.data.ProfileRepository
 import app.wlo.core.ports.BackupRequest
 import app.wlo.core.ports.BackupScheduler
 import app.wlo.core.ports.DataVaultPort
+import app.wlo.core.ports.HealthConnectSyncPort
+import app.wlo.core.ports.HealthConnectSyncStatus
 import app.wlo.core.ports.VaultBackupState
 import app.wlo.core.ports.VaultFreshStartReport
 import app.wlo.core.ports.VaultPartitionUsage
@@ -24,6 +28,7 @@ public data class VaultDashboardUiState(
     public val freshStartPreview: VaultFreshStartReport? = null,
     public val freshStartDone: VaultFreshStartReport? = null,
     public val busy: Boolean = false,
+    public val healthConnect: HealthConnectSyncStatus? = null,
 )
 
 /**
@@ -34,15 +39,26 @@ public data class VaultDashboardUiState(
 public class VaultDashboardViewModel(
     private val vault: DataVaultPort,
     private val scheduler: BackupScheduler,
+    private val profiles: ProfileRepository,
+    private val healthConnectSync: HealthConnectSyncPort,
 ) : ViewModel() {
     private val usage = MutableStateFlow<List<VaultPartitionUsage>>(emptyList())
     private val backup = MutableStateFlow<VaultBackupState?>(null)
     private val freshPreview = MutableStateFlow<VaultFreshStartReport?>(null)
     private val freshDone = MutableStateFlow<VaultFreshStartReport?>(null)
     private val busy = MutableStateFlow(false)
+    private val healthConnect = MutableStateFlow<HealthConnectSyncStatus?>(null)
+    private val activity = combine(busy, healthConnect) { busyNow, hc -> busyNow to hc }
 
     public val state: StateFlow<VaultDashboardUiState> =
-        combine(usage, backup, freshPreview, freshDone, busy) { partitions, backupState, preview, done, busyNow ->
+        combine(
+            usage,
+            backup,
+            freshPreview,
+            freshDone,
+            activity,
+        ) { partitions, backupState, preview, done, activityNow ->
+            val (busyNow, hc) = activityNow
             VaultDashboardUiState(
                 partitions = partitions,
                 totalVaultBytes = partitions.sumOf { it.bytes },
@@ -55,6 +71,7 @@ public class VaultDashboardViewModel(
                 freshStartPreview = preview,
                 freshStartDone = done,
                 busy = busyNow,
+                healthConnect = hc,
             )
         }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), VaultDashboardUiState())
 
@@ -68,6 +85,23 @@ public class VaultDashboardViewModel(
             usage.value = vault.storageUsage()
             backup.value = vault.backupState()
             freshPreview.value = vault.freshStartPreview()
+            healthConnect.value = healthConnectSync.status()
+            busy.value = false
+        }
+    }
+
+    public fun refreshHealthConnect() {
+        viewModelScope.launch { healthConnect.value = healthConnectSync.status() }
+    }
+
+    public fun syncHealthConnect() {
+        viewModelScope.launch {
+            busy.value = true
+            when (val active = profiles.active()) {
+                is WloResult.Ok -> active.value?.let { healthConnectSync.syncNow(it.id) }
+                is WloResult.Err -> Unit
+            }
+            healthConnect.value = healthConnectSync.status()
             busy.value = false
         }
     }

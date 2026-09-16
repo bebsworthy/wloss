@@ -177,6 +177,57 @@ public interface MeasurementEventAttrDao {
     public suspend fun insertAllIgnoring(attrs: List<MeasurementEventAttrEntity>)
 }
 
+@Dao
+public interface HealthConnectDao {
+    @Query("SELECT * FROM health_connect_records WHERE recordId = :recordId")
+    public suspend fun record(recordId: String): HealthConnectRecordEntity?
+
+    @Upsert
+    public suspend fun upsertRecord(record: HealthConnectRecordEntity)
+
+    @Query("DELETE FROM health_connect_records WHERE recordId = :recordId")
+    public suspend fun deleteRecord(recordId: String)
+
+    @Query("SELECT * FROM health_connect_records ORDER BY recordId")
+    public suspend fun allRecords(): List<HealthConnectRecordEntity>
+
+    @Query("SELECT * FROM health_connect_records WHERE profileId = :profileId AND metric = :metric")
+    public suspend fun records(
+        profileId: String,
+        metric: String,
+    ): List<HealthConnectRecordEntity>
+
+    @Insert(onConflict = OnConflictStrategy.IGNORE)
+    public suspend fun insertRecordsIgnoring(records: List<HealthConnectRecordEntity>)
+
+    @Query("SELECT * FROM health_connect_sync_state WHERE profileId = :profileId AND metric = :metric")
+    public suspend fun syncState(
+        profileId: String,
+        metric: String,
+    ): HealthConnectSyncStateEntity?
+
+    @Upsert
+    public suspend fun upsertSyncState(state: HealthConnectSyncStateEntity)
+
+    @Query("SELECT * FROM health_connect_sync_state ORDER BY profileId, metric")
+    public suspend fun allSyncStates(): List<HealthConnectSyncStateEntity>
+
+    @Insert(onConflict = OnConflictStrategy.IGNORE)
+    public suspend fun insertSyncStatesIgnoring(states: List<HealthConnectSyncStateEntity>)
+
+    @Insert
+    public suspend fun appendLog(log: HealthConnectImportLogEntity)
+
+    @Query("SELECT * FROM health_connect_import_log WHERE profileId = :profileId ORDER BY atEpochMs DESC LIMIT 1")
+    public suspend fun latestLog(profileId: String): HealthConnectImportLogEntity?
+
+    @Query("SELECT * FROM health_connect_import_log ORDER BY atEpochMs, id")
+    public suspend fun allLogs(): List<HealthConnectImportLogEntity>
+
+    @Insert(onConflict = OnConflictStrategy.IGNORE)
+    public suspend fun insertLogsIgnoring(logs: List<HealthConnectImportLogEntity>)
+}
+
 /**
  * Day scalars: write access belongs to the `:core:data` projection pipeline
  * only (Appendix A.3); consumers read through DayProjectionRepository.

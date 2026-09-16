@@ -123,6 +123,10 @@ core = "1.19.0"
 # BiometricPrompt, whose public constructor takes androidx FragmentActivity
 # (no androidx.biometric dependency — see AppLock.kt FLAG note).
 fragment = "1.9.0"
+# Health Connect 1.1.0 is the current stable client line (verified 2026-09-16
+# against the AndroidX release notes). Keep the SDK confined to the F13
+# adapter and its permission-contract UI; domain code talks through :core:ports.
+healthConnect = "1.1.0"
 detekt = "1.23.8"
 # ktlint-gradle 14.2.0 (Mar 2026, actively maintained; GitHub releases + plugin
 # portal metadata, verified 2026-09-12). Chosen over a manual exec task: the v14
@@ -165,6 +169,7 @@ bouncycastle-bcprov = { module = "org.bouncycastle:bcprov-jdk18on", version.ref 
 androidx-work-runtime = { module = "androidx.work:work-runtime-ktx", version.ref = "work" }
 androidx-core-ktx = { module = "androidx.core:core-ktx", version.ref = "core" }
 androidx-fragment-ktx = { module = "androidx.fragment:fragment-ktx", version.ref = "fragment" }
+androidx-health-connect-client = { module = "androidx.health.connect:connect-client", version.ref = "healthConnect" }
 
 # --- Networking (D9: :core:network ONLY — the single egress choke point) ---
 ktor-client-core = { module = "io.ktor:ktor-client-core", version.ref = "ktor" }

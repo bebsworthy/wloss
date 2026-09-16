@@ -11,6 +11,9 @@ import app.wlo.core.database.DiaryEntryRevisionEntity
 import app.wlo.core.database.FoodItemEntity
 import app.wlo.core.database.FoodSearchEntity
 import app.wlo.core.database.GroceryItemEntity
+import app.wlo.core.database.HealthConnectImportLogEntity
+import app.wlo.core.database.HealthConnectRecordEntity
+import app.wlo.core.database.HealthConnectSyncStateEntity
 import app.wlo.core.database.ListItemEntity
 import app.wlo.core.database.MeasurementEventAttrEntity
 import app.wlo.core.database.MeasurementEventEntity
@@ -144,6 +147,27 @@ public class StagedRestorer(
             buildList {
                 val orphanMeasurements = payload.measurements.filter { it.profileId !in profileIds }.map { it.id }
                 if (orphanMeasurements.isNotEmpty()) add("measurements reference missing profiles: $orphanMeasurements")
+                val eventIds =
+                    payload.measurements.map { it.id }.toSet() +
+                        db
+                            .measurementEvents()
+                            .all()
+                            .map { it.id }
+                            .toSet()
+                val orphanHealthRecords =
+                    payload.healthConnect.records
+                        .filter { it.profileId !in profileIds || it.measurementEventId !in eventIds }
+                        .map { it.recordId }
+                if (orphanHealthRecords.isNotEmpty()) {
+                    add("Health Connect records reference missing profiles or events: $orphanHealthRecords")
+                }
+                val orphanHealthStateProfiles =
+                    (payload.healthConnect.syncStates.map { it.profileId } + payload.healthConnect.logs.map { it.profileId })
+                        .filterNot { it in profileIds }
+                        .distinct()
+                if (orphanHealthStateProfiles.isNotEmpty()) {
+                    add("Health Connect state references missing profiles: $orphanHealthStateProfiles")
+                }
                 val orphanDiary = payload.diary.filter { it.profileId !in profileIds }.map { it.id }
                 if (orphanDiary.isNotEmpty()) add("diary entries reference missing profiles: $orphanDiary")
                 val badRevisions =
@@ -231,6 +255,10 @@ internal fun decodePayloadSections(sections: JsonObject): BackupPayload {
         listItems = rows(BackupSchema.SECTION_LIST, ListItemRow.serializer()),
         pantryItems = rows(BackupSchema.SECTION_PANTRY, PantryItemRow.serializer()),
         aisleCorrections = rows(BackupSchema.SECTION_AISLE_CORRECTIONS, AisleCorrectionRow.serializer()),
+        healthConnect =
+            sections[BackupSchema.SECTION_HEALTH_CONNECT]?.let {
+                section(it, HealthConnectSection.serializer())
+            } ?: HealthConnectSection(),
         settings = section(sections[BackupSchema.SECTION_SETTINGS], SettingsSection.serializer()),
         documents = section(sections[BackupSchema.SECTION_DOCUMENTS], DocumentsSection.serializer()),
         vaultBlobs = rows(BackupSchema.SECTION_VAULT, VaultBlobRow.serializer()),
@@ -374,6 +402,9 @@ public class RestoreCommitter(
             db.listItems().insertAllIgnoring(payload.listItems.map { it.toEntity() })
             db.pantryItems().insertAllIgnoring(payload.pantryItems.map { it.toEntity() })
             db.aisleCorrections().insertAllIgnoring(payload.aisleCorrections.map { it.toEntity() })
+            db.healthConnect().insertRecordsIgnoring(payload.healthConnect.records.map { it.toEntity() })
+            db.healthConnect().insertSyncStatesIgnoring(payload.healthConnect.syncStates.map { it.toEntity() })
+            db.healthConnect().insertLogsIgnoring(payload.healthConnect.logs.map { it.toEntity() })
 
             warnings += reconcileConsentLedger(payload.consentLedger)
         }
@@ -444,6 +475,7 @@ public class RestoreCommitter(
         for (row in payload.planSlots) if (db.planSlots().byId(row.id) != null) present++
         for (row in payload.listItems) if (db.listItems().byId(row.id) != null) present++
         for (row in payload.pantryItems) if (db.pantryItems().byId(row.id) != null) present++
+        for (row in payload.healthConnect.records) if (db.healthConnect().record(row.recordId) != null) present++
         return present
     }
 
@@ -457,7 +489,8 @@ public class RestoreCommitter(
             payload.plans.size +
             payload.planSlots.size +
             payload.listItems.size +
-            payload.pantryItems.size
+            payload.pantryItems.size +
+            payload.healthConnect.records.size
 
     private fun chainVerifies(rows: List<ConsentLedgerRow>): Boolean {
         var prev: String? = rows.firstOrNull()?.prevHashHex
@@ -540,6 +573,28 @@ internal fun MeasurementAttrRow.toEntity(eventId: String): MeasurementEventAttrE
         valueText = valueText,
         valueReal = valueReal,
     )
+
+internal fun HealthConnectRecordRow.toEntity(): HealthConnectRecordEntity =
+    HealthConnectRecordEntity(
+        recordId,
+        profileId,
+        measurementEventId,
+        dataOriginPackage,
+        clientRecordId,
+        clientRecordVersion,
+        recordingMethod,
+        lastModifiedAtEpochMs,
+        capturedAtEpochMs,
+        zoneOffsetSeconds,
+        metric,
+        canonicalValue,
+    )
+
+internal fun HealthConnectSyncStateRow.toEntity(): HealthConnectSyncStateEntity =
+    HealthConnectSyncStateEntity(profileId, metric, changeToken, lastSyncAtEpochMs)
+
+internal fun HealthConnectLogRow.toEntity(): HealthConnectImportLogEntity =
+    HealthConnectImportLogEntity(id, profileId, atEpochMs, outcome, inserted, updated, deleted, skipped, conflicts, retryable, detail)
 
 internal fun DiaryEntryRow.toEntity(): DiaryEntryEntity =
     DiaryEntryEntity(

@@ -41,6 +41,21 @@ class MigrationTest {
         )
 
     @Test
+    fun migrate7To8_addsHealthConnectIdentityCursorAndLog() =
+        runTest {
+            helper.createDatabase(7).close()
+            val migrated = helper.runMigrationsAndValidate(8, listOf(Migrations.MIGRATION_7_8))
+            migrated.use { connection ->
+                listOf("health_connect_records", "health_connect_sync_state", "health_connect_import_log").forEach { table ->
+                    assertEquals(
+                        1L,
+                        queryLong(connection, "SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name='$table'"),
+                    )
+                }
+            }
+        }
+
+    @Test
     fun migrate1To2_preservesRowsAndAddsNoteColumn() =
         runTest {
             helper.createDatabase(1).use { connection ->
@@ -334,12 +349,12 @@ class MigrationTest {
         }
 
     @Test
-    fun v1DatabaseChainsThroughToV7() =
+    fun v1DatabaseChainsThroughToV8() =
         runTest {
             helper.createDatabase(1).close()
             helper
                 .runMigrationsAndValidate(
-                    7,
+                    8,
                     listOf(
                         Migrations.MIGRATION_1_2,
                         Migrations.MIGRATION_2_3,
@@ -347,6 +362,7 @@ class MigrationTest {
                         Migrations.MIGRATION_4_5,
                         Migrations.MIGRATION_5_6,
                         Migrations.MIGRATION_6_7,
+                        Migrations.MIGRATION_7_8,
                     ),
                 ).use { connection ->
                     assertEquals(

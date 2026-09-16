@@ -6,6 +6,9 @@ import app.wlo.core.database.DiaryEntryEntity
 import app.wlo.core.database.DiaryEntryRevisionEntity
 import app.wlo.core.database.FoodItemEntity
 import app.wlo.core.database.GroceryItemEntity
+import app.wlo.core.database.HealthConnectImportLogEntity
+import app.wlo.core.database.HealthConnectRecordEntity
+import app.wlo.core.database.HealthConnectSyncStateEntity
 import app.wlo.core.database.ListItemEntity
 import app.wlo.core.database.MeasurementEventAttrEntity
 import app.wlo.core.database.MeasurementEventEntity
@@ -63,6 +66,12 @@ public class SnapshotAssembler(
             listItems = db.listItems().all().map { it.toRow() },
             pantryItems = db.pantryItems().all().map { it.toRow() },
             aisleCorrections = db.aisleCorrections().all().map { it.toRow() },
+            healthConnect =
+                HealthConnectSection(
+                    records = db.healthConnect().allRecords().map { it.toRow() },
+                    syncStates = db.healthConnect().allSyncStates().map { it.toRow() },
+                    logs = db.healthConnect().allLogs().map { it.toRow() },
+                ),
             settings = SettingsSection(values = settings.exportKnownSettings()),
             documents = DocumentsSection(values = documents.snapshotDocuments()),
             // R-U18: blobs ride ONLY the explicit includeVault opt-in. The
@@ -75,6 +84,28 @@ public class SnapshotAssembler(
     /** PART B: enumerate partition blobs (VaultFileStore) for opted-in bundles. */
     private suspend fun collectVaultBlobs(): List<VaultBlobRow> = emptyList()
 }
+
+internal fun HealthConnectRecordEntity.toRow(): HealthConnectRecordRow =
+    HealthConnectRecordRow(
+        recordId,
+        profileId,
+        measurementEventId,
+        dataOriginPackage,
+        clientRecordId,
+        clientRecordVersion,
+        recordingMethod,
+        lastModifiedAtEpochMs,
+        capturedAtEpochMs,
+        zoneOffsetSeconds,
+        metric,
+        canonicalValue,
+    )
+
+internal fun HealthConnectSyncStateEntity.toRow(): HealthConnectSyncStateRow =
+    HealthConnectSyncStateRow(profileId, metric, changeToken, lastSyncAtEpochMs)
+
+internal fun HealthConnectImportLogEntity.toRow(): HealthConnectLogRow =
+    HealthConnectLogRow(id, profileId, atEpochMs, outcome, inserted, updated, deleted, skipped, conflicts, retryable, detail)
 
 // --- entity → row mappers (mechanical; field names pinned by the row types) --
 

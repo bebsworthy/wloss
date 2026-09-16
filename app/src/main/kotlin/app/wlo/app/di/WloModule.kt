@@ -54,11 +54,15 @@ import app.wlo.core.network.OpenFoodFactsClient
 import app.wlo.core.network.RoomEgressLedger
 import app.wlo.core.ports.BarcodeScanner
 import app.wlo.core.ports.EgressPort
+import app.wlo.core.ports.HealthConnectPort
+import app.wlo.core.ports.HealthConnectSyncPort
 import app.wlo.core.ports.ModelManager
 import app.wlo.core.ports.OcrReader
 import app.wlo.core.ports.OffLookupPolicy
 import app.wlo.core.ports.OffRepository
 import app.wlo.core.ports.PhotoAnalyzer
+import app.wlo.core.vault.AndroidHealthConnectPort
+import app.wlo.core.vault.HealthConnectSyncManager
 import app.wlo.feature.f01.onboarding.di.f01OnboardingModule
 import app.wlo.feature.f01.onboarding.domain.TemplateLibrary
 import app.wlo.feature.f02.food.di.f02FoodModule
@@ -194,6 +198,15 @@ public val platformModule: Module =
             )
         }
         single<GroceryRepository> { RoomGroceryRepository(db = get<WloDatabase>()) }
+        single<HealthConnectPort> { AndroidHealthConnectPort(context = get()) }
+        single<HealthConnectSyncPort> {
+            HealthConnectSyncManager(
+                client = get(),
+                db = get(),
+                weighIns = get(),
+                nowEpochMs = { System.currentTimeMillis() },
+            )
+        }
 
         // F01 shipped template library: plain JSON assets, read through the
         // injectable [OnboardingTemplates.Reader] (F01 §3 — no template is

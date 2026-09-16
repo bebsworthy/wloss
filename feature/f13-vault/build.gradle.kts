@@ -12,6 +12,7 @@ dependencies {
     implementation(libs.compose.foundation)
     // The SAF pickers (ACTION_OPEN_DOCUMENT_TREE / OPEN_DOCUMENT / CREATE).
     implementation(libs.androidx.activity.compose)
+    implementation(libs.androidx.health.connect.client)
     implementation(libs.androidx.lifecycle.runtime.compose)
     implementation(libs.kotlinx.datetime)
     implementation(libs.kotlinx.coroutines.core)
@@ -29,6 +30,7 @@ dependencies {
     // The data-mechanics port (D1: the backup/restore pipeline is bound in
     // :app) + the typed settings store (folder uri, auto toggle, app lock).
     implementation(project(":core:ports"))
+    implementation(project(":core:data"))
     implementation(project(":core:datastore"))
     implementation(project(":core:model"))
     implementation(libs.kotlinx.serialization.json)

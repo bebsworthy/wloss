@@ -380,8 +380,44 @@ public object Migrations {
             }
         }
 
+    /** Health Connect identity/cursor/log storage (WLO-0038). */
+    public val MIGRATION_7_8: Migration =
+        object : Migration(7, 8) {
+            override suspend fun migrate(connection: SQLiteConnection) {
+                connection.exec(
+                    "CREATE TABLE IF NOT EXISTS `health_connect_records` (" +
+                        "`recordId` TEXT NOT NULL, `profileId` TEXT NOT NULL, `measurementEventId` TEXT NOT NULL, " +
+                        "`dataOriginPackage` TEXT NOT NULL, `clientRecordId` TEXT, `clientRecordVersion` INTEGER, " +
+                        "`recordingMethod` INTEGER NOT NULL, `lastModifiedAtEpochMs` INTEGER NOT NULL, " +
+                        "`capturedAtEpochMs` INTEGER NOT NULL, `zoneOffsetSeconds` INTEGER, `metric` TEXT NOT NULL, " +
+                        "`canonicalValue` REAL NOT NULL, PRIMARY KEY(`recordId`))",
+                )
+                connection.exec(
+                    "CREATE INDEX IF NOT EXISTS `index_health_connect_records_measurementEventId` ON `health_connect_records` (`measurementEventId`)",
+                )
+                connection.exec(
+                    "CREATE INDEX IF NOT EXISTS `index_health_connect_records_profileId_metric` ON `health_connect_records` (`profileId`, `metric`)",
+                )
+                connection.exec(
+                    "CREATE TABLE IF NOT EXISTS `health_connect_sync_state` (" +
+                        "`profileId` TEXT NOT NULL, `metric` TEXT NOT NULL, `changeToken` TEXT NOT NULL, " +
+                        "`lastSyncAtEpochMs` INTEGER NOT NULL, PRIMARY KEY(`profileId`, `metric`))",
+                )
+                connection.exec(
+                    "CREATE TABLE IF NOT EXISTS `health_connect_import_log` (" +
+                        "`id` TEXT NOT NULL, `profileId` TEXT NOT NULL, `atEpochMs` INTEGER NOT NULL, " +
+                        "`outcome` TEXT NOT NULL, `inserted` INTEGER NOT NULL, `updated` INTEGER NOT NULL, " +
+                        "`deleted` INTEGER NOT NULL, `skipped` INTEGER NOT NULL, `conflicts` INTEGER NOT NULL, " +
+                        "`retryable` INTEGER NOT NULL, `detail` TEXT, PRIMARY KEY(`id`))",
+                )
+                connection.exec(
+                    "CREATE INDEX IF NOT EXISTS `index_health_connect_import_log_profileId_atEpochMs` ON `health_connect_import_log` (`profileId`, `atEpochMs`)",
+                )
+            }
+        }
+
     public val ALL: Array<Migration> =
-        arrayOf(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7)
+        arrayOf(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8)
 }
 
 /** Small extension mirroring the statement-prepare/step pattern used above. */

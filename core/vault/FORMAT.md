@@ -74,7 +74,7 @@ rules: explicit `schemaVersion`, defaults for new fields,
 Section order (hashing + FK-safe commit order): `profiles, measurements,
 diary, targets, provenance, consent_ledger, food_items, recipes,
 grocery_items, plans, plan_slots, list_items, pantry_items,
-aisle_corrections, settings, documents, vault_blobs`.
+aisle_corrections, health_connect, settings, documents, vault_blobs`.
 
 Row shapes are the `*Row` data classes in `app.wlo.core.vault.BackupSchema`
 — kotlinx `@Serializable`, field names are the contract. Notables:
@@ -85,6 +85,9 @@ Row shapes are the `*Row` data classes in `app.wlo.core.vault.BackupSchema`
   (R-B2) — its own schemaVersion envelope travels inside the string.
 - `consent_ledger` rows carry the hash chain; restore appends only when the
   chain continues the local head.
+- `health_connect` carries immutable upstream record identity, per-datatype
+  change cursors, and visible sync receipts so provenance and idempotency
+  survive a restore.
 - EXCLUDED by ruling: `network_receipts` (they audit THIS install's egress —
   not user data), `day_records` (derived cache; recomputed on restore),
   `food_search` (FTS mirror; rebuilt), photo attachment blobs (R-U18; the

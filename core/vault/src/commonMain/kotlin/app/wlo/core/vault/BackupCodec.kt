@@ -101,6 +101,10 @@ public object BackupCodec {
             BackupSchema.SECTION_AISLE_CORRECTIONS,
             json.encodeToJsonElement(ListSerializer(AisleCorrectionRow.serializer()), payload.aisleCorrections),
         )
+        put(
+            BackupSchema.SECTION_HEALTH_CONNECT,
+            json.encodeToJsonElement(HealthConnectSection.serializer(), payload.healthConnect),
+        )
         put(BackupSchema.SECTION_SETTINGS, json.encodeToJsonElement(SettingsSection.serializer(), payload.settings))
         put(BackupSchema.SECTION_DOCUMENTS, json.encodeToJsonElement(DocumentsSection.serializer(), payload.documents))
         put(BackupSchema.SECTION_VAULT, json.encodeToJsonElement(ListSerializer(VaultBlobRow.serializer()), payload.vaultBlobs))

@@ -39,6 +39,7 @@ kotlin {
             implementation(libs.androidx.fragment.ktx)
             // The worker resolves the graph through the composition root.
             implementation(libs.koin.core)
+            implementation(libs.androidx.health.connect.client)
         }
         jvmTest.dependencies {
             implementation(libs.kotlin.test.junit)
