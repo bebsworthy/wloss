@@ -83,23 +83,23 @@ portion is absent; it is deliberately not promoted to Pass.
 
 ## Implementation-scenario traceability
 
-Every defined scenario is assigned below. “Automated + manual pending” maps to
-the owning ticket's unit-test/evidence directory plus the outstanding manual
-matrix in this report.
+Every defined scenario is assigned below. “Focused regression pass” means the
+named host-level assertions pass; it does not claim the corresponding device,
+process-death, assistive-technology, or visual journey has run.
 
 | Scenario IDs | Evidence | Outcome |
 |---|---|---|
-| A88-01…A88-07 | WLO-0088 evidence; data/database/vault suites | Automated pass; manual pending |
-| A89-01…A89-06 | WLO-0089 evidence; repository/ViewModel suites | Automated pass; manual pending |
-| A90-01…A90-07 | WLO-0090 evidence; body/state suites | Automated pass; manual pending |
-| A91-01…A91-06 | WLO-0091 evidence; contrast/static checks | Automated pass; visual/TalkBack pending |
-| A92-01…A92-06 | WLO-0092 evidence; screen/state suites | Automated pass; visual/device pending |
-| A93-01…A93-07 | WLO-0093 evidence; goals/profile suites | Automated pass; locale/IME/TalkBack pending |
-| A94-01…A94-07 | WLO-0094 evidence; logbook/repository suites | Automated pass; gesture/TalkBack pending |
-| A95-01…A95-06 | WLO-0095 evidence; parser/vault suites | Automated pass; SAF/device pending |
-| A96-01…A96-06 | WLO-0096 evidence; navigation suites | Automated pass; adaptive device pending |
-| A97-01…A97-07 | WLO-0097 evidence; onboarding/scheduler suites | Automated pass; permission/device pending |
-| A98-01…A98-07 | WLO-0098 evidence; chart tests | Automated pass; A98-02/05/06/07 manual pending |
+| A88-01…A88-07 | WLO-0088 evidence; data/database/vault suites | Focused regression pass; consumer/device matrix pending |
+| A89-01…A89-06 | WLO-0089 evidence; repository/ViewModel suites | Focused regression pass; process-death/device matrix pending |
+| A90-01…A90-07 | WLO-0090 evidence; body/state suites | Focused regression pass; lifecycle/device matrix pending |
+| A91-01…A91-06 | WLO-0091 evidence; contrast/static checks | Focused regression pass; visual/TalkBack pending |
+| A92-01…A92-06 | WLO-0092 evidence; screen/state suites | Focused regression pass; visual/device pending |
+| A93-01…A93-07 | WLO-0093 evidence; goals/profile suites | Focused regression pass; failure injection/locale/IME/TalkBack pending |
+| A94-01…A94-07 | WLO-0094 evidence; logbook/repository suites | Focused regression pass; gesture/TalkBack pending |
+| A95-01…A95-06 | WLO-0095 evidence; parser/vault suites | Focused regression pass; SAF/process-death device pending |
+| A96-01…A96-06 | WLO-0096 evidence; navigation suites | Focused regression pass; adaptive device pending |
+| A97-01…A97-07 | WLO-0097 evidence; onboarding/scheduler suites | Focused regression pass; permission/device pending |
+| A98-01…A98-07 | WLO-0098 evidence; chart tests | Focused regression pass; A98-02/05/06/07 manual pending |
 
 ## M3 self-audit
 
