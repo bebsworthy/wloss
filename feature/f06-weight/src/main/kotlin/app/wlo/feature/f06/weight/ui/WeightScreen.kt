@@ -317,7 +317,12 @@ public fun WeightScreen(
                             }
                         }
 
-                        WeightTrendCard(state = state, viewModel = viewModel, onOpenMath = onOpenMath)
+                        WeightTrendCard(
+                            state = state,
+                            viewModel = viewModel,
+                            onOpenMath = onOpenMath,
+                            onOpenLogbook = { onOpenLogbook(null) },
+                        )
 
                         GoalProgressCard(progress = state.goalProgress, state = state, onEditGoal = onEditGoal)
 
@@ -644,6 +649,7 @@ private fun WeightTrendCard(
     state: WeighInUiState,
     viewModel: WeighInViewModel,
     onOpenMath: () -> Unit,
+    onOpenLogbook: () -> Unit,
 ) {
     val trend = state.trend ?: return
     WloCard(modifier = Modifier.testTag("f06-trend-card")) {
@@ -668,6 +674,7 @@ private fun WeightTrendCard(
                 trend.emptyActionWindow?.let { target ->
                     { viewModel.onEvent(WeighInEvent.WindowChange(target)) }
                 },
+            onViewRawReadings = onOpenLogbook,
         )
         trend.delta30?.let { delta ->
             val formatted = state.massUnit.format(delta.value)

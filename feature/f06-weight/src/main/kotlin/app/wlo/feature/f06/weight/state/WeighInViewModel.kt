@@ -13,6 +13,7 @@ import app.wlo.core.data.ProfileRepository
 import app.wlo.core.data.WeighInRepository
 import app.wlo.core.data.WeighInWriteCommand
 import app.wlo.core.designsystem.ChartPoint
+import app.wlo.core.designsystem.ChartSeriesRole
 import app.wlo.core.engines.BmiEngine
 import app.wlo.core.engines.GirthRatiosEngine
 import app.wlo.core.engines.OutlierVerdict
@@ -830,7 +831,17 @@ public class WeighInViewModel(
                     currentTrend.copy(
                         trend =
                             if (currentTrend.trendLineVisible) {
-                                points.map { ChartPoint(it.epochDay, it.trendKg.value) }
+                                points.map {
+                                    ChartPoint(
+                                        epochDay = it.epochDay,
+                                        value = it.trendKg.value,
+                                        stableKey = "trend:${method.value}:${it.epochDay}",
+                                        displayUnit = "kg",
+                                        role = ChartSeriesRole.TREND,
+                                        provenance = it.trendKg.provenance.toString(),
+                                        methodLabel = method.value.name,
+                                    )
+                                }
                             } else {
                                 emptyList()
                             },
@@ -932,7 +943,17 @@ public class WeighInViewModel(
         val bodyFatPoints =
             windowEvents
                 .filter { it.kind == MeasurementKind.BODY_FAT }
-                .map { ChartPoint(it.dayEpochDay, it.valueReal) }
+                .map {
+                    ChartPoint(
+                        epochDay = it.dayEpochDay,
+                        value = it.valueReal,
+                        stableKey = it.id,
+                        captureTimeEpochMs = it.capturedAt.toEpochMilliseconds(),
+                        displayUnit = "%",
+                        role = ChartSeriesRole.RAW,
+                        sourceEventIds = listOf(it.id),
+                    )
+                }
         val bodyFatSeries =
             reads
                 .value(measurements.bodyFatChart(id, bodyFrom, today), emptyList())
@@ -940,14 +961,35 @@ public class WeighInViewModel(
                 .map { (methodLabel, methodPoints) ->
                     BodyFatSeriesUi(
                         methodLabel = methodLabel,
-                        points = methodPoints.map { ChartPoint(it.dayEpochDay, it.valuePercent) },
+                        points =
+                            methodPoints.map {
+                                ChartPoint(
+                                    epochDay = it.dayEpochDay,
+                                    value = it.valuePercent,
+                                    stableKey = "body:$methodLabel:${it.dayEpochDay}",
+                                    displayUnit = "%",
+                                    role = ChartSeriesRole.BODY_METHOD,
+                                    methodLabel = methodLabel,
+                                    provenance = it.source,
+                                )
+                            },
                         sourceLabel = methodPoints.map { it.source }.distinct().joinToString(),
                     )
                 }
         val waistPoints =
             windowEvents
                 .filter { it.kind == MeasurementKind.CUSTOM && it.id in waistEventIds }
-                .map { ChartPoint(it.dayEpochDay, it.valueReal) }
+                .map {
+                    ChartPoint(
+                        epochDay = it.dayEpochDay,
+                        value = it.valueReal,
+                        stableKey = it.id,
+                        captureTimeEpochMs = it.capturedAt.toEpochMilliseconds(),
+                        displayUnit = "cm",
+                        role = ChartSeriesRole.RAW,
+                        sourceEventIds = listOf(it.id),
+                    )
+                }
 
         // The derived ratios (F06 §3, WLO-0043): computed from the latest tape
         // + the latest daily scalar — never entered, always provenance-badged.
@@ -962,6 +1004,7 @@ public class WeighInViewModel(
                 ?.valueReal
 
         val samples = reads.value(weighIns.dailyScalars(id, from, today), emptyList())
+        val selections = reads.value(weighIns.dailySelections(id, from, today), emptyList()).associateBy { it.dayEpochDay }
         val ratios =
             run {
                 val waistCm = waistPoints.lastOrNull()?.value
@@ -1071,10 +1114,37 @@ public class WeighInViewModel(
                 ratios = ratios,
                 trend =
                     TrendUi(
-                        samples = samples.map { ChartPoint(it.epochDay, it.weightKg) },
+                        samples =
+                            samples.map { sample ->
+                                val selection = selections[sample.epochDay]
+                                ChartPoint(
+                                    epochDay = sample.epochDay,
+                                    value = sample.weightKg,
+                                    stableKey = "daily:${sample.epochDay}",
+                                    displayUnit = "kg",
+                                    role = ChartSeriesRole.DAILY,
+                                    sourceEventIds = selection?.contributingEventIds.orEmpty(),
+                                    provenance =
+                                        selection
+                                            ?.reason
+                                            ?.name
+                                            ?.lowercase()
+                                            ?.replace('_', ' '),
+                                )
+                            },
                         trend =
                             if (trendVisible) {
-                                points.map { ChartPoint(it.epochDay, it.trendKg.value) }
+                                points.map {
+                                    ChartPoint(
+                                        epochDay = it.epochDay,
+                                        value = it.trendKg.value,
+                                        stableKey = "trend:${method.value}:${it.epochDay}",
+                                        displayUnit = "kg",
+                                        role = ChartSeriesRole.TREND,
+                                        provenance = it.trendKg.provenance.toString(),
+                                        methodLabel = method.value.name,
+                                    )
+                                }
                             } else {
                                 emptyList()
                             },

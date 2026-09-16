@@ -1,16 +1,32 @@
 package app.wlo.core.designsystem
 
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.focusable
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.ListItem
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
@@ -18,6 +34,12 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.input.key.Key
+import androidx.compose.ui.input.key.KeyEventType
+import androidx.compose.ui.input.key.key
+import androidx.compose.ui.input.key.onKeyEvent
+import androidx.compose.ui.input.key.type
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.TextStyle
@@ -85,6 +107,16 @@ internal fun trendXFraction(
     return ((epochDay - windowStartDay).toDouble() / span).toFloat().coerceIn(0f, 1f)
 }
 
+/** Finds the nearest point in time; an exact tie resolves to the earlier day. */
+internal fun closestTrendPoint(
+    points: List<ChartPoint>,
+    targetEpochDay: Double,
+): ChartPoint? =
+    points.minWithOrNull(
+        compareBy<ChartPoint> { kotlin.math.abs(it.epochDay - targetEpochDay) }
+            .thenBy { it.epochDay },
+    )
+
 internal fun trendAxisTicks(
     windowStartDay: Long,
     windowEndDay: Long,
@@ -139,7 +171,7 @@ internal fun trendWindowCaption(
  * own extent, so sparse or stale data keeps its honest position in time.
  */
 @Composable
-@Suppress("UnusedParameter")
+@OptIn(ExperimentalMaterial3Api::class)
 public fun WloTrendChart(
     samples: List<ChartPoint>,
     trend: List<ChartPoint>,
@@ -153,10 +185,25 @@ public fun WloTrendChart(
     emptyMessage: String? = null,
     emptyActionLabel: String? = null,
     onEmptyAction: (() -> Unit)? = null,
+    onExplain: ((ChartPoint) -> Unit)? = null,
+    onViewRawReadings: (() -> Unit)? = null,
 ) {
     val firstDataDay = samples.firstOrNull()?.epochDay ?: trend.firstOrNull()?.epochDay
     val lastDataDay = samples.lastOrNull()?.epochDay ?: trend.lastOrNull()?.epochDay
     val caption = trendWindowCaption(windowStartDay, windowEndDay, firstDataDay, lastDataDay)
+
+    val selectable = (samples + trend).distinctBy { it.stableKey }.sortedBy { it.epochDay }
+    var selectedKey by rememberSaveable { mutableStateOf<String?>(null) }
+    var showData by rememberSaveable { mutableStateOf(false) }
+    val selected = selectable.firstOrNull { it.stableKey == selectedKey }
+    LaunchedEffect(selectable.map { it.stableKey }) {
+        if (selectedKey != null && selected == null) selectedKey = null
+    }
+
+    fun selectOffset(offset: Int) {
+        val current = selected?.let(selectable::indexOf) ?: if (offset > 0) -1 else selectable.size
+        selectable.getOrNull(current + offset)?.let { selectedKey = it.stableKey }
+    }
 
     Column(modifier = modifier) {
         if (samples.isEmpty() && trend.isEmpty()) {
@@ -188,7 +235,34 @@ public fun WloTrendChart(
                 alwaysShowTickYear = alwaysShowTickYear,
                 formatWeight = formatWeight,
                 describe = describe,
+                selected = selected,
+                onSelect = { selectedKey = it.stableKey },
+                onPrevious = { selectOffset(-1) },
+                onNext = { selectOffset(1) },
             )
+            Text(
+                text = "Measured points · Trend line",
+                style = wloType.label,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                IconButton(
+                    onClick = { selectOffset(-1) },
+                    enabled = selected != null && selectable.indexOf(selected) > 0,
+                ) {
+                    Icon(WloIcons.ArrowBack, contentDescription = "Previous sample")
+                }
+                IconButton(
+                    onClick = { selectOffset(1) },
+                    enabled = selected != null && selectable.indexOf(selected) < selectable.lastIndex,
+                ) {
+                    Icon(WloIcons.ChevronRight, contentDescription = "Next sample")
+                }
+                TextButton(onClick = { showData = true }) { Text("View data") }
+            }
+            selected?.let { point ->
+                ChartPointDetail(point, formatWeight, onExplain)
+            }
         }
         Text(
             text = caption,
@@ -197,6 +271,88 @@ public fun WloTrendChart(
             modifier = Modifier.padding(top = WloSpacing.TIGHT),
         )
     }
+    if (showData) {
+        ModalBottomSheet(onDismissRequest = { showData = false }) {
+            Text(
+                "Chart data",
+                style = MaterialTheme.typography.titleLarge,
+                modifier = Modifier.padding(horizontal = WloSpacing.CARD),
+            )
+            LazyColumn(modifier = Modifier.fillMaxWidth().heightIn(max = 480.dp)) {
+                items(selectable, key = { it.stableKey }) { point ->
+                    ListItem(
+                        headlineContent = { Text(chartPointDate(point)) },
+                        supportingContent = { Text(chartPointDescription(point, formatWeight)) },
+                        modifier = Modifier.semantics { contentDescription = chartPointDescription(point, formatWeight) },
+                    )
+                    HorizontalDivider()
+                }
+            }
+            TextButton(
+                onClick = { showData = false },
+                modifier = Modifier.padding(WloSpacing.TIGHT),
+            ) { Text("Close") }
+            if (onViewRawReadings != null) {
+                TextButton(
+                    onClick = {
+                        showData = false
+                        onViewRawReadings()
+                    },
+                    modifier = Modifier.padding(horizontal = WloSpacing.TIGHT),
+                ) { Text("Raw readings") }
+            }
+        }
+    }
+}
+
+@Composable
+private fun ChartPointDetail(
+    point: ChartPoint,
+    formatWeight: (Double) -> String,
+    onExplain: ((ChartPoint) -> Unit)?,
+) {
+    var explanationVisible by rememberSaveable(point.stableKey) { mutableStateOf(false) }
+    Column(
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .semantics { contentDescription = "Selected. ${chartPointDescription(point, formatWeight)}" }
+                .padding(vertical = WloSpacing.TIGHT),
+    ) {
+        Text(chartPointDate(point), style = MaterialTheme.typography.titleSmall)
+        Text(chartPointDescription(point, formatWeight), style = wloType.body)
+        TextButton(
+            onClick = {
+                if (onExplain != null) onExplain(point) else explanationVisible = !explanationVisible
+            },
+        ) { Text("Explain") }
+        if (explanationVisible) {
+            Text(
+                point.provenance ?: "This point is shown from ${point.sourceEventIds.size} contributing source(s).",
+                style = wloType.caption,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+    }
+}
+
+private fun chartPointDate(point: ChartPoint): String {
+    val date = LocalDate.fromEpochDays(point.epochDay)
+    return "${date.dayOfMonth} ${TREND_MONTHS[date.monthNumber - 1]} ${date.year}"
+}
+
+private fun chartPointDescription(
+    point: ChartPoint,
+    formatWeight: (Double) -> String,
+): String {
+    val value = if (point.displayUnit.isBlank()) formatWeight(point.value) else "${point.value} ${point.displayUnit}"
+    val role =
+        point.methodLabel ?: point.role.name
+            .lowercase()
+            .replace('_', ' ')
+    val status = point.holdReason?.let { "Held: $it" } ?: point.provenance ?: "Available"
+    val sources = point.sourceEventIds.size.let { "$it source${if (it == 1) "" else "s"}" }
+    return "$value · $role · $status · $sources"
 }
 
 @Composable
@@ -208,6 +364,10 @@ private fun WeightChartCanvas(
     alwaysShowTickYear: Boolean,
     formatWeight: (Double) -> String,
     describe: String,
+    selected: ChartPoint?,
+    onSelect: (ChartPoint) -> Unit,
+    onPrevious: () -> Unit,
+    onNext: () -> Unit,
 ) {
     val textMeasurer = rememberTextMeasurer()
     val axisStyle =
@@ -226,12 +386,35 @@ private fun WeightChartCanvas(
             axisStyle = axisStyle,
         )
 
+    val selectable = (samples + trend).distinctBy { it.stableKey }.sortedBy { it.epochDay }
     Canvas(
         modifier =
             Modifier
                 .fillMaxWidth()
                 .height(180.dp)
-                .semantics { contentDescription = describe },
+                .pointerInput(selectable, windowStartDay, windowEndDay) {
+                    detectTapGestures { offset ->
+                        val fraction = (offset.x / size.width).coerceIn(0f, 1f)
+                        val day = windowStartDay + fraction * (windowEndDay - windowStartDay)
+                        closestTrendPoint(selectable, day.toDouble())?.let(onSelect)
+                    }
+                }.onKeyEvent { event ->
+                    if (event.type != KeyEventType.KeyDown) return@onKeyEvent false
+                    when (event.key) {
+                        Key.DirectionLeft -> {
+                            onPrevious()
+                            true
+                        }
+                        Key.DirectionRight -> {
+                            onNext()
+                            true
+                        }
+                        else -> false
+                    }
+                }.focusable()
+                .semantics {
+                    contentDescription = "$describe ${selectable.size} available data points. Use previous and next controls or View data."
+                },
     ) {
         drawWeightChart(
             samples = samples,
@@ -242,6 +425,7 @@ private fun WeightChartCanvas(
             paints = paints,
             textMeasurer = textMeasurer,
             formatWeight = formatWeight,
+            selected = selected,
         )
     }
 }
@@ -255,6 +439,7 @@ private fun DrawScope.drawWeightChart(
     paints: TrendChartPaints,
     textMeasurer: androidx.compose.ui.text.TextMeasurer,
     formatWeight: (Double) -> String,
+    selected: ChartPoint?,
 ) {
     val left = 2.dp.toPx()
     val right = size.width - 2.dp.toPx()
@@ -274,6 +459,14 @@ private fun DrawScope.drawWeightChart(
         drawCircle(paints.dot, 3.dp.toPx(), Offset(x(sample.epochDay), y(sample.value)))
     }
     if (trend.size > 1) drawSeries(trend, ::x, ::y, paints.line, 2.5f)
+    selected?.let { point ->
+        drawCircle(
+            color = paints.line,
+            radius = 7.dp.toPx(),
+            center = Offset(x(point.epochDay), y(point.value)),
+            style = Stroke(width = 2.dp.toPx()),
+        )
+    }
 
     drawText(textMeasurer, axisLabels.first(), Offset(left, 2.dp.toPx()), paints.axisStyle)
     axisLabels.getOrNull(1)?.let { lowLabel ->

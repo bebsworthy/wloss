@@ -63,6 +63,16 @@ class TrendChartGeometryTest {
         )
     }
 
+    @Test
+    fun `closest point resolves an equal distance to the earlier sample`() {
+        val earlier = ChartPoint(epochDay = 10, value = 80.0)
+        val later = ChartPoint(epochDay = 12, value = 79.0)
+
+        assertEquals(earlier, closestTrendPoint(listOf(later, earlier), 11.0))
+        assertEquals(later, closestTrendPoint(listOf(later, earlier), 11.6))
+        assertEquals(null, closestTrendPoint(emptyList(), 11.0))
+    }
+
     private fun day(
         year: Int,
         month: Int,

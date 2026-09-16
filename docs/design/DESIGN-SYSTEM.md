@@ -185,6 +185,18 @@ only (research §2.3).
 
 ### 4.1 Consolidated motion table (mined from all 13 specs)
 
+Weight trend exploration follows this explicit interaction policy (WLO-0098).
+Native Material ripples and sheet motion inherit the system animator scale; the
+chart itself has no entrance animation and never interpolates numeric values.
+
+| Trigger | Visual transition | Duration policy | Haptic | Reduced motion |
+|---|---|---|---|---|
+| Chart sample selection | Move the selection ring only | Immediate in v1; 150–200 ms maximum if tokenized later | None while exploring | Final position immediately |
+| Weight period/section change | Replace content without moving the numeric hero | Native state change; 150–200 ms maximum | None | Replace immediately |
+| Milestone disclosure | Bounded size/content reveal without focus or scroll jump | 150–200 ms | Optional preference-gated confirmation | Reveal immediately |
+| Capture/save | Native sheet transition; values never count up | Material default | One after committed write (WLO-0089) | Final saved state immediately |
+| Delete/Undo | Standard row placement; recovery timer is independent | Material default | Preference-gated action feedback | Placement changes immediately |
+
 Every value below is verbatim from a spec; the token column maps it onto the
 scale. Where a spec gave a range or no value, the token is the design
 decision. († = easing/spring unspecified in spec — token supplies it.)
