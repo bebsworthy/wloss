@@ -1,22 +1,33 @@
 package app.wlo.feature.f01.onboarding.ui
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.DatePicker
+import androidx.compose.material3.DatePickerDialog
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.SegmentedButton
+import androidx.compose.material3.SegmentedButtonDefaults
+import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import app.wlo.core.designsystem.SelectChip
 import app.wlo.core.designsystem.WloBanner
 import app.wlo.core.designsystem.WloBannerTone
 import app.wlo.core.designsystem.WloButton
@@ -36,8 +47,10 @@ import app.wlo.core.model.DerivedValue
 import app.wlo.core.model.Provenance
 import app.wlo.core.model.WeightGoalEligibility
 import app.wlo.core.model.WeightGoalMode
+import app.wlo.feature.f01.onboarding.state.GoalFormState
 import app.wlo.feature.f01.onboarding.state.GoalsEditorEvent
 import app.wlo.feature.f01.onboarding.state.GoalsEditorViewModel
+import kotlinx.datetime.LocalDate
 
 /**
  * The goals editor (WLO-0035 W4): goal weight, pace, target date, daily
@@ -48,9 +61,32 @@ import app.wlo.feature.f01.onboarding.state.GoalsEditorViewModel
 @Composable
 public fun GoalsEditorScreen(
     viewModel: GoalsEditorViewModel,
+    onBack: () -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
+    var confirmDiscard by rememberSaveable { mutableStateOf(false) }
+    BackHandler(enabled = state.dirty) { confirmDiscard = true }
+
+    if (confirmDiscard) {
+        AlertDialog(
+            onDismissRequest = { confirmDiscard = false },
+            title = { Text("Keep editing?") },
+            text = { Text("Your unsaved goal draft is still available on this device.") },
+            confirmButton = {
+                TextButton(onClick = { confirmDiscard = false }) { Text("Keep editing") }
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = {
+                        confirmDiscard = false
+                        viewModel.onEvent(GoalsEditorEvent.DiscardDraft)
+                        onBack()
+                    },
+                ) { Text("Discard") }
+            },
+        )
+    }
 
     Column(
         modifier =
@@ -69,16 +105,14 @@ public fun GoalsEditorScreen(
         when {
             state.loading -> Unit
 
-            !state.hasTargets ->
-                WloCard(modifier = Modifier.testTag("f01-goals-empty")) {
-                    Text(
-                        text = "No plan yet — the plan's targets appear here after the plan exists.",
-                        style = wloType.caption,
-                        color = wloExtendedColors.textTertiary,
+            else -> {
+                if (!state.hasTargets) {
+                    WloBanner(
+                        text = "Set a weight goal here. A diet plan and calorie budget are optional.",
+                        tone = WloBannerTone.Info,
+                        modifier = Modifier.testTag("f01-goals-empty"),
                     )
                 }
-
-            else -> {
                 state.diff.forEach { line ->
                     WloBanner(
                         text = line,
@@ -97,7 +131,7 @@ public fun GoalsEditorScreen(
                 WloCard(modifier = Modifier.testTag("f01-goals-card")) {
                     WloCardHeader(title = "Goal")
                     WloListRow(
-                        label = "Current trend",
+                        label = if (state.currentWeightIsStarting) "Starting weight" else "Current trend",
                         value = {
                             Text(
                                 state.currentWeightKg?.let(state.massUnit::format) ?: "Not available",
@@ -105,30 +139,35 @@ public fun GoalsEditorScreen(
                             )
                         },
                     )
-                    Row(horizontalArrangement = Arrangement.spacedBy(WloSpacing.TIGHT)) {
+                    SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
                         WeightGoalMode.entries.forEach { mode ->
-                            SelectChip(
-                                label = mode.name.lowercase().replaceFirstChar(Char::uppercase),
+                            SegmentedButton(
                                 selected = state.mode == mode,
                                 onClick = { viewModel.onEvent(GoalsEditorEvent.ModeChange(mode)) },
+                                shape = SegmentedButtonDefaults.itemShape(mode.ordinal, WeightGoalMode.entries.size),
                                 modifier = Modifier.testTag("f01-goals-mode-${mode.name.lowercase()}"),
-                            )
+                            ) { Text(mode.name.lowercase().replaceFirstChar(Char::uppercase)) }
                         }
                     }
-                    Row(horizontalArrangement = Arrangement.spacedBy(WloSpacing.TIGHT)) {
-                        EditorField(
-                            value = state.goalWeightText,
-                            onValueChange = { viewModel.onEvent(GoalsEditorEvent.GoalWeightChange(it)) },
-                            placeholder = "goal ${state.massUnit.symbol}",
-                            modifier = Modifier.weight(1f).testTag("f01-goals-weight"),
-                        )
-                        EditorField(
-                            value = state.paceText,
-                            onValueChange = { viewModel.onEvent(GoalsEditorEvent.PaceChange(it)) },
-                            placeholder = "% / week",
-                            modifier = Modifier.weight(1f).testTag("f01-goals-pace"),
-                        )
-                    }
+                    EditorField(
+                        value = state.goalWeightText,
+                        onValueChange = { viewModel.onEvent(GoalsEditorEvent.GoalWeightChange(it)) },
+                        label = "Target weight (${state.massUnit.symbol})",
+                        placeholder = "For example, 75.0",
+                        error = state.goalWeightError,
+                        enabled = state.formState != GoalFormState.SAVING,
+                        modifier = Modifier.fillMaxWidth().testTag("f01-goals-weight"),
+                    )
+                    WloCardHeader(title = "Pace and date")
+                    EditorField(
+                        value = state.paceText,
+                        onValueChange = { viewModel.onEvent(GoalsEditorEvent.PaceChange(it)) },
+                        label = "Pace (% bodyweight per week)",
+                        placeholder = "For example, 0.5",
+                        error = state.paceError,
+                        enabled = state.formState != GoalFormState.SAVING,
+                        modifier = Modifier.fillMaxWidth().testTag("f01-goals-pace"),
+                    )
                     state.impliedPacePctPerWeek?.let { implied ->
                         Text(
                             text = "That date implies ${formatPace(implied)} of bodyweight per week.",
@@ -137,38 +176,24 @@ public fun GoalsEditorScreen(
                             modifier = Modifier.testTag("f01-goals-implied-pace"),
                         )
                     }
-                    if (!state.targetDateValid) {
-                        WloBanner(
-                            text = "Use a future date in YYYY-MM-DD format.",
-                            tone = WloBannerTone.Warning,
-                            modifier = Modifier.testTag("f01-goals-date-error"),
-                        )
-                    }
-                    Row(horizontalArrangement = Arrangement.spacedBy(WloSpacing.TIGHT)) {
-                        EditorField(
-                            value =
-                                if (state.forecastEligibility is WeightGoalEligibility.Eligible) {
-                                    state.targetDateText
-                                } else {
-                                    ""
-                                },
-                            onValueChange = { viewModel.onEvent(GoalsEditorEvent.TargetDateChange(it)) },
-                            placeholder =
-                                if (state.forecastEligibility is WeightGoalEligibility.Eligible) {
-                                    "by YYYY-MM-DD (optional)"
-                                } else {
-                                    "date held pending safety check"
-                                },
-                            enabled = state.forecastEligibility is WeightGoalEligibility.Eligible,
-                            modifier = Modifier.weight(1f).testTag("f01-goals-date"),
-                        )
-                        EditorField(
-                            value = state.budgetText,
-                            onValueChange = { viewModel.onEvent(GoalsEditorEvent.BudgetChange(it)) },
-                            placeholder = "daily kcal",
-                            modifier = Modifier.weight(1f).testTag("f01-goals-budget"),
-                        )
-                    }
+                    GoalDatePicker(
+                        value = state.targetDateText,
+                        onValueChange = { viewModel.onEvent(GoalsEditorEvent.TargetDateChange(it)) },
+                        enabled =
+                            state.forecastEligibility is WeightGoalEligibility.Eligible &&
+                                state.formState != GoalFormState.SAVING,
+                        error = state.dateError ?: if (!state.targetDateValid) "Choose a future date." else null,
+                    )
+                    WloCardHeader(title = "Optional energy settings")
+                    EditorField(
+                        value = state.budgetText,
+                        onValueChange = { viewModel.onEvent(GoalsEditorEvent.BudgetChange(it)) },
+                        label = "Daily calorie budget (kcal, optional)",
+                        placeholder = "Leave blank for no calorie target",
+                        error = state.budgetError,
+                        enabled = state.formState != GoalFormState.SAVING,
+                        modifier = Modifier.fillMaxWidth().testTag("f01-goals-budget"),
+                    )
                     WloCardHeader(title = "Goal safety check")
                     WeightGoalSafetyControls(
                         pregnant = state.pregnant,
@@ -203,32 +228,54 @@ public fun GoalsEditorScreen(
                         )
                     }
                     GoalForecastPreview(state)
+                    if (state.formState == GoalFormState.CONFLICT) {
+                        WloSecondaryButton(
+                            label = "Reload current",
+                            onClick = { viewModel.onEvent(GoalsEditorEvent.ReloadCurrent) },
+                            modifier = Modifier.fillMaxWidth().testTag("f01-goals-reload"),
+                        )
+                        WloSecondaryButton(
+                            label = "Review differences",
+                            onClick = { viewModel.onEvent(GoalsEditorEvent.ReviewDifferences) },
+                            modifier = Modifier.fillMaxWidth().testTag("f01-goals-review"),
+                        )
+                    }
                     WloButton(
-                        label = "Save as new version",
+                        label =
+                            when {
+                                state.formState == GoalFormState.SAVING -> "Saving…"
+                                state.hasTargets -> "Save as new version"
+                                else -> "Set goal"
+                            },
                         onClick = { viewModel.onEvent(GoalsEditorEvent.Save) },
-                        enabled = state.eligibility is WeightGoalEligibility.Eligible && state.targetDateValid,
+                        enabled =
+                            state.formState != GoalFormState.SAVING &&
+                                state.eligibility is WeightGoalEligibility.Eligible &&
+                                state.targetDateValid,
                         modifier = Modifier.fillMaxWidth().testTag("f01-goals-save"),
                     )
                 }
 
-                WloCard(modifier = Modifier.testTag("f01-goals-history-card")) {
-                    WloCardHeader(title = "Versions")
-                    state.history.forEach { record ->
-                        val line =
-                            "v${record.version}${if (record.isCurrent) " — current" else ""}" +
-                                " · ${record.writtenBy.wireName} · ${record.createdAtLabel}"
-                        WloListRow(
-                            label = line,
-                            value = {
-                                if (!record.isCurrent) {
-                                    WloSecondaryButton(
-                                        label = "Restore",
-                                        onClick = { viewModel.onEvent(GoalsEditorEvent.RevertTo(record.version)) },
-                                        modifier = Modifier.testTag("f01-goals-revert-${record.version}"),
-                                    )
-                                }
-                            },
-                        )
+                if (state.history.isNotEmpty()) {
+                    WloCard(modifier = Modifier.testTag("f01-goals-history-card")) {
+                        WloCardHeader(title = "Versions")
+                        state.history.forEach { record ->
+                            val line =
+                                "v${record.version}${if (record.isCurrent) " — current" else ""}" +
+                                    " · ${record.writtenBy.wireName} · ${record.createdAtLabel}"
+                            WloListRow(
+                                label = line,
+                                value = {
+                                    if (!record.isCurrent) {
+                                        WloSecondaryButton(
+                                            label = "Restore",
+                                            onClick = { viewModel.onEvent(GoalsEditorEvent.RevertTo(record.version)) },
+                                            modifier = Modifier.testTag("f01-goals-revert-${record.version}"),
+                                        )
+                                    }
+                                },
+                            )
+                        }
                     }
                 }
             }
@@ -302,11 +349,53 @@ private fun ForecastCard(
 
 private fun formatPace(value: Double): String = "%.2f%%".format(value)
 
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun GoalDatePicker(
+    value: String,
+    onValueChange: (String) -> Unit,
+    enabled: Boolean,
+    error: String?,
+) {
+    var open by rememberSaveable { mutableStateOf(false) }
+    OutlinedButton(
+        onClick = { open = true },
+        enabled = enabled,
+        modifier = Modifier.fillMaxWidth().testTag("f01-goals-date"),
+    ) {
+        Text(if (value.isBlank()) "Target date (optional)" else "Target date · $value")
+    }
+    if (value.isNotBlank()) {
+        TextButton(onClick = { onValueChange("") }, enabled = enabled) { Text("Clear target date") }
+    }
+    error?.let { Text(it, color = androidx.compose.material3.MaterialTheme.colorScheme.error) }
+    if (open) {
+        val initial = runCatching { LocalDate.parse(value).toEpochDays() * MILLIS_PER_DAY }.getOrNull()
+        val pickerState = androidx.compose.material3.rememberDatePickerState(initialSelectedDateMillis = initial)
+        DatePickerDialog(
+            onDismissRequest = { open = false },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        pickerState.selectedDateMillis?.let { millis ->
+                            onValueChange(LocalDate.fromEpochDays(millis / MILLIS_PER_DAY).toString())
+                        }
+                        open = false
+                    },
+                ) { Text("Use date") }
+            },
+            dismissButton = { TextButton(onClick = { open = false }) { Text("Cancel") } },
+        ) { DatePicker(state = pickerState, showModeToggle = false) }
+    }
+}
+
 @Composable
 private fun EditorField(
     value: String,
     onValueChange: (String) -> Unit,
+    label: String,
     placeholder: String,
+    error: String?,
     enabled: Boolean = true,
     modifier: Modifier = Modifier,
 ): Unit =
@@ -318,5 +407,10 @@ private fun EditorField(
         singleLine = true,
         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
         textStyle = wloType.body,
+        label = { Text(label) },
+        isError = error != null,
+        supportingText = error?.let { message -> { Text(message) } },
         placeholder = { Text(placeholder, style = wloType.caption, color = wloExtendedColors.textTertiary) },
     )
+
+private const val MILLIS_PER_DAY: Long = 86_400_000L

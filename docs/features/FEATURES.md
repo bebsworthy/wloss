@@ -62,6 +62,12 @@ eating-disorder concern, medically influenced weight, unsupported pace, or a
 sub-floor plan holds targets and dates without disabling the weight record.
 This is a product-support boundary, not medical advice or diagnosis.
 
+The post-onboarding Goals editor also supports an explicit weight-only first
+Targets version. It does not require the diet wizard and does not invent a
+calorie budget: `energy.budgetKcal` remains null unless the user supplies and
+safely validates one. Downstream consumers render an absent budget as absent,
+not zero or a computed recommendation.
+
 | Horizon | Included capability |
 |---|---|
 | **Release 1 — weight core** | correct kg/lb entry and display; event log and edit/delete; honest trend/chart states with a neutral 30-day change; accessible entry; post-save trend result; lifecycle/error reliability; Health Connect weight/body-fat import with durable source identity; benchmarked daily-scalar policy; calibrated forecast ranges; loss/maintenance/gain safety and direction-correct forecasting; goal editing and progress |

@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import app.wlo.core.common.ClockPort
 import app.wlo.core.common.DayBoundary
+import app.wlo.core.common.DecimalInput
 import app.wlo.core.common.MassUnit
 import app.wlo.core.common.getOrNull
 import app.wlo.core.data.DayProjectionRepository
@@ -16,6 +17,11 @@ import app.wlo.core.data.WeighInRepository
 import app.wlo.core.datastore.JsonDocumentStore
 import app.wlo.core.datastore.SettingsStore
 import app.wlo.core.documents.DocumentCodec
+import app.wlo.core.documents.Energy
+import app.wlo.core.documents.Goal
+import app.wlo.core.documents.MacroSplit
+import app.wlo.core.documents.Macros
+import app.wlo.core.documents.TargetsDocument
 import app.wlo.core.documents.TargetsWriterId
 import app.wlo.core.engines.EnergyDay
 import app.wlo.core.engines.EnergyEngine
@@ -23,6 +29,7 @@ import app.wlo.core.engines.EngineState
 import app.wlo.core.engines.ForecastEngine
 import app.wlo.core.engines.GoalForecastResult
 import app.wlo.core.engines.MeasuredInput
+import app.wlo.core.model.ConstantsRegistry
 import app.wlo.core.model.Profile
 import app.wlo.core.model.SafetyAnswer
 import app.wlo.core.model.WeightGoalEligibility
@@ -31,8 +38,11 @@ import app.wlo.core.model.WeightGoalSafetyCopy
 import app.wlo.core.model.WeightGoalSafetyCopyPolicy
 import app.wlo.core.model.WeightGoalSafetyInput
 import app.wlo.feature.f01.onboarding.domain.GoalEditorSafety
+import app.wlo.feature.f01.onboarding.domain.GoalSaveJournal
+import app.wlo.feature.f01.onboarding.domain.GoalSaveJournalIO
 import app.wlo.feature.f01.onboarding.domain.GoalsEditorDraft
 import app.wlo.feature.f01.onboarding.domain.GoalsEditorDraftIO
+import app.wlo.feature.f01.onboarding.domain.WeightFirstOnboardingStore
 import app.wlo.feature.f01.onboarding.domain.WeightGoalPreview
 import app.wlo.feature.f01.onboarding.domain.WeightGoalPreviewInput
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -43,6 +53,7 @@ import kotlinx.datetime.Instant
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
+import kotlin.uuid.Uuid
 
 /** Goals-editor intents (MVI-lite). */
 public sealed interface GoalsEditorEvent {
@@ -80,9 +91,17 @@ public sealed interface GoalsEditorEvent {
     ) : GoalsEditorEvent
 
     public data object DismissNotice : GoalsEditorEvent
+
+    public data object ReloadCurrent : GoalsEditorEvent
+
+    public data object ReviewDifferences : GoalsEditorEvent
+
+    public data object DiscardDraft : GoalsEditorEvent
 }
 
 public enum class GoalSafetyQuestion { PREGNANT, BREASTFEEDING, EATING_DISORDER, MEDICALLY_INFLUENCED }
+
+public enum class GoalFormState { LOADING, EDITING, SAVING, SAVE_ERROR, CONFLICT, SAVED }
 
 /** One line of the versions ledger. */
 public data class TargetsVersionUi(
@@ -95,6 +114,7 @@ public data class TargetsVersionUi(
 /** The goals editor's state (WLO-0035 W4: an edit path that is not the wizard). */
 public data class GoalsEditorUi(
     public val loading: Boolean = true,
+    public val formState: GoalFormState = GoalFormState.LOADING,
     public val hasTargets: Boolean = false,
     public val baseVersion: Int? = null,
     public val goalWeightText: String = "",
@@ -112,6 +132,7 @@ public data class GoalsEditorUi(
     public val forecastEligibility: WeightGoalEligibility = eligibility,
     public val safetyCopy: WeightGoalSafetyCopy = WeightGoalSafetyCopyPolicy.forResult(eligibility),
     public val currentWeightKg: Double? = null,
+    public val currentWeightIsStarting: Boolean = false,
     public val todayEpochDay: Long = 0,
     public val now: Instant = Instant.fromEpochMilliseconds(0),
     public val impliedPacePctPerWeek: Double? = null,
@@ -121,6 +142,11 @@ public data class GoalsEditorUi(
     /** The last write's human diff ("budget 1900 → 1950 kcal"), newest first. */
     public val diff: List<String> = emptyList(),
     public val notice: String? = null,
+    public val goalWeightError: String? = null,
+    public val paceError: String? = null,
+    public val dateError: String? = null,
+    public val budgetError: String? = null,
+    public val dirty: Boolean = false,
     public val history: List<TargetsVersionUi> = emptyList(),
 )
 
@@ -131,6 +157,7 @@ public data class GoalsEditorUi(
  * the ledger records what changed regardless of which surface wrote it.
  * Rejections are hard and spoken plainly; nothing is clamped (A.2).
  */
+@Suppress("LargeClass") // One cohesive versioned editor; journal, safety and forecast share one frozen draft.
 public class GoalsEditorViewModel(
     private val profiles: ProfileRepository,
     private val targets: TargetsRepository,
@@ -165,24 +192,49 @@ public class GoalsEditorViewModel(
 
     /** MVI-lite intent entry point. */
     public fun onEvent(event: GoalsEditorEvent) {
+        if (state.value.formState == GoalFormState.SAVING) return
         when (event) {
-            is GoalsEditorEvent.GoalWeightChange -> updateSafety(state.value.copy(goalWeightText = event.text))
-            is GoalsEditorEvent.PaceChange -> updateSafety(state.value.copy(paceText = event.text))
-            is GoalsEditorEvent.TargetDateChange -> updateSafety(state.value.copy(targetDateText = event.text))
-            is GoalsEditorEvent.BudgetChange -> updateSafety(state.value.copy(budgetText = event.text))
-            is GoalsEditorEvent.ModeChange -> updateSafety(state.value.copy(mode = event.mode))
+            is GoalsEditorEvent.GoalWeightChange ->
+                updateSafety(state.value.edited().copy(goalWeightText = event.text, goalWeightError = null))
+            is GoalsEditorEvent.PaceChange ->
+                updateSafety(state.value.edited().copy(paceText = event.text, paceError = null))
+            is GoalsEditorEvent.TargetDateChange ->
+                updateSafety(state.value.edited().copy(targetDateText = event.text, dateError = null))
+            is GoalsEditorEvent.BudgetChange ->
+                updateSafety(state.value.edited().copy(budgetText = event.text, budgetError = null))
+            is GoalsEditorEvent.ModeChange -> updateSafety(state.value.edited().copy(mode = event.mode))
             is GoalsEditorEvent.SafetyChange ->
                 updateSafety(
                     when (event.question) {
-                        GoalSafetyQuestion.PREGNANT -> state.value.copy(pregnant = event.answer)
-                        GoalSafetyQuestion.BREASTFEEDING -> state.value.copy(breastfeeding = event.answer)
-                        GoalSafetyQuestion.EATING_DISORDER -> state.value.copy(eatingDisorderConcern = event.answer)
+                        GoalSafetyQuestion.PREGNANT -> state.value.edited().copy(pregnant = event.answer)
+                        GoalSafetyQuestion.BREASTFEEDING -> state.value.edited().copy(breastfeeding = event.answer)
+                        GoalSafetyQuestion.EATING_DISORDER ->
+                            state.value.edited().copy(eatingDisorderConcern = event.answer)
                         GoalSafetyQuestion.MEDICALLY_INFLUENCED ->
-                            state.value.copy(medicallyInfluencedWeight = event.answer)
+                            state.value.edited().copy(medicallyInfluencedWeight = event.answer)
                     },
                 )
             GoalsEditorEvent.DismissNotice -> state.value = state.value.copy(notice = null)
             GoalsEditorEvent.Save -> save()
+            GoalsEditorEvent.ReloadCurrent -> viewModelScope.launch { reload(ignoreDraft = true) }
+            GoalsEditorEvent.ReviewDifferences ->
+                viewModelScope.launch {
+                    val id = profileId ?: return@launch
+                    val version = targets.current(id).getOrNull()?.version ?: return@launch
+                    state.value =
+                        state.value.copy(
+                            baseVersion = version,
+                            formState = GoalFormState.EDITING,
+                            dirty = true,
+                            notice = "Your draft is retained against v$version. Review and save again.",
+                        )
+                    persistDraft(state.value)
+                }
+            GoalsEditorEvent.DiscardDraft ->
+                viewModelScope.launch {
+                    profileId?.let { documents.remove(draftKey(it)) }
+                    reload(ignoreDraft = true)
+                }
             is GoalsEditorEvent.RevertTo ->
                 viewModelScope.launch {
                     val id = profileId ?: return@launch
@@ -231,23 +283,42 @@ public class GoalsEditorViewModel(
         }
     }
 
+    private fun GoalsEditorUi.edited(): GoalsEditorUi =
+        copy(
+            dirty = true,
+            formState = GoalFormState.EDITING,
+            notice = null,
+        )
+
     private fun save() {
         val id = profileId ?: return
         val current = state.value
-        val displayWeight = current.goalWeightText.toDoubleOrNull()
+        val displayWeight = DecimalInput.parse(current.goalWeightText)
         if (displayWeight == null || displayWeight <= 0.0) {
             state.value =
-                state.value.copy(notice = "check the goal weight — a number in ${activeUnit.symbol}")
+                current.copy(
+                    goalWeightError = "Enter a positive number in ${activeUnit.symbol}.",
+                    formState = GoalFormState.SAVE_ERROR,
+                )
             return
         }
         val kg = activeUnit.toKilograms(displayWeight)
-        val pace = current.impliedPacePctPerWeek ?: current.paceText.toDoubleOrNull()
+        val parsedPace = DecimalInput.parse(current.paceText)
+        val pace = current.impliedPacePctPerWeek ?: parsedPace
         if (current.mode != WeightGoalMode.MAINTENANCE && (pace == null || pace <= 0.0)) {
-            state.value = state.value.copy(notice = "check the pace — % of bodyweight per week")
+            state.value =
+                current.copy(
+                    paceError = "Enter a positive % of bodyweight per week.",
+                    formState = GoalFormState.SAVE_ERROR,
+                )
             return
         }
         if (!current.targetDateValid) {
-            state.value = state.value.copy(notice = "check the target date — use a future YYYY-MM-DD date")
+            state.value =
+                current.copy(
+                    dateError = "Choose a future date.",
+                    formState = GoalFormState.SAVE_ERROR,
+                )
             return
         }
         val date =
@@ -257,11 +328,23 @@ public class GoalsEditorViewModel(
                 .takeIf { current.forecastEligibility is WeightGoalEligibility.Eligible }
         date?.let {
             runCatching { Instant.parse("${it}T12:00:00Z") }.getOrNull() ?: run {
-                state.value = state.value.copy(notice = "check the target date — YYYY-MM-DD")
+                state.value =
+                    current.copy(
+                        dateError = "Choose a valid date.",
+                        formState = GoalFormState.SAVE_ERROR,
+                    )
                 return
             }
         }
-        val budget = current.budgetText.toDoubleOrNull()
+        val budget = current.budgetText.takeIf(String::isNotBlank)?.let(DecimalInput::parse)
+        if (current.budgetText.isNotBlank() && budget == null) {
+            state.value =
+                current.copy(
+                    budgetError = "Enter a finite daily calorie budget or leave this blank.",
+                    formState = GoalFormState.SAVE_ERROR,
+                )
+            return
+        }
         val eligibility = current.eligibility
         if (eligibility !is WeightGoalEligibility.Eligible) {
             val copy = WeightGoalSafetyCopyPolicy.forResult(eligibility)
@@ -270,65 +353,95 @@ public class GoalsEditorViewModel(
                     eligibility = eligibility,
                     safetyCopy = copy,
                     notice = "${copy.title}. ${copy.body}",
+                    formState = GoalFormState.SAVE_ERROR,
                 )
             return
         }
 
         viewModelScope.launch {
+            state.value = current.copy(formState = GoalFormState.SAVING, notice = null)
             val record = targets.current(id).getOrNull()
-            if (record == null) {
-                state.value = state.value.copy(notice = "no plan yet — finish the wizard first")
-                return@launch
-            }
             val document =
-                record.document.copy(
-                    goal =
-                        record.document.goal.copy(
-                            targetWeightKg = kg,
-                            pacePctPerWeek = pace ?: 0.0,
-                            targetDate = date,
-                        ),
-                    energy =
-                        if (budget != null && record.document.energy.cadence == app.wlo.core.documents.Cadence.DAILY) {
-                            record.document.energy.copy(budgetKcal = budget)
-                        } else {
-                            record.document.energy
-                        },
-                )
-            when (val outcome = writers.studio().writeRevision(id, record.version, document)) {
-                is TargetsWriteOutcome.Written -> {
-                    val input = safetyInput(current, kg, pace, budget)
-                    documents.writeText(
-                        safetyKey(id),
-                        DocumentCodec.json.encodeToString(WeightGoalSafetyInput.serializer(), input),
+                record
+                    ?.document
+                    ?.copy(
+                        goal =
+                            record.document.goal.copy(
+                                targetWeightKg = kg,
+                                pacePctPerWeek = pace ?: 0.0,
+                                targetDate = date,
+                            ),
+                        energy =
+                            record.document.energy.copy(
+                                budgetKcal = budget,
+                            ),
                     )
-                    documents.remove(draftKey(id))
+                    ?: TargetsDocument(
+                        goal =
+                            Goal(
+                                targetWeightKg = kg,
+                                pacePctPerWeek = pace ?: 0.0,
+                                targetDate = date,
+                            ),
+                        energy =
+                            Energy(
+                                budgetKcal = budget,
+                                floorKcal = ConstantsRegistry.floorKcal(profile?.sex).toDouble(),
+                            ),
+                        macros = Macros(MacroSplit.Preset("balanced")),
+                    )
+            val journal =
+                GoalSaveJournal(
+                    operationId = Uuid.random().toString(),
+                    profileId = id,
+                    baseVersion = current.baseVersion,
+                    document = document,
+                    safetyInput = safetyInput(current, kg, pace, budget),
+                )
+            runCatching { documents.writeText(journalKey(id), GoalSaveJournalIO.encode(journal)) }
+                .onFailure {
                     state.value =
-                        state.value.copy(
-                            diff = outcome.diff,
-                            notice = "saved as v${outcome.record.version}",
+                        current.copy(
+                            formState = GoalFormState.SAVE_ERROR,
+                            notice = "That didn't save. Your draft is still here.",
                         )
-                    reload()
+                    return@launch
+                }
+            val outcome =
+                current.baseVersion?.let { writers.studio().writeRevision(id, it, document) }
+                    ?: writers.studio().writeFirst(id, document)
+            when (outcome) {
+                is TargetsWriteOutcome.Written -> {
+                    val committed = journal.copy(committedVersion = outcome.record.version)
+                    runCatching { documents.writeText(journalKey(id), GoalSaveJournalIO.encode(committed)) }
+                    finishJournal(committed, outcome.diff)
                 }
 
-                is TargetsWriteOutcome.Rejected ->
-                    state.value = state.value.copy(notice = rejectionCopy(outcome.error))
+                is TargetsWriteOutcome.Rejected -> {
+                    val formState =
+                        if (outcome.error is TargetsWriteError.VersionConflict) {
+                            GoalFormState.CONFLICT
+                        } else {
+                            GoalFormState.SAVE_ERROR
+                        }
+                    state.value = current.copy(formState = formState, notice = rejectionCopy(outcome.error))
+                }
             }
         }
     }
 
-    private suspend fun reload() {
+    private suspend fun reload(ignoreDraft: Boolean = false) {
         val activeProfile = profile ?: profiles.active().getOrNull() ?: return
         profile = activeProfile
         val id = profileId ?: activeProfile.id
         profileId = id
-        currentWeightKg =
+        val trendWeight =
             weighIns
                 .currentTrend(id, DayBoundary.epochDay(clock.now(), zone))
                 .getOrNull()
                 ?.current
                 ?.value
-                ?: activeProfile.startWeightKg
+        currentWeightKg = trendWeight ?: activeProfile.startWeightKg
         val today = DayBoundary.epochDay(clock.now(), zone)
         val energyDays =
             dayProjection
@@ -354,16 +467,54 @@ public class GoalsEditorViewModel(
                 null
             }
         val current = targets.current(id).getOrNull()
+        val pending =
+            documents
+                .readText(journalKey(id))
+                ?.let(GoalSaveJournalIO::decode)
+                ?.takeIf { it.profileId == id }
+        if (pending != null && current?.document == pending.document) {
+            finishJournal(pending.copy(committedVersion = current.version), emptyList())
+            return
+        }
+        val draft =
+            if (ignoreDraft) {
+                null
+            } else {
+                documents
+                    .readText(draftKey(id))
+                    ?.let(GoalsEditorDraftIO::decode)
+                    ?.takeIf { it.profileId == id && it.baseVersion == current?.version }
+            }
         if (current == null) {
-            state.value = state.value.copy(loading = false, hasTargets = false)
+            val intent =
+                documents
+                    .readText(WeightFirstOnboardingStore.GOAL_INTENT_KEY)
+                    ?.let(WeightFirstOnboardingStore::decodeDraft)
+            updateSafety(
+                state.value.copy(
+                    loading = false,
+                    formState = GoalFormState.EDITING,
+                    hasTargets = false,
+                    baseVersion = null,
+                    goalWeightText =
+                        draft?.displayWeight(activeUnit)
+                            ?: intent?.targetWeightKg?.let(activeUnit::formatNumber).orEmpty(),
+                    massUnit = activeUnit,
+                    paceText = draft?.paceText ?: intent?.pacePctPerWeek?.let(::trimNumber).orEmpty(),
+                    targetDateText = draft?.targetDate.orEmpty(),
+                    budgetText = draft?.budgetText.orEmpty(),
+                    mode = draft?.mode ?: intent?.goalMode ?: WeightGoalMode.LOSS,
+                    pregnant = draft?.pregnant ?: SafetyAnswer.NOT_ANSWERED,
+                    breastfeeding = draft?.breastfeeding ?: SafetyAnswer.NOT_ANSWERED,
+                    eatingDisorderConcern = draft?.eatingDisorderConcern ?: SafetyAnswer.NOT_ANSWERED,
+                    medicallyInfluencedWeight = draft?.medicallyInfluencedWeight ?: SafetyAnswer.NOT_ANSWERED,
+                    currentWeightIsStarting = trendWeight == null && activeProfile.startWeightKg != null,
+                    dirty = draft != null,
+                ),
+            )
             return
         }
         val document = current.document
-        val draft =
-            documents
-                .readText(draftKey(id))
-                ?.let(GoalsEditorDraftIO::decode)
-                ?.takeIf { it.baseVersion == current.version }
         val attestation =
             documents.readText(safetyKey(id))?.let { text ->
                 runCatching {
@@ -393,16 +544,20 @@ public class GoalsEditorViewModel(
         updateSafety(
             state.value.copy(
                 loading = false,
+                formState = GoalFormState.EDITING,
                 hasTargets = true,
                 baseVersion = current.version,
-                goalWeightText = activeUnit.formatNumber(draft?.targetWeightKg ?: document.goal.targetWeightKg),
+                goalWeightText =
+                    draft?.displayWeight(activeUnit)
+                        ?: activeUnit.formatNumber(document.goal.targetWeightKg),
                 massUnit = activeUnit,
-                paceText = trimNumber(draft?.pacePctPerWeek ?: document.goal.pacePctPerWeek),
+                paceText = draft?.paceText ?: trimNumber(document.goal.pacePctPerWeek),
                 targetDateText = draft?.targetDate ?: document.goal.targetDate.orEmpty(),
                 budgetText =
-                    (draft?.budgetKcal ?: document.energy.budgetKcal)
-                        ?.let(::trimNumber)
-                        .orEmpty(),
+                    draft?.budgetText
+                        ?: document.energy.budgetKcal
+                            ?.let(::trimNumber)
+                            .orEmpty(),
                 mode = draft?.mode ?: mode,
                 pregnant = draft?.pregnant ?: attestation?.pregnant ?: SafetyAnswer.NOT_ANSWERED,
                 breastfeeding = draft?.breastfeeding ?: attestation?.breastfeeding ?: SafetyAnswer.NOT_ANSWERED,
@@ -411,15 +566,17 @@ public class GoalsEditorViewModel(
                 medicallyInfluencedWeight =
                     draft?.medicallyInfluencedWeight ?: attestation?.medicallyInfluencedWeight
                         ?: SafetyAnswer.NOT_ANSWERED,
+                currentWeightIsStarting = trendWeight == null && activeProfile.startWeightKg != null,
+                dirty = draft != null,
                 history = history,
             ),
         )
     }
 
     private fun updateSafety(updated: GoalsEditorUi) {
-        val target = updated.goalWeightText.toDoubleOrNull()?.let(activeUnit::toKilograms)
-        val pace = updated.paceText.toDoubleOrNull()
-        val budget = updated.budgetText.toDoubleOrNull()
+        val target = DecimalInput.parse(updated.goalWeightText)?.let(activeUnit::toKilograms)
+        val pace = DecimalInput.parse(updated.paceText)
+        val budget = updated.budgetText.takeIf(String::isNotBlank)?.let(DecimalInput::parse)
         val today = DayBoundary.epochDay(clock.now(), zone)
         val targetDay =
             updated.targetDateText
@@ -494,15 +651,16 @@ public class GoalsEditorViewModel(
 
     private fun persistDraft(ui: GoalsEditorUi) {
         val id = profileId ?: return
-        val version = ui.baseVersion ?: return
-        if (!ui.hasTargets || ui.loading) return
+        if (ui.loading || !ui.dirty) return
         val draft =
             GoalsEditorDraft(
-                baseVersion = version,
-                targetWeightKg = ui.goalWeightText.toDoubleOrNull()?.let(activeUnit::toKilograms),
-                pacePctPerWeek = ui.paceText.toDoubleOrNull(),
+                profileId = id,
+                baseVersion = ui.baseVersion,
+                massUnit = activeUnit,
+                targetWeightText = ui.goalWeightText,
+                paceText = ui.paceText,
                 targetDate = ui.targetDateText,
-                budgetKcal = ui.budgetText.toDoubleOrNull(),
+                budgetText = ui.budgetText,
                 mode = ui.mode,
                 pregnant = ui.pregnant,
                 breastfeeding = ui.breastfeeding,
@@ -510,6 +668,45 @@ public class GoalsEditorViewModel(
                 medicallyInfluencedWeight = ui.medicallyInfluencedWeight,
             )
         viewModelScope.launch { documents.writeText(draftKey(id), GoalsEditorDraftIO.encode(draft)) }
+    }
+
+    private fun GoalsEditorDraft.displayWeight(unit: MassUnit): String {
+        val value = DecimalInput.parse(targetWeightText) ?: return targetWeightText
+        return unit.formatNumber(unit.fromKilograms(massUnit.toKilograms(value)))
+    }
+
+    private suspend fun finishJournal(
+        journal: GoalSaveJournal,
+        diff: List<String>,
+    ) {
+        val completed =
+            runCatching {
+                documents.writeText(
+                    safetyKey(journal.profileId),
+                    DocumentCodec.json.encodeToString(
+                        WeightGoalSafetyInput.serializer(),
+                        journal.safetyInput,
+                    ),
+                )
+                documents.remove(draftKey(journal.profileId))
+                documents.remove(journalKey(journal.profileId))
+            }.isSuccess
+        if (!completed) {
+            state.value =
+                state.value.copy(
+                    formState = GoalFormState.SAVE_ERROR,
+                    notice = "Goal saved; finishing its safety record. Retry to reconcile.",
+                )
+            return
+        }
+        reload(ignoreDraft = true)
+        state.value =
+            state.value.copy(
+                formState = GoalFormState.SAVED,
+                dirty = false,
+                diff = diff,
+                notice = "Saved as v${journal.committedVersion}.",
+            )
     }
 
     private fun eligibilityFor(
@@ -568,6 +765,8 @@ public class GoalsEditorViewModel(
     private fun safetyKey(profileId: String): String = "weight/goal-safety-v1/$profileId"
 
     private fun draftKey(profileId: String): String = "weight/goal-editor-draft-v1/$profileId"
+
+    private fun journalKey(profileId: String): String = "weight/goal-editor-save-v1/$profileId"
 
     private fun rejectionCopy(error: TargetsWriteError): String =
         when (error) {

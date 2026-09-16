@@ -110,6 +110,17 @@ class TargetsWriterTest {
         }
 
     @Test
+    fun studioCreatesWeightOnlyV1WithNoEnergyBudget() =
+        runTest {
+            val id = aProfile()
+            val first = writers.studio().writeFirst(id, document(budgetKcal = null))
+
+            assertIs<TargetsWriteOutcome.Written>(first)
+            assertEquals(null, first.record.document.energy.budgetKcal)
+            assertEquals("balanced", (first.record.document.macros.split as MacroSplit.Preset).name)
+        }
+
+    @Test
     fun studioRevisionAgainstStaleBaseConflicts() =
         runTest {
             val id = aProfile()

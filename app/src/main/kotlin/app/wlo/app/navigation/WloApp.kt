@@ -469,7 +469,11 @@ private fun RouteSurface(
 
         // The goals editor (WLO-0035 W4): the wizard's first run is v1 of this
         // same editor — R-B2's STUDIO_F01 door, now surfaced.
-        F01Routes.STUDIO -> GoalsEditorScreen(viewModel = koinViewModel())
+        F01Routes.STUDIO ->
+            GoalsEditorScreen(
+                viewModel = koinViewModel(),
+                onBack = { navController.popBackStack() },
+            )
 
         F01Routes.PLAN_STUDIO -> OnboardingScreen(viewModel = koinViewModel())
 

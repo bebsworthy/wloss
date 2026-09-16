@@ -83,6 +83,14 @@
   - **AI touchpoint (the only one) [v1.x — v1 ships the deterministic constraint→field applier only, per R-S10]:** optional "refine my template" — the user states constraints in natural language ("no cooking Wednesdays, ~120 g protein, hate cottage cheese") and a cloud LLM proposes structured template edits. Requires the F12 **`meal-planning`** consent toggle (one of F12's six frozen categories; F12 lists F01 as a consumer for exactly this) ON with a BYOK key configured; the consent surface appears at the point of use with a preview of exactly what would be sent. **On-device fallback:** a deterministic constraint→field applier covers common phrasings with no network; if both are unavailable, the Studio remains fully manual. Proposals are drafts — apply/discard, never auto-commit (confirm-before-write grammar).
 - **Outputs / artifacts:** `Goal` record; `DietPlan vN` versions; `Milestone[]` with projections; `PreferenceProfile`; `FreshStartMarker`; import report.
 - **State owned:** goals, plan versions and diffs, preference profile, milestone definitions, fresh-start markers, onboarding completion state.
+- **Weight-only goal creation:** a profile may have no Targets document. The
+  Goals editor can explicitly create v1 through the existing F01 Studio writer
+  without running the diet wizard: DAILY cadence, null calorie budget unless
+  the user enters one, the registry floor with no override acknowledgment and
+  the balanced macro-schema default. Saved weight-first intent is only an
+  editable prefill. Drafts retain raw text and profile/base-version identity;
+  conflicts never overwrite, and a small operation journal reconciles the
+  immutable Targets version with its safety metadata after interruption.
 
 ## 4. User Interaction Model
 

@@ -109,7 +109,11 @@ public val appModule: Module =
         // The profile-facts editor (WLO-0035 W4): onboarding answers, correctable.
         viewModel {
             app.wlo.app.ui.settings
-                .ProfileFactsViewModel(profiles = get())
+                .ProfileFactsViewModel(
+                    profiles = get(),
+                    settings = get(),
+                    clock = get(),
+                )
         }
         // Debug egress monitor (F12 §3.8): reads the persisted receipt ledger.
         factory { EgressMonitorViewModel(ledger = get(), zoo = get()) }
