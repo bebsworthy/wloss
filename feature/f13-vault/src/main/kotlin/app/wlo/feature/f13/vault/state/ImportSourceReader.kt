@@ -54,7 +54,8 @@ public class AndroidImportSourceReader(
                 require(stagingDirectory.mkdirs() || stagingDirectory.isDirectory) {
                     "The import staging area is unavailable. Try again."
                 }
-                val destination = File(stagingDirectory, "${System.currentTimeMillis()}-${name.hashCode().toUInt()}.stage")
+                val destination =
+                    File(stagingDirectory, "${System.currentTimeMillis()}-${name.hashCode().toUInt()}.stage")
                 staged = destination
                 appContext.contentResolver.openInputStream(parsed)?.use { input ->
                     FileOutputStream(destination).use { output ->
