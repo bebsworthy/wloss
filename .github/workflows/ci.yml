@@ -25,7 +25,7 @@ jobs:
           distribution: temurin
           java-version: 21
       - name: Set up Gradle
-        uses: gradle/actions/setup-gradle@v4
+        uses: gradle/actions/setup-gradle@v6
       - name: Build (unit tests, ktlint, detekt, lint included via check)
         run: ./gradlew build checkArchitecture
 
@@ -38,7 +38,7 @@ jobs:
         with:
           distribution: temurin
           java-version: 21
-      - uses: gradle/actions/setup-gradle@v4
+      - uses: gradle/actions/setup-gradle@v6
       - name: Demonstrate every rule failing on a synthetic violation
         run: ./gradlew -p build-logic test
 
@@ -52,7 +52,7 @@ jobs:
         with:
           distribution: temurin
           java-version: 21
-      - uses: gradle/actions/setup-gradle@v4
+      - uses: gradle/actions/setup-gradle@v6
       - name: Enable KVM acceleration
         run: |
           echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' \
@@ -95,7 +95,7 @@ jobs:
           distribution: temurin
           java-version: 21
       - name: Set up Gradle
-        uses: gradle/actions/setup-gradle@v4
+        uses: gradle/actions/setup-gradle@v6
       - name: Decode channel signing key
         env:
           WLO_SIGNING_KEYSTORE_BASE64: ${{ secrets.WLO_SIGNING_KEYSTORE_BASE64 }}
