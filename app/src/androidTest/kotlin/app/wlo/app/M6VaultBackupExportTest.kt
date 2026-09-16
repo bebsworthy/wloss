@@ -125,7 +125,7 @@ public class M6VaultBackupExportTest {
         openVaultScreen("wlo://vault", "f13/vault", "f13-vault")
         rule.onNodeWithTag("f13-open-backup", useUnmergedTree = true).performClick()
         TestNav.awaitRoutePumpingClock(rule, "f13/vault/backup-setup")
-        TestNav.awaitTag(rule, "f13-backup-title")
+        TestNav.awaitTag(rule, "f13-backup")
 
         // 1. Folder through the REAL system picker. The screen's own
         // "Choose folder" button launches SAF with a null initial uri, which
@@ -210,7 +210,7 @@ public class M6VaultBackupExportTest {
         openVaultScreen("wlo://vault", "f13/vault", "f13-vault")
         rule.onNodeWithTag("f13-open-export", useUnmergedTree = true).performClick()
         TestNav.awaitRoutePumpingClock(rule, "f13/vault/export")
-        TestNav.awaitTag(rule, "f13-export-title")
+        TestNav.awaitTag(rule, "f13-export")
         rule.onNodeWithTag("f13-format-csv", useUnmergedTree = true).performClick()
         waitUntil {
             rule

@@ -128,7 +128,7 @@ public class M3ScreensTest {
         Thread.sleep(600)
         shot("m3-trend-tuner")
         rule.onNodeWithTag("f06-open-math", useUnmergedTree = true).performScrollTo().performClick()
-        TestNav.awaitTag(rule, "f06-math-title")
+        TestNav.awaitTag(rule, "f06-math-ewma")
         shot("m3-math-doc")
         backTo(ui, "hub-quick-actions")
 

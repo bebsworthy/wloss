@@ -168,7 +168,7 @@ public class M3WeighInTest {
         // the weight surface's history card compresses the day to its
         // canonical closing weight, the feed keeps every reading.
         rule.onNodeWithTag("f06-open-logbook").performScrollTo().performClick()
-        TestNav.awaitTag(rule, "f06-logbook-title")
+        TestNav.awaitTag(rule, "f06-logbook-list")
         assertTrue(
             "both weigh-ins are listed",
             rule.onAllNodesWithText("76.8 kg").fetchSemanticsNodes().isNotEmpty() &&
@@ -235,7 +235,7 @@ public class M3WeighInTest {
                 .forEach { repository.deleteWeighIn(it.id, clock.now()) }
         }
 
-        rule.onNodeWithTag("f06-open-sheet").performScrollTo().performClick()
+        rule.onNodeWithTag("f06-open-sheet").performClick()
         rule.onNodeWithTag("f06-weight-field").performTextClearance()
         rule.onNodeWithTag("f06-weight-field").performTextInput("80.0")
         rule.onNodeWithTag("f06-save-weighin").performClick()
@@ -377,7 +377,7 @@ public class M3WeighInTest {
         // it from the verbatim logbook (the weight hero intentionally shows
         // the lower daily scalar rather than every reading).
         rule.onNodeWithTag("f06-open-logbook").performScrollTo().performClick()
-        TestNav.awaitTag(rule, "f06-logbook-title")
+        TestNav.awaitTag(rule, "f06-logbook-list")
         pollText("95.0 kg")
     }
 
@@ -427,7 +427,7 @@ public class M3WeighInTest {
         // The window selector + segment row grew the surface — the math button
         // sits below the fold now; scroll to it like a user would.
         rule.onNodeWithTag("f06-open-math").performScrollTo().performClick()
-        TestNav.awaitTag(rule, "f06-math-title")
+        TestNav.awaitTag(rule, "f06-math-ewma")
         // The formula version rides the doc card's provenance chip; the new
         // chip anatomy speaks the value via its content description (the chip
         // never repeats the value as visible text — WLO-0030 defect 15).
@@ -447,7 +447,7 @@ public class M3WeighInTest {
         // logbook — the verbatim feed owns the delete door (WLO-0055).
         UiDevice.getInstance(InstrumentationRegistry.getInstrumentation()).pressBack()
         rule.onNodeWithTag("f06-open-logbook").performScrollTo().performClick()
-        TestNav.awaitTag(rule, "f06-logbook-title")
+        TestNav.awaitTag(rule, "f06-logbook-list")
 
         // The top row is the one under the finger; its value must come back.
         val deletedValue = firstRowWeight()
@@ -468,7 +468,7 @@ public class M3WeighInTest {
         awaitWeightSurface()
         UiDevice.getInstance(InstrumentationRegistry.getInstrumentation()).pressBack()
         rule.onNodeWithTag("f06-open-logbook").performScrollTo().performClick()
-        TestNav.awaitTag(rule, "f06-logbook-title")
+        TestNav.awaitTag(rule, "f06-logbook-list")
 
         // The tap door (F06 §5 inline edit) carries the same feedback as
         // every other list row: tap opens the prefilled sheet.
