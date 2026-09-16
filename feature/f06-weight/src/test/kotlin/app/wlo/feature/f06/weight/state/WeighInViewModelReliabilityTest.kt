@@ -467,7 +467,7 @@ class WeighInViewModelReliabilityTest {
         }
 
     @Test
-    fun `two stale points hold trend and reference with lapsed copy`() =
+    fun `two stale points hold trend and 30-day change with lapsed copy`() =
         runTest {
             Dispatchers.setMain(StandardTestDispatcher(testScheduler))
             try {
@@ -485,7 +485,7 @@ class WeighInViewModelReliabilityTest {
                 val trend = assertNotNull(viewModel.uiState.value.trend)
                 assertFalse(trend.trendLineVisible)
                 assertTrue(trend.trend.isEmpty())
-                assertTrue(trend.reference.isEmpty())
+                assertEquals(null, trend.delta30)
                 assertEquals("Last entry 27 Aug — the trend resumes when you do.", trend.stateCopy)
                 assertTrue("latest 80.0 kg" in trend.description)
             } finally {
@@ -524,7 +524,7 @@ class WeighInViewModelReliabilityTest {
         }
 
     @Test
-    fun `reference is gated identically with the selected window trend`() =
+    fun `canonical 30-day change remains stable when the chart window changes`() =
         runTest {
             Dispatchers.setMain(StandardTestDispatcher(testScheduler))
             try {
@@ -535,6 +535,7 @@ class WeighInViewModelReliabilityTest {
                 val weighIns =
                     FakeWeighIns().apply {
                         filterScalarsByRange = true
+                        canonicalDelta30Kg = -2.0
                         scalarSamples =
                             listOf(
                                 WeightSample(today - 60, 82.0),
@@ -544,14 +545,14 @@ class WeighInViewModelReliabilityTest {
                     }
                 val viewModel = viewModel(weighIns = weighIns)
                 advanceUntilIdle()
-                assertTrue(assertNotNull(viewModel.uiState.value.trend).reference.isNotEmpty())
+                assertEquals(-2.0, assertNotNull(viewModel.uiState.value.trend).delta30?.value)
 
                 viewModel.onEvent(WeighInEvent.WindowChange(ChartWindowUi.D30))
                 advanceUntilIdle()
 
                 val held = assertNotNull(viewModel.uiState.value.trend)
                 assertFalse(held.trendLineVisible)
-                assertTrue(held.reference.isEmpty())
+                assertEquals(-2.0, held.delta30?.value)
             } finally {
                 Dispatchers.resetMain()
             }
@@ -756,6 +757,7 @@ private class FakeWeighIns(
     var filterScalarsByRange: Boolean = false
     var canonicalTrendKg: Double? = null
     var canonicalDeltaKg: Double? = null
+    var canonicalDelta30Kg: Double? = null
     val requestedDays = mutableListOf<Long>()
     private var dailyScalarCalls = 0
 
@@ -845,7 +847,11 @@ private class FakeWeighIns(
             canonicalDeltaKg?.let { value ->
                 DerivedValue(value, Provenance.Derived(formulaVersion = "test", inputs = emptyList()))
             }
-        return WloResult.ok(CurrentTrend(scalarSamples, null, current, delta))
+        val delta30 =
+            canonicalDelta30Kg?.let { value ->
+                DerivedValue(value, Provenance.Derived(formulaVersion = "test", inputs = emptyList()))
+            }
+        return WloResult.ok(CurrentTrend(scalarSamples, null, current, delta, delta30))
     }
 
     override suspend fun deleteWeighIn(

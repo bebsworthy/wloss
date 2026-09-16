@@ -6,6 +6,7 @@ import app.wlo.core.database.jvmDatabaseBuilder
 import app.wlo.core.datastore.SettingsStoreFactory
 import app.wlo.core.engines.WeightSample
 import app.wlo.core.model.ConstantsRegistry
+import app.wlo.core.model.Provenance
 import app.wlo.core.model.TrendMethod
 import app.wlo.core.testing.FakeClock
 import kotlinx.coroutines.test.runTest
@@ -158,6 +159,30 @@ class CurrentTrendTest {
         }
 
     @Test
+    fun delta30ReadsAcrossTheFullCanonicalWindow() =
+        runTest {
+            val profileId =
+                profiles
+                    .create(NewProfile(birthYear = 1990, heightCm = 178.0, startWeightKg = 78.2), clock.now())
+                    .okOrDie()
+                    .id
+            seedSeries(profileId)
+
+            val shared = weighIns.currentTrend(profileId, today).okOrDie()
+            val series = assertNotNull(shared.series)
+            val delta = assertNotNull(shared.delta30)
+            val first = series.points.first()
+            val last = series.points.last()
+            val expected = last.trendKg.value - first.trendKg.value
+            assertEquals(
+                expected,
+                delta.value,
+                absoluteTolerance = 1e-12,
+            )
+            assertEquals(listOf("windowDays=30"), (delta.provenance as Provenance.Derived).inputs)
+        }
+
+    @Test
     fun gentleDeclineSeedKeepsEwmaNearTheRawReading() =
         runTest {
             val profileId =
@@ -191,6 +216,7 @@ class CurrentTrendTest {
             assertEquals(null, shared.series)
             assertEquals(null, shared.current)
             assertEquals(null, shared.delta7)
+            assertEquals(null, shared.delta30)
         }
 
     private companion object {

@@ -56,3 +56,7 @@ Completed with isolated commits and ticket evidence: WLO-0070 trend-first post-s
 The scoped Release 1 weight-core implementation is now complete. The remaining Release 1 program step is WLO-0029: establish signed alpha/stable distribution and begin real-device dogfooding without breaking data continuity. Findings from dogfooding should create focused defects rather than reopening completed contracts.
 
 No Release 2 weight-experience feature is currently committed; promote focused work only from dogfood evidence.
+
+
+## Weight-experience scope cleanup (2026-09-16)
+Owner review canceled WLO-0046, WLO-0042, WLO-0041, WLO-0037, WLO-0077, and WLO-0076. WLO-0085 removed the already-rendered progress ribbon and retained only a neutral, canonical 30-day trend change after a full window exists. No Release 2 weight-experience feature is currently committed.

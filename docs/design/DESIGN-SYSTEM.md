@@ -385,7 +385,7 @@ Aisle-ordered list (user-order respected forever; headers collapse) · Check-off
 
 **Release 1:** trend confirmation card (`Weight trend`, raw small beneath;
 identical neutral motion in either direction) · accessible entry in kg/lb ·
-honest raw+trend chart · logbook and import identity · loss/maintenance/gain
+honest raw+trend chart with neutral 30-day change · logbook and import identity · loss/maintenance/gain
 goal state · goal editor/progress · Health Connect weight/body-fat import.
 **Release 2:**
 **Deferred:** smoother

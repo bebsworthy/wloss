@@ -44,9 +44,6 @@ internal data class TrendAxisTick(
 private data class TrendChartPaints(
     val dot: Color,
     val line: Color,
-    val ribbonUp: Color,
-    val ribbonDown: Color,
-    val chrome: Color,
     val grid: Color,
     val axisStyle: TextStyle,
 )
@@ -151,7 +148,6 @@ public fun WloTrendChart(
     windowStartDay: Long = samples.firstOrNull()?.epochDay ?: trend.firstOrNull()?.epochDay ?: 0L,
     windowEndDay: Long = samples.lastOrNull()?.epochDay ?: trend.lastOrNull()?.epochDay ?: windowStartDay + 1L,
     modifier: Modifier = Modifier,
-    reference: List<ChartPoint> = emptyList(),
     describe: String = "Weight chart.",
     alwaysShowTickYear: Boolean = false,
     emptyMessage: String? = null,
@@ -187,7 +183,6 @@ public fun WloTrendChart(
             WeightChartCanvas(
                 samples = samples,
                 trend = trend,
-                reference = reference,
                 windowStartDay = windowStartDay,
                 windowEndDay = windowEndDay,
                 alwaysShowTickYear = alwaysShowTickYear,
@@ -208,7 +203,6 @@ public fun WloTrendChart(
 private fun WeightChartCanvas(
     samples: List<ChartPoint>,
     trend: List<ChartPoint>,
-    reference: List<ChartPoint>,
     windowStartDay: Long,
     windowEndDay: Long,
     alwaysShowTickYear: Boolean,
@@ -228,9 +222,6 @@ private fun WeightChartCanvas(
         TrendChartPaints(
             dot = MaterialTheme.colorScheme.onSurfaceVariant,
             line = MaterialTheme.colorScheme.primary,
-            ribbonUp = wloExtendedColors.accentDim,
-            ribbonDown = wloExtendedColors.neutralDelta.copy(alpha = 0.30f),
-            chrome = wloExtendedColors.textTertiary,
             grid = MaterialTheme.colorScheme.outline.copy(alpha = 0.5f),
             axisStyle = axisStyle,
         )
@@ -245,7 +236,6 @@ private fun WeightChartCanvas(
         drawWeightChart(
             samples = samples,
             trend = trend,
-            reference = reference,
             windowStartDay = windowStartDay,
             windowEndDay = windowEndDay,
             ticks = ticks,
@@ -259,7 +249,6 @@ private fun WeightChartCanvas(
 private fun DrawScope.drawWeightChart(
     samples: List<ChartPoint>,
     trend: List<ChartPoint>,
-    reference: List<ChartPoint>,
     windowStartDay: Long,
     windowEndDay: Long,
     ticks: List<TrendAxisTick>,
@@ -281,8 +270,6 @@ private fun DrawScope.drawWeightChart(
     drawLine(paints.grid, Offset(left, y(bounds.high)), Offset(right, y(bounds.high)), strokeWidth = 1.dp.toPx())
     drawLine(paints.grid, Offset(left, y(bounds.low)), Offset(right, y(bounds.low)), strokeWidth = 1.dp.toPx())
 
-    if (reference.size > 1) drawSeries(reference, ::x, ::y, paints.chrome.copy(alpha = 0.55f), 1.5f)
-    if (reference.isNotEmpty()) drawRibbon(trend, reference, ::x, ::y, paints.ribbonUp, paints.ribbonDown)
     samples.forEach { sample ->
         drawCircle(paints.dot, 3.dp.toPx(), Offset(x(sample.epochDay), y(sample.value)))
     }
@@ -328,30 +315,6 @@ private fun DrawScope.drawSeries(
         if (index == 0) path.moveTo(offset.x, offset.y) else path.lineTo(offset.x, offset.y)
     }
     drawPath(path, color, style = Stroke(width = width))
-}
-
-private fun DrawScope.drawRibbon(
-    trend: List<ChartPoint>,
-    reference: List<ChartPoint>,
-    x: (Long) -> Float,
-    y: (Double) -> Float,
-    ribbonUp: Color,
-    ribbonDown: Color,
-) {
-    val refByDay = reference.associateBy { it.epochDay }
-    val paired = trend.mapNotNull { point -> refByDay[point.epochDay]?.let { Triple(point, it, x(point.epochDay)) } }
-    if (paired.size <= 1) return
-    val path = Path()
-    paired.forEachIndexed { index, (point, _, cx) ->
-        if (index == 0) path.moveTo(cx, y(point.value)) else path.lineTo(cx, y(point.value))
-    }
-    paired.indices.reversed().forEach { index ->
-        val (_, ref, cx) = paired[index]
-        path.lineTo(cx, y(ref.value))
-    }
-    path.close()
-    val falling = paired.last().second.value >= paired.last().first.value
-    drawPath(path, (if (falling) ribbonUp else ribbonDown).copy(alpha = 0.22f))
 }
 
 private fun compactDateRange(

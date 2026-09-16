@@ -577,7 +577,6 @@ private fun WeightTrendCard(
             formatWeight = state.massUnit::format,
             windowStartDay = trend.windowStartDay,
             windowEndDay = trend.windowEndDay,
-            reference = trend.reference,
             describe = trend.description,
             alwaysShowTickYear = trend.alwaysShowTickYear,
             emptyMessage = trend.stateCopy,
@@ -587,6 +586,16 @@ private fun WeightTrendCard(
                     { viewModel.onEvent(WeighInEvent.WindowChange(target)) }
                 },
         )
+        trend.delta30?.let { delta ->
+            val formatted = state.massUnit.format(delta.value)
+            val signed = if (delta.value > 0.0) "+$formatted" else formatted
+            Text(
+                text = "30-day trend $signed",
+                style = wloType.receipt,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.testTag("f06-trend-delta-30"),
+            )
+        }
         if (trend.samples.isNotEmpty() && trend.stateCopy != null) {
             Text(trend.stateCopy, style = wloType.caption, color = wloExtendedColors.textTertiary)
         }
@@ -895,7 +904,6 @@ private fun BodyFatSection(
                     trend = emptyList(),
                     currentTrend = null,
                     formatWeight = { cm -> "${format1(cm)} cm" },
-                    reference = emptyList(),
                     describe = "Waist tape series in centimetres.",
                 )
             }
@@ -912,7 +920,6 @@ private fun BodyFatSection(
                     trend = emptyList(),
                     currentTrend = null,
                     formatWeight = { pct -> "${format1(pct)} %" },
-                    reference = emptyList(),
                     describe = "Body-fat estimates in percent — every method is an estimate, ±3–4 % typical.",
                 )
             }

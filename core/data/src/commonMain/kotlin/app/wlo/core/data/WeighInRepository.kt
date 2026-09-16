@@ -140,7 +140,7 @@ public data class ReplacedWeighIn(
 
 /**
  * The shared current-trend snapshot: the canonical series for a sparkline, the
- * latest smoothed value, and the weekly delta — all from the one window.
+ * latest smoothed value, and neutral lookback deltas — all from the one window.
  */
 public data class CurrentTrend(
     /** Lowest-of-day scalars of the canonical window, oldest first. */
@@ -151,6 +151,8 @@ public data class CurrentTrend(
     public val current: DerivedValue<Double>?,
     /** Trend now minus trend 7 days back (null when the lookback point is absent). */
     public val delta7: DerivedValue<Double>?,
+    /** Change across the canonical 30-calendar-day window, if that full span exists. */
+    public val delta30: DerivedValue<Double>? = null,
 )
 
 /** Append result: the stored event plus the guard's verdict (UI confirm input). */
@@ -341,7 +343,7 @@ public class RoomWeighInRepository internal constructor(
     ): WloResult<CurrentTrend> =
         dailyScalars(profileId, toDay - TREND_WINDOW_DAYS + 1, toDay).map { samples ->
             if (samples.isEmpty()) {
-                CurrentTrend(samples = samples, series = null, current = null, delta7 = null)
+                CurrentTrend(samples = samples, series = null, current = null, delta7 = null, delta30 = null)
             } else {
                 val series = SmoothingEngine.trend(samples)
                 val last = series.points.last()
@@ -356,11 +358,25 @@ public class RoomWeighInRepository internal constructor(
                             ),
                         )
                     }
+                val first = series.points.first()
+                val delta30 =
+                    if (last.epochDay - first.epochDay >= TREND_WINDOW_DAYS - 1) {
+                        DerivedValue(
+                            last.trendKg.value - first.trendKg.value,
+                            Provenance.Derived(
+                                formulaVersion = seriesFormulaVersion(series),
+                                inputs = listOf("windowDays=$TREND_WINDOW_DAYS"),
+                            ),
+                        )
+                    } else {
+                        null
+                    }
                 CurrentTrend(
                     samples = samples,
                     series = series,
                     current = last.trendKg,
                     delta7 = delta,
+                    delta30 = delta30,
                 )
             }
         }

@@ -149,7 +149,6 @@ public data class HistoryBucketUi(
 public data class TrendUi(
     public val samples: List<ChartPoint>,
     public val trend: List<ChartPoint>,
-    public val reference: List<ChartPoint>,
     /**
      * The headline trend value: the CANONICAL shared read (the Hub shows the
      * same number — WLO-0030 defect 9) while the smoother selection sits at
@@ -158,6 +157,8 @@ public data class TrendUi(
      */
     public val current: DerivedValue<Double>?,
     public val delta7: DerivedValue<Double>?,
+    /** Neutral change across the canonical trailing 30-calendar-day window. */
+    public val delta30: DerivedValue<Double>?,
     /** F06 §4 gate: the trend line only renders from ≥3 points in the selected window. */
     public val trendLineVisible: Boolean,
     /** True while the chart reflects a non-default tuner selection (a preview). */
@@ -620,10 +621,6 @@ public class WeighInViewModel(
             )
         val points = series.points
         val byDay = points.associate { it.epochDay to it.trendKg.value }
-        val reference =
-            points.mapNotNull { point ->
-                byDay[point.epochDay - REFERENCE_SHIFT_DAYS]?.let { behind -> ChartPoint(point.epochDay, behind) }
-            }
         val last = points.last()
         val delta =
             byDay[last.epochDay - DELTA_WINDOW_DAYS]?.let { weekAgo ->
@@ -634,6 +631,19 @@ public class WeighInViewModel(
                         inputs = listOf("windowDays=$DELTA_WINDOW_DAYS"),
                     ),
                 )
+            }
+        val monthStart = byDay[last.epochDay - (THIRTY_DAY_WINDOW_DAYS - 1)]
+        val delta30 =
+            if (monthStart != null) {
+                DerivedValue(
+                    last.trendKg.value - monthStart,
+                    Provenance.Derived(
+                        formulaVersion = seriesVersion(method.value),
+                        inputs = listOf("windowDays=$THIRTY_DAY_WINDOW_DAYS"),
+                    ),
+                )
+            } else {
+                null
             }
         val atDefaults =
             method.value == TrendMethod.EWMA &&
@@ -650,9 +660,9 @@ public class WeighInViewModel(
                             } else {
                                 emptyList()
                             },
-                        reference = if (currentTrend.trendLineVisible) reference else emptyList(),
                         current = last.trendKg,
                         delta7 = delta,
+                        delta30 = delta30,
                         preview = !atDefaults,
                     ),
             )
@@ -825,10 +835,6 @@ public class WeighInViewModel(
                 abs(alpha.value - ConstantsRegistry.EWMA_ALPHA_DEFAULT) < 1e-9
 
         val byDay = points.associate { it.epochDay to it.trendKg.value }
-        val reference =
-            points.mapNotNull { point ->
-                byDay[point.epochDay - REFERENCE_SHIFT_DAYS]?.let { behind -> ChartPoint(point.epochDay, behind) }
-            }
         val lastPoint = points.lastOrNull()
         val weekAgo = lastPoint?.epochDay?.let { byDay[it - DELTA_WINDOW_DAYS] }
         val tunerDelta =
@@ -844,6 +850,20 @@ public class WeighInViewModel(
                 null
             }
         val delta = if (atDefaults) canonical?.delta7 else tunerDelta
+        val previewMonthStart =
+            lastPoint?.let { point -> byDay[point.epochDay - (THIRTY_DAY_WINDOW_DAYS - 1)] }
+        val previewDelta30 =
+            if (lastPoint != null && previewMonthStart != null) {
+                DerivedValue(
+                    lastPoint.trendKg.value - previewMonthStart,
+                    Provenance.Derived(
+                        formulaVersion = seriesVersion(method.value),
+                        inputs = listOf("windowDays=$THIRTY_DAY_WINDOW_DAYS"),
+                    ),
+                )
+            } else {
+                null
+            }
 
         val chartWindow =
             resolveChartWindow(selectedWindow, today, from, samples) { candidate ->
@@ -885,9 +905,9 @@ public class WeighInViewModel(
                             } else {
                                 emptyList()
                             },
-                        reference = if (trendVisible) reference else emptyList(),
                         current = if (atDefaults) canonical?.current else lastPoint?.trendKg,
                         delta7 = delta,
+                        delta30 = if (atDefaults) canonical?.delta30 else previewDelta30,
                         trendLineVisible = trendVisible,
                         preview = !atDefaults,
                         windowStartDay = chartWindow.startDay,
@@ -980,8 +1000,8 @@ public class WeighInViewModel(
         /** Trend-line gate (F06 §4: ≥3 points in the selected display window). */
         public const val TREND_GATE_POINTS: Int = 3
 
-        /** The progress-ribbon reference shift (days-ago line, default 30). */
-        public const val REFERENCE_SHIFT_DAYS: Long = 30
+        /** Inclusive canonical window used by the neutral 30-day trend change. */
+        public const val THIRTY_DAY_WINDOW_DAYS: Long = 30
 
         /** The headline delta window (F06 §5's weekly rate reads weekly). */
         public const val DELTA_WINDOW_DAYS: Long = 7
