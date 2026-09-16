@@ -12,3 +12,7 @@ WLO-0053 and WLO-0072.
 
 # Acceptance
 A low outlier cannot silently become the canonical answer; sparse and timezone cases are deterministic; Hub and Weight agree; preference and accessibility tests pass.
+
+## Product decision (2026-09-16)
+
+Canceled by owner. WLO keeps one canonical trend headline. A best-of-window number would cherry-pick favorable readings, amplify outliers and repeated-weighing incentives, and has no coherent meaning across loss, maintenance, and gain goals.

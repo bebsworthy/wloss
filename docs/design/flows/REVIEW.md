@@ -387,7 +387,7 @@ meta already declares the distinct persona):
 | Surface | Now (lb) | Becomes (kg) |
 |---|---|---|
 | Trend hero / weigh prefill | 179.1 | 81.2 |
-| Yesterday / confirmation raw / 10-day best | 179.8 · 178.4 · 178.2 | 81.6 · 80.9 · 80.9 |
+| Yesterday / confirmation raw | 179.8 · 178.4 | 81.6 · 80.9 |
 | Trend history start (Aug 12) | 181.9 | 82.5 |
 | Weekly rate | −1.3 lb/wk | −0.6 kg/wk |
 | 30-day ribbon | −2.8 lb | −1.3 kg |
