@@ -25,7 +25,7 @@ public val f01OnboardingModule: Module =
         single {
             FinishWeightFirstOnboarding(
                 profiles = get(),
-                measurements = get(),
+                weighIns = get(),
                 settings = get(),
                 store = get(),
                 clock = get(),

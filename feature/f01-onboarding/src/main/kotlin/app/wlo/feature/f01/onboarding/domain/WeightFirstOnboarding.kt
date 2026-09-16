@@ -6,14 +6,13 @@ import app.wlo.core.common.DayBoundary
 import app.wlo.core.common.MassUnit
 import app.wlo.core.common.WloResult
 import app.wlo.core.common.getOrNull
-import app.wlo.core.data.MeasurementRepository
-import app.wlo.core.data.NewMeasurement
 import app.wlo.core.data.NewProfile
 import app.wlo.core.data.ProfileRepository
+import app.wlo.core.data.WeighInRepository
+import app.wlo.core.data.WeighInWriteCommand
 import app.wlo.core.datastore.JsonDocumentStore
 import app.wlo.core.datastore.SettingsStore
 import app.wlo.core.documents.DocumentCodec
-import app.wlo.core.model.MeasurementKind
 import app.wlo.core.model.SafetyAnswer
 import app.wlo.core.model.UnitSystem
 import app.wlo.core.model.WeightGoalEligibility
@@ -92,7 +91,7 @@ public class WeightFirstOnboardingStore(
 /** Atomic-enough first-run writer: profile/weight first, completion flag last. */
 public class FinishWeightFirstOnboarding(
     private val profiles: ProfileRepository,
-    private val measurements: MeasurementRepository,
+    private val weighIns: WeighInRepository,
     private val settings: SettingsStore,
     private val store: WeightFirstOnboardingStore,
     private val clock: ClockPort,
@@ -113,13 +112,13 @@ public class FinishWeightFirstOnboarding(
                     ).getOrNull()
                 ?: return WloResult.err(AppError.Storage(null, "profile.create"))
         draft.firstWeightKg?.let { weight ->
-            measurements
-                .append(
-                    NewMeasurement(
+            weighIns
+                .commitWeighIn(
+                    WeighInWriteCommand.New(
+                        operationId = "$OPERATION_PREFIX:${profile.id}",
                         profileId = profile.id,
                         dayEpochDay = DayBoundary.epochDay(now, TimeZone.currentSystemDefault()),
-                        kind = MeasurementKind.WEIGHT,
-                        valueReal = weight,
+                        weightKg = weight,
                         source = SOURCE,
                         capturedAt = now,
                     ),
@@ -131,5 +130,6 @@ public class FinishWeightFirstOnboarding(
 
     public companion object {
         public const val SOURCE: String = "weight-first-onboarding"
+        private const val OPERATION_PREFIX: String = "weight-first"
     }
 }
