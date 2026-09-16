@@ -66,6 +66,7 @@ public val f06WeightModule: Module =
                 measurements = get(),
                 settings = get(),
                 recovery = LogbookDeletionRecoveryStore(get()),
+                savedStateHandle = get(),
             )
         }
     }

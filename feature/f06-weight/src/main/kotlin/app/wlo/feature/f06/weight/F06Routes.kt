@@ -1,5 +1,7 @@
 package app.wlo.feature.f06.weight
 
+import app.wlo.feature.f06.weight.state.HistoryRange
+
 /**
  * F06 route contracts (ARCHITECTURE §2.2 `routes.kt` slot): the public route
  * targets, so the Hub and the deep-link registry reach weight surfaces without
@@ -20,4 +22,12 @@ public object F06Routes {
 
     /** The full-page logbook (WLO-0055): every verbatim entry, month sections. */
     public const val LOGBOOK: String = "f06/logbook"
+
+    public const val ARG_RANGE_START: String = "rangeStart"
+    public const val ARG_RANGE_END: String = "rangeEnd"
+    public const val LOGBOOK_RANGE: String = "$LOGBOOK/{$ARG_RANGE_START}/{$ARG_RANGE_END}"
+
+    /** Encodes the overview's half-open history bucket without losing boundaries. */
+    public fun logbook(range: HistoryRange?): String =
+        if (range == null) LOGBOOK else "$LOGBOOK/${range.startInclusive}/${range.endExclusive}"
 }

@@ -231,6 +231,14 @@ public fun WloApp(
                     composable(route = F06Routes.MATH) { MathDocsScreen() }
                     composable(route = F06Routes.BODY_FAT) { BodyFatScreen(viewModel = koinViewModel()) }
                     composable(route = F06Routes.LOGBOOK) { LogbookScreen(viewModel = koinViewModel()) }
+                    composable(
+                        route = F06Routes.LOGBOOK_RANGE,
+                        arguments =
+                            listOf(
+                                navArgument(F06Routes.ARG_RANGE_START) { type = NavType.LongType },
+                                navArgument(F06Routes.ARG_RANGE_END) { type = NavType.LongType },
+                            ),
+                    ) { LogbookScreen(viewModel = koinViewModel()) }
                     // M6 internal surfaces: Settings' children (the F12 consent demo)
                     // and the F13 vault wizards have no wlo:// URIs of their own — they
                     // are visited deliberately from their parent surfaces (IA §6). The
@@ -530,7 +538,8 @@ private fun RouteSurface(
                 viewModel = koinViewModel(parameters = { parametersOf(true, BodySectionUi.WEIGHT) }),
                 bodyFatViewModel = koinViewModel(),
                 onOpenMath = { navController.navigate(F06Routes.MATH) },
-                onOpenLogbook = { navController.navigate(F06Routes.LOGBOOK) },
+                onOpenLogbook = { range -> navController.navigate(F06Routes.logbook(range)) },
+                onEditGoal = { navController.navigate(F01Routes.STUDIO) },
             )
 
         F06Routes.MATH -> MathDocsScreen()
@@ -565,7 +574,8 @@ private fun TopLevelRouteSurface(
                     viewModel = koinViewModel(parameters = { parametersOf(false, BodySectionUi.WEIGHT) }),
                     bodyFatViewModel = koinViewModel(),
                     onOpenMath = { navController.navigate(F06Routes.MATH) },
-                    onOpenLogbook = { navController.navigate(F06Routes.LOGBOOK) },
+                    onOpenLogbook = { range -> navController.navigate(F06Routes.logbook(range)) },
+                    onEditGoal = { navController.navigate(F01Routes.STUDIO) },
                 )
             }
 

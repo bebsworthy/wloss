@@ -1,5 +1,6 @@
 package app.wlo.feature.f06.weight.state
 
+import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import app.wlo.core.common.ClockPort
@@ -14,6 +15,7 @@ import app.wlo.core.data.WeighInRepository
 import app.wlo.core.datastore.SettingsStore
 import app.wlo.core.model.MeasurementEvent
 import app.wlo.core.model.MeasurementKind
+import app.wlo.feature.f06.weight.F06Routes
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.collectLatest
@@ -173,6 +175,7 @@ public class LogbookViewModel(
     private val settings: SettingsStore,
     private val recovery: LogbookDeletionRecoveryStore? = null,
     initialRange: HistoryRange? = null,
+    savedStateHandle: SavedStateHandle = SavedStateHandle(),
 ) : ViewModel() {
     private val zone: TimeZone = TimeZone.currentSystemDefault()
     private var profileId: String? = null
@@ -185,7 +188,12 @@ public class LogbookViewModel(
     private val deleted = MutableStateFlow<DeletedUi?>(null)
     private val edit = MutableStateFlow<EditSheetUi?>(null)
     private var pendingDeletion: PendingLogbookDeletion? = null
-    private var range: HistoryRange? = initialRange
+    private var range: HistoryRange? =
+        initialRange ?: run {
+            val start = savedStateHandle.get<Long>(F06Routes.ARG_RANGE_START)
+            val end = savedStateHandle.get<Long>(F06Routes.ARG_RANGE_END)
+            if (start != null && end != null && start < end) HistoryRange(start, end) else null
+        }
     private var recoveryReconciled: Boolean = false
     private val notice = MutableStateFlow<String?>(null)
 

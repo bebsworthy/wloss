@@ -154,6 +154,8 @@ public enum class ChartWindowUi(
 public data class HistoryBucketUi(
     public val tier: HistoryTier,
     public val label: String,
+    public val startDayInclusive: Long,
+    public val endDayExclusive: Long,
     public val countLabel: String?,
     public val deltaLabel: String?,
     public val weightLabel: String?,
@@ -910,6 +912,8 @@ public class WeighInViewModel(
                     HistoryBucketUi(
                         tier = bucket.tier,
                         label = HistoryLabels.bucketLabel(bucket, today),
+                        startDayInclusive = bucket.startDay,
+                        endDayExclusive = bucket.endDay + 1,
                         countLabel = "${bucket.count} weigh-in" + if (bucket.count == 1) "" else "s",
                         deltaLabel = bucket.deltaKg?.let { delta -> signedWeight(delta, unit) },
                         weightLabel = bucket.endValueKg?.let(unit::format),
