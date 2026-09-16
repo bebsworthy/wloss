@@ -1,13 +1,13 @@
 ---
 id: WLO-0042
 title: 'Weight progress ribbon with a fixed, honest reference window'
-status: backlog
+status: canceled
 theme: weight-experience
 release: 2
 created: 2026-09-14T13:38:34Z
-modified: 2026-09-15T21:29:21Z
-closed:
-revision: f4985eee370e65aa
+modified: 2026-09-16T05:47:40Z
+closed: 2026-09-16T05:47:40Z
+revision: 07d268575e32e4c3
 blocks: []
 related: [WLO-0053, WLO-0054]
 ---

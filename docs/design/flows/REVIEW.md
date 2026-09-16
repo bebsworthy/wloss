@@ -149,7 +149,7 @@ Legend: ✅ strength · ⚠ defect · · minor. Screen IDs: `w` = wireframe,
 - **m1 Entry** ✅ short manual entry, ±0.1 steppers, date chips, and
   Health Connect feeding the same event store.
 - **m2 Confirmation** ✅ **the set's best artifact**: frozen anatomy (trend
-  hero odometer, raw as small print, ribbon) plus the gain-day variant —
+  hero odometer, raw as small print) plus the gain-day variant —
   "a gain day feels identical in effort, different only in the small print."
 - **m3 Outlier guard** ✅ one line, Keep/Correct, "an admitted typo is
   fixed, not judged". ⚠ unit mixing: lb persona, sheet says "4.2 kg above
@@ -390,7 +390,6 @@ meta already declares the distinct persona):
 | Yesterday / confirmation raw | 179.8 · 178.4 | 81.6 · 80.9 |
 | Trend history start (Aug 12) | 181.9 | 82.5 |
 | Weekly rate | −1.3 lb/wk | −0.6 kg/wk |
-| 30-day ribbon | −2.8 lb | −1.3 kg |
 | Outlier raw + guard copy | 188.3 · "9.2 lb above" | 85.4 · "4.2 kg above" |
 | Gain-day variant | 179.2 ↑0.3 · 179.5 | 81.3 ↑0.1 · 81.4 |
 | Check-in Sunday trend | 178.9 | 81.1 |
@@ -441,7 +440,6 @@ annotation (annotations already carry most; add where missing).
 
 **Flow 04**
 - ❌ m1 "tick per metric · F13"; ✍ "prefilled with the trend · one decimal · kg mirror 81.2 · scale path auto-confirms: 0 taps" → "prefilled with your trend"
-- ✍ m2 ribbon caption "…band breathed 200 ms as today landed" → "−1.3 kg vs last month"
 - ✍ m4 logbook caption → "long-press a day to log it later"
 - ❌ m6 "silent shutter · always — camera sound is a discretion leak" (annotation)
 - ✍ m7 "the frame was discarded at save — the outline is the artifact, nothing to leak (R-U16) · tap any number → … · share = faceless vector strip only" → "no photo exists — outlines only, nothing to leak"; ❌ "chips count up over 400 ms…" caption
@@ -504,6 +502,5 @@ left" mechanism line). Deviations from the plan, all improvements:
 - "later bands sit still" (flow 05 timeline legend) trimmed — ambient-motion
   narration the plan's list had not caught.
 - Pin nudges after copy removals: 01 p3, 02 p21/p25, 03 p16; trend-history
-  ribbon caption tightened to fit one line in kg.
 - Re-rendered ~35 changed frames in the browser and re-inspected each;
   kg persona, ⓘ anatomy, and tone verified against the design bar.

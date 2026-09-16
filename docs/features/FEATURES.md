@@ -65,7 +65,7 @@ This is a product-support boundary, not medical advice or diagnosis.
 | Horizon | Included capability |
 |---|---|
 | **Release 1 — weight core** | correct kg/lb entry and display; event log and edit/delete; honest trend/chart states; accessible entry; post-save trend result; lifecycle/error reliability; Health Connect weight/body-fat import with durable source identity; benchmarked daily-scalar policy; calibrated forecast ranges; loss/maintenance/gain safety and direction-correct forecasting; goal editing and progress |
-| **Release 2 — weight experience** | progress ribbon |
+| **Release 2 — weight experience** | No committed additions; promote only from dogfood evidence. |
 | **Deferred / advanced** | user-tunable smoothing and smoother comparison; custom metrics; elaborate milestone celebrations; Bluetooth-scale drivers; multi-profile vault partitions; broader food, planning, exercise, silhouette, digestion, and AI suite release work |
 
 Release 1 stores one profile while keeping `profileId` in every row. Body mass
@@ -413,7 +413,7 @@ Ratified 2026-09-11.*
   sizing for hero numerals. No second typeface.
 - **R-D4 — Charting split.** Vico (Apache-2.0) for standard line/bar
   charts; custom Compose Canvas for the four signature objects (forecast
-  cone, progress ribbon, rings, odometer numerals); one shared
+  cone, rings, odometer numerals); one shared
   month-heatmap implementation reused by F05/F09/F11. YCharts rejected as
   dormant.
 - **R-D5 — Delta colors: neutral default, curated accents, red never.**

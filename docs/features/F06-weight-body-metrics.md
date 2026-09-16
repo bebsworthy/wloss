@@ -41,7 +41,7 @@ Core objectives:
 - **The single most common flow:**
   1. User steps on a connected scale and the entry arrives through Health Connect, or opens the manual weigh-in sheet.
   2. A confirmation card animates in: **"Trend 179.1 ↓ 0.6"**, raw 178.4 shown small beneath; single soft haptic.
-  3. Done — under 5 seconds, no keyboard. The chart ribbon has grown imperceptibly.
+  3. Done — under 5 seconds, no keyboard.
 
 ## 3. How It Works — functional mechanics
 
@@ -85,7 +85,7 @@ Core objectives:
 
 **Outputs & artifacts**
 
-- Daily scalar series per metric + trend series; progress-ribbon geometry; milestone breakdown (goal split into milestone weights, each with a target date rendered from **F07**'s forecast); correlation datasets (weight ↔ any girth); import log; export-ready series (F13).
+- Daily scalar series per metric + trend series; milestone breakdown (goal split into milestone weights, each with a target date rendered from **F07**'s forecast); correlation datasets (weight ↔ any girth); import log; export-ready series (F13).
 
 **State owned by F06:** the measurement store, daily-scalar/smoother policy
 versions, body-fat method registry and headline pick, import log, and
@@ -122,19 +122,18 @@ ritual with F13's mechanics per R-B7 — F06 only renders both.)
   assigns moral color. Up and down use the same motion and neutral/accent roles,
   with raw-day magnitude kept in the small print.
 - **Odometer numerals:** trend value rolls digit-by-digit (400 ms) on the confirmation card and Hub hero number.
-- **Progress ribbon:** green band above / neutral band below the trend line; thickness = change vs. N days ago (default 30, user-adjustable with a scrubber). New data makes the band *breathe* — a 200 ms thickness ease. The user literally watches progress accumulate as area.
 - **Milestone moment:** full-bleed card, giant numeral count-up, distinct two-note celebration haptic, shareable card render (F11 may attach a badge).
 
 **Data-quality gating**
 
-- Trend line needs ≥ 3 daily scalars in the **selected display window** before it renders; the N-days-ago reference/ribbon uses the same gate. Below that the chart keeps the dots and states whether the trend is warming up or resumes with the next entry. An empty window says so, keeps its real time frame, and may offer the smallest wider window that contains data.
+- Trend line needs ≥ 3 daily scalars in the **selected display window** before it renders. Below that the chart keeps the dots and states whether the trend is warming up or resumes with the next entry. An empty window says so, keeps its real time frame, and may offer the smallest wider window that contains data.
 - Milestone dates and any forward projection are **F07's** to compute and gate; F06 renders them but refuses to invent dates from thin data.
 - Body-fat from impedance always carries an honest uncertainty note (±3–4% typical); no false precision, MeThreeSixty-complaint-proof.
 
 ## 5. What the User Gets Out
 
 - **Headline pair:** raw weigh-in (small) + canonical trend weight (hero) + weekly rate ("−0.6 kg/wk"). The canonical trend remains the single headline answer.
-- **Charts:** scale dots + trend line + progress ribbon (30d/90d/1y/all); per-metric trend charts for every girth and custom type; body-fat multi-method overlay; weight ↔ girth scatter with correlation coefficient and plain-language note ("waist −3.1 cm while weight flat — you're losing size, and the tape sees it") — **[v1.x]**; correlations stay out of v1 per the master scope.
+- **Charts:** scale dots + trend line (30d/90d/1y/all); per-metric trend charts for every girth and custom type; body-fat multi-method overlay; weight ↔ girth scatter with correlation coefficient and plain-language note ("waist −3.1 cm while weight flat — you're losing size, and the tape sees it") — **[v1.x]**; correlations stay out of v1 per the master scope.
 - **Compressed history + the full logbook (WLO-0055, owner ruling):** the weight surface carries a history card — one row per bucket, coarser with distance: each day for the last 7 days, then 4 weeks (Mon–Sun), then 4 months, then quarter by quarter (12-quarter cap; the raw feed's business beyond that). A bucket row states the range, how many weigh-ins it holds, the change vs the bucket before it, and the closing day's weight (lowest-of-day — the same canonical the trend uses); empty buckets keep their row — gaps are data, not absent UI. Every bucket taps through to **the logbook**, a raw table of every entry with provenance marks, inline edit (spec, pending), and delete (R-B8 amendment) — the geek's ground truth beneath every smoothed view and the source of the import log. The logbook is a full-page surface: sticky month headers carry the month so rows don't repeat it ("Sun 14 · 06:30 … 77.0 kg"), and the feed is windowed — latest 3 months, "Load earlier (N more)" — so a decade reads the same as a week. The delete door lives there, on the raw rows (WLO-0050): the entry slides as one opaque piece and the Delete action — an error-tinted glyph + label, never a color fill — is revealed in the space it vacates. The delete fires only on release with the drag held past the trigger distance; velocity is ignored, so a flick never acts, and crossing the trigger is visible before the lift (muted → error morph + tick). Short releases spring back; the undo notice renders inline where the row was — never a dialog, never a page-level banner, never an overlap. Aggregates are never deletable on the card.
 - **Milestone breakdown:** F01's auto-generated ladder (4–8 rungs) rendered with per-milestone dates (from F07's 3-band forecast — optimistic/expected/pessimistic dates shown as a range, never one promise).
 - **Provenance rule:** every body number is badged **measured** (tape, scale mass), **estimated** (Navy/RFM/impedance/photo-scan — with formula + inputs + citation), or **derived** (BMI, ratios). Tapping any number opens "How we got here" — the exact inputs, formula, constants, and its data-quality state.

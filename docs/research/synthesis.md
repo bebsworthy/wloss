@@ -141,7 +141,7 @@ Ranked by (value to the numbers-geek) × (fit with local-first) × (cost).
    signals). This is the number a geek checks every Sunday.
 2. **Trend weight with selectable smoothers** *(Happy Scale)* — EWMA default,
    zero-phase option, lowest-of-day import, "Trend 179.1, down 0.6" framing on every
-   weigh-in, progress ribbon.
+   weigh-in. WLO rejected the competitor's progress ribbon as redundant visual encoding.
 3. **Goal-date forecast with optimistic/expected/pessimistic bands** *(gap in all
    19 apps)* — every competitor extrapolates linearly and lies near plateaus.
 4. **Photo-logging correction loop as the hero flow** *(SnapCalorie hints, Cal AI
@@ -291,7 +291,7 @@ weekly check-in → adjusted plan → shopping list → next week.**
 - [ ] Nutrients: calories/macros v1, micronutrient panels fast-follow *(Cronometer bar)*
 - [ ] Shopping list: consolidated, aisle-learned, pantry-deducted, edit-proof
 - [ ] Exercise: Hevy-style logging loop + templates + volume heatmap
-- [ ] Weight: trend weight (2+ smoothers), progress ribbon, named predictions,
+- [ ] Weight: trend weight (2+ smoothers), named predictions,
       3-band forecast, explainers
 - [ ] Adaptive TDEE with data-quality states + weekly check-in card
 - [ ] Silhouette: guided capture, on-device timeline/compare, hidden gallery

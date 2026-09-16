@@ -103,7 +103,7 @@ not app code (Compose implementation is a later phase).
    dates, check-in card (frozen anatomy, F07 §4), delta chips, fit
    badges, adherence strip, variety heatmap, tupperware leftover
    connector, aisle-grouped list + reconciliation delta chips, progress
-   ribbon, milestone ladder, trend confirmation card, quiet-scale card,
+   milestone ladder, trend confirmation card, quiet-scale card,
    Bristol carousel, unlock progress ring, report-card grade stamp,
    streak chip, share-card renderer, consent sheet with payload preview
    (F12 §3.5 — a *signature* component), receipt-log ledger view, storage
@@ -135,7 +135,7 @@ Priority order (each maps to a signature moment in FEATURES §2.4):
    offline variants.
 3. **The Sunday check-in** (F07, frozen anatomy) → Apply commit → F01
    plan-diff view. The Week loop's anchor.
-4. **Weigh-in + trend moment** (F06): confirmation card, progress ribbon,
+4. **Weigh-in + trend moment** (F06): confirmation card, trend chart,
    outlier guard, trend history. (The F08 capture ritual that followed here
    moved to its own flow 09 in round 10.)
 5. **Plan → shop** (F03/F04): week grid with fit badges, swap deltas,

@@ -50,7 +50,7 @@ Core objectives (verifiable):
 ## 3. How It Works — functional mechanics
 
 **Inputs.** Event streams from F02 (meals, scan confidence), F03 (plan
-adherence), F05 (sessions, PRs, volume), F06 (weigh-ins, trend, ribbon), F07
+adherence), F05 (sessions, PRs, volume), F06 (weigh-ins, trend), F07
 (check-in results, TDEE estimates, quality states), F08 (silhouette captures),
 F09 (Bristol entries, regularity), F10 (day-completeness, seconds-to-log).
 Time series and custom EAV metrics from the F13 vault, with provenance records.

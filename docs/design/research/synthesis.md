@@ -62,7 +62,7 @@ trend-smoothing as the emotionally protective default view.**
 
 | # | Pattern | Source | Lands in WLO |
 |---|---------|--------|--------------|
-| P24 | **Progress ribbon** — "green area above / red area below the line whose thickness shows how much you've lost" — hidden progress as literal geometry | happy-scale.md; F06 spec adopts (band above/neutral below, N-day gear) | F06 chart + F10 hero strip |
+| P24 | **Progress ribbon** — "green area above / red area below the line whose thickness shows how much you've lost" — hidden progress as literal geometry | happy-scale.md; evaluated and rejected for WLO as redundant visual encoding | — |
 | P25 | **Plan-vs-actual overlay** — weight chart overlays "progress vs. plan" schedule line | loseit.md | F06 chart (F01 plan curve as overlay); F03 planned-vs-actual deltas |
 | P26 | **7-bar budget-shape chart** — weekday/weekend calorie cycling "trivial to render as a 7-bar budget chart," a power-user favorite | loseit.md | F01 schedule bars (spec'd: pinned weekly total invariant) |
 | P27 | **Any-metric × any-window** — "line graphs of any nutrient/biometric over custom ranges," rolling-average toggle, averages of visible points | cronometer.md; macrofactor.md ("chart pages display an average of all visible points") | F11 stats hub (spec'd: free range + presets, overlay compare) |
@@ -233,8 +233,7 @@ adopt) · kizitonwose/Calendar (MIT, has a HeatMap mode). **Adopted split
 (R-D4):**
 - Vico: energy-balance bar/line combo, sparkline hosts, generic line charts.
 - Custom Canvas (`DrawScope`): the forecast cone (per-x band pairs +
-  animated widening), macro/budget rings (trivial arcs), the progress ribbon
-  (area-geometry between trend and N-day-ago line).
+  animated widening) and macro/budget rings (trivial arcs).
 - kizitonwose Calendar or a ~150-line Canvas grid: month heatmaps.
 All licenses GPLv3-compatible.
 
@@ -305,7 +304,7 @@ approval; batched on ticket WLO-0011):
    tabular figures mandatory wherever numbers change or align, display
    optical size for hero numerals.
 4. **R-D4 (candidate) — Charts:** Vico for standard line/bar; custom Canvas
-   for the forecast cone, rings, and progress ribbon; one heatmap
+   for the forecast cone and rings; one heatmap
    implementation shared by F05/F09/F11.
 5. **R-D5 (candidate) — Delta colors:** default neutral CVD-safe pair for
    gains/losses; curated user-selectable accents; red never a default and

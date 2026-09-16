@@ -16,3 +16,7 @@ WLO-0053 chart correctness and WLO-0072 validated canonical series policy.
 
 # Acceptance
 The band never implies progress without a valid goal/reference, never hides uncertainty, and its geometry is covered by pure tests and screenshot checks.
+
+## Product decision (2026-09-16)
+
+Canceled by owner as a feature. Remove the shifted reference line, shaded band, goal coloring, animation, scrubber, and settings. A separate cleanup ticket may expose only the useful fact as neutral text: 30-day trend change, shown only when sufficient history exists.

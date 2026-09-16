@@ -228,7 +228,6 @@ decision. († = easing/spring unspecified in spec — token supplies it.)
 | Superset queue | F05 | queue walks A → B → A | — | M2 † |
 | Weigh-in confirmation | F06 | card animates in; trend arrow draws downward with spring settle; gain = identical motion, neutral color | single soft tick (both cases) | M3 + spring |
 | Odometer (hero/trend) | F06 | rolls digit-by-digit, 400 ms | — | odometer 400 ms |
-| Progress ribbon breathe | F06 | thickness ease 200 ms on new data | — | S4 |
 | Back-fill recompute | F06 | zero-phase recent values re-settle, visible 300 ms ease | — | M2 |
 | Milestone moment | F06 | giant numeral count-up | two-note celebration | count-up |
 | Check-in reveal | F07 | 500 ms sequence: status chip stamps → trend odometer-rolls → expenditure line draws L→R → proposal row rises | — | choreographed 500 ms |
@@ -325,7 +324,7 @@ them honestly); one shared month-heatmap implementation (kizitonwose
 Calendar or ~150-line grid) reused by F05/F09/F11.
 
 Signature chart objects: **forecast cone** (fan chart: center + 3 bands,
-decelerating, widening displayed, 700 ms bloom), **progress ribbon**
+decelerating, widening displayed, 700 ms bloom), trend chart
 (area between trend and N-days-ago line, breathe on new data), **budget
 ring** (arc + count-up + provenance chip center), **odometer numerals**
 (400 ms hero roll, tabular digits so nothing jitters). Chart rules: every
@@ -389,7 +388,6 @@ identical neutral motion in either direction) · accessible entry in kg/lb ·
 honest raw+trend chart · logbook and import identity · loss/maintenance/gain
 goal state · goal editor/progress · Health Connect weight/body-fat import.
 **Release 2:**
-Progress ribbon ·
 **Deferred:** smoother
 comparison/tuning · body-fat/girth/EAV custom metrics · milestone celebration ·
 Bluetooth scale drivers · multi-profile lock · advanced correlations.

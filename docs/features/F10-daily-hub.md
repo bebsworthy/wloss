@@ -48,7 +48,7 @@ Core objectives (verifiable):
 
 ## 3. How It Works — functional mechanics
 
-**Inputs.** From F06: trend weight, delta vs. 7/30 days, progress-ribbon data,
+**Inputs.** From F06: trend weight, delta vs. 7/30 days,
 last weigh-in timestamp. From F07: adaptive target, consumed/planned energy,
 data-quality state (`developing`/`updating`/`held`), check-in due flag. From F03:
 today's planned meals and the next meal. From F05: scheduled workout, live
@@ -138,8 +138,7 @@ empty state or an upsell.
 
 ## 5. What the User Gets Out
 
-- **Hero number card** — trend-first weight framing ("Trend 179.1, down 0.6")
-  with the progress-ribbon strip from F06; tap → F06.
+- **Hero number card** — trend-first weight framing ("Trend 179.1, down 0.6"); tap → F06.
 - **Calories ring** — consumed vs. the adaptive target from F07, with macro
   dots; the target wears an inline ⓘ that taps through to the explainer
   (update cadence and last-change date live there; reads "provisional" when
@@ -176,7 +175,7 @@ sits in the Hub's overflow menu and on every notification.
 
 - **Consumes from:** F01 (goal framing, plan name) · F02 (quick-log capture, log
   state) · F03 (today's plan, "log as planned" prefill) · F05 (sessions, PR
-  events) · F06 (trend, weigh-in state, ribbon) · F07 (adaptive target, ring
+  events) · F06 (trend, weigh-in state) · F07 (adaptive target, ring
   values, quality states, check-in due) · F08 (capture due) · F09 (log state) ·
   F11 (streak chip, report-ready) · F13 (backup-health dot).
 - **Feeds into:** the same features (deep-link traffic with prefills); F11
