@@ -147,6 +147,8 @@ public class M3WeighInTest {
         // LOWER re-weigh replaces it as the day's scalar (lowest-of-day).
         rule.onNodeWithTag("f06-weight-field").performTextClearance()
         rule.onNodeWithTag("f06-weight-field").performTextInput("76.8")
+        rule.onNodeWithTag("f06-time-field").performTextClearance()
+        rule.onNodeWithTag("f06-time-field").performTextInput("07:00")
         rule.onNodeWithTag("f06-save-weighin").performClick()
         pollText("Raw reading 76.8 kg · manual")
         dismissConfirmation()
@@ -415,6 +417,9 @@ public class M3WeighInTest {
             }
         assertEquals(expectedPrefill, correctedPrefill)
         assertNotEquals("95.0", correctedPrefill)
+        assertTrue(todayEvents(koin).any { abs(it.valueReal - 95.0) < 1e-9 })
+        rule.onNodeWithTag("f06-save-weighin").performClick()
+        TestNav.awaitTag(rule, "f06-confirmation-card")
         assertTrue(todayEvents(koin).none { abs(it.valueReal - 95.0) < 1e-9 })
     }
 
@@ -454,7 +459,7 @@ public class M3WeighInTest {
         rule.onAllNodesWithTag("f06-row").onFirst().performTouchInput { swipe(centerRight, centerLeft) }
 
         // The undo notice lives in the feed, where the row was.
-        TestNav.awaitText(rule, "Weigh-in deleted")
+        TestNav.awaitText(rule, "Deleted")
         pollFirstRowChanged(deletedValue)
         rule.onNodeWithText("Undo").performClick()
         pollFirstRow(deletedValue)
