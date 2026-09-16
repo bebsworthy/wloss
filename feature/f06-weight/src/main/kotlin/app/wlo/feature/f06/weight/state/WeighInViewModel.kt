@@ -285,6 +285,7 @@ public data class WeighInUiState(
     /** Canonical kilograms used to seed the next manual entry in the active display unit. */
     public val entryPrefillKg: Double?,
     public val entryPrefillContext: String,
+    public val goalProgress: GoalProgressUi,
 ) {
     public companion object {
         /** Lowest-of-day copy (Happy Scale's rule, spoken kindly and once). */
@@ -307,6 +308,7 @@ public data class WeighInUiState(
                 lastWeighInLabel = null,
                 entryPrefillKg = null,
                 entryPrefillContext = "No previous reading yet.",
+                goalProgress = GoalProgressUi(GoalProgressState.NO_GOAL, null, null, null),
             )
     }
 }
@@ -350,6 +352,7 @@ public class WeighInViewModel(
     private val profiles: ProfileRepository,
     private val weighIns: WeighInRepository,
     private val measurements: MeasurementRepository,
+    private val goalProgressLoader: GoalProgressLoader,
     private val massUnits: Flow<MassUnit>,
     initialSheetOpen: Boolean,
     initialSection: BodySectionUi = BodySectionUi.WEIGHT,
@@ -809,6 +812,7 @@ public class WeighInViewModel(
         // read — the exact number the Hub shows. The tuner's own output
         // is a preview and is labeled as one.
         val canonical = reads.value(weighIns.currentTrend(id, today), null)
+        val goalProgress = goalProgressLoader.load(profile, canonical?.current, today)
         val entryPrefill =
             resolveEntryPrefill(
                 trendKg = canonical?.current?.value,
@@ -900,6 +904,7 @@ public class WeighInViewModel(
                     },
                 entryPrefillKg = entryPrefill.kilograms,
                 entryPrefillContext = entryPrefill.context,
+                goalProgress = goalProgress,
             )
         backfillPendingSheet(entryPrefill, unit)
         loadedTemporalKey = WeightTemporalKey(today, zone.id)

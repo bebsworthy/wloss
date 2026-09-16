@@ -7,6 +7,7 @@ import app.wlo.core.documents.PreferenceProfile
 import app.wlo.core.documents.TargetsDocument
 import app.wlo.core.engines.ForecastBands
 import app.wlo.core.engines.GoalForecastResult
+import app.wlo.core.engines.MilestoneLadder
 import app.wlo.core.model.ActivityLevel
 import app.wlo.core.model.SafetyAnswer
 import app.wlo.core.model.Sex
@@ -15,7 +16,6 @@ import app.wlo.core.model.WeightGoalHoldReason
 import app.wlo.core.model.WeightGoalMode
 import app.wlo.core.model.WeightGoalSafetyCopy
 import app.wlo.core.model.WeightGoalSafetyCopyPolicy
-import app.wlo.feature.f01.onboarding.domain.Milestones
 
 /**
  * The wizard steps (F01 §3 step map + flow 07): every step is skippable —
@@ -47,7 +47,7 @@ public enum class OnboardingStep {
  * One renderable wizard state. Input fields carry their values directly
  * (user-entered numbers, not derived); every DERIVED number the UI shows —
  * budget, forecast, milestones — travels through the domain types
- * ([ForecastBands], [TargetsDocument], [Milestones.Rung]) and renders via
+ * ([ForecastBands], [TargetsDocument], [MilestoneLadder.Rung]) and renders via
  * provenance-chip components only (D6).
  */
 public data class OnboardingUiState(
@@ -85,7 +85,7 @@ public data class OnboardingUiState(
     /** Shared WLO-0074 quality/safety result; [forecast] is a render compatibility view. */
     public val forecastResult: GoalForecastResult? = null,
     public val draftTargets: TargetsDocument? = null,
-    public val milestones: List<Milestones.Rung> = emptyList(),
+    public val milestones: List<MilestoneLadder.Rung> = emptyList(),
     // --- adapt (deterministic constraint applier) ---
     public val constraints: List<String> = emptyList(),
     public val application: ConstraintApplier.Application = ConstraintApplier.Application(),

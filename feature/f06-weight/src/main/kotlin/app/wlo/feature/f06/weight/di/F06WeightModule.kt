@@ -1,8 +1,12 @@
 package app.wlo.feature.f06.weight.di
 
+import app.wlo.core.datastore.JsonDocumentStore
 import app.wlo.core.datastore.SettingsStore
+import app.wlo.core.documents.DocumentCodec
+import app.wlo.core.model.WeightGoalSafetyInput
 import app.wlo.feature.f06.weight.state.BodyFatViewModel
 import app.wlo.feature.f06.weight.state.BodySectionUi
+import app.wlo.feature.f06.weight.state.GoalProgressLoader
 import app.wlo.feature.f06.weight.state.LogbookViewModel
 import app.wlo.feature.f06.weight.state.WeighInViewModel
 import org.koin.androidx.viewmodel.dsl.viewModel
@@ -17,11 +21,25 @@ import org.koin.dsl.module
 public val f06WeightModule: Module =
     module {
         viewModel { (initialSheetOpen: Boolean, initialSection: BodySectionUi) ->
+            val documents = get<JsonDocumentStore>()
             WeighInViewModel(
                 clock = get(),
                 profiles = get(),
                 weighIns = get(),
                 measurements = get(),
+                goalProgressLoader =
+                    GoalProgressLoader(
+                        clock = get(),
+                        targets = get(),
+                        dayProjection = get(),
+                        readGoalSafetyInput = { profileId ->
+                            documents.readText("weight/goal-safety-v1/$profileId")?.let { text ->
+                                runCatching {
+                                    DocumentCodec.json.decodeFromString(WeightGoalSafetyInput.serializer(), text)
+                                }.getOrNull()
+                            }
+                        },
+                    ),
                 massUnits = get<SettingsStore>().massUnit,
                 initialSheetOpen = initialSheetOpen,
                 initialSection = initialSection,

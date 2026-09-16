@@ -55,13 +55,17 @@ import app.wlo.core.designsystem.WloSheet
 import app.wlo.core.designsystem.WloSpacing
 import app.wlo.core.designsystem.WloStatDivider
 import app.wlo.core.designsystem.WloTrendChart
+import app.wlo.core.designsystem.formatDay
 import app.wlo.core.designsystem.rememberWloHaptics
 import app.wlo.core.designsystem.wloExtendedColors
 import app.wlo.core.designsystem.wloType
+import app.wlo.core.engines.MilestoneLadder
 import app.wlo.core.model.TrendMethod
 import app.wlo.feature.f06.weight.state.BodyFatViewModel
 import app.wlo.feature.f06.weight.state.BodySectionUi
 import app.wlo.feature.f06.weight.state.ChartWindowUi
+import app.wlo.feature.f06.weight.state.GoalProgressState
+import app.wlo.feature.f06.weight.state.GoalProgressUi
 import app.wlo.feature.f06.weight.state.HistoryBucketUi
 import app.wlo.feature.f06.weight.state.HistoryTier
 import app.wlo.feature.f06.weight.state.RatiosUi
@@ -264,6 +268,8 @@ public fun WeightScreen(
                     )
                 }
 
+                GoalProgressCard(progress = state.goalProgress, state = state)
+
                 WeightTrendCard(state = state, viewModel = viewModel, onOpenMath = onOpenMath)
 
                 WloCard(modifier = Modifier.testTag("f06-history-card")) {
@@ -333,6 +339,96 @@ public fun WeightScreen(
                 onStepDown = { viewModel.onEvent(WeighInEvent.StepperDown) },
                 onSave = { viewModel.onEvent(WeighInEvent.Save) },
             )
+        }
+    }
+}
+
+@Composable
+private fun GoalProgressCard(
+    progress: GoalProgressUi,
+    state: WeighInUiState,
+) {
+    WloCard(modifier = Modifier.testTag("f06-goal-progress")) {
+        WloCardHeader(title = "Goal progress")
+        when (progress.state) {
+            GoalProgressState.NO_GOAL ->
+                Text(
+                    text = "No weight goal is active. Weight tracking works without one.",
+                    style = wloType.caption,
+                    color = wloExtendedColors.textTertiary,
+                )
+            GoalProgressState.UNAVAILABLE ->
+                Text(
+                    text = "Goal progress couldn't refresh. Weight tracking still works.",
+                    style = wloType.caption,
+                    color = wloExtendedColors.textTertiary,
+                )
+            GoalProgressState.TREND_FORMING ->
+                Text(
+                    text = "Keep weighing — goal progress starts from the canonical trend, not a single low reading.",
+                    style = wloType.caption,
+                    color = wloExtendedColors.textTertiary,
+                )
+            GoalProgressState.LOSS,
+            GoalProgressState.MAINTENANCE,
+            GoalProgressState.GAIN,
+            -> {
+                progress.currentTrend?.let { trend ->
+                    WloListRow(
+                        label = "Current trend",
+                        value = {
+                            ProvenanceChip(
+                                value = trend,
+                                format = state.massUnit::format,
+                            )
+                        },
+                    )
+                }
+                progress.targetWeightKg?.let { target ->
+                    WloListRow(
+                        label = "Goal",
+                        value = { Text(state.massUnit.format(target), style = wloType.statS) },
+                    )
+                }
+                progress.remainingKg?.let { remaining ->
+                    WloListRow(
+                        label = "Remaining",
+                        value = { Text(state.massUnit.format(remaining), style = wloType.statS) },
+                    )
+                }
+                progress.rungs.forEach { rung ->
+                    WloListRow(
+                        label =
+                            buildString {
+                                append(state.massUnit.format(rung.weightKg))
+                                if (rung.isGoal) append(" · goal")
+                            },
+                        secondary =
+                            when {
+                                rung.state == MilestoneLadder.State.COMPLETED -> "Reached by your trend"
+                                rung.rangeEpochDays != null -> {
+                                    val (early, late) = checkNotNull(rung.rangeEpochDays)
+                                    "${formatDay(early)} – ${formatDay(late)}"
+                                }
+                                else -> "Date unavailable — progress still counts"
+                            },
+                        leading = {
+                            Text(
+                                text = if (rung.state == MilestoneLadder.State.COMPLETED) "Done" else "Next",
+                                style = wloType.label,
+                                color = wloExtendedColors.textTertiary,
+                            )
+                        },
+                    )
+                }
+                progress.forecastCopy?.let { copy ->
+                    Text(
+                        text = copy,
+                        style = wloType.caption,
+                        color = wloExtendedColors.textTertiary,
+                    )
+                }
+            }
         }
     }
 }

@@ -65,10 +65,12 @@ public class M3WeighInTest {
     @Test
     public fun weightSurface_activityRecreationRefreshesWithoutAnErrorState() {
         TestNav.awaitTag(rule, "f06-title")
+        rule.onNodeWithTag("f06-goal-progress", useUnmergedTree = true).assertExists()
 
         rule.activityRule.scenario.recreate()
 
         TestNav.awaitTag(rule, "f06-title")
+        rule.onNodeWithTag("f06-goal-progress", useUnmergedTree = true).assertExists()
         assertTrue(rule.onAllNodesWithTag("f06-load-error").fetchSemanticsNodes().isEmpty())
     }
 

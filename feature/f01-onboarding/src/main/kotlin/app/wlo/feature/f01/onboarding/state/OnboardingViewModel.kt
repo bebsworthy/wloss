@@ -12,6 +12,7 @@ import app.wlo.core.documents.DietTemplate
 import app.wlo.core.documents.DietTemplateApplier
 import app.wlo.core.documents.TargetsDocument
 import app.wlo.core.engines.ForecastEngine
+import app.wlo.core.engines.MilestoneLadder
 import app.wlo.core.model.ActivityLevel
 import app.wlo.core.model.ConstantsRegistry
 import app.wlo.core.model.SafetyAnswer
@@ -22,7 +23,6 @@ import app.wlo.core.model.WeightGoalMode
 import app.wlo.core.model.WeightGoalSafetyCopyPolicy
 import app.wlo.feature.f01.onboarding.domain.FinishOnboarding
 import app.wlo.feature.f01.onboarding.domain.GoalEditorSafety
-import app.wlo.feature.f01.onboarding.domain.Milestones
 import app.wlo.feature.f01.onboarding.domain.OnboardingDraft
 import app.wlo.feature.f01.onboarding.domain.OnboardingDraftIO
 import app.wlo.feature.f01.onboarding.domain.TemplateLibrary
@@ -397,12 +397,13 @@ public class OnboardingViewModel(
 
         val milestones =
             forecast?.let { bands ->
-                Milestones.ladder(
-                    from = state.currentWeightKg,
-                    to = state.goalWeightKg,
+                MilestoneLadder.loss(
+                    journeyStartKg = state.currentWeightKg,
+                    currentTrendKg = state.currentWeightKg,
+                    goalKg = state.goalWeightKg,
                     optimistic = bands.optimistic,
                     pessimistic = bands.pessimistic,
-                    startEpochDay = clockEpochDay(),
+                    forecastStartEpochDay = clockEpochDay(),
                 )
             } ?: emptyList()
 

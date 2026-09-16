@@ -5,14 +5,24 @@ import app.wlo.core.common.ClockPort
 import app.wlo.core.common.MassUnit
 import app.wlo.core.common.WloResult
 import app.wlo.core.data.CurrentTrend
+import app.wlo.core.data.DayProjectionRepository
+import app.wlo.core.data.DayView
 import app.wlo.core.data.DeletedWeighIn
 import app.wlo.core.data.MeasurementRepository
 import app.wlo.core.data.NewMeasurement
 import app.wlo.core.data.NewProfile
 import app.wlo.core.data.ProfileRepository
 import app.wlo.core.data.ReplacedWeighIn
+import app.wlo.core.data.TargetsRepository
 import app.wlo.core.data.WeighInOutcome
 import app.wlo.core.data.WeighInRepository
+import app.wlo.core.documents.Energy
+import app.wlo.core.documents.Goal
+import app.wlo.core.documents.MacroSplit
+import app.wlo.core.documents.Macros
+import app.wlo.core.documents.TargetsDocument
+import app.wlo.core.documents.TargetsRecord
+import app.wlo.core.documents.TargetsWriterId
 import app.wlo.core.engines.OutlierVerdict
 import app.wlo.core.engines.SmoothingEngine
 import app.wlo.core.engines.WeightSample
@@ -50,6 +60,38 @@ import kotlin.test.assertTrue
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class WeighInViewModelReliabilityTest {
+    @Test
+    fun `goal progress handles no goal forming trend loss maintenance and gain`() =
+        runTest {
+            Dispatchers.setMain(StandardTestDispatcher(testScheduler))
+            try {
+                val noGoal = viewModel()
+                advanceUntilIdle()
+                assertEquals(GoalProgressState.NO_GOAL, noGoal.uiState.value.goalProgress.state)
+
+                val forming = viewModel(targets = StaticTargets(targetsRecord(75.0)))
+                advanceUntilIdle()
+                assertEquals(GoalProgressState.TREND_FORMING, forming.uiState.value.goalProgress.state)
+
+                suspend fun stateFor(targetKg: Double): GoalProgressUi {
+                    val weighIns = FakeWeighIns().apply { canonicalTrendKg = 80.0 }
+                    val viewModel = viewModel(weighIns = weighIns, targets = StaticTargets(targetsRecord(targetKg)))
+                    advanceUntilIdle()
+                    return viewModel.uiState.value.goalProgress
+                }
+
+                val loss = stateFor(72.0)
+                assertEquals(GoalProgressState.LOSS, loss.state)
+                assertTrue(loss.rungs.size in 4..8)
+                assertTrue(loss.rungs.all { it.rangeEpochDays == null })
+                assertEquals(8.0, loss.remainingKg)
+                assertEquals(GoalProgressState.MAINTENANCE, stateFor(80.0).state)
+                assertEquals(GoalProgressState.GAIN, stateFor(85.0).state)
+            } finally {
+                Dispatchers.resetMain()
+            }
+        }
+
     @Test
     fun `successful save confirms persisted raw event and recomputed canonical trend`() =
         runTest {
@@ -519,6 +561,7 @@ class WeighInViewModelReliabilityTest {
         clock: MutableClock = MutableClock(Instant.parse("2026-09-16T12:00:00Z")),
         weighIns: FakeWeighIns = FakeWeighIns(),
         massUnits: Flow<MassUnit> = flowOf(MassUnit.KILOGRAM),
+        targets: TargetsRepository = EmptyTargets,
         initialSheetOpen: Boolean = false,
         zoneProvider: () -> TimeZone = { TimeZone.UTC },
     ): WeighInViewModel =
@@ -527,10 +570,79 @@ class WeighInViewModelReliabilityTest {
             profiles = FakeProfiles,
             weighIns = weighIns,
             measurements = EmptyMeasurements,
+            goalProgressLoader =
+                GoalProgressLoader(
+                    clock = clock,
+                    targets = targets,
+                    dayProjection = EmptyDayProjection,
+                    readGoalSafetyInput = { null },
+                    zoneProvider = zoneProvider,
+                ),
             massUnits = massUnits,
             initialSheetOpen = initialSheetOpen,
             zoneProvider = zoneProvider,
         )
+}
+
+private class StaticTargets(
+    private val record: TargetsRecord,
+) : TargetsRepository {
+    override suspend fun current(profileId: String): WloResult<TargetsRecord?> = WloResult.ok(record)
+
+    override fun observeCurrent(profileId: String): Flow<WloResult<TargetsRecord?>> = flowOf(WloResult.ok(record))
+
+    override suspend fun history(profileId: String): WloResult<List<TargetsRecord>> = WloResult.ok(listOf(record))
+}
+
+private fun targetsRecord(targetKg: Double): TargetsRecord =
+    TargetsRecord(
+        version = 1,
+        createdAtEpochMs = 0,
+        createdBy = TargetsWriterId.STUDIO_F01,
+        document =
+            TargetsDocument(
+                goal = Goal(targetWeightKg = targetKg, pacePctPerWeek = 0.5),
+                energy = Energy(budgetKcal = 1_900.0, floorKcal = 1_200.0),
+                macros = Macros(MacroSplit.Preset("balanced")),
+            ),
+    )
+
+private object EmptyTargets : TargetsRepository {
+    override suspend fun current(profileId: String): WloResult<TargetsRecord?> = WloResult.ok(null)
+
+    override fun observeCurrent(profileId: String): Flow<WloResult<TargetsRecord?>> = flowOf(WloResult.ok(null))
+
+    override suspend fun history(profileId: String): WloResult<List<TargetsRecord>> = WloResult.ok(emptyList())
+}
+
+private object EmptyDayProjection : DayProjectionRepository {
+    override fun observeDay(
+        profileId: String,
+        day: Long,
+    ): Flow<WloResult<DayView>> = flow { error("unused") }
+
+    override fun observeRange(
+        profileId: String,
+        fromDay: Long,
+        toDay: Long,
+    ): Flow<WloResult<List<DayView>>> = flow { error("unused") }
+
+    override suspend fun day(
+        profileId: String,
+        day: Long,
+    ): WloResult<DayView> = error("unused")
+
+    override suspend fun range(
+        profileId: String,
+        fromDay: Long,
+        toDay: Long,
+    ): WloResult<List<DayView>> = WloResult.ok(emptyList())
+
+    override suspend fun recompute(
+        profileId: String,
+        fromDay: Long,
+        toDay: Long,
+    ): WloResult<Unit> = error("unused")
 }
 
 private class MutableClock(

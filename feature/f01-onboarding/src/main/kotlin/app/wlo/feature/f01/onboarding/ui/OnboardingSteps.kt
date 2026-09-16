@@ -58,13 +58,13 @@ import app.wlo.core.designsystem.wloType
 import app.wlo.core.documents.DietTemplate
 import app.wlo.core.documents.DietTemplateApplier
 import app.wlo.core.engines.ForecastBands
+import app.wlo.core.engines.MilestoneLadder
 import app.wlo.core.model.ActivityLevel
 import app.wlo.core.model.ConstantsRegistry
 import app.wlo.core.model.DerivedValue
 import app.wlo.core.model.Provenance
 import app.wlo.core.model.Sex
 import app.wlo.core.model.WeightGoalEligibility
-import app.wlo.feature.f01.onboarding.domain.Milestones
 import app.wlo.feature.f01.onboarding.state.OnboardingEvent
 import app.wlo.feature.f01.onboarding.state.OnboardingStep
 import app.wlo.feature.f01.onboarding.state.OnboardingUiState
@@ -946,7 +946,7 @@ internal fun ReviewStep(state: OnboardingUiState) {
 
 @Composable
 private fun RungRow(
-    rung: Milestones.Rung,
+    rung: MilestoneLadder.Rung,
     massUnit: MassUnit,
 ) {
     Row(
