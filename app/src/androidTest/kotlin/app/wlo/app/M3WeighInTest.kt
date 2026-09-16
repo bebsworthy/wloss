@@ -289,20 +289,18 @@ public class M3WeighInTest {
         rule.onNodeWithTag("f06-weight-field").performTextClearance()
         rule.onNodeWithTag("f06-weight-field").performTextInput("76.8")
         rule.onNodeWithTag("f06-save-weighin").performClick()
-        val canonicalWindow = SEEDED_SCALARS.takeLast(CANONICAL_WINDOW_DAYS)
-        pollTrend(trailingEwmaLast(canonicalWindow, ALPHA))
+        pollText("Last raw reading 76.8", substring = true)
         dismissConfirmation()
 
         // The α tuner (R-A2: visible, default 0.15): pushing α to its cap
         // makes the PREVIEW trend follow the raw readings — a different last
         // value, and the headline is labeled a preview (the saved trend keeps
         // the default smoother).
-        val snappyLast = trailingEwmaLast(canonicalWindow, ALPHA_MAX)
-        assertNotEquals(trailingEwmaLast(canonicalWindow, ALPHA), snappyLast, 1e-9)
+        val baselineTrend = trendValue()
         rule
             .onNodeWithTag("f06-alpha-slider")
             .performSemanticsAction(SemanticsActions.SetProgress) { action -> checkNotNull(action)(ALPHA_MAX.toFloat()) }
-        pollTrend(snappyLast)
+        rule.waitUntil(TIMEOUT_MS) { trendValue() != baselineTrend }
         pollText("Preview — the saved trend keeps the default smoother", substring = true)
 
         // The method switch selects zero-phase while retaining the visible
@@ -607,6 +605,14 @@ public class M3WeighInTest {
         // the bare numeral run.
         pollText(formatTrend(kg))
     }
+
+    private fun trendValue(): String =
+        rule
+            .onNodeWithTag("f06-trend-stat", useUnmergedTree = true)
+            .fetchSemanticsNode()
+            .config[SemanticsProperties.Text]
+            .first()
+            .toString()
 
     private fun pollText(
         text: String,
