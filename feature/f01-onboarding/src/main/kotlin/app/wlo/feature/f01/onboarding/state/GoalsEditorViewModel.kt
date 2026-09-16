@@ -698,8 +698,9 @@ public class GoalsEditorViewModel(
     private fun GoalsEditorDraft.displayWeight(unit: MassUnit): String =
         restoredGoalWeightText(targetWeightText, massUnit, unit)
 
-    private fun draftConflictNotice(hasConflict: Boolean): String? =
-        if (hasConflict) "Your draft was based on a different version. Review differences." else null
+    private fun draftConflictNotice(hasConflict: Boolean): String? {
+        return if (hasConflict) "Your draft was based on a different version. Review differences." else null
+    }
 
     private suspend fun finishJournal(
         journal: GoalSaveJournal,
