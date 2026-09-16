@@ -1,0 +1,107 @@
+Reusing configuration cache.
+> Task :core:common:jvmProcessResources NO-SOURCE
+> Task :core:common:processJvmMainResources SKIPPED
+> Task :core:consent:jvmProcessResources NO-SOURCE
+> Task :core:common:kmpPartiallyResolvedDependenciesChecker
+> Task :core:consent:processJvmMainResources SKIPPED
+> Task :core:model:jvmProcessResources NO-SOURCE
+> Task :core:data:kmpPartiallyResolvedDependenciesChecker
+> Task :core:database:kmpPartiallyResolvedDependenciesChecker
+> Task :core:model:kmpPartiallyResolvedDependenciesChecker
+> Task :core:consent:kmpPartiallyResolvedDependenciesChecker
+> Task :core:model:processJvmMainResources SKIPPED
+> Task :core:common:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :core:model:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :core:consent:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :core:datastore:kmpPartiallyResolvedDependenciesChecker
+> Task :core:datastore:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :core:datastore:jvmProcessResources NO-SOURCE
+> Task :core:documents:kmpPartiallyResolvedDependenciesChecker
+> Task :core:datastore:processJvmMainResources SKIPPED
+> Task :core:documents:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :core:data:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :core:database:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :core:engines:jvmProcessResources NO-SOURCE
+> Task :core:engines:processJvmMainResources SKIPPED
+> Task :core:data:jvmProcessResources UP-TO-DATE
+> Task :core:data:jvmTestProcessResources NO-SOURCE
+> Task :core:engines:kmpPartiallyResolvedDependenciesChecker
+> Task :core:data:processJvmMainResources SKIPPED
+> Task :core:documents:jvmProcessResources UP-TO-DATE
+> Task :core:data:processJvmTestResources SKIPPED
+> Task :core:testing:kmpPartiallyResolvedDependenciesChecker
+> Task :core:engines:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :core:testing:jvmProcessResources NO-SOURCE
+> Task :core:testing:processJvmMainResources SKIPPED
+> Task :core:documents:processJvmMainResources SKIPPED
+> Task :core:testing:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :core:model:compileKotlinJvm UP-TO-DATE
+> Task :core:model:compileJvmMainJava NO-SOURCE
+> Task :core:model:jvmMainClasses UP-TO-DATE
+> Task :core:model:jvmJar UP-TO-DATE
+> Task :core:consent:compileKotlinJvm UP-TO-DATE
+> Task :core:common:compileKotlinJvm UP-TO-DATE
+> Task :core:documents:compileKotlinJvm UP-TO-DATE
+> Task :core:consent:compileJvmMainJava NO-SOURCE
+> Task :core:consent:jvmMainClasses UP-TO-DATE
+> Task :core:documents:compileJvmMainJava NO-SOURCE
+> Task :core:documents:jvmMainClasses UP-TO-DATE
+> Task :core:common:compileJvmMainJava NO-SOURCE
+> Task :core:common:jvmMainClasses UP-TO-DATE
+> Task :core:consent:jvmJar UP-TO-DATE
+> Task :core:documents:jvmJar UP-TO-DATE
+> Task :core:common:jvmJar UP-TO-DATE
+> Task :core:database:kspKotlinJvm UP-TO-DATE
+> Task :core:database:jvmProcessResources NO-SOURCE
+> Task :core:database:processJvmMainResources SKIPPED
+> Task :core:database:copyRoomSchemas NO-SOURCE
+> Task :core:engines:compileKotlinJvm UP-TO-DATE
+> Task :core:datastore:compileKotlinJvm UP-TO-DATE
+> Task :core:database:compileKotlinJvm UP-TO-DATE
+> Task :core:engines:compileJvmMainJava NO-SOURCE
+> Task :core:engines:jvmMainClasses UP-TO-DATE
+> Task :core:datastore:compileJvmMainJava NO-SOURCE
+> Task :core:datastore:jvmMainClasses UP-TO-DATE
+> Task :core:database:compileJvmMainJava NO-SOURCE
+> Task :core:engines:jvmJar UP-TO-DATE
+> Task :core:database:jvmMainClasses UP-TO-DATE
+> Task :core:datastore:jvmJar UP-TO-DATE
+> Task :core:database:jvmJar UP-TO-DATE
+> Task :core:testing:compileKotlinJvm UP-TO-DATE
+> Task :core:data:compileKotlinJvm UP-TO-DATE
+> Task :core:testing:compileJvmMainJava NO-SOURCE
+> Task :core:testing:jvmMainClasses UP-TO-DATE
+> Task :core:data:compileJvmMainJava NO-SOURCE
+> Task :core:data:jvmMainClasses UP-TO-DATE
+> Task :core:data:jvmJar UP-TO-DATE
+> Task :core:testing:jvmJar UP-TO-DATE
+
+> Task :core:data:compileTestKotlinJvm
+w: file:///Users/boyd/wip/wloss/core/data/src/jvmTest/kotlin/app/wlo/core/data/ImplementationReviewRegressionTest.kt:27:57 'typealias Instant = Instant' is deprecated. This type is deprecated in favor of `kotlin.time.Instant`.
+w: file:///Users/boyd/wip/wloss/core/data/src/jvmTest/kotlin/app/wlo/core/data/ImplementationReviewRegressionTest.kt:28:67 Redundant call of conversion method.
+w: file:///Users/boyd/wip/wloss/core/data/src/jvmTest/kotlin/app/wlo/core/data/ImplementationReviewRegressionTest.kt:30:92 'typealias Instant = Instant' is deprecated. This type is deprecated in favor of `kotlin.time.Instant`.
+
+> Task :core:data:compileJvmTestJava NO-SOURCE
+> Task :core:data:jvmTestClasses
+
+> Task :core:data:jvmTest FAILED
+
+ImplementationReviewRegressionTest[jvm] > legacyPersistedTrendMustMatchCanonicalAfterPolicyInitialization[jvm] FAILED
+    java.lang.AssertionError at ImplementationReviewRegressionTest.kt:18
+
+1 test completed, 1 failed
+
+[Incubating] Problems report is available at: file:///Users/boyd/wip/wloss/build/reports/problems/problems-report.html
+
+FAILURE: Build failed with an exception.
+
+* What went wrong:
+Execution failed for task ':core:data:jvmTest'.
+> There were failing tests. See the report at: file:///Users/boyd/wip/wloss/core/data/build/reports/tests/jvmTest/index.html
+
+* Try:
+> Run with --scan to get full insights from a Build Scan (powered by Develocity).
+
+BUILD FAILED in 2s
+32 actionable tasks: 11 executed, 21 up-to-date
+Configuration cache entry reused.

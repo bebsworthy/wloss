@@ -34,6 +34,7 @@ import app.wlo.core.model.DerivedValue
  * @param format numeral-only formatting — no unit, no suffix (grouping, precision)
  * @param unit unit symbol rendered as the small suffix ("kg", "kcal")
  * @param valueStyle display style; defaults to the `hero` ramp entry
+ * @param unitStyle baseline-aligned unit style; defaults to the row-stat role
  * @param delta optional inline slot after the unit (delta chip, trend arrow)
  * @param provenance optional REPLACEMENT for the built-in chip line below the
  *   numeral. Default renders [ProvenanceChip] here; pass a slot of your own
@@ -48,6 +49,7 @@ public fun WloHeroStat(
     unit: String,
     modifier: Modifier = Modifier,
     valueStyle: TextStyle = wloType.hero,
+    unitStyle: TextStyle = wloType.statM,
     delta: (@Composable () -> Unit)? = null,
     provenance: (@Composable () -> Unit)? = null,
 ): Unit =
@@ -63,7 +65,7 @@ public fun WloHeroStat(
             Spacer(Modifier.width(WloSpacing.TIGHT))
             Text(
                 text = unit,
-                style = wloType.statM,
+                style = unitStyle,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.alignByBaseline(),
             )

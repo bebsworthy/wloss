@@ -70,7 +70,7 @@ not zero or a computed recommendation.
 
 | Horizon | Included capability |
 |---|---|
-| **Release 1 — weight core** | correct kg/lb entry and display; event log and edit/delete; honest trend/chart states with a neutral 30-day change; accessible entry; post-save trend result; lifecycle/error reliability; Health Connect weight/body-fat import with durable source identity; benchmarked daily-scalar policy; calibrated forecast ranges; loss/maintenance/gain safety and direction-correct forecasting; goal editing and progress |
+| **Release 1 — weight core** | correct kg/lb entry and display; event log and edit/delete; honest trend/chart states with a neutral selected-period change; accessible entry; post-save trend result; lifecycle/error reliability; Health Connect weight/body-fat import with durable source identity; benchmarked daily-scalar policy; calibrated forecast ranges; loss/maintenance/gain safety and direction-correct forecasting; goal editing and progress |
 | **Release 2 — weight experience** | No committed additions; promote only from dogfood evidence. |
 | **Deferred / advanced** | user-tunable smoothing and smoother comparison; custom metrics; elaborate milestone celebrations; Bluetooth-scale drivers; multi-profile vault partitions; broader food, planning, exercise, silhouette, digestion, and AI suite release work |
 
@@ -257,8 +257,13 @@ these are binding until amended *here* (feature docs must not re-litigate them).
 
 ### Algorithm constants (published on F07's Algorithms page)
 
-- **R-A1 —** 7,700 kcal/kg (3,500/lb). **R-A2 —** EWMA α default 0.15, tuner
-  visible. **R-A3 —** v1 engine: Transparent (closed-form) only; Adaptive
+- **R-A1 —** 7,700 kcal/kg (3,500/lb). **R-A2 —** EWMA α default 0.15. Owner amendment WLO-0104 (2026-09-16):
+  tuning and math explanations live in chart settings, not the overview.
+  Default EWMA is seeded once from the full recorded daily-scalar history;
+  chart ranges crop that series, never restart it. Persisted/live trend values
+  share this initialization. Overview change uses first/last available trend
+  values in the selected period and names their actual dates. MA7 uses seven
+  calendar days of available scalars, never seven arbitrary observations. **R-A3 —** v1 engine: Transparent (closed-form) only; Adaptive
   spline ships v1.x opt-in, becomes default only after benchmarking.
 - **R-A4 —** v1 nutrients: kcal, macros, fiber, sugar, sodium; micronutrient
   panels v1.x.
@@ -429,7 +434,10 @@ Ratified 2026-09-11.*
 - **R-D3 — Typography: Inter, single family.** Inter (OFL-1.1,
   Apache-2.0-compatible per R-S1) is the only UI family. Tabular figures
   (`tnum`) are mandatory wherever numbers change or align; display optical
-  sizing for hero numerals. No second typeface.
+  sizing for hero numerals. No second typeface. WLO-0114 exception for the
+  F06 page-overview hero: use regular Inter Medium with proportional lining
+  figures to match the owner-requested WLO-0103 mockup. This does not apply
+  to tabular rows, axes, deltas or odometers.
 - **R-D4 — Charting split.** Vico (Apache-2.0) for standard line/bar
   charts; custom Compose Canvas for the four signature objects (forecast
   cone, rings, odometer numerals); one shared
@@ -671,3 +679,7 @@ cadence + schedule + applied F07 deltas, cached, and provenance-chipped
 ("adaptive · check-in Sep 8"). F02 renders it as the budget ring, F03
 generates against it, F10 quotes it, F11 grades against it. All other
 features depend only on the projection, never on Targets internals.
+
+### Weight overview owner amendment — WLO-0104 (2026-09-16)
+
+The approved page-based layout replaces the overview's stacked cards. Show individual raw weigh-in dots behind the trend, an always-in-domain yellow goal line, and date/weight-only point tooltips. Remove inline debug details, legend prose, persistent tuning/math controls and opaque policy jargon. Settings keeps accessible algorithm explanations and preview reset; goal/history remain navigable. Derived provenance is available on demand rather than requiring a badge on every overview number. The weigh-in action has reserved space and must not cover content. This supersedes earlier fixed30-day overview-change and visible-tuner requirements; weekly/canonical metrics used elsewhere retain their named horizons.

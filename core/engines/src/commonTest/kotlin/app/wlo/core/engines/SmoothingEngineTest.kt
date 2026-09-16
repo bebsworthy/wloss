@@ -10,6 +10,16 @@ import kotlin.test.assertTrue
 
 /** Unit tests for the F06 smoothing options + outlier guard (F06 §3/§4, R-A2). */
 class SmoothingEngineTest {
+    @Test
+    fun calendarAverageExcludesOldReadingsAcrossGaps() {
+        val series =
+            SmoothingEngine.trend(
+                listOf(WeightSample(1, 100.0), WeightSample(20, 80.0), WeightSample(26, 82.0), WeightSample(27, 84.0)),
+                TrendMethod.MOVING_AVERAGE_7D,
+            )
+        assertEquals(listOf(100.0, 80.0, 81.0, 83.0), series.points.map { it.trendKg.value })
+    }
+
     // --- EWMA (delegation parity: one implementation, two named doors) ---
 
     @Test

@@ -128,7 +128,7 @@ public interface WeighInRepository {
      * THE one current-trend answer (owner review WLO-0030, defect 9: the Hub
      * read the persisted day projection while the weight page recomputed over
      * its own window — two sources of truth). Default smoother (EWMA, R-A2 α)
-     * over the canonical [RoomWeighInRepository.TREND_WINDOW_DAYS]-day window
+     * over the full recorded history (chart ranges crop output only)
      * ending [toDay]. The Hub hero, the F06 default view, AND the projection
      * writer (the persisted TREND scalar) all go through this one function, so
      * every surface's inputs are identical by construction. [TrendUi]-style
@@ -535,15 +535,16 @@ public class RoomWeighInRepository internal constructor(
         method: TrendMethod,
         alpha: Double,
     ): WloResult<app.wlo.core.engines.TrendSeries> =
-        dailyScalars(profileId, fromDay, toDay).map { samples ->
-            SmoothingEngine.trend(samples, method, alpha)
+        dailyScalars(profileId, Long.MIN_VALUE, toDay).map { samples ->
+            val series = SmoothingEngine.trend(samples, method, alpha)
+            series.copy(points = series.points.filter { it.epochDay >= fromDay })
         }
 
     override suspend fun currentTrend(
         profileId: String,
         toDay: Long,
     ): WloResult<CurrentTrend> =
-        dailySelections(profileId, toDay - TREND_WINDOW_DAYS + 1, toDay).map { selections ->
+        dailySelections(profileId, Long.MIN_VALUE, toDay).map { selections ->
             val samples = selections.map { WeightSample(it.dayEpochDay, it.kg) }
             if (samples.isEmpty()) {
                 CurrentTrend(samples = samples, series = null, current = null, delta7 = null, delta30 = null, selections = selections)
@@ -561,9 +562,9 @@ public class RoomWeighInRepository internal constructor(
                             ),
                         )
                     }
-                val first = series.points.first()
+                val first = series.points.firstOrNull { it.epochDay == toDay - TREND_WINDOW_DAYS + 1 }
                 val delta30 =
-                    if (last.epochDay - first.epochDay >= TREND_WINDOW_DAYS - 1) {
+                    if (first != null && last.epochDay == toDay) {
                         DerivedValue(
                             last.trendKg.value - first.trendKg.value,
                             Provenance.Derived(
@@ -688,7 +689,7 @@ public class RoomWeighInRepository internal constructor(
             dao.rangeOfKind(
                 profileId,
                 MeasurementKind.WEIGHT.wireName,
-                fromDay - TREND_WINDOW_DAYS + 1,
+                Long.MIN_VALUE,
                 Long.MAX_VALUE,
             )
         // Include previously persisted trend days as well as surviving weight
@@ -700,29 +701,26 @@ public class RoomWeighInRepository internal constructor(
             (listOf(fromDay) + existingTrendDays + weights.map { it.dayEpochDay }.filter { it >= fromDay })
                 .distinct()
                 .sorted()
+        val selections =
+            weights
+                .groupBy { it.dayEpochDay }
+                .mapNotNull { (day, events) -> DailyWeightPolicy.select(day, events.map { it.toDomain() }, timeZoneId) }
+                .sortedBy { it.dayEpochDay }
+        val selectionsByDay = selections.associateBy { it.dayEpochDay }
+        val seriesByDay =
+            SmoothingEngine
+                .trend(selections.map { WeightSample(it.dayEpochDay, it.kg) })
+                .points
+                .associateBy { it.epochDay }
         affectedDays.forEach { day ->
             val oldTrendIds =
                 dao.rangeOfKind(profileId, MeasurementKind.TREND.wireName, day, day).map { it.id }
             oldTrendIds.forEach { db.measurementEventAttrs().deleteForEvent(it) }
             dao.deleteKindForDay(profileId, day, MeasurementKind.TREND.wireName)
 
-            val selections =
-                weights
-                    .asSequence()
-                    .filter { it.dayEpochDay in (day - TREND_WINDOW_DAYS + 1)..day }
-                    .groupBy { it.dayEpochDay }
-                    .mapNotNull { (sampleDay, events) ->
-                        DailyWeightPolicy.select(sampleDay, events.map { it.toDomain() }, timeZoneId)
-                    }.sortedBy { it.dayEpochDay }
-                    .toList()
-            val samples = selections.map { WeightSample(it.dayEpochDay, it.kg) }
-            if (samples.isNotEmpty() && weights.any { it.dayEpochDay == day }) {
-                val current =
-                    SmoothingEngine
-                        .trend(samples)
-                        .points
-                        .last()
-                        .trendKg
+            val selected = selectionsByDay[day]
+            val current = seriesByDay[day]?.trendKg
+            if (selected != null && current != null) {
                 val trendId = Uuid.random().toString()
                 dao.insert(
                     MeasurementEventEntity(
@@ -737,9 +735,9 @@ public class RoomWeighInRepository internal constructor(
                         note = current.provenance.toString(),
                     ),
                 )
-                val selected = selections.last()
                 writeAttributes(
                     listOf(
+                        MeasurementAttr(trendId, "trendHistoryVersion", valueText = TREND_HISTORY_VERSION),
                         MeasurementAttr(trendId, "dailyPolicyVersion", valueText = selected.policyVersion),
                         MeasurementAttr(trendId, "dailyPolicyTimeZone", valueText = selected.timeZoneId),
                         MeasurementAttr(trendId, "dailySelectionReason", valueText = selected.reason.name),
@@ -805,7 +803,10 @@ public class RoomWeighInRepository internal constructor(
                 db
                     .measurementEventAttrs()
                     .forEvent(trend.id)
-                    .none { it.attr == "dailyPolicyVersion" && it.valueText == DailyWeightPolicy.VERSION }
+                    .let { attrs ->
+                        attrs.none { it.attr == "dailyPolicyVersion" && it.valueText == DailyWeightPolicy.VERSION } ||
+                            attrs.none { it.attr == "trendHistoryVersion" && it.valueText == TREND_HISTORY_VERSION }
+                    }
             }
         if (!hasLegacyTrend) return
 
@@ -829,10 +830,11 @@ public class RoomWeighInRepository internal constructor(
 
     public companion object {
         /**
-         * THE canonical trend window (days of daily scalars): [currentTrend]
-         * computes over it and the append path persists its answer — one
-         * window, one answer, everywhere.
+         * WLO-0104: one full-history initialization for live and persisted trends.
+         * The 30-day constant is a comparison horizon, never a smoothing seed.
          */
+        private const val TREND_HISTORY_VERSION: String = "full-history-v1"
+
         public const val TREND_WINDOW_DAYS: Long = 30
 
         /** The weekly delta lookback (days) behind the last trend point. */

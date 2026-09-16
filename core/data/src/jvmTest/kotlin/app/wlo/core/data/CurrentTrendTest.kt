@@ -99,7 +99,7 @@ class CurrentTrendTest {
         }
 
     @Test
-    fun sharedReadUsesTheCanonicalWindowNotTheChartWindow() =
+    fun sharedReadAndEveryChartViewportUseTheSameHistory() =
         runTest {
             val profileId =
                 profiles
@@ -111,8 +111,7 @@ class CurrentTrendTest {
             val shared = weighIns.currentTrend(profileId, today).okOrDie()
             val current = assertNotNull(shared.current)
 
-            // The canonical answer IS the default smoother over the canonical
-            // 30-day window — exactly one window, one smoother selection.
+            // WLO-0104: ranges crop one authoritative full-history series.
             val canonical =
                 weighIns
                     .trend(
@@ -125,18 +124,13 @@ class CurrentTrendTest {
             val canonicalPoint = assertNotNull(canonical.points.lastOrNull())
             assertEquals(canonicalPoint.trendKg.value, current.value, absoluteTolerance = 1e-12)
 
-            // Root cause of the old 77.7-vs-77.6 split, pinned: the old F06
-            // query (90-day chart window) seeds EWMA differently and lands on
-            // a DIFFERENT number than the persisted 30-day answer.
             val chartWindow =
                 weighIns
                     .trend(profileId, today - 89, today, TrendMethod.EWMA, ConstantsRegistry.EWMA_ALPHA_DEFAULT)
                     .okOrDie()
             val chartPoint = chartWindow.points.last()
-            assertTrue(
-                abs(chartPoint.trendKg.value - current.value) > 1e-9,
-                "a 90-day window must NOT reproduce the canonical answer (that was the bug)",
-            )
+            assertEquals(current.value, chartPoint.trendKg.value, absoluteTolerance = 1e-12)
+            assertEquals(canonical.points, chartWindow.points.filter { it.epochDay >= today - 29 })
         }
 
     @Test
@@ -172,7 +166,7 @@ class CurrentTrendTest {
             val shared = weighIns.currentTrend(profileId, today).okOrDie()
             val series = assertNotNull(shared.series)
             val delta = assertNotNull(shared.delta30)
-            val first = series.points.first()
+            val first = series.points.first { it.epochDay == today - 29 }
             val last = series.points.last()
             val expected = last.trendKg.value - first.trendKg.value
             assertEquals(

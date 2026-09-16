@@ -1,0 +1,219 @@
+{
+  "origin": "Existing WLO-0099 run, not rerun by WLO-0101",
+  "attributes": {
+    "tests": "78",
+    "failures": "41",
+    "errors": "0",
+    "skipped": "0",
+    "time": "0.000",
+    "timestamp": "2026-09-16T10:04:03",
+    "hostname": "localhost"
+  },
+  "failures": [
+    {
+      "class": "app.wlo.app.F10HubMealsTest",
+      "test": "streakChip_isVisibleOverASeededLoggedDay",
+      "failure": "java.lang.IllegalStateException: node \"hub-trend-card\" never appeared; route=f06/weight; screen texts: [Body fat, Weight trend, \u2212 0.2 kg / 7 d, Last raw reading 77.0 kg \u00b7 06:30, 30 d, 1 y, 90 d, Measured points \u00b7 Trend line, View data, 19 Jun \u2013 16 Sep 2026, 30-day trend -0.8 kg]\n\tat app.wlo.app.TestNav.awaitTag(TestNav.kt:143)\n\tat app.wlo.app.TestNav.awaitTag$default(TestNav.kt:111)\n\tat app.wlo.app.F10HubMealsTest.streakChip_isVisibleOverASeededLoggedDay(F10HubMealsTest.kt:82)"
+    },
+    {
+      "class": "app.wlo.app.F10HubMealsTest",
+      "test": "logAsPlanned_writesOneDiaryEntry_andRetiresTheSlot",
+      "failure": "java.lang.IllegalStateException: node \"hub-trend-card\" never appeared; route=f06/weight; screen texts: [Body fat, Weight trend, \u2212 0.2 kg / 7 d, Last raw reading 77.0 kg \u00b7 06:30, 30 d, 1 y, 90 d, Measured points \u00b7 Trend line, View data, 19 Jun \u2013 16 Sep 2026, 30-day trend -0.8 kg]\n\tat app.wlo.app.TestNav.awaitTag(TestNav.kt:143)\n\tat app.wlo.app.TestNav.awaitTag$default(TestNav.kt:111)\n\tat app.wlo.app.F10HubMealsTest.logAsPlanned_writesOneDiaryEntry_andRetiresTheSlot(F10HubMealsTest.kt:94)"
+    },
+    {
+      "class": "app.wlo.app.F10ScreensTest",
+      "test": "captureF10HubSurfaces",
+      "failure": "org.junit.ComparisonFailure: expected:<[hub]> but was:<[weight]>\n\tat org.junit.Assert.assertEquals(Assert.java:117)\n\tat org.junit.Assert.assertEquals(Assert.java:146)\n\tat app.wlo.app.TestNav.awaitSurface(TestNav.kt:107)\n\tat app.wlo.app.F10ScreensTest.captureF10HubSurfaces(F10ScreensTest.kt:42)"
+    },
+    {
+      "class": "app.wlo.app.M3DeepLinkSweepTest",
+      "test": "everyRegistryUri_landsOnItsRegisteredSurface",
+      "failure": "org.junit.ComparisonFailure: expected:<[hub]> but was:<[f06/weight]>\n\tat org.junit.Assert.assertEquals(Assert.java:117)\n\tat org.junit.Assert.assertEquals(Assert.java:146)\n\tat app.wlo.app.TestNav.awaitRoute(TestNav.kt:92)\n\tat app.wlo.app.M3DeepLinkSweepTest.everyRegistryUri_landsOnItsRegisteredSurface(M3DeepLinkSweepTest.kt:32)"
+    },
+    {
+      "class": "app.wlo.app.M3DiaryHubTest",
+      "test": "waterQuickAdd_landsAsADrinkEntry_andCorrectionHistoryIsVisible",
+      "failure": "java.lang.IllegalStateException: node \"hub-trend-card\" never appeared; route=f06/weight; screen texts: [Body fat, Weight trend, \u2212 0.2 kg / 7 d, Last raw reading 77.0 kg \u00b7 06:30, 30 d, 1 y, 90 d, Measured points \u00b7 Trend line, View data, 19 Jun \u2013 16 Sep 2026, 30-day trend -0.8 kg]\n\tat app.wlo.app.TestNav.awaitTag(TestNav.kt:143)\n\tat app.wlo.app.TestNav.awaitTag$default(TestNav.kt:111)\n\tat app.wlo.app.M3DiaryHubTest.waterQuickAdd_landsAsADrinkEntry_andCorrectionHistoryIsVisible(M3DiaryHubTest.kt:81)"
+    },
+    {
+      "class": "app.wlo.app.M3DiaryHubTest",
+      "test": "seededWeek_hubRendersBudgetTrendWeekDots_andDiaryCarriesTheDay",
+      "failure": "java.lang.IllegalStateException: node \"hub-trend-card\" never appeared; route=f06/weight; screen texts: [Body fat, Weight trend, \u2212 0.2 kg / 7 d, Last raw reading 77.0 kg \u00b7 06:30, 30 d, 1 y, 90 d, Measured points \u00b7 Trend line, View data, 19 Jun \u2013 16 Sep 2026, 30-day trend -0.8 kg]\n\tat app.wlo.app.TestNav.awaitTag(TestNav.kt:143)\n\tat app.wlo.app.TestNav.awaitTag$default(TestNav.kt:111)\n\tat app.wlo.app.M3DiaryHubTest.seededWeek_hubRendersBudgetTrendWeekDots_andDiaryCarriesTheDay(M3DiaryHubTest.kt:43)"
+    },
+    {
+      "class": "app.wlo.app.M3ScreensTest",
+      "test": "captureEveningHub",
+      "failure": "java.lang.IllegalStateException: node \"hub-close-card\" never appeared; route=f06/weight; screen texts: [Body fat, Weight trend, \u2212 0.2 kg / 7 d, Last raw reading 77.0 kg \u00b7 06:30, 30 d, 1 y, 90 d, Measured points \u00b7 Trend line, View data, 19 Jun \u2013 16 Sep 2026, 30-day trend -0.8 kg]\n\tat app.wlo.app.TestNav.awaitTag(TestNav.kt:143)\n\tat app.wlo.app.TestNav.awaitTag$default(TestNav.kt:111)\n\tat app.wlo.app.M3ScreensTest.captureEveningHub(M3ScreensTest.kt:163)"
+    },
+    {
+      "class": "app.wlo.app.M3ScreensTest",
+      "test": "captureDaySurfaces",
+      "failure": "java.lang.IllegalStateException: node \"hub-trend-card\" never appeared; route=f06/weight; screen texts: [Body fat, Weight trend, \u2212 0.2 kg / 7 d, Last raw reading 77.0 kg \u00b7 06:30, 30 d, 1 y, 90 d, Measured points \u00b7 Trend line, View data, 19 Jun \u2013 16 Sep 2026, 30-day trend -0.8 kg]\n\tat app.wlo.app.TestNav.awaitTag(TestNav.kt:143)\n\tat app.wlo.app.TestNav.awaitTag$default(TestNav.kt:111)\n\tat app.wlo.app.M3ScreensTest.captureDaySurfaces(M3ScreensTest.kt:53)"
+    },
+    {
+      "class": "app.wlo.app.M3WeighInTest",
+      "test": "outlierFlagged_showsKeepOrCorrect_andKeepKeepsTheEvent",
+      "failure": "java.lang.IllegalStateException: node \"f06-title\" never appeared; route=f06/weight; screen texts: [Body fat, Weight trend, \u2212 0.2 kg / 7 d, Last raw reading 77.0 kg \u00b7 06:30, 30 d, 1 y, 90 d, Measured points \u00b7 Trend line, View data, 19 Jun \u2013 16 Sep 2026, 30-day trend -0.8 kg]\n\tat app.wlo.app.TestNav.awaitTag(TestNav.kt:143)\n\tat app.wlo.app.TestNav.awaitTag$default(TestNav.kt:111)\n\tat app.wlo.app.M3WeighInTest.awaitWeightSurface(M3WeighInTest.kt:571)\n\tat app.wlo.app.M3WeighInTest.outlierFlagged_showsKeepOrCorrect_andKeepKeepsTheEvent(M3WeighInTest.kt:365)"
+    },
+    {
+      "class": "app.wlo.app.M3WeighInTest",
+      "test": "poundInput_isStoredAsCanonicalKilograms_andRenderedAsPounds",
+      "failure": "java.lang.IllegalStateException: node \"f06-title\" never appeared; route=f06/weight; screen texts: [Body fat, Weight trend, \u2212 0.5 lb / 7 d, Last raw reading 169.8 lb \u00b7 06:30, 30 d, 1 y, 90 d, Measured points \u00b7 Trend line, View data, 19 Jun \u2013 16 Sep 2026, 30-day trend -1.7 lb]\n\tat app.wlo.app.TestNav.awaitTag(TestNav.kt:143)\n\tat app.wlo.app.TestNav.awaitTag$default(TestNav.kt:111)\n\tat app.wlo.app.M3WeighInTest.awaitWeightSurface(M3WeighInTest.kt:571)\n\tat app.wlo.app.M3WeighInTest.poundInput_isStoredAsCanonicalKilograms_andRenderedAsPounds(M3WeighInTest.kt:187)"
+    },
+    {
+      "class": "app.wlo.app.M3WeighInTest",
+      "test": "mathDocScreen_opensFromTheChart",
+      "failure": "java.lang.IllegalStateException: node \"f06-title\" never appeared; route=f06/weight; screen texts: [Body fat, Weight trend, \u2212 0.2 kg / 7 d, Last raw reading 77.0 kg \u00b7 06:30, 30 d, 1 y, 90 d, Measured points \u00b7 Trend line, View data, 19 Jun \u2013 16 Sep 2026, 30-day trend -0.8 kg]\n\tat app.wlo.app.TestNav.awaitTag(TestNav.kt:143)\n\tat app.wlo.app.TestNav.awaitTag$default(TestNav.kt:111)\n\tat app.wlo.app.M3WeighInTest.awaitWeightSurface(M3WeighInTest.kt:571)\n\tat app.wlo.app.M3WeighInTest.mathDocScreen_opensFromTheChart(M3WeighInTest.kt:423)"
+    },
+    {
+      "class": "app.wlo.app.M3WeighInTest",
+      "test": "emptyThirtyDayWindow_offersSmallestWiderWindow_andHidesTuner",
+      "failure": "java.lang.IllegalStateException: node \"f06-title\" never appeared; route=f06/weight; screen texts: [Body fat, Weight trend, \u2212 0.2 kg / 7 d, Last raw reading 77.0 kg \u00b7 06:30, 30 d, 1 y, 90 d, Measured points \u00b7 Trend line, View data, 19 Jun \u2013 16 Sep 2026, 30-day trend -0.8 kg]\n\tat app.wlo.app.TestNav.awaitTag(TestNav.kt:143)\n\tat app.wlo.app.TestNav.awaitTag$default(TestNav.kt:111)\n\tat app.wlo.app.M3WeighInTest.awaitWeightSurface(M3WeighInTest.kt:571)\n\tat app.wlo.app.M3WeighInTest.emptyThirtyDayWindow_offersSmallestWiderWindow_andHidesTuner(M3WeighInTest.kt:319)"
+    },
+    {
+      "class": "app.wlo.app.M3WeighInTest",
+      "test": "weightSurface_activityRecreationRefreshesWithoutAnErrorState",
+      "failure": "java.lang.IllegalStateException: node \"f06-title\" never appeared; route=f06/weight; screen texts: [Body fat, Weight trend, \u2212 0.2 kg / 7 d, Last raw reading 77.0 kg \u00b7 06:30, 30 d, 1 y, 90 d, Measured points \u00b7 Trend line, View data, 19 Jun \u2013 16 Sep 2026, 30-day trend -0.8 kg]\n\tat app.wlo.app.TestNav.awaitTag(TestNav.kt:143)\n\tat app.wlo.app.TestNav.awaitTag$default(TestNav.kt:111)\n\tat app.wlo.app.M3WeighInTest.weightSurface_activityRecreationRefreshesWithoutAnErrorState(M3WeighInTest.kt:67)"
+    },
+    {
+      "class": "app.wlo.app.M3WeighInTest",
+      "test": "logbookDelete_fullSwipeFires_thenUndoInline",
+      "failure": "java.lang.IllegalStateException: node \"f06-title\" never appeared; route=f06/weight; screen texts: [Body fat, Weight trend, \u2212 0.2 kg / 7 d, Last raw reading 77.0 kg \u00b7 06:30, 30 d, 1 y, 90 d, Measured points \u00b7 Trend line, View data, 19 Jun \u2013 16 Sep 2026, 30-day trend -0.8 kg]\n\tat app.wlo.app.TestNav.awaitTag(TestNav.kt:143)\n\tat app.wlo.app.TestNav.awaitTag$default(TestNav.kt:111)\n\tat app.wlo.app.M3WeighInTest.awaitWeightSurface(M3WeighInTest.kt:571)\n\tat app.wlo.app.M3WeighInTest.logbookDelete_fullSwipeFires_thenUndoInline(M3WeighInTest.kt:445)"
+    },
+    {
+      "class": "app.wlo.app.M3WeighInTest",
+      "test": "smoothingControls_moveTheLine_asLabeledPreview",
+      "failure": "java.lang.IllegalStateException: node \"f06-title\" never appeared; route=f06/weight; screen texts: [Body fat, Weight trend, \u2212 0.2 kg / 7 d, Last raw reading 77.0 kg \u00b7 06:30, 30 d, 1 y, 90 d, Measured points \u00b7 Trend line, View data, 19 Jun \u2013 16 Sep 2026, 30-day trend -0.8 kg]\n\tat app.wlo.app.TestNav.awaitTag(TestNav.kt:143)\n\tat app.wlo.app.TestNav.awaitTag$default(TestNav.kt:111)\n\tat app.wlo.app.M3WeighInTest.awaitWeightSurface(M3WeighInTest.kt:571)\n\tat app.wlo.app.M3WeighInTest.smoothingControls_moveTheLine_asLabeledPreview(M3WeighInTest.kt:285)"
+    },
+    {
+      "class": "app.wlo.app.M3WeighInTest",
+      "test": "doubleWeighIn_keepsBothEvents_andHeroMatchesTheCanonicalTrend",
+      "failure": "java.lang.IllegalStateException: node \"f06-title\" never appeared; route=f06/weight; screen texts: [Body fat, Weight trend, \u2212 0.2 kg / 7 d, Last raw reading 77.0 kg \u00b7 06:30, 30 d, 1 y, 90 d, Measured points \u00b7 Trend line, View data, 19 Jun \u2013 16 Sep 2026, 30-day trend -0.8 kg]\n\tat app.wlo.app.TestNav.awaitTag(TestNav.kt:143)\n\tat app.wlo.app.TestNav.awaitTag$default(TestNav.kt:111)\n\tat app.wlo.app.M3WeighInTest.awaitWeightSurface(M3WeighInTest.kt:571)\n\tat app.wlo.app.M3WeighInTest.doubleWeighIn_keepsBothEvents_andHeroMatchesTheCanonicalTrend(M3WeighInTest.kt:144)"
+    },
+    {
+      "class": "app.wlo.app.M3WeighInTest",
+      "test": "invalidInput_staysInTheSheet_withFieldSpecificError",
+      "failure": "java.lang.IllegalStateException: node \"f06-title\" never appeared; route=f06/weight; screen texts: [Body fat, Weight trend, \u2212 0.2 kg / 7 d, Last raw reading 77.0 kg \u00b7 06:30, 30 d, 1 y, 90 d, Measured points \u00b7 Trend line, View data, 19 Jun \u2013 16 Sep 2026, 30-day trend -0.8 kg]\n\tat app.wlo.app.TestNav.awaitTag(TestNav.kt:143)\n\tat app.wlo.app.TestNav.awaitTag$default(TestNav.kt:111)\n\tat app.wlo.app.M3WeighInTest.awaitWeightSurface(M3WeighInTest.kt:571)\n\tat app.wlo.app.M3WeighInTest.invalidInput_staysInTheSheet_withFieldSpecificError(M3WeighInTest.kt:251)"
+    },
+    {
+      "class": "app.wlo.app.M3WeighInTest",
+      "test": "firstSavedReading_showsHonestSparseConfirmation",
+      "failure": "java.lang.IllegalStateException: node \"f06-title\" never appeared; route=f06/weight; screen texts: [Body fat, Weight trend, \u2212 0.2 kg / 7 d, Last raw reading 77.0 kg \u00b7 06:30, 30 d, 1 y, 90 d, Measured points \u00b7 Trend line, View data, 19 Jun \u2013 16 Sep 2026, 30-day trend -0.8 kg]\n\tat app.wlo.app.TestNav.awaitTag(TestNav.kt:143)\n\tat app.wlo.app.TestNav.awaitTag$default(TestNav.kt:111)\n\tat app.wlo.app.M3WeighInTest.awaitWeightSurface(M3WeighInTest.kt:571)\n\tat app.wlo.app.M3WeighInTest.firstSavedReading_showsHonestSparseConfirmation(M3WeighInTest.kt:222)"
+    },
+    {
+      "class": "app.wlo.app.M3WeighInTest",
+      "test": "logbookEdit_tapOpensSheet_saveReplacesTheEntry",
+      "failure": "java.lang.IllegalStateException: node \"f06-title\" never appeared; route=f06/weight; screen texts: [Body fat, Weight trend, \u2212 0.2 kg / 7 d, Last raw reading 77.0 kg \u00b7 06:30, 30 d, 1 y, 90 d, Measured points \u00b7 Trend line, View data, 19 Jun \u2013 16 Sep 2026, 30-day trend -0.8 kg]\n\tat app.wlo.app.TestNav.awaitTag(TestNav.kt:143)\n\tat app.wlo.app.TestNav.awaitTag$default(TestNav.kt:111)\n\tat app.wlo.app.M3WeighInTest.awaitWeightSurface(M3WeighInTest.kt:571)\n\tat app.wlo.app.M3WeighInTest.logbookEdit_tapOpensSheet_saveReplacesTheEntry(M3WeighInTest.kt:468)"
+    },
+    {
+      "class": "app.wlo.app.M3WeighInTest",
+      "test": "rapidDoubleSave_createsOneEvent",
+      "failure": "java.lang.IllegalStateException: node \"f06-title\" never appeared; route=f06/weight; screen texts: [Body fat, Weight trend, \u2212 0.2 kg / 7 d, Last raw reading 77.0 kg \u00b7 06:30, 30 d, 1 y, 90 d, Measured points \u00b7 Trend line, View data, 19 Jun \u2013 16 Sep 2026, 30-day trend -0.8 kg]\n\tat app.wlo.app.TestNav.awaitTag(TestNav.kt:143)\n\tat app.wlo.app.TestNav.awaitTag$default(TestNav.kt:111)\n\tat app.wlo.app.M3WeighInTest.awaitWeightSurface(M3WeighInTest.kt:571)\n\tat app.wlo.app.M3WeighInTest.rapidDoubleSave_createsOneEvent(M3WeighInTest.kt:267)"
+    },
+    {
+      "class": "app.wlo.app.M3WeighInTest",
+      "test": "outlierCorrect_deletesFlaggedEvent_andReopensWithSafePriorValue",
+      "failure": "java.lang.IllegalStateException: node \"f06-title\" never appeared; route=f06/weight; screen texts: [Body fat, Weight trend, \u2212 0.2 kg / 7 d, Last raw reading 77.0 kg \u00b7 06:30, 30 d, 1 y, 90 d, Measured points \u00b7 Trend line, View data, 19 Jun \u2013 16 Sep 2026, 30-day trend -0.8 kg]\n\tat app.wlo.app.TestNav.awaitTag(TestNav.kt:143)\n\tat app.wlo.app.TestNav.awaitTag$default(TestNav.kt:111)\n\tat app.wlo.app.M3WeighInTest.awaitWeightSurface(M3WeighInTest.kt:571)\n\tat app.wlo.app.M3WeighInTest.outlierCorrect_deletesFlaggedEvent_andReopensWithSafePriorValue(M3WeighInTest.kt:387)"
+    },
+    {
+      "class": "app.wlo.app.M3WeighInTest",
+      "test": "compactLargeFontSheet_keepsSaveReachableWithIme_andCapturesEvidence",
+      "failure": "java.lang.IllegalStateException: node \"f06-title\" never appeared; route=f06/weight; screen texts: [Body fat, Weight trend, \u2212 0.2 kg / 7 d, Last raw reading 77.0 kg \u00b7 06:30, 30 d, 1 y, 90 d, Measured points \u00b7 Trend line, Weigh in]\n\tat app.wlo.app.TestNav.awaitTag(TestNav.kt:143)\n\tat app.wlo.app.TestNav.awaitTag$default(TestNav.kt:111)\n\tat app.wlo.app.M3WeighInTest.awaitWeightSurface(M3WeighInTest.kt:571)\n\tat app.wlo.app.M3WeighInTest.compactLargeFontSheet_keepsSaveReachableWithIme_andCapturesEvidence(M3WeighInTest.kt:123)"
+    },
+    {
+      "class": "app.wlo.app.M3WeighInTest",
+      "test": "prefilledEntry_usesMaterialPickers_andSavesWithoutTypingWeight",
+      "failure": "java.lang.IllegalStateException: node \"f06-title\" never appeared; route=f06/weight; screen texts: [Body fat, Weight trend, \u2212 0.2 kg / 7 d, Last raw reading 77.0 kg \u00b7 06:30, 30 d, 1 y, 90 d, Measured points \u00b7 Trend line, View data, 19 Jun \u2013 16 Sep 2026, 30-day trend -0.8 kg]\n\tat app.wlo.app.TestNav.awaitTag(TestNav.kt:143)\n\tat app.wlo.app.TestNav.awaitTag$default(TestNav.kt:111)\n\tat app.wlo.app.M3WeighInTest.awaitWeightSurface(M3WeighInTest.kt:571)\n\tat app.wlo.app.M3WeighInTest.prefilledEntry_usesMaterialPickers_andSavesWithoutTypingWeight(M3WeighInTest.kt:80)"
+    },
+    {
+      "class": "app.wlo.app.M5PlanShopTest",
+      "test": "generateList_aisleGroups_consolidation_checksSurviveRegeneration",
+      "failure": "org.junit.ComparisonFailure: expected:<[hub]> but was:<[weight]>\n\tat org.junit.Assert.assertEquals(Assert.java:117)\n\tat org.junit.Assert.assertEquals(Assert.java:146)\n\tat app.wlo.app.TestNav.awaitSurface(TestNav.kt:107)\n\tat app.wlo.app.M5PlanShopTest.generateList_aisleGroups_consolidation_checksSurviveRegeneration(M5PlanShopTest.kt:255)"
+    },
+    {
+      "class": "app.wlo.app.M5PlanShopTest",
+      "test": "planWeek_fromSeededOnboarding_dealsUnderThirtySeconds",
+      "failure": "org.junit.ComparisonFailure: expected:<[hub]> but was:<[weight]>\n\tat org.junit.Assert.assertEquals(Assert.java:117)\n\tat org.junit.Assert.assertEquals(Assert.java:146)\n\tat app.wlo.app.TestNav.awaitSurface(TestNav.kt:107)\n\tat app.wlo.app.M5PlanShopTest.generateWeekThroughUi(M5PlanShopTest.kt:128)\n\tat app.wlo.app.M5PlanShopTest.planWeek_fromSeededOnboarding_dealsUnderThirtySeconds(M5PlanShopTest.kt:147)"
+    },
+    {
+      "class": "app.wlo.app.M5PlanShopTest",
+      "test": "exportTextCarriesAisleGroups_andImportCsvRoundTrips",
+      "failure": "org.junit.ComparisonFailure: expected:<[hub]> but was:<[weight]>\n\tat org.junit.Assert.assertEquals(Assert.java:117)\n\tat org.junit.Assert.assertEquals(Assert.java:146)\n\tat app.wlo.app.TestNav.awaitSurface(TestNav.kt:107)\n\tat app.wlo.app.M5PlanShopTest.exportTextCarriesAisleGroups_andImportCsvRoundTrips(M5PlanShopTest.kt:526)"
+    },
+    {
+      "class": "app.wlo.app.M5PlanShopTest",
+      "test": "slotSwap_reDealsWithDifferentRecipe_andConfirmShiftsDayScalars",
+      "failure": "org.junit.ComparisonFailure: expected:<[hub]> but was:<[weight]>\n\tat org.junit.Assert.assertEquals(Assert.java:117)\n\tat org.junit.Assert.assertEquals(Assert.java:146)\n\tat app.wlo.app.TestNav.awaitSurface(TestNav.kt:107)\n\tat app.wlo.app.M5PlanShopTest.slotSwap_reDealsWithDifferentRecipe_andConfirmShiftsDayScalars(M5PlanShopTest.kt:215)"
+    },
+    {
+      "class": "app.wlo.app.M5PlanShopTest",
+      "test": "pantry_stockSweepAndDeduction_offByDefaultThenVisibleWhenToggled",
+      "failure": "org.junit.ComparisonFailure: expected:<[hub]> but was:<[weight]>\n\tat org.junit.Assert.assertEquals(Assert.java:117)\n\tat org.junit.Assert.assertEquals(Assert.java:146)\n\tat app.wlo.app.TestNav.awaitSurface(TestNav.kt:107)\n\tat app.wlo.app.M5PlanShopTest.pantry_stockSweepAndDeduction_offByDefaultThenVisibleWhenToggled(M5PlanShopTest.kt:482)"
+    },
+    {
+      "class": "app.wlo.app.M5ScreensTest",
+      "test": "captureM5Surfaces",
+      "failure": "org.junit.ComparisonFailure: expected:<[hub]> but was:<[weight]>\n\tat org.junit.Assert.assertEquals(Assert.java:117)\n\tat org.junit.Assert.assertEquals(Assert.java:146)\n\tat app.wlo.app.TestNav.awaitSurface(TestNav.kt:107)\n\tat app.wlo.app.M5ScreensTest.captureM5Surfaces(M5ScreensTest.kt:132)"
+    },
+    {
+      "class": "app.wlo.app.M6ScreensTest",
+      "test": "captureM6Surfaces",
+      "failure": "org.junit.ComparisonFailure: expected:<[hub]> but was:<[f06/weight]>\n\tat org.junit.Assert.assertEquals(Assert.java:117)\n\tat org.junit.Assert.assertEquals(Assert.java:146)\n\tat app.wlo.app.TestNav.awaitRoute(TestNav.kt:92)\n\tat app.wlo.app.M6ScreensTest.captureM6Surfaces(M6ScreensTest.kt:125)"
+    },
+    {
+      "class": "app.wlo.app.OnboardingFlowTest",
+      "test": "gainGoal_isSupportedButDoesNotShowAConfidentDate",
+      "failure": "java.lang.AssertionError: Assert failed: The component with Text + InputText + EditableText contains 'Gain goals are supported' (ignoreCase: false) as substring is not displayed!\n\tat androidx.compose.ui.test.AssertionsKt.assertIsDisplayed(Assertions.kt:34)\n\tat app.wlo.app.OnboardingFlowTest.gainGoal_isSupportedButDoesNotShowAConfidentDate(OnboardingFlowTest.kt:59)"
+    },
+    {
+      "class": "app.wlo.app.OnboardingFlowTest",
+      "test": "poundChoice_drivesOnboarding_andRemainsTheOnlySettingsSwitch",
+      "failure": "java.lang.AssertionError: Failed to inject touch input.\nReason: Expected exactly '1' node but could not find any node that satisfies: (ContentDescription = 'Hub' (ignoreCase: false))\n\n\tat androidx.compose.ui.test.SemanticsNodeInteraction.fetchOneOrThrow(SemanticsNodeInteraction.kt:178)\n\tat androidx.compose.ui.test.SemanticsNodeInteraction.fetchOneOrThrow$default(SemanticsNodeInteraction.kt:150)\n\tat androidx.compose.ui.test.SemanticsNodeInteraction.fetchSemanticsNode(SemanticsNodeInteraction.kt:84)\n\tat androidx.compose.ui.test.ActionsKt.performTouchInput(Actions.kt:403)\n\tat androidx.compose.ui.test.AndroidActions.performClickImpl(Actions.android.kt:23)\n\tat androidx.compose.ui.test.ActionsKt.performClick(Actions.kt:61)\n\tat app.wlo.app.OnboardingFlowTest.poundChoice_drivesOnboarding_andRemainsTheOnlySettingsSwitch(OnboardingFlowTest.kt:74)"
+    },
+    {
+      "class": "app.wlo.app.OnboardingFlowTest",
+      "test": "happyPath_completesUnderThreeMinutes_andLandsOnUsefulWeight",
+      "failure": "java.lang.IllegalStateException: Weight never took over after Start\n\tat app.wlo.app.OnboardingRobotKt.awaitWeight(OnboardingRobot.kt:137)\n\tat app.wlo.app.OnboardingRobotKt.driveToHub(OnboardingRobot.kt:125)\n\tat app.wlo.app.OnboardingFlowTest.happyPath_completesUnderThreeMinutes_andLandsOnUsefulWeight(OnboardingFlowTest.kt:37)"
+    },
+    {
+      "class": "app.wlo.app.OnboardingResumeTest",
+      "test": "closeMidFlow_relaunch_resumesAtThePersistedStepWithoutCorruption",
+      "failure": "java.lang.IllegalStateException: button containing \"Continue\" never appeared\n\tat app.wlo.app.OnboardingResumeTest.clickWhenPresent(OnboardingResumeTest.kt:61)\n\tat app.wlo.app.OnboardingResumeTest.closeMidFlow_relaunch_resumesAtThePersistedStepWithoutCorruption(OnboardingResumeTest.kt:26)"
+    },
+    {
+      "class": "app.wlo.app.P6ForecastScreensTest",
+      "test": "captureForecastCardEvidence",
+      "failure": "org.junit.ComparisonFailure: expected:<[hub]> but was:<[weight]>\n\tat org.junit.Assert.assertEquals(Assert.java:117)\n\tat org.junit.Assert.assertEquals(Assert.java:146)\n\tat app.wlo.app.TestNav.awaitSurface(TestNav.kt:107)\n\tat app.wlo.app.P6ForecastScreensTest.shotForecastCard(P6ForecastScreensTest.kt:87)\n\tat app.wlo.app.P6ForecastScreensTest.captureForecastCardEvidence(P6ForecastScreensTest.kt:46)"
+    },
+    {
+      "class": "app.wlo.app.P6ForecastScreensTest",
+      "test": "captureOnboardingForecastStep",
+      "failure": "java.lang.IllegalStateException: the forecast step never appeared\n\tat app.wlo.app.P6ForecastScreensTest.captureOnboardingForecastStep(P6ForecastScreensTest.kt:78)"
+    },
+    {
+      "class": "app.wlo.app.WloDeepLinkTest",
+      "test": "launch_withWloHubIntent_afterOnboarding_landsOnHub",
+      "failure": "java.lang.IllegalStateException: button containing \"Continue\" never appeared\n\tat app.wlo.app.OnboardingRobot.clickText(OnboardingRobot.kt:103)\n\tat app.wlo.app.OnboardingRobot.driveThroughWizardWithUiAutomator(OnboardingRobot.kt:81)\n\tat app.wlo.app.WloDeepLinkTest.launch_withWloHubIntent_afterOnboarding_landsOnHub(WloDeepLinkTest.kt:43)"
+    },
+    {
+      "class": "app.wlo.app.WloShellTest",
+      "test": "switchingTopLevelDestinations_restoresPlanTabUiState",
+      "failure": "java.lang.IllegalStateException: Weight never took over after Start\n\tat app.wlo.app.OnboardingRobotKt.awaitWeight(OnboardingRobot.kt:137)\n\tat app.wlo.app.OnboardingRobotKt.driveToHub(OnboardingRobot.kt:125)\n\tat app.wlo.app.WloShellTest.switchingTopLevelDestinations_restoresPlanTabUiState(WloShellTest.kt:83)"
+    },
+    {
+      "class": "app.wlo.app.WloShellTest",
+      "test": "hub_afterOnboarding_rendersWeightWithoutAnUngatedForecast",
+      "failure": "java.lang.IllegalStateException: Weight never took over after Start\n\tat app.wlo.app.OnboardingRobotKt.awaitWeight(OnboardingRobot.kt:137)\n\tat app.wlo.app.OnboardingRobotKt.driveToHub(OnboardingRobot.kt:125)\n\tat app.wlo.app.WloShellTest.hub_afterOnboarding_rendersWeightWithoutAnUngatedForecast(WloShellTest.kt:100)"
+    },
+    {
+      "class": "app.wlo.app.WloShellTest",
+      "test": "nestedDestination_replacesTabsWithAppBar_andNavigateUpReturnsToOwner",
+      "failure": "java.lang.IllegalStateException: Weight never took over after Start\n\tat app.wlo.app.OnboardingRobotKt.awaitWeight(OnboardingRobot.kt:137)\n\tat app.wlo.app.OnboardingRobotKt.driveToHub(OnboardingRobot.kt:125)\n\tat app.wlo.app.WloShellTest.nestedDestination_replacesTabsWithAppBar_andNavigateUpReturnsToOwner(WloShellTest.kt:64)"
+    },
+    {
+      "class": "app.wlo.app.WloShellTest",
+      "test": "afterOnboarding_showsWeightFirstDestinations_andSwitching",
+      "failure": "java.lang.IllegalStateException: Weight never took over after Start\n\tat app.wlo.app.OnboardingRobotKt.awaitWeight(OnboardingRobot.kt:137)\n\tat app.wlo.app.OnboardingRobotKt.driveToHub(OnboardingRobot.kt:125)\n\tat app.wlo.app.WloShellTest.afterOnboarding_showsWeightFirstDestinations_andSwitching(WloShellTest.kt:44)"
+    }
+  ]
+}

@@ -141,7 +141,7 @@ public object ConstantsRegistry {
     public const val EWMA_ZERO_PHASE_FORMULA_VERSION: String = "trend/ewma-zero-phase-v1"
 
     /** Plain 7-day moving average — F06 §3 option 3. */
-    public const val MA7_FORMULA_VERSION: String = "trend/ma7-v1"
+    public const val MA7_FORMULA_VERSION: String = "trend/ma7-calendar-v2"
 
     /** Window length of [MOVING_AVERAGE_7D] (days). */
     public const val MA7_WINDOW_DAYS: Int = 7

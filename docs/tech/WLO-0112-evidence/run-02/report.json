@@ -1,0 +1,59 @@
+{
+  "schemaVersion": 1,
+  "warnings": [
+    "Screen widths are normalized uniformly; desktop chrome must be excluded.",
+    "Text-box anchors are not glyph baselines. Data/state equality is not inferred.",
+    "Background mask is contrast-based, not OCR. Difference includes rasterization changes.",
+    "Candidate overflow is clipped to the reference. Difference excludes uncovered pixels."
+  ],
+  "android": {
+    "serial": "emulator-5554",
+    "anchorText": "Weight trend"
+  },
+  "browser": {
+    "url": "file:///Users/boyd/wip/wloss/docs/design/mockups/WLO-0103/weight-overview.html",
+    "bounds": {
+      "x": 215,
+      "y": 69.890625,
+      "width": 470,
+      "height": 1045
+    },
+    "anchor": {
+      "x": 27.40625,
+      "y": 118.0625
+    },
+    "anchorSelector": ".main>.eyebrow"
+  },
+  "referenceSize": [
+    470,
+    1046
+  ],
+  "candidateSize": [
+    1080,
+    2400
+  ],
+  "scale": 0.4351851851851852,
+  "offset": {
+    "x": -0.010416666666664298,
+    "y": 17.53472222222223
+  },
+  "backgroundMode": "dark",
+  "referenceAnchor": {
+    "x": 27.40625,
+    "y": 118.0625
+  },
+  "candidateAnchor": {
+    "x": 63,
+    "y": 231
+  },
+  "alignment": "anchor top-left",
+  "outputs": {
+    "reference.png": "/Users/boyd/wip/wloss/docs/tech/WLO-0112-evidence/run-02/reference.png",
+    "candidate.png": "/Users/boyd/wip/wloss/docs/tech/WLO-0112-evidence/run-02/candidate.png",
+    "aligned.png": "/Users/boyd/wip/wloss/docs/tech/WLO-0112-evidence/run-02/aligned.png",
+    "overlay.png": "/Users/boyd/wip/wloss/docs/tech/WLO-0112-evidence/run-02/overlay.png",
+    "blend.png": "/Users/boyd/wip/wloss/docs/tech/WLO-0112-evidence/run-02/blend.png",
+    "difference.png": "/Users/boyd/wip/wloss/docs/tech/WLO-0112-evidence/run-02/difference.png",
+    "side-by-side.png": "/Users/boyd/wip/wloss/docs/tech/WLO-0112-evidence/run-02/side-by-side.png"
+  }
+}

@@ -104,3 +104,15 @@ This project uses `ticket` (CLI). Track work there, not in chat:
 `ticket task <ID> question add` (JSONL stdin). Markdown by default, `--json` if
 you must parse. Full help: `ticket --help` and every subcommand.
 <!-- ticket:skill:end -->
+
+## Agent-run screenshot comparisons
+
+For mockup-versus-app visual reviews, generate the evidence yourself with
+`tools/screenshot-compare/agent.py`; do not ask the owner to load screenshots,
+remove backgrounds or align overlays. See `tools/screenshot-compare/README.md`
+for the non-interactive capture command. Capture the intended app state, choose
+a unique corresponding DOM/Android region containing the same first glyph
+(prefer the first hero numeral over an unrelated label). The tool detects ink
+inside the regions; do not align text-box leading. Inspect the resulting PNGs
+and `report.json`. Match data/state where possible and disclose differences;
+anchor alignment alone does not establish pixel-perfect typography.

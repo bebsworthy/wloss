@@ -85,9 +85,22 @@ public object SmoothingEngine {
         return out
     }
 
+    /** Available readings within seven calendar days; missing days are never filled. */
+    private fun calendarMovingAverage(samples: List<WeightSample>): List<Double> {
+        var first = 0
+        var sum = 0.0
+        return samples.mapIndexed { index, sample ->
+            sum += sample.weightKg
+            while (samples[first].epochDay < sample.epochDay - ConstantsRegistry.MA7_WINDOW_DAYS + 1) {
+                sum -= samples[first++].weightKg
+            }
+            sum / (index - first + 1)
+        }
+    }
+
     /**
      * The typed door repositories call: daily weight scalars in (F06's
-     * lowest-of-day/noon-normalized series, R-B5), smoothed series out with
+     * policy-selected daily series, R-B5), smoothed series out with
      * per-point provenance.
      */
     public fun trend(
@@ -101,7 +114,7 @@ public object SmoothingEngine {
             when (method) {
                 TrendMethod.EWMA -> ewma(values, alpha)
                 TrendMethod.ZERO_PHASE_EWMA -> zeroPhaseEwma(values, alpha)
-                TrendMethod.MOVING_AVERAGE_7D -> movingAverage(values)
+                TrendMethod.MOVING_AVERAGE_7D -> calendarMovingAverage(ordered)
             }
         val version =
             when (method) {
@@ -112,20 +125,30 @@ public object SmoothingEngine {
         val inputs =
             when (method) {
                 TrendMethod.MOVING_AVERAGE_7D ->
-                    listOf("windowDays=${ConstantsRegistry.MA7_WINDOW_DAYS}", "n=${values.size}")
-                else -> listOf("alpha=$alpha", "n=${values.size}")
+                    listOf("windowDays=${ConstantsRegistry.MA7_WINDOW_DAYS}")
+                else -> listOf("alpha=$alpha")
             }
         return TrendSeries(
             method = method,
             alpha = alpha,
             points =
-                ordered.zip(smoothed) { sample, value ->
+                ordered.zip(smoothed).mapIndexed { index, (sample, value) ->
                     SmoothedPoint(
                         epochDay = sample.epochDay,
                         trendKg =
                             DerivedValue(
                                 value = value,
-                                provenance = Provenance.Derived(formulaVersion = version, inputs = inputs),
+                                provenance =
+                                    Provenance.Derived(
+                                        formulaVersion = version,
+                                        inputs =
+                                            inputs + "asOfDay=${sample.epochDay}" +
+                                                when (method) {
+                                                    TrendMethod.EWMA -> listOf("n=${index + 1}")
+                                                    TrendMethod.ZERO_PHASE_EWMA -> listOf("n=${values.size}")
+                                                    TrendMethod.MOVING_AVERAGE_7D -> emptyList()
+                                                },
+                                    ),
                             ),
                     )
                 },
@@ -164,7 +187,7 @@ public object SmoothingEngine {
     }
 }
 
-/** One daily weight scalar (F06 lowest-of-day view — the trend input, R-B5). */
+/** One policy-selected daily weight scalar (the trend input, R-B5). */
 @Serializable
 public data class WeightSample(
     public val epochDay: Long,

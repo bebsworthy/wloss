@@ -78,6 +78,7 @@ public object WloColors {
 public data class WloExtendedColors(
     val accentDim: Color,
     val chartBoundary: Color,
+    val chartGoal: Color,
     val neutralDelta: Color,
     val held: Color,
     val developing: Color,
@@ -95,6 +96,7 @@ private val darkExtendedColors =
     WloExtendedColors(
         accentDim = WloColors.AccentDim,
         chartBoundary = WloColors.Accent,
+        chartGoal = Color(0xFFF4D35E),
         neutralDelta = WloColors.NeutralDelta,
         held = WloColors.Held,
         developing = WloColors.Developing,
@@ -108,6 +110,7 @@ private val darkExtendedColors =
 private val lightExtendedColors =
     darkExtendedColors.copy(
         chartBoundary = WloColors.PrimaryLight,
+        chartGoal = Color(0xFF756000),
         held = WloColors.HeldLight,
         developing = WloColors.DevelopingLight,
         info = WloColors.InfoLight,

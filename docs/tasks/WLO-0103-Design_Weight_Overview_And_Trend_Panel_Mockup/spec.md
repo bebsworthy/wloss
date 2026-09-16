@@ -1,0 +1,4 @@
+Review weight overview composition incorporating owner feedback: yellow target line always in chart domain when a target exists; selected-period change; tooltip-only point inspection; no inline legend, data-detail block, smoother tuner, large math button or consistent-window copy. Produce an interactive screen mockup and developer handoff with calculation, accessibility and layout acceptance criteria. Settings and rare math details live off the main screen. No production implementation.
+
+
+Owner refinement: preserve page-based composition. Show individual recorded weights as muted dots behind the trend to explain ordinary fluctuations. Point inspection must identify actual measured values separately from the trend while keeping the date/weight-only tooltip. No inline legend or restored debug block.

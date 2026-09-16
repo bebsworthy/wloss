@@ -1,0 +1,293 @@
+[
+  {
+    "id": "R01",
+    "priority": "P1",
+    "title": "Restoring a pounds goal draft converts it twice",
+    "tickets": [
+      93
+    ],
+    "anchors": [
+      "[GoalsEditorViewModel.kt:675](/Users/boyd/wip/wloss/feature/f01-onboarding/src/main/kotlin/app/wlo/feature/f01/onboarding/state/GoalsEditorViewModel.kt:675)"
+    ],
+    "text": "**Reproduced on API 29.** Set units to lb, open Goals, enter 160, leave with toolbar Up, reopen Goals: target becomes **352.7 lb**. `displayWeight` converts the draft to kg, converts it back to display units, then passes that display value to `formatNumber`, which itself expects kg and converts again. This can block a valid goal via eligibility checks and presents a materially wrong proposed target. No goal was saved during the review.\n\n**Fix:** pass canonical kg directly to `unit.formatNumber`; preserve canonical precision independently of formatted draft text. Add a real GoalsEditorViewModel restore test for lb\u2192lb, kg\u2192lb and repeated reopen, not just the current test of `toKilograms(fromKilograms(x))`.\n\n**Retest:** 160 lb remains 160.0 lb after navigation and process recreation; switching to kg yields about 72.6 kg without changing the canonical target. Evidence: `04-goal-draft-160lb.png`, `05-goal-draft-reopened.png` and corresponding UI trees. A93-03/A93-06 fail."
+  },
+  {
+    "id": "R02",
+    "priority": "P1",
+    "title": "The new daily policy leaves old persisted trends and projections intact",
+    "tickets": [
+      88
+    ],
+    "anchors": [
+      "[WeighInRepository.kt:772](/Users/boyd/wip/wloss/core/data/src/commonMain/kotlin/app/wlo/core/data/WeighInRepository.kt:772)",
+      "[Migrations.kt:423](/Users/boyd/wip/wloss/core/database/src/commonMain/kotlin/app/wlo/core/database/Migrations.kt:423)",
+      "[RoomRepositories.kt:456](/Users/boyd/wip/wloss/core/data/src/commonMain/kotlin/app/wlo/core/data/RoomRepositories.kt:456)"
+    ],
+    "text": "**Reproduced with a focused Room regression test.** Seed the post-upgrade data shape: 07:00=80 kg, 18:00=79 kg, legacy persisted trend=79. Initialize the new policy and read canonical trend: **80.0**, but the persisted TREND row remains **79.0**. Migration 8\u21929 adds nullable columns; lazy initialization sets metadata only. No full rebuild, mixed-version gate, retryable migration state or policy-change notice exists. Writing a new reading repairs only the affected suffix, leaving older projections inconsistent. DayProjector continues consuming the stored TREND rows.\n\n**Fix:** atomically or resumably rebuild all derived history at the policy transition before exposing the new version; retain raw events and make legacy backup restore use the same path. Persist the migration state/timezone at the intended boundary and implement the promised notice.\n\n**Retest:** the included `ImplementationReviewRegressionTest.kt` must pass with canonical and stored values both 80.0, then add real v8 upgrade/rollback/restart and forecast/projection parity tests. Its captured assertion failure is in `policy-regression-result.xml`. This fixture tests post-upgrade consistency, not an actual v8 migration invocation. A88-04 fails."
+  },
+  {
+    "id": "R03",
+    "priority": "P1",
+    "title": "Undo failure is followed by automatic destruction of its recovery copy",
+    "tickets": [
+      94
+    ],
+    "anchors": [
+      "[LogbookScreen.kt:107](/Users/boyd/wip/wloss/feature/f06-weight/src/main/kotlin/app/wlo/feature/f06/weight/ui/LogbookScreen.kt:107)",
+      "[LogbookScreen.kt:122](/Users/boyd/wip/wloss/feature/f06-weight/src/main/kotlin/app/wlo/feature/f06/weight/ui/LogbookScreen.kt:122)",
+      "[LogbookViewModel.kt:566](/Users/boyd/wip/wloss/feature/f06-weight/src/main/kotlin/app/wlo/feature/f06/weight/state/LogbookViewModel.kt:566)"
+    ],
+    "text": "**Confirmed in the failure control flow; failure injection not run on device.** After restore fails, `restoreFailed` restarts the Snackbar effect. It still starts the ordinary expiry timer. Expiry dismisses the \u201cRecovery copy retained\u201d receipt and dispatches FinalizeDelete, which clears the durable snapshot. A transient restore failure therefore becomes permanent deletion after roughly the normal Undo interval, despite promising Retry. A second failed Retry does not change `restoreFailed` again, so the effect may not even present a new actionable receipt after the action dismissed it.\n\n**Fix:** make restore failure a durable recovery state with no automatic finalization; use an attempt/generation state to reshow Retry after each failure. Only successful restore or explicit final-delete acknowledgement may clear it. Serialize restore/finalize so expiry cannot race an active restore.\n\n**Retest:** fail restore twice, advance beyond the normal/accessibility deadline, background/recreate, then recover storage and Retry. The complete event and attrs must return exactly once. A94-05 fails."
+  },
+  {
+    "id": "R04",
+    "priority": "P1",
+    "title": "Two fast deletes can overwrite the single recovery record",
+    "tickets": [
+      94
+    ],
+    "anchors": [
+      "[LogbookViewModel.kt:498](/Users/boyd/wip/wloss/feature/f06-weight/src/main/kotlin/app/wlo/feature/f06/weight/state/LogbookViewModel.kt:498)",
+      "[LogbookViewModel.kt:527](/Users/boyd/wip/wloss/feature/f06-weight/src/main/kotlin/app/wlo/feature/f06/weight/state/LogbookViewModel.kt:527)"
+    ],
+    "text": "**Confirmed race in source.** The pending-delete guard runs before launching a coroutine, but `pendingDeletion` is not reserved until snapshot lookup, recovery-file write and database deletion have completed. Two actions before the first suspension resolves both pass the guard. Different events can both be deleted while the one per-profile recovery document is overwritten; repeated deletion of the same event can let the second failure clear the first operation's recovery. UI deletion is likewise disabled only after `deleted` becomes non-null.\n\n**Fix:** reserve a busy/pending operation synchronously before launching work, serialize all delete/Undo/finalize transitions, and clear a receipt only when its operation ID matches. A snapshot and delete also need a coherent version check if the event changes between preparation and commit.\n\n**Retest:** suspend `deletionSnapshot`, dispatch Delete(A) and Delete(B), then release it. Exactly one deletion may proceed and its receipt must remain recoverable. Also test two Delete(A) calls and concurrent Undo/dismiss. A94-05 fails; existing serialization tests do not exercise this ViewModel race."
+  },
+  {
+    "id": "R05",
+    "priority": "P1",
+    "title": "Retrying first-run completion can duplicate the starting measurement",
+    "tickets": [
+      97
+    ],
+    "anchors": [
+      "[WeightFirstOnboarding.kt:115](/Users/boyd/wip/wloss/feature/f01-onboarding/src/main/kotlin/app/wlo/feature/f01/onboarding/domain/WeightFirstOnboarding.kt:115)",
+      "[WeightFirstOnboarding.kt:128](/Users/boyd/wip/wloss/feature/f01-onboarding/src/main/kotlin/app/wlo/feature/f01/onboarding/domain/WeightFirstOnboarding.kt:128)"
+    ],
+    "text": "**Unimplemented required recovery behavior; the unsafe writer predates this change.** Completion still appends a new starting-weight event and only afterward writes goal intent, handoff, completion flag and draft removal. A failure or process death after append but before completion causes retry to append another event. WLO-0097 adds a handoff document but no operation token, transaction/journal or reconciliation for the profile/weight writes. Persisting navigation intent does not make completion idempotent.\n\n**Fix:** create a durable completion operation before writing, reuse its profile/event identities on retry, and set completion only after durable reconciliation. Surface failures instead of letting document-write exceptions leave a busy UI.\n\n**Retest:** inject failure after initial weight commit and after each document write, restart and finish again; one profile and one initial measurement must exist. A97-01/A97-02 remain unsatisfied. Do not mark these scenarios \u201cautomated pass\u201d from draft serialization tests."
+  },
+  {
+    "id": "R06",
+    "priority": "P1",
+    "title": "A known oversized file escapes the import error boundary",
+    "tickets": [
+      95
+    ],
+    "anchors": [
+      "[ImportSourceReader.kt:50](/Users/boyd/wip/wloss/feature/f13-vault/src/main/kotlin/app/wlo/feature/f13/vault/state/ImportSourceReader.kt:50)",
+      "[ExportImportViewModels.kt:184](/Users/boyd/wip/wloss/feature/f13-vault/src/main/kotlin/app/wlo/feature/f13/vault/state/ExportImportViewModels.kt:184)"
+    ],
+    "text": "**Confirmed exception path; a hostile SAF provider was not exercised.** `queryMetadata` and the declared-size `require` run before the reader's try/catch. A provider reporting more than 20 MiB causes IllegalArgumentException; metadata access can throw SecurityException. ImportViewModel catches only ImportSourceException. These errors escape the launched coroutine instead of reaching the promised recoverable state and can terminate the app. The streaming-size check is wrapped correctly, so the result depends on whether the provider supplies SIZE.\n\n**Fix:** put metadata lookup, size validation, directory/file setup and read inside the same typed exception boundary while preserving CancellationException. Ensure partial staging is cleaned in every path.\n\n**Retest:** providers returning oversized declared size, unknown size with oversized stream, revoked metadata permission and open failure all produce an in-context error, zero app-data mutation and a working Choose another file/Retry. A95-03 fails."
+  },
+  {
+    "id": "R07",
+    "priority": "P1",
+    "title": "Recreated body drafts reuse an already committed token for new values",
+    "tickets": [
+      89,
+      90
+    ],
+    "anchors": [
+      "[BodyFatViewModel.kt:100](/Users/boyd/wip/wloss/feature/f06-weight/src/main/kotlin/app/wlo/feature/f06/weight/state/BodyFatViewModel.kt:100)",
+      "[BodyFatViewModel.kt:157](/Users/boyd/wip/wloss/feature/f06-weight/src/main/kotlin/app/wlo/feature/f06/weight/state/BodyFatViewModel.kt:157)",
+      "[RoomRepositories.kt:240](/Users/boyd/wip/wloss/core/data/src/commonMain/kotlin/app/wlo/core/data/RoomRepositories.kt:240)"
+    ],
+    "text": "**Confirmed lifecycle mismatch in source.** SavedStateHandle persists `operationId` and tape text, but not `committedOperationId` or a durable committed-result reconciliation. After saving and process recreation, the old operation token is restored while committed state is null. Editing then does not rotate the token. The next save returns the previous measurement bundle from the repository, while the ViewModel reports \u201cSaved\u201d using the newly calculated estimate. The new body measurement is silently absent.\n\n**Fix:** persist/reconcile operation status and the exact submitted snapshot; after a committed operation, a deliberate edit must start a new operation. Also handle death after commit but before receipt. The same reconciliation principle is missing from weigh-in capture: an already-committed restored draft can be edited and resubmitted with its old token; repository replay returns the old reading instead of saving the edit.\n\n**Retest:** save A, recreate with saved state, enter distinct B and save. Two intended bundles must exist and B's receipt must name its actual committed value; replay of unchanged A must not duplicate it. Exercise both body and weigh-in drafts. A90 lifecycle contract and A89-05 fail."
+  },
+  {
+    "id": "R08",
+    "priority": "P1",
+    "title": "Chart navigation cannot be started through its advertised accessible controls",
+    "tickets": [
+      98
+    ],
+    "anchors": [
+      "[WloTrendChart.kt:252](/Users/boyd/wip/wloss/core/designsystem/src/main/kotlin/app/wlo/core/designsystem/WloTrendChart.kt:252)",
+      "[WloTrendChart.kt:283](/Users/boyd/wip/wloss/core/designsystem/src/main/kotlin/app/wlo/core/designsystem/WloTrendChart.kt:283)"
+    ],
+    "text": "**Reproduced through the emulator accessibility tree.** On an unselected chart, both Previous and Next have `enabled=false`; they require a selection that their own actions cannot initiate. The Canvas exposes a description but no accessibility selection action. \u201cView data\u201d rows are static ListItems with no selection or Explain action. Consequently a screen-reader user can read values but cannot follow the required select\u2192explain journey without a coordinate tap. Keyboard arrows work on the focused Canvas, but Home/End/Enter from the handoff are absent.\n\n**Fix:** enable a first-selection action, expose selection and Explain directly in the standard data list, implement the specified keyboard actions and announce completed selection changes. Preserve focus on refresh.\n\n**Retest:** start from no selection with TalkBack and keyboard only; select any sample, open its actual explanation, reach boundaries and return. Evidence: `imperial-unselected.xml`; actual TalkBack traversal remains unrun. A98-02 fails by semantics/source, independently of that manual gap."
+  },
+  {
+    "id": "R09",
+    "priority": "P1",
+    "title": "CSV staging can publish a report for mappings that have already changed",
+    "tickets": [
+      95
+    ],
+    "anchors": [
+      "[ExportImportViewModels.kt:317](/Users/boyd/wip/wloss/feature/f13-vault/src/main/kotlin/app/wlo/feature/f13/vault/state/ExportImportViewModels.kt:317)",
+      "[ExportImportViewModels.kt:355](/Users/boyd/wip/wloss/feature/f13-vault/src/main/kotlin/app/wlo/feature/f13/vault/state/ExportImportViewModels.kt:355)",
+      "[ExportImportViewModels.kt:305](/Users/boyd/wip/wloss/feature/f13-vault/src/main/kotlin/app/wlo/feature/f13/vault/state/ExportImportViewModels.kt:305)"
+    ],
+    "text": "**Confirmed asynchronous race in source.** Review starts a coroutine but leaves Mapping editable and Review enabled. The coroutine captures a mapping, suspends in `stageCsvImport`, then unconditionally publishes its report/token into whatever state exists when it returns. Change kg\u2192lb during staging, or choose another file: the older report can still switch the wizard to Reviewing and provide a commit token for the old interpretation/source. Setting `staged=null` at edit time does not invalidate an in-flight result. Concurrent staging also shares one mutable pending batch in VaultPortAdapter.\n\n**Fix:** give each source/mapping revision a generation, freeze or explicitly cancel Review work, and apply results only if generation/source/profile still match. Commit must bind the exact reviewed immutable mapping to the batch. Serialize adapter staging/commit or scope sessions independently.\n\n**Retest:** block stage, change unit/source, release old result and assert it cannot enter Reviewing or commit. Review the new mapping and verify only its values are imported. A95-04 fails despite the added token check."
+  },
+  {
+    "id": "R10",
+    "priority": "P2",
+    "title": "Logbook and overview history still compute the old daily-minimum summary",
+    "tickets": [
+      88,
+      92,
+      94
+    ],
+    "anchors": [
+      "[LogbookViewModel.kt:331](/Users/boyd/wip/wloss/feature/f06-weight/src/main/kotlin/app/wlo/feature/f06/weight/state/LogbookViewModel.kt:331)",
+      "[WeighInViewModel.kt:921](/Users/boyd/wip/wloss/feature/f06-weight/src/main/kotlin/app/wlo/feature/f06/weight/state/WeighInViewModel.kt:921)"
+    ],
+    "text": "**Confirmed in source.** Logbook `flushMonth` explicitly uses `dayEvents.minOf` and flags the lowest raw entry. Overview still sends raw readings to WeightHistory, whose daily canonical reduction is also minimum-based. For a first day containing 07:00=80 and 18:00=79 and a last day with 07:00=80, these summaries show a +1 kg change while the new selected daily values show 0. This is a left-unfixed cross-consumer requirement, not a defect in the new pure reducer.\n\n**Fix:** obtain dailySelections for aggregate start/end/delta values, preserving raw count and raw list rows separately. Replace the lowest badge with a truthful selected/contributing label if needed, including a two-event median.\n\n**Retest:** the same-day fixture must agree in overview buckets, month summary, canonical chart and explainers. A88-01/A94-06 aggregation contract fail."
+  },
+  {
+    "id": "R11",
+    "priority": "P2",
+    "title": "Chart details ignore preferred units and expose raw Double precision",
+    "tickets": [
+      98,
+      90
+    ],
+    "anchors": [
+      "[WloTrendChart.kt:352](/Users/boyd/wip/wloss/core/designsystem/src/main/kotlin/app/wlo/core/designsystem/WloTrendChart.kt:352)",
+      "[WeighInViewModel.kt:839](/Users/boyd/wip/wloss/feature/f06-weight/src/main/kotlin/app/wlo/feature/f06/weight/state/WeighInViewModel.kt:839)",
+      "[WeightScreen.kt:1022](/Users/boyd/wip/wloss/feature/f06-weight/src/main/kotlin/app/wlo/feature/f06/weight/ui/WeightScreen.kt:1022)"
+    ],
+    "text": "**Reproduced on API 29.** With lb selected, the hero/axes use lb while a selected point shows `77.30454545454546 kg`. Setting `displayUnit=\"kg\"` bypasses the supplied `formatWeight` function and concatenates the raw Double. The data-list path does the same. Waist charts likewise remain cm in imperial mode. This defeats the unit contract and makes dense numeric UI visibly unfinished.\n\n**Fix:** keep canonical unit separate from display formatting; use one unit-aware formatter for axes, details, lists and accessible descriptions, with appropriate precision. Translate waist to in when that is the active convention.\n\n**Retest:** 80 kg displays about 176.4 lb consistently everywhere; no long floating-point tail appears; 101.6 cm displays 40.0 in. Evidence: `08-imperial-selection.png`. A98-01/A98-05 unit parity and WLO-0090 unit presentation are incomplete."
+  },
+  {
+    "id": "R12",
+    "priority": "P2",
+    "title": "Body chart identity drops repeated same-day readings and provenance",
+    "tickets": [
+      90,
+      98
+    ],
+    "anchors": [
+      "[WeighInViewModel.kt:969](/Users/boyd/wip/wloss/feature/f06-weight/src/main/kotlin/app/wlo/feature/f06/weight/state/WeighInViewModel.kt:969)",
+      "[WloTrendChart.kt:196](/Users/boyd/wip/wloss/core/designsystem/src/main/kotlin/app/wlo/core/designsystem/WloTrendChart.kt:196)"
+    ],
+    "text": "**Confirmed in source.** The repository returns event IDs, capture time, method version and formula inputs, but the UI maps them to a key containing only method label and day. Two same-day measurements using one method share the key; `distinctBy` removes one from the accessible list/selection while Canvas can still draw both. The mapping also drops sourceEventIds, capture time, method version and explanationInputs, so detail may claim zero sources and cannot explain the formula inputs.\n\n**Fix:** use event ID as stable key and carry the full method-aware provenance through the UI model. Order same-day samples by capture time/ID and expose meaningful per-event explanation in View data.\n\n**Retest:** two Navy measurements on one day plus RFM and unknown-method readings remain individually selectable/listed, with matching values and formula/source details. A90-06/A98-01 fail."
+  },
+  {
+    "id": "R13",
+    "priority": "P2",
+    "title": "Goal recovery and conflict actions do not perform the promised reconciliation",
+    "tickets": [
+      93
+    ],
+    "anchors": [
+      "[GoalsEditorViewModel.kt:220](/Users/boyd/wip/wloss/feature/f01-onboarding/src/main/kotlin/app/wlo/feature/f01/onboarding/state/GoalsEditorViewModel.kt:220)",
+      "[GoalsEditorViewModel.kt:393](/Users/boyd/wip/wloss/feature/f01-onboarding/src/main/kotlin/app/wlo/feature/f01/onboarding/state/GoalsEditorViewModel.kt:393)",
+      "[GoalsEditorViewModel.kt:486](/Users/boyd/wip/wloss/feature/f01-onboarding/src/main/kotlin/app/wlo/feature/f01/onboarding/state/GoalsEditorViewModel.kt:486)"
+    ],
+    "text": "**Confirmed in source; storage-failure UI injection remains unrun.** After Targets commits but safety metadata fails, the message says Retry to reconcile, yet the normal Save action creates a new journal and attempts another write using the stale base version; it does not resume the committed journal. Recovery occurs only during reload and matches document equality rather than a durable operation identity. \u201cReview differences\u201d only swaps baseVersion and displays a notice; it does not show the current values/diff before an overwrite. On recreation, a draft whose base version changed is silently filtered out instead of entering Conflict.\n\n**Fix:** route Retry to journal completion, preserve committed operation identity, and present actual old/current/draft values for explicit conflict resolution. Restore stale-version drafts as conflicts, not missing drafts. Prevent pending journal state being replaced by a new ordinary Save.\n\n**Retest:** fail metadata after vN+1, retry in place and recreate; exactly one target version with matching safety record. Concurrent change plus recreation must retain draft and show differences. Existing journal encode/decode tests prove serialization only. A93-04/A93-05/A93-06 remain incomplete."
+  },
+  {
+    "id": "R14",
+    "priority": "P2",
+    "title": "Toolbar Up bypasses dirty/busy policies and titles are still duplicated",
+    "tickets": [
+      93,
+      95,
+      96
+    ],
+    "anchors": [
+      "[WloApp.kt:190](/Users/boyd/wip/wloss/app/src/main/kotlin/app/wlo/app/navigation/WloApp.kt:190)",
+      "[GoalsEditorScreen.kt:100](/Users/boyd/wip/wloss/feature/f01-onboarding/src/main/kotlin/app/wlo/feature/f01/onboarding/ui/GoalsEditorScreen.kt:100)",
+      "[ImportScreen.kt:73](/Users/boyd/wip/wloss/feature/f13-vault/src/main/kotlin/app/wlo/feature/f13/vault/ui/ImportScreen.kt:73)"
+    ],
+    "text": "**Dirty-Up bypass and duplicate Goals title reproduced on API 29.** Goals intercepts system Back locally, but the shell toolbar navigates directly. Up exits a dirty form with no Keep editing/Discard prompt, and the same shell escape remains available while Goals saves or Import applies. Removing the import Close button does not gate toolbar/system Back. The shell now renders a title for every route while Goals, Profile and several F13 screens retain WloScreenTitle, so the \u201cone title\u201d acceptance is not fulfilled.\n\n**Fix:** expose a screen exit policy to the shell and use it for Up, system Back and relevant navigation actions. Remove redundant content titles once the shell owns them; retain sheet headings. Busy operations must resolve/reconcile instead of appearing cancelled.\n\n**Retest:** both Back affordances behave identically on dirty/saving/applying forms, and one visible title exists on every affected route. Evidence: goal before/after UI trees show two \u201cGoals\u201d titles and the Up\u2192Settings transition without a dialog. A93-06/A95 Applying contract/A96-02 fail."
+  },
+  {
+    "id": "R15",
+    "priority": "P2",
+    "title": "Supporting-pane and logbook list-detail layouts are not implemented",
+    "tickets": [
+      96
+    ],
+    "anchors": [
+      "[WloNavigationPolicy.kt:39](/Users/boyd/wip/wloss/app/src/main/kotlin/app/wlo/app/navigation/WloNavigationPolicy.kt:39)",
+      "[WeightScreen.kt:147](/Users/boyd/wip/wloss/feature/f06-weight/src/main/kotlin/app/wlo/feature/f06/weight/ui/WeightScreen.kt:147)",
+      "[LogbookScreen.kt:98](/Users/boyd/wip/wloss/feature/f06-weight/src/main/kotlin/app/wlo/feature/f06/weight/ui/LogbookScreen.kt:98)"
+    ],
+    "text": "**Reproduced at 1080dp window width.** The only reference to `useSupportingPane` in production is its definition. Weight uses width-independent single-column content; Logbook has no expanded list-detail branch. The implementation adds a rail and a unit-tested breakpoint helper, but the content simply stretches across the available width. A breakpoint unit test cannot prove an adaptive layout that is never called.\n\n**Fix:** implement the specified primary/supporting panes and event-ID-based list/detail state, with compact fallback, minimum content widths and one editor instance across resize. Preserve filter/selection/draft through the transition.\n\n**Retest:** 599/600/839/840dp and a genuinely expanded window show the correct structure, including dirty-editor resize. Evidence: `09-wide-1080dp.png` (2160px at 320dpi); earlier wide attempts were hardware-capped to 2160px at 420dpi and are not claimed as >=840dp evidence. A96-03/A96-04 fail."
+  },
+  {
+    "id": "R16",
+    "priority": "P2",
+    "title": "Reminder UI can claim enabled when notifications cannot be delivered",
+    "tickets": [
+      97
+    ],
+    "anchors": [
+      "[SettingsScreen.kt:204](/Users/boyd/wip/wloss/app/src/main/kotlin/app/wlo/app/ui/settings/SettingsScreen.kt:204)",
+      "[WeighInReminder.kt:80](/Users/boyd/wip/wloss/app/src/main/kotlin/app/wlo/app/notification/WeighInReminder.kt:80)",
+      "[WeighInReminder.kt:101](/Users/boyd/wip/wloss/app/src/main/kotlin/app/wlo/app/notification/WeighInReminder.kt:101)"
+    ],
+    "text": "**Unimplemented acceptance behavior, not merely missing device evidence.** The switch reads the saved preference only. There is no resumed-platform/channel availability state or repair action; the worker checks runtime permission but not app/channel blocking in its predicate. The schedule remains a fixed 24-hour interval computed from LocalDateTime, with no timezone/clock/DST reconciliation. These parts of the old implementation were not changed by the time-picker/copy work.\n\n**Fix:** model requested versus effective state, refresh on resume, expose provider/system repair links and a scheduling failure state. Schedule/recalculate the next approximate local occurrence with a zone-aware policy and time-change handling. Retain inexact delivery without requesting exact alarms.\n\n**Retest:** revoked permission, globally disabled app notifications and disabled channel must be distinguishable and recoverable; timezone/DST changes preserve the selected local-time intent. A97-05/A97-06 cannot be labeled implemented until these code paths exist."
+  },
+  {
+    "id": "R17",
+    "priority": "P2",
+    "title": "Body inputs lose canonical precision and retain stale profile facts",
+    "tickets": [
+      90
+    ],
+    "anchors": [
+      "[BodyFatViewModel.kt:173](/Users/boyd/wip/wloss/feature/f06-weight/src/main/kotlin/app/wlo/feature/f06/weight/state/BodyFatViewModel.kt:173)",
+      "[BodyFatViewModel.kt:122](/Users/boyd/wip/wloss/feature/f06-weight/src/main/kotlin/app/wlo/feature/f06/weight/state/BodyFatViewModel.kt:122)",
+      "[BodyFatViewModel.kt:322](/Users/boyd/wip/wloss/feature/f06-weight/src/main/kotlin/app/wlo/feature/f06/weight/state/BodyFatViewModel.kt:322)"
+    ],
+    "text": "**Confirmed in source.** Unit changes convert the current displayed string and round to one decimal, then use that rounded string as the next canonical input: 100 cm\u219239.4 in\u2192100.1 cm. The ViewModel reads height/sex only during initialization; editing Profile and returning to the retained Weight/body ViewModel does not refresh or invalidate the computed snapshot. Both contradict the explicit \u201cphysical quantity remains unchanged\u201d and profile-change invalidation requirements.\n\n**Fix:** retain canonical inputs separately from rendered text and convert only for display; observe or explicitly refresh profile facts, increment the calculation revision, and invalidate prior estimates when relevant facts change. Persist the draft's display unit to interpret restored strings safely.\n\n**Retest:** repeated cm/in switches preserve the canonical value within 1e-6; profile height/sex change makes Save unavailable until recalculation with new facts. A90-03/A90-04 fail beyond their existing single-conversion tests."
+  },
+  {
+    "id": "R18",
+    "priority": "P2",
+    "title": "Correction rounds the original timestamp and changes its stored day bucket",
+    "tickets": [
+      89
+    ],
+    "anchors": [
+      "[WeighInViewModel.kt:688](/Users/boyd/wip/wloss/feature/f06-weight/src/main/kotlin/app/wlo/feature/f06/weight/state/WeighInViewModel.kt:688)",
+      "[WeighInViewModel.kt:586](/Users/boyd/wip/wloss/feature/f06-weight/src/main/kotlin/app/wlo/feature/f06/weight/state/WeighInViewModel.kt:586)"
+    ],
+    "text": "**Confirmed in source.** CorrectFlagged formats the original capture instant in the current device timezone, uses that local date rather than original dayEpochDay, and truncates time to minutes. Save always reparses these strings even if only weight changed. A 07:00:45 reading becomes 07:00:00; after travel across a date boundary it can move to a different stored day. The original exact snapshot is retained but not used to preserve unchanged time, unlike the logbook edit implementation.\n\n**Fix:** detect untouched date/time fields and pass original day/instant; only re-bucket when the user explicitly changes them. Apply the same stale-original checks used by logbook editing where appropriate.\n\n**Retest:** change only kg on a second-precision reading before/after a timezone change and verify original timestamp/day are identical, with one atomic replacement. Include this in A89-02/A89-05 regression coverage."
+  },
+  {
+    "id": "R19",
+    "priority": "P2",
+    "title": "Import process restoration loses the current mapping and commit phase",
+    "tickets": [
+      95
+    ],
+    "anchors": [
+      "[ExportImportViewModels.kt:162](/Users/boyd/wip/wloss/feature/f13-vault/src/main/kotlin/app/wlo/feature/f13/vault/state/ExportImportViewModels.kt:162)",
+      "[ExportImportViewModels.kt:238](/Users/boyd/wip/wloss/feature/f13-vault/src/main/kotlin/app/wlo/feature/f13/vault/state/ExportImportViewModels.kt:238)",
+      "[ExportImportViewModels.kt:495](/Users/boyd/wip/wloss/feature/f13-vault/src/main/kotlin/app/wlo/feature/f13/vault/state/ExportImportViewModels.kt:495)"
+    ],
+    "text": "**Confirmed in source.** SavedStateHandle holds only staging path/name. Recreation starts from bytes and the sniffer/global remembered mapping, so unreviewed user edits are lost; sniffed columns override remembered corrections. No durable wizard phase or commit receipt is reconciled. A process death after database commit can therefore reopen as Mapping instead of showing that the import already happened. Stable row IDs limit some duplication, but they do not preserve the user's mapping choices or distinguish commit from readback failure. Raw staged bytes also live in cache, so they can disappear and require a clear recovery path.\n\n**Fix:** persist versioned session source identity, profile, mapping revision, immutable reviewed mapping/token, phase and committed receipt. Recover the session rather than re-sniff it; preserve correct retry semantics and clean it on explicit discard/success.\n\n**Retest:** edit a sniffed kg column to lb, kill before Review and after commit, recreate, and verify the exact chosen mapping plus truthful outcome. A95-01/A95-04 lifecycle contract remains incomplete."
+  },
+  {
+    "id": "R20",
+    "priority": "P2",
+    "title": "The M3 contrast evidence omits meaningful forecast lines",
+    "tickets": [
+      91
+    ],
+    "anchors": [
+      "[WloForecastCard.kt:459](/Users/boyd/wip/wloss/core/designsystem/src/main/kotlin/app/wlo/core/designsystem/WloForecastCard.kt:459)",
+      "[WloTheme.kt:37](/Users/boyd/wip/wloss/core/designsystem/src/main/kotlin/app/wlo/core/designsystem/WloTheme.kt:37)",
+      "[ThemeContrastTest.kt:22](/Users/boyd/wip/wloss/core/designsystem/src/test/kotlin/app/wlo/core/designsystem/ThemeContrastTest.kt:22)"
+    ],
+    "text": "**Measured from shipped colors.** The forecast's fast/slow boundary lines use AccentDim `#1F6B54` on dark Surface `#151A21`: approximately **2.74:1** (2.51:1 on SurfaceRaised). This misses the handoff's 3:1 target for meaningful chart boundaries. ThemeContrastTest covers many text pairs and outline but not this chart role, so \u201cevery active pairing\u201d in the evidence is overstated. Labels/alternate data help interpretation but do not make a barely visible uncertainty boundary satisfy the specified visual target.\n\n**Fix:** define a chart-boundary semantic role with sufficient contrast in both themes and test actual composites/containers, while keeping low-alpha fill decorative. Also reconcile the remaining direction-based delta accent with the handoff's neutral loss/maintenance/gain treatment; do not treat \u201cgreen downward\u201d as automatically suitable for every goal mode.\n\n**Retest:** verify every essential line/point/boundary and text/container pairing actually used by Weight/Goals, with light/dark and grayscale screenshots. Existing primitive M3 delegation is a real improvement; this finding is about incomplete token coverage, not replacing it."
+  },
+  {
+    "id": "R21",
+    "priority": "P1",
+    "title": "The release gate lacks working journey tests and overstates automated coverage",
+    "tickets": [
+      99
+    ],
+    "anchors": [
+      "[WLO-0099-WEIGHT-UX-VALIDATION.md:97](/Users/boyd/wip/wloss/docs/tech/WLO-0099-WEIGHT-UX-VALIDATION.md:97)",
+      "[commands.md:33](/Users/boyd/wip/wloss/docs/tech/WLO-0099-evidence/commands.md:33)"
+    ],
+    "text": "**Confirmed from retained XML and current tests.** The previous device run contains 78 cases, 41 failures. Most stop at stale Hub-first expectations or removed `f06-title` before reaching the behavior being tested; onboarding has additional failures needing triage. There are no new end-to-end device tests in these commits exercising most added recovery contracts. The validation table nevertheless groups all scenario IDs as \u201cAutomated pass; manual pending\u201d. A93-05 is backed by journal serialization, not failure-after-commit recovery; adaptive tests assert an unused breakpoint; import tests cover mapping validation, not ViewModel lifecycle/races. The defects above show these are missing implementations/test coverage, not exclusively unrun visual checks.\n\n**Fix:** repair robots/selectors and changed contractual assertions, implement focused failing-path tests, then map each acceptance scenario to a specific assertion/manual artifact. Keep Fail distinct from Not run. WLO-0099 correctly remains doing and must remain a release blocker; completed implementation tickets need their acceptance status revisited.\n\n**Retest:** relevant device suite green on disposable API29/current-API targets, explicit process-death/assistive/large-font intersections, and the named 60-second performance baseline comparison. This review did not rerun the 17-minute failing suite merely to repeat known setup failures. A99-01/A99-02/A99-03/A99-06/A99-07 do not pass."
+  }
+]

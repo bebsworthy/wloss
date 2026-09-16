@@ -335,6 +335,6 @@ policy=median; bias=0.0149; mae=0.0765; rmse=0.1671; stabilityRms=0.2896; revisi
 policy=consistent-window; bias=0.03; mae=0.0635; rmse=0.1352; stabilityRms=0.1864; revisionMean=0.2067; revisionMax=9.92; forecast30d=0.0632; editDelta=9.92; deleteDelta=0.0; backfillCoverageGain=1
 smoother=ewma; bias=0.2909; mae=0.2909; rmse=0.3704; stabilityRms=0.1351; lagDays=9; revisionMean=0.1745; revisionMax=1.54; forecast30d=0.9319
 smoother=ewma-zero-phase; bias=0.0681; mae=0.1891; rmse=0.2248; stabilityRms=0.1391; lagDays=6; revisionMean=0.1895; revisionMax=0.8704; forecast30d=0.9796
-smoother=ma-7d; bias=0.1866; mae=0.1874; rmse=0.2818; stabilityRms=0.1434; lagDays=5; revisionMean=0.2151; revisionMax=1.5571; forecast30d=1.1357"""
+smoother=ma-7d; bias=0.1833; mae=0.1841; rmse=0.2767; stabilityRms=0.1426; lagDays=5; revisionMean=0.2341; revisionMax=2.0; forecast30d=1.1008"""
     }
 }

@@ -189,6 +189,8 @@ public data class TrendUi(
     /** Smallest wider window containing data, offered only for an empty selected window. */
     public val emptyActionWindow: ChartWindowUi?,
     public val description: String,
+    public val rawSamples: List<ChartPoint> = emptyList(),
+    public val currentDay: Long? = null,
 )
 
 /** The outlier confirm (one line, one tap either way — F06 §4). */
@@ -411,6 +413,7 @@ public class WeighInViewModel(
 
     private val method = MutableStateFlow(TrendMethod.EWMA)
     private val alpha = MutableStateFlow(ConstantsRegistry.EWMA_ALPHA_DEFAULT)
+    private var fullTrendSamples: List<EngineWeightSample> = emptyList()
     private val window = MutableStateFlow(savedEnum(WINDOW_KEY, ChartWindowUi.D90))
     private val bodyFatWindow = MutableStateFlow(savedEnum(BODY_WINDOW_KEY, ChartWindowUi.D90))
     private val section = MutableStateFlow(savedEnum(SECTION_KEY, initialSection))
@@ -824,20 +827,19 @@ public class WeighInViewModel(
         update()
         val currentData = data.value
         val currentTrend = currentData.trend
-        if (currentTrend == null || currentTrend.samples.isEmpty()) {
+        if (currentTrend == null || fullTrendSamples.isEmpty()) {
             data.value = currentData.copy(method = method.value, alpha = alpha.value)
             return
         }
         val series =
             SmoothingEngine.trend(
                 samples =
-                    currentTrend.samples.map { point ->
-                        EngineWeightSample(point.epochDay, point.value)
-                    },
+                fullTrendSamples,
                 method = method.value,
                 alpha = alpha.value,
             )
         val points = series.points
+        val visiblePoints = points.filter { it.epochDay in currentTrend.windowStartDay..currentTrend.windowEndDay }
         val byDay = points.associate { it.epochDay to it.trendKg.value }
         val last = points.last()
         val delta =
@@ -874,7 +876,7 @@ public class WeighInViewModel(
                     currentTrend.copy(
                         trend =
                             if (currentTrend.trendLineVisible) {
-                                points.map {
+                                visiblePoints.map {
                                     ChartPoint(
                                         epochDay = it.epochDay,
                                         value = it.trendKg.value,
@@ -889,6 +891,7 @@ public class WeighInViewModel(
                                 emptyList()
                             },
                         current = last.trendKg,
+                        currentDay = last.epochDay,
                         delta7 = delta,
                         delta30 = delta30,
                         preview = !atDefaults,
@@ -1089,8 +1092,10 @@ public class WeighInViewModel(
                         },
                 )
             }
-        val series = reads.value(weighIns.trend(id, from, today, method.value, alpha.value), null)
-        val points = series?.points.orEmpty()
+        val allSamples = reads.value(weighIns.dailyScalars(id, Long.MIN_VALUE, today), emptyList())
+        val series = SmoothingEngine.trend(allSamples, method.value, alpha.value)
+        val points = series.points.filter { it.epochDay >= from }
+        val rawEvents = reads.value(measurements.rangeOfKind(id, MeasurementKind.WEIGHT, from, today), emptyList())
         // THE single trend source (WLO-0030 defect 9): the canonical
         // read — the exact number the Hub shows. The tuner's own output
         // is a preview and is labeled as one.
@@ -1107,7 +1112,7 @@ public class WeighInViewModel(
                 abs(alpha.value - ConstantsRegistry.EWMA_ALPHA_DEFAULT) < 1e-9
 
         val byDay = points.associate { it.epochDay to it.trendKg.value }
-        val lastPoint = points.lastOrNull()
+        val lastPoint = series.points.lastOrNull()
         val weekAgo = lastPoint?.epochDay?.let { byDay[it - DELTA_WINDOW_DAYS] }
         val tunerDelta =
             if (lastPoint != null && weekAgo != null) {
@@ -1157,6 +1162,7 @@ public class WeighInViewModel(
             data.value = data.value.copy(loadState = WeightLoadState.Error(LOAD_FAILED_NOTICE))
             return false
         }
+        fullTrendSamples = allSamples
         val isEmpty = samples.isEmpty() && history.isEmpty() && bodyFatPoints.isEmpty() && waistPoints.isEmpty()
         data.value =
             WeighInUiState(
@@ -1217,6 +1223,18 @@ public class WeighInViewModel(
                         stateCopy = stateCopy,
                         emptyActionWindow = chartWindow.emptyActionWindow,
                         description = chartDescription,
+                        currentDay = lastPoint?.epochDay,
+                        rawSamples =
+                            rawEvents.map { event ->
+                                ChartPoint(
+                                    epochDay = event.dayEpochDay,
+                                    value = event.valueReal,
+                                    stableKey = event.id,
+                                    role = ChartSeriesRole.RAW,
+                                    captureTimeEpochMs = event.capturedAt.toEpochMilliseconds(),
+                                    sourceEventIds = listOf(event.id),
+                                )
+                            },
                     ),
                 method = method.value,
                 alpha = alpha.value,

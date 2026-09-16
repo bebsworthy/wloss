@@ -1,0 +1,8 @@
+Review every W01–W17 and S01–S09 surface and F1–F12 journey in WLO-0086 against current source, governing product rulings, Material 3, accessibility and motion guidance. Produce docs/tech/WLO-0087-WEIGHT-UX-UI-REVIEW.md with evidence, severity, exact component/layout proposals, states, acceptance criteria, phased delivery and honest validation limits. Record actionable follow-up work through Ticket; reuse existing smoothing work. This task is an audit and proposal, not authorization to rewrite the application. Inspect available runtime/evidence without changing personal data. Completion: full inventory coverage, sourced findings, implementation-ready recommendations and tracker links.
+
+
+## Completed review
+
+Delivered docs/tech/WLO-0087-WEIGHT-UX-UI-REVIEW.md: all 26 surfaces, 12 journeys, 18 prioritized findings, screen/component/theme/motion handoff, full acceptance matrix and explicit contract conflicts. Created proposed backlog WLO-0088–WLO-0099 and retained WLO-0054 as smoothing owner. Evidence in docs/tech/WLO-0087-evidence: six current-build API 29 screenshots and five UI summaries.
+
+Validation: current debug build succeeded; compact Weight/capture/Settings/Goals/Body layout and 200% text inspected. Body selection failure reproduced and traced to unpublished UI state. Contrast calculations verified. Local document links and coverage IDs checked; git diff --check clean. No production code changed or destructive data action exercised. Physical haptics, assistive-tech operation, full failure/lifecycle matrix, Health Connect, import/restore, wide windows and usability study remain explicitly proposed QA, not claimed passes.

@@ -85,11 +85,11 @@ public fun MathDocsScreen(modifier: Modifier = Modifier) {
         MethodDoc(
             name = "7-day average",
             formula = "sₜ = mean(xₜ₋₆ … xₜ)",
-            terms = listOf("a plain mean over the last seven daily numbers"),
+            terms = listOf("a plain mean over available daily weights in the last seven calendar days"),
             plain =
                 "The simplest possible smoother: the week's average. Maximum transparency, " +
                     "maximum lag — a change takes about half a week to fully show up. The first " +
-                    "days of a new series are means over whatever exists so far.",
+                    "days of a new series use the available readings. Missing days are not filled in.",
             formulaVersion = ConstantsRegistry.MA7_FORMULA_VERSION,
             testTag = "f06-math-ma7",
         )

@@ -158,3 +158,7 @@ how the profile anchor is established and edited, decide whether existing
 users opt in or migrate at a release boundary, and show a one-time “trend
 recomputed with the new daily-weight method” note. This report makes no silent
 change to R-B8, R-B5, R-A2, or production behavior.
+
+### WLO-0104 calendar-MA correction (2026-09-16)
+
+The original MA7 row above used seven observations, including sparse periods. The corrected seven-calendar-day method rerun on the same corpus yields bias +0.1833kg, MAE0.1841kg, RMSE0.2767kg, stability RMS0.1426kg, lag5days, revision mean0.2341kg/max2.0kg, forecast30d error1.1008kg. The original row remains historical evidence; the executable snapshot now pins the corrected method.

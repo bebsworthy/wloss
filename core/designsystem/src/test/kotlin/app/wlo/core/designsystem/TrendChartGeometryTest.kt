@@ -6,6 +6,70 @@ import kotlin.test.assertTrue
 
 class TrendChartGeometryTest {
     @Test
+    fun quarterUsesCalendarMonthBoundaries() {
+        val start =
+            java.time.LocalDate
+                .of(2026, 6, 19)
+                .toEpochDay()
+        val end =
+            java.time.LocalDate
+                .of(2026, 9, 16)
+                .toEpochDay()
+        assertEquals(
+            listOf(7, 8, 9).map {
+                java.time.LocalDate
+                    .of(2026, it, 1)
+                    .toEpochDay()
+            },
+            weightAxisTicks(start, end).map { it.epochDay },
+        )
+    }
+
+    @Test
+    fun shortWindowPreservesBothEndpointsAndMidpoint() {
+        assertEquals(listOf(100L, 114L, 129L), weightAxisTicks(100, 129).map { it.epochDay })
+        assertEquals(listOf(100L), weightAxisTicks(100, 100).map { it.epochDay })
+    }
+
+    @Test
+    fun goalAlwaysFitsTheSameScaleAsWeights() {
+        for (goal in listOf(40.0, 74.0, 77.0, 150.0)) {
+            val bounds = weightChartBounds(listOf(77.0, 78.3), goal)
+            assertTrue(goal > bounds.low && goal < bounds.high)
+            assertTrue(77.0 > bounds.low && 78.3 < bounds.high)
+        }
+    }
+
+    @Test
+    fun tapUsesBothCoordinatesAndRejectsEmptySpace() {
+        val positions =
+            listOf(
+                androidx.compose.ui.geometry
+                    .Offset(100f, 50f),
+                androidx.compose.ui.geometry
+                    .Offset(100f, 100f),
+            )
+        assertEquals(
+            1,
+            nearestWeightPoint(
+                positions,
+                androidx.compose.ui.geometry
+                    .Offset(100f, 99f),
+                24f,
+            ),
+        )
+        assertEquals(
+            null,
+            nearestWeightPoint(
+                positions,
+                androidx.compose.ui.geometry
+                    .Offset(0f, 99f),
+                24f,
+            ),
+        )
+    }
+
+    @Test
     fun `same stale sample keeps its honest position in each selected window`() {
         val today = day(2026, 9, 16)
         val sample = today - 20

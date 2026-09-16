@@ -140,8 +140,8 @@ internal fun trendAxisTicks(
         val label =
             when {
                 span <= 45L -> "${date.dayOfMonth} $month"
-                alwaysShowYear || crossesYear -> "$month ’${date.year.toString().takeLast(2)}"
-                else -> month
+                alwaysShowYear || crossesYear -> "${date.dayOfMonth} $month ’${date.year.toString().takeLast(2)}"
+                else -> "${date.dayOfMonth} $month"
             }
         TrendAxisTick(day, label)
     }

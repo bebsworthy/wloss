@@ -1,0 +1,14 @@
+{
+  "url": "file:///Users/boyd/wip/wloss/docs/design/mockups/WLO-0103/weight-overview.html",
+  "bounds": {
+    "x": 215,
+    "y": 69.890625,
+    "width": 470,
+    "height": 1045
+  },
+  "anchor": {
+    "x": 27.40625,
+    "y": 118.0625
+  },
+  "anchorSelector": ".main>.eyebrow"
+}

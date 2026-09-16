@@ -1,21 +1,33 @@
 package app.wlo.feature.f06.weight.ui
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.ExtendedFloatingActionButton
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.ListItem
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SegmentedButton
 import androidx.compose.material3.SegmentedButtonDefaults
@@ -24,6 +36,8 @@ import androidx.compose.material3.Slider
 import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -34,10 +48,10 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusManager
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.LiveRegionMode
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
@@ -47,7 +61,6 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import app.wlo.core.designsystem.ProvenanceChip
 import app.wlo.core.designsystem.SelectChip
 import app.wlo.core.designsystem.WloBanner
 import app.wlo.core.designsystem.WloBannerTone
@@ -63,14 +76,15 @@ import app.wlo.core.designsystem.WloListRow
 import app.wlo.core.designsystem.WloSecondaryButton
 import app.wlo.core.designsystem.WloSheet
 import app.wlo.core.designsystem.WloSpacing
-import app.wlo.core.designsystem.WloStatDivider
 import app.wlo.core.designsystem.WloStatRow
 import app.wlo.core.designsystem.WloTrendChart
+import app.wlo.core.designsystem.WloWeightChart
 import app.wlo.core.designsystem.formatDay
 import app.wlo.core.designsystem.rememberWloHaptics
 import app.wlo.core.designsystem.wloExtendedColors
 import app.wlo.core.designsystem.wloType
 import app.wlo.core.engines.MilestoneLadder
+import app.wlo.core.model.ConstantsRegistry
 import app.wlo.core.model.TrendMethod
 import app.wlo.feature.f06.weight.state.BodyFatUiState
 import app.wlo.feature.f06.weight.state.BodyFatViewModel
@@ -78,9 +92,7 @@ import app.wlo.feature.f06.weight.state.BodySectionUi
 import app.wlo.feature.f06.weight.state.ChartWindowUi
 import app.wlo.feature.f06.weight.state.GoalProgressState
 import app.wlo.feature.f06.weight.state.GoalProgressUi
-import app.wlo.feature.f06.weight.state.HistoryBucketUi
 import app.wlo.feature.f06.weight.state.HistoryRange
-import app.wlo.feature.f06.weight.state.HistoryTier
 import app.wlo.feature.f06.weight.state.RatiosUi
 import app.wlo.feature.f06.weight.state.SheetUi
 import app.wlo.feature.f06.weight.state.VerdictUi
@@ -97,22 +109,13 @@ import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 
 /**
- * The F06 weight surface (owner review WLO-0030): trend-first hero — one
- * "Weight" card header, the hero numeral + small unit + weekly delta, the
- * last raw reading line, a real weigh-in button — then the compressed
- * history (WLO-0055: one row per bucket, coarser with distance — days,
- * weeks, months, quarters; rows tap through), the trend chart with its
- * smoother tuner (α visible, R-A2 default 0.15; a non-default selection is
- * a labeled PREVIEW — the saved trend keeps the default), and the outlier
- * guard's one-line keep-or-delete. Every verbatim entry — and the
- * swipe-to-reveal delete with its inline undo (R-B8 amendment, WLO-0035 +
- * WLO-0050) — lives on the full logbook screen this card opens. The
- * weigh-in sheet opens over this surface (wlo://weight/log) — the typed
- * path is first-class, R-U15. One screen, two segments (R2, WLO-0035):
- * Weight (this) and Body fat (per-method series + tape + calculator) —
- * never a separate route.
+ * WLO-0104 page-based weight overview: latest trend, selected-period change,
+ * goal and raw-event chart. Settings owns smoothing/math and body-metric
+ * access; history opens the event log. The reserved bottom action opens the
+ * existing weigh-in sheet without obscuring scroll content.
  */
 @Composable
+@OptIn(ExperimentalMaterial3Api::class)
 @Suppress("LongMethod") // One ordered semantic dashboard; extracted cards own each section's detail.
 public fun WeightScreen(
     viewModel: WeighInViewModel,
@@ -121,7 +124,9 @@ public fun WeightScreen(
     onOpenLogbook: (HistoryRange?) -> Unit,
     onEditGoal: () -> Unit,
     modifier: Modifier = Modifier,
+    showTopBar: Boolean = false,
 ) {
+    var showChartSettings by rememberSaveable { mutableStateOf(false) }
     val state: WeighInUiState by viewModel.uiState.collectAsStateWithLifecycle()
     val sheet: SheetUi? by viewModel.sheetState.collectAsStateWithLifecycle()
     val verdict: VerdictUi? by viewModel.verdictState.collectAsStateWithLifecycle()
@@ -145,31 +150,44 @@ public fun WeightScreen(
 
     val scrollState = rememberScrollState()
     BoxWithConstraints(modifier = modifier.fillMaxWidth()) {
-        val useBottomAction = maxHeight < 600.dp || LocalDensity.current.fontScale >= 1.5f
         val useSupportingPane = maxWidth >= 840.dp
         val openSheet = { viewModel.onEvent(WeighInEvent.OpenSheet()) }
         Scaffold(
-            floatingActionButton = {
-                if (!useBottomAction && state.section == BodySectionUi.WEIGHT && sheet == null) {
-                    ExtendedFloatingActionButton(
-                        onClick = openSheet,
-                        icon = { Icon(WloIcons.Plus, contentDescription = null) },
-                        text = { Text("Weigh in") },
-                        modifier = Modifier.testTag("f06-open-sheet"),
+            topBar = {
+                if (showTopBar) {
+                    TopAppBar(
+                        title = { Text("Weight") },
+                        colors =
+                            TopAppBarDefaults.topAppBarColors(
+                                containerColor = MaterialTheme.colorScheme.background,
+                            ),
+                        windowInsets = WindowInsets(0, 0, 0, 0),
+                        actions = {
+                            IconButton(
+                                onClick = { showChartSettings = true },
+                                modifier = Modifier.padding(end = 8.dp),
+                            ) {
+                                Icon(WloIcons.Tune, contentDescription = "Chart settings")
+                            }
+                        },
                     )
                 }
             },
             bottomBar = {
-                if (useBottomAction && state.section == BodySectionUi.WEIGHT && sheet == null) {
-                    WloButton(
-                        label = "Weigh in",
+                if (state.section == BodySectionUi.WEIGHT && sheet == null) {
+                    Button(
                         onClick = openSheet,
                         modifier =
                             Modifier
                                 .fillMaxWidth()
-                                .padding(horizontal = WloSpacing.SCREEN, vertical = WloSpacing.CARD)
+                                .padding(horizontal = 24.dp, vertical = 12.dp)
+                                .height(52.dp)
                                 .testTag("f06-open-sheet"),
-                    )
+                    ) {
+                        Text("+", style = WeightOverviewTypography.action)
+                        Spacer(Modifier.width(8.dp))
+                        Text("Weigh in", style = WeightOverviewTypography.action)
+                    }
                 }
             },
         ) { scaffoldPadding ->
@@ -179,7 +197,8 @@ public fun WeightScreen(
                         Modifier
                             .weight(if (useSupportingPane) 0.64f else 1f)
                             .verticalScroll(scrollState)
-                            .padding(horizontal = WloSpacing.SCREEN)
+                            .padding(horizontal = if (state.section == BodySectionUi.WEIGHT) 8.dp else 24.dp)
+                            .padding(top = 15.dp)
                             .padding(bottom = WloSpacing.SCREEN),
                     verticalArrangement = Arrangement.spacedBy(WloSpacing.SCREEN),
                 ) {
@@ -197,20 +216,21 @@ public fun WeightScreen(
                     }
 
                     // One screen, different series (R2, WLO-0035) — segments, not routes.
-                    SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
-                        listOf(BodySectionUi.WEIGHT to "Weight", BodySectionUi.BODY_FAT to "Body fat")
-                            .forEachIndexed { index, (section, label) ->
-                                SegmentedButton(
-                                    selected = state.section == section,
-                                    onClick = { viewModel.onEvent(WeighInEvent.SectionChange(section)) },
-                                    shape = SegmentedButtonDefaults.itemShape(index, BodySectionUi.entries.size),
-                                    modifier = Modifier.testTag("f06-section-${section.name.lowercase()}"),
-                                ) {
-                                    Text(label)
+                    if (state.section == BodySectionUi.BODY_FAT) {
+                        SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
+                            listOf(BodySectionUi.WEIGHT to "Weight", BodySectionUi.BODY_FAT to "Body fat")
+                                .forEachIndexed { index, (section, label) ->
+                                    SegmentedButton(
+                                        selected = state.section == section,
+                                        onClick = { viewModel.onEvent(WeighInEvent.SectionChange(section)) },
+                                        shape = SegmentedButtonDefaults.itemShape(index, BodySectionUi.entries.size),
+                                        modifier = Modifier.testTag("f06-section-${section.name.lowercase()}"),
+                                    ) {
+                                        Text(label)
+                                    }
                                 }
-                            }
+                        }
                     }
-
                     if (state.section == BodySectionUi.BODY_FAT) {
                         BodyFatSection(
                             state = state,
@@ -255,124 +275,16 @@ public fun WeightScreen(
                         }
 
                         run {
-                            WloCard(modifier = Modifier.testTag("f06-hero-card")) {
-                                val trend = state.trend
-                                val current = trend?.current
-                                val delta7 = trend?.delta7
-                                WloCardHeader(
-                                    title = "Weight trend",
-                                    provenance =
-                                        if (current != null) {
-                                            {
-                                                // The chip opens the math sheet — real "how we got
-                                                // here" content, never a dead info mark.
-                                                ProvenanceChip(
-                                                    value = current,
-                                                    format = state.massUnit::format,
-                                                    onClick = onOpenMath,
-                                                )
-                                            }
-                                        } else {
-                                            null
-                                        },
-                                )
-                                if (current != null) {
-                                    WloHeroStat(
-                                        value = current,
-                                        format = state.massUnit::formatNumber,
-                                        unit = state.massUnit.symbol,
-                                        delta =
-                                            if (delta7 != null) {
-                                                {
-                                                    WloDeltaChip(
-                                                        value = delta7,
-                                                        format = { magnitude ->
-                                                            val weight = state.massUnit.formatNumber(magnitude)
-                                                            "$weight ${state.massUnit.symbol} / 7 d"
-                                                        },
-                                                        style = wloType.statM,
-                                                        context = "trend delta",
-                                                    )
-                                                }
-                                            } else {
-                                                null
-                                            },
-                                        // The card header owns the single provenance chip (top-right).
-                                        provenance = {},
-                                        modifier = Modifier.testTag("f06-trend-stat"),
-                                    )
-                                }
-                                if (current == null) {
-                                    Text(
-                                        text =
-                                            trend?.stateCopy
-                                                ?: "Trend is forming from your canonical daily weights.",
-                                        style = wloType.caption,
-                                        color = wloExtendedColors.textTertiary,
-                                    )
-                                }
-                                state.lastWeighInLabel?.let { last ->
-                                    Text(
-                                        text = "Last raw reading $last",
-                                        style = wloType.receipt,
-                                        color = wloExtendedColors.textTertiary,
-                                    )
-                                }
-                            }
-
-                            WeightTrendCard(
+                            WeightOverview(
+                                showSettings = showChartSettings,
+                                onSettingsChange = { showChartSettings = it },
+                                showInlineSettings = !showTopBar,
                                 state = state,
                                 viewModel = viewModel,
                                 onOpenMath = onOpenMath,
                                 onOpenLogbook = { onOpenLogbook(null) },
+                                onEditGoal = onEditGoal,
                             )
-
-                            GoalProgressCard(progress = state.goalProgress, state = state, onEditGoal = onEditGoal)
-
-                            WloCard(modifier = Modifier.testTag("f06-history-card")) {
-                                WloCardHeader(title = "History")
-                                if (state.history.isEmpty()) {
-                                    Text(
-                                        text =
-                                            "No weigh-ins yet — the morning window reads steadiest, " +
-                                                "whenever you get to it.",
-                                        style = wloType.caption,
-                                        color = wloExtendedColors.textTertiary,
-                                    )
-                                }
-                                // One row per bucket, coarser with distance (WLO-0055): the
-                                // tier captions mark the compression, and every row taps
-                                // through to the verbatim feed — delete lives there, on the
-                                // raw rows, never on an aggregate. Hairline dividers inside
-                                // a tier, tier captions at the boundaries — the same list
-                                // rhythm as the logbook (WLO-0056).
-                                var previousTier: HistoryTier? = null
-                                state.history.forEach { bucket ->
-                                    if (bucket.tier != previousTier) {
-                                        previousTier = bucket.tier
-                                        Text(
-                                            text = bucket.tier.label,
-                                            style = wloType.label,
-                                            color = wloExtendedColors.textTertiary,
-                                        )
-                                    } else {
-                                        WloStatDivider()
-                                    }
-                                    HistoryRow(
-                                        bucket = bucket,
-                                        onClick = {
-                                            onOpenLogbook(
-                                                HistoryRange(bucket.startDayInclusive, bucket.endDayExclusive),
-                                            )
-                                        },
-                                    )
-                                }
-                                WloSecondaryButton(
-                                    label = "View logbook",
-                                    onClick = { onOpenLogbook(null) },
-                                    modifier = Modifier.fillMaxWidth().testTag("f06-open-logbook"),
-                                )
-                            }
 
                             notice?.let {
                                 Text(
@@ -684,70 +596,219 @@ private fun signedDeltaLabel(
 }
 
 @Composable
-private fun WeightTrendCard(
+private fun WeightOverview(
+    showSettings: Boolean,
+    onSettingsChange: (Boolean) -> Unit,
+    showInlineSettings: Boolean,
     state: WeighInUiState,
     viewModel: WeighInViewModel,
     onOpenMath: () -> Unit,
     onOpenLogbook: () -> Unit,
+    onEditGoal: () -> Unit,
 ) {
     val trend = state.trend ?: return
-    WloCard(modifier = Modifier.testTag("f06-trend-card")) {
-        WloCardHeader(title = "Trend")
-        WindowSegmentedControl(
-            selected = state.window,
-            onSelect = { viewModel.onEvent(WeighInEvent.WindowChange(it)) },
-            testPrefix = "f06-window",
-        )
-        WloTrendChart(
-            samples = trend.samples,
-            trend = trend.trend,
-            currentTrend = null,
-            formatWeight = state.massUnit::format,
-            windowStartDay = trend.windowStartDay,
-            windowEndDay = trend.windowEndDay,
-            describe = trend.description,
-            alwaysShowTickYear = trend.alwaysShowTickYear,
-            emptyMessage = trend.stateCopy,
-            emptyActionLabel = trend.emptyActionWindow?.let { "Show ${it.label}" },
-            onEmptyAction =
-                trend.emptyActionWindow?.let { target ->
-                    { viewModel.onEvent(WeighInEvent.WindowChange(target)) }
-                },
-            onViewRawReadings = onOpenLogbook,
-        )
-        trend.delta30?.let { delta ->
-            val formatted = state.massUnit.format(delta.value)
-            val signed = if (delta.value > 0.0) "+$formatted" else formatted
-            Text(
-                text = "30-day trend $signed",
-                style = wloType.receipt,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.testTag("f06-trend-delta-30"),
-            )
-        }
-        if (trend.samples.isNotEmpty() && trend.stateCopy != null) {
-            Text(trend.stateCopy, style = wloType.caption, color = wloExtendedColors.textTertiary)
-        }
-        if (trend.samples.isNotEmpty()) {
-            SmootherTuner(
-                method = state.method,
-                alpha = state.alpha,
-                onMethod = { viewModel.onEvent(WeighInEvent.MethodChange(it)) },
-                onAlpha = { viewModel.onEvent(WeighInEvent.AlphaChange(it)) },
-            )
-            if (trend.preview) {
+    var showGoal by rememberSaveable { mutableStateOf(false) }
+    val first = trend.trend.firstOrNull()
+    val last = trend.trend.lastOrNull()
+    val change =
+        if (first != null && last != null && first.epochDay != last.epochDay) last.value - first.value else null
+    val reset = {
+        viewModel.onEvent(WeighInEvent.MethodChange(TrendMethod.EWMA))
+        viewModel.onEvent(WeighInEvent.AlphaChange(ConstantsRegistry.EWMA_ALPHA_DEFAULT))
+    }
+    Column(modifier = Modifier.testTag("f06-weight-overview")) {
+        Column(Modifier.padding(horizontal = 16.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(
-                    text = "Preview — the saved trend keeps the default smoother.",
-                    style = wloType.caption,
-                    color = wloExtendedColors.held,
+                    "Weight trend",
+                    style = WeightOverviewTypography.eyebrow,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.weight(1f),
+                )
+                if (showInlineSettings) {
+                    IconButton(onClick = { onSettingsChange(true) }) {
+                        Icon(WloIcons.Tune, contentDescription = "Chart settings")
+                    }
+                }
+            }
+            Spacer(Modifier.height(5.dp))
+            trend.current?.let { current ->
+                WloHeroStat(
+                    value = current,
+                    format = state.massUnit::formatNumber,
+                    unit = state.massUnit.symbol,
+                    valueStyle = WeightOverviewTypography.hero,
+                    unitStyle = WeightOverviewTypography.unit,
+                    provenance = {},
+                    modifier = Modifier.testTag("f06-trend-stat"),
+                )
+                Spacer(Modifier.height(5.dp))
+                trend.currentDay?.let {
+                    val prefix = if (it == trend.windowEndDay) "Today " else ""
+                    Text(
+                        prefix + overviewDate(it, fullMonth = true),
+                        style = WeightOverviewTypography.date,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+            }
+            Spacer(Modifier.height(23.dp))
+            if (trend.preview) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text("Preview", color = wloExtendedColors.chartGoal)
+                    TextButton(onClick = reset, modifier = Modifier.testTag("f06-reset-preview")) { Text("Reset") }
+                }
+            }
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(16.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    change?.let { delta ->
+                        Text(
+                            (if (delta > 0) "+" else "") + state.massUnit.format(delta).replace('-', '−'),
+                            style = WeightOverviewTypography.change,
+                            modifier = Modifier.testTag("f06-period-change"),
+                        )
+                        Text(
+                            "Change · ${overviewDate(checkNotNull(first).epochDay)} – " +
+                                overviewDate(checkNotNull(last).epochDay),
+                            style = WeightOverviewTypography.supporting,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                }
+                TextButton(
+                    onClick = { if (state.goalProgress.targetWeightKg != null) showGoal = true else onEditGoal() },
+                    contentPadding = PaddingValues(0.dp),
+                    shape = androidx.compose.ui.graphics.RectangleShape,
+                    modifier = Modifier.weight(1f).testTag("f06-goal-summary"),
+                ) {
+                    Column(horizontalAlignment = Alignment.End, modifier = Modifier.fillMaxWidth()) {
+                        val target = state.goalProgress.targetWeightKg
+                        Text(
+                            target?.let { "${state.massUnit.format(it)} goal" } ?: "Set a goal",
+                            style = WeightOverviewTypography.goal,
+                            textAlign = androidx.compose.ui.text.style.TextAlign.End,
+                            color = wloExtendedColors.chartGoal,
+                        )
+                        if (target != null) {
+                            trend.current?.let { current ->
+                                Text(
+                                    "${state.massUnit.format(kotlin.math.abs(target - current.value))} to goal",
+                                    style = WeightOverviewTypography.supporting,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+            Spacer(Modifier.height(18.dp))
+            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+            Spacer(Modifier.height(17.dp))
+            WindowSegmentedControl(
+                selected = state.window,
+                onSelect = { viewModel.onEvent(WeighInEvent.WindowChange(it)) },
+                testPrefix = "f06-window",
+            )
+            Spacer(Modifier.height(12.dp))
+            Text(
+                "${overviewDate(trend.windowStartDay)} – ${overviewDate(trend.windowEndDay)}" +
+                    if (first != null && first.epochDay > trend.windowStartDay) {
+                        " · readings from ${overviewDate(first.epochDay)}"
+                    } else {
+                        ""
+                    },
+                style = WeightOverviewTypography.supporting,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            WloWeightChart(
+                samples = trend.rawSamples,
+                trend = trend.trend,
+                goalKg = state.goalProgress.targetWeightKg,
+                startDay = trend.windowStartDay,
+                endDay = trend.windowEndDay,
+                formatWeight = state.massUnit::format,
+                formatAxis = state.massUnit::formatNumber,
+            )
+            trend.stateCopy?.let {
+                Text(
+                    it,
+                    style = WeightOverviewTypography.supporting,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
+            trend.emptyActionWindow?.let { target ->
+                TextButton(onClick = { viewModel.onEvent(WeighInEvent.WindowChange(target)) }) {
+                    Text("Show ${target.label}")
+                }
+            }
+            Spacer(Modifier.height(12.dp))
+            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
         }
-        WloSecondaryButton(
-            label = "How the math works",
-            onClick = onOpenMath,
-            modifier = Modifier.fillMaxWidth().testTag("f06-open-math"),
+        // Full-width standard ListItem aligns its built-in 16dp inset with the page's 24dp gutter.
+        ListItem(
+            headlineContent = { Text("Weigh-in history", style = WeightOverviewTypography.history) },
+            supportingContent = {
+                state.lastWeighInLabel?.let {
+                    Text(
+                        "Last reading · $it",
+                        style = WeightOverviewTypography.supporting,
+                        modifier = Modifier.padding(top = 2.dp),
+                    )
+                }
+            },
+            trailingContent = { Icon(WloIcons.ChevronRight, contentDescription = null) },
+            colors =
+                androidx.compose.material3.ListItemDefaults
+                    .colors(containerColor = MaterialTheme.colorScheme.background),
+            modifier =
+                Modifier
+                    .padding(top = 4.dp)
+                    .testTag("f06-open-logbook")
+                    .clickable(onClickLabel = "Weigh-in history", onClick = onOpenLogbook),
         )
+    }
+    if (showSettings) {
+        WloSheet(onDismissRequest = { onSettingsChange(false) }, title = "Chart settings") {
+            Column(
+                Modifier.verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(WloSpacing.TIGHT),
+            ) {
+                SmootherTuner(
+                    method = state.method,
+                    alpha = state.alpha,
+                    onMethod = { viewModel.onEvent(WeighInEvent.MethodChange(it)) },
+                    onAlpha = { viewModel.onEvent(WeighInEvent.AlphaChange(it)) },
+                )
+                Text(
+                    "Alternative settings preview the chart. Your saved trend stays unchanged.",
+                    style = wloType.caption,
+                )
+                TextButton(onClick = reset) { Text("Restore defaults") }
+                TextButton(onClick = {
+                    onSettingsChange(false)
+                    viewModel.onEvent(WeighInEvent.SectionChange(BodySectionUi.BODY_FAT))
+                }) { Text("Body measurements") }
+                TextButton(onClick = {
+                    onSettingsChange(false)
+                    onOpenMath()
+                }) { Text("How the trend is calculated") }
+                WloButton(label = "Done", onClick = { onSettingsChange(false) }, modifier = Modifier.fillMaxWidth())
+            }
+        }
+    }
+    if (showGoal) {
+        WloSheet(onDismissRequest = { showGoal = false }, title = "Goal progress") {
+            Column(Modifier.verticalScroll(rememberScrollState())) {
+                GoalProgressCard(state.goalProgress, state, onEditGoal = {
+                    showGoal = false
+                    onEditGoal()
+                })
+            }
+        }
     }
 }
 
@@ -770,7 +831,7 @@ private fun WeightLifecycleRefresh(viewModel: WeighInViewModel) {
 private const val BOUNDARY_POLL_MILLIS: Long = 60_000L
 private const val MIN_CONFIRMATION_TREND_SAMPLES: Int = 3
 
-/** The smoother selection + the visible α tuner (R-A2: default 0.15, in the open). */
+/** Advanced preview controls, shown only inside chart settings (WLO-0104, R-A2). */
 @Composable
 private fun SmootherTuner(
     method: TrendMethod,
@@ -784,84 +845,59 @@ private fun SmootherTuner(
             style = wloType.label,
             color = wloExtendedColors.textTertiary,
         )
-        Row(horizontalArrangement = Arrangement.spacedBy(WloSpacing.TIGHT)) {
-            for (candidate in TrendMethod.entries) {
-                SelectChip(
-                    label = methodLabel(candidate),
-                    selected = candidate == method,
-                    onClick = { onMethod(candidate) },
-                    modifier = Modifier.testTag("f06-method-${candidate.wireName}"),
-                )
-            }
+        for (candidate in TrendMethod.entries) {
+            ListItem(
+                modifier =
+                    Modifier
+                        .testTag("f06-method-${candidate.wireName}")
+                        .selectable(
+                            selected = candidate == method,
+                            role = Role.RadioButton,
+                            onClick = { onMethod(candidate) },
+                        ),
+                headlineContent = { Text(methodLabel(candidate)) },
+                supportingContent = {
+                    Text(
+                        when (candidate) {
+                            TrendMethod.EWMA -> "Smooths daily fluctuations using earlier readings."
+                            TrendMethod.ZERO_PHASE_EWMA -> "Uses later readings; past values can change."
+                            TrendMethod.MOVING_AVERAGE_7D -> "Available readings within seven calendar days."
+                        },
+                    )
+                },
+                leadingContent = {
+                    RadioButton(
+                        selected = candidate == method,
+                        onClick = null,
+                        modifier =
+                            Modifier.semantics {
+                                contentDescription =
+                                    methodLabel(candidate)
+                            },
+                    )
+                },
+            )
         }
-        Text(
-            text = "Responsiveness α ${format2(alpha)}",
-            style = wloType.label,
-            color = wloExtendedColors.textTertiary,
-        )
-        Slider(
-            value = alpha.toFloat(),
-            onValueChange = { onAlpha(it.toDouble()) },
-            valueRange = ALPHA_MIN..ALPHA_MAX,
-            colors = SliderDefaults.colors(thumbColor = MaterialTheme.colorScheme.primary),
-            modifier = Modifier.fillMaxWidth().testTag("f06-alpha-slider"),
-        )
+        if (method != TrendMethod.MOVING_AVERAGE_7D) {
+            Text(
+                text = "Responsiveness α ${format2(alpha)}",
+                style = wloType.label,
+                color = wloExtendedColors.textTertiary,
+            )
+            Slider(
+                value = alpha.toFloat(),
+                onValueChange = { onAlpha(it.toDouble()) },
+                valueRange = ALPHA_MIN..ALPHA_MAX,
+                colors = SliderDefaults.colors(thumbColor = MaterialTheme.colorScheme.primary),
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .testTag("f06-alpha-slider")
+                        .semantics { contentDescription = "Trend responsiveness" },
+            )
+        }
     }
 
-/**
- * One compressed-history bucket row (WLO-0055), on the design system's
- * standard [WloListRow] anatomy — headline range, supporting weigh-in count
- * (always present, so the list rhythm stays even), the Δ and closing day's
- * weight in the value slot. An empty bucket keeps its row — gaps are data.
- * Tapping any row opens the full logbook, where the individual entries live.
- */
-@Composable
-private fun HistoryRow(
-    bucket: HistoryBucketUi,
-    onClick: () -> Unit,
-) {
-    WloListRow(
-        label = bucket.label,
-        secondary = bucket.countLabel,
-        modifier = Modifier.testTag("f06-history-row"),
-        value = {
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(WloSpacing.CARD),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                bucket.deltaLabel?.let { delta ->
-                    Text(
-                        text = delta,
-                        style = wloType.caption,
-                        color = wloExtendedColors.textTertiary,
-                    )
-                }
-                if (bucket.weightLabel == null) {
-                    Text(
-                        text = "—",
-                        style = wloType.statS,
-                        color = wloExtendedColors.textTertiary,
-                        modifier = Modifier.testTag("f06-history-weight"),
-                    )
-                } else {
-                    Text(
-                        text = bucket.weightLabel,
-                        style = wloType.statS,
-                        modifier = Modifier.testTag("f06-history-weight"),
-                    )
-                }
-            }
-        },
-        onClick = onClick,
-    )
-}
-
-/**
- * The typed weigh-in path (R-U15): first-class, never a fallback, and
- * back-datable (F06 §4) — an ISO date plus an optional HH:MM (blank reads
- * as noon, the R-B5 normalization). Children land in [WloSheet]'s padded,
- * spaced column.
- */
 @Composable
 private fun WeighInSheetContent(
     sheet: SheetUi,
@@ -1104,11 +1140,28 @@ private fun WindowSegmentedControl(
         ChartWindowUi.entries.forEachIndexed { index, candidate ->
             SegmentedButton(
                 selected = candidate == selected,
+                icon = {},
                 onClick = { onSelect(candidate) },
                 shape = SegmentedButtonDefaults.itemShape(index, ChartWindowUi.entries.size),
-                modifier = Modifier.testTag("$testPrefix-${candidate.name.lowercase()}"),
+                colors =
+                    SegmentedButtonDefaults.colors(
+                        activeContainerColor = MaterialTheme.colorScheme.primaryContainer,
+                        activeContentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                    ),
+                modifier = Modifier.height(44.dp).testTag("$testPrefix-${candidate.name.lowercase()}"),
             ) {
-                Text(candidate.label)
+                Text(
+                    candidate.label.replace("all", "All"),
+                    style =
+                        WeightOverviewTypography.control.copy(
+                            fontWeight =
+                                if (candidate == selected) {
+                                    androidx.compose.ui.text.font.FontWeight.SemiBold
+                                } else {
+                                    androidx.compose.ui.text.font.FontWeight.Normal
+                                },
+                        ),
+                )
             }
         }
     }
@@ -1183,3 +1236,15 @@ private fun RatiosCard(
         }
     }
 }
+
+/** Day-first labels keep the date readable and consistent with the overview reference. */
+private fun overviewDate(
+    epochDay: Long,
+    fullMonth: Boolean = false,
+): String =
+    java.time.LocalDate.ofEpochDay(epochDay).format(
+        java.time.format.DateTimeFormatter.ofPattern(
+            if (fullMonth) "d MMMM" else "d MMM",
+            java.util.Locale.getDefault(),
+        ),
+    )

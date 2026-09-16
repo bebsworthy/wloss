@@ -1,0 +1,79 @@
+{
+  "schemaVersion": 1,
+  "warnings": [
+    "Screen widths are normalized uniformly; desktop chrome must be excluded.",
+    "Glyph anchors align visible ink, not font size. Data/state equality is not inferred.",
+    "Background mask is contrast-based, not OCR. Difference includes rasterization changes.",
+    "Candidate overflow is clipped to the reference. Difference excludes uncovered pixels."
+  ],
+  "android": {
+    "serial": "emulator-5554",
+    "anchorText": "77.1"
+  },
+  "browser": {
+    "url": "file:///Users/boyd/wip/wloss/docs/design/mockups/WLO-0103/weight-overview.html",
+    "bounds": {
+      "x": 215,
+      "y": 69.890625,
+      "width": 470,
+      "height": 1045
+    },
+    "anchor": {
+      "x": 27.40625,
+      "y": 145.953125,
+      "width": 97.53125,
+      "height": 77
+    },
+    "anchorSelector": "#hero"
+  },
+  "anchorRegions": {
+    "reference": {
+      "x": 27.40625,
+      "y": 145.953125,
+      "width": 97.53125,
+      "height": 77
+    },
+    "candidate": {
+      "x": 63,
+      "y": 337,
+      "width": 227,
+      "height": 178
+    }
+  },
+  "referenceSize": [
+    470,
+    1046
+  ],
+  "candidateSize": [
+    1080,
+    2400
+  ],
+  "scale": 0.4351851851851852,
+  "offset": {
+    "x": 1.2777777777777786,
+    "y": 0.11111111111111427
+  },
+  "backgroundMode": "dark",
+  "referenceAnchor": {
+    "x": 30,
+    "y": 162,
+    "width": 32,
+    "height": 47
+  },
+  "candidateAnchor": {
+    "x": 66,
+    "y": 372,
+    "width": 72,
+    "height": 107
+  },
+  "alignment": "first visible glyph top-left",
+  "outputs": {
+    "reference.png": "/Users/boyd/wip/wloss/docs/tech/WLO-0114-evidence/pass-01/reference.png",
+    "candidate.png": "/Users/boyd/wip/wloss/docs/tech/WLO-0114-evidence/pass-01/candidate.png",
+    "aligned.png": "/Users/boyd/wip/wloss/docs/tech/WLO-0114-evidence/pass-01/aligned.png",
+    "overlay.png": "/Users/boyd/wip/wloss/docs/tech/WLO-0114-evidence/pass-01/overlay.png",
+    "blend.png": "/Users/boyd/wip/wloss/docs/tech/WLO-0114-evidence/pass-01/blend.png",
+    "difference.png": "/Users/boyd/wip/wloss/docs/tech/WLO-0114-evidence/pass-01/difference.png",
+    "side-by-side.png": "/Users/boyd/wip/wloss/docs/tech/WLO-0114-evidence/pass-01/side-by-side.png"
+  }
+}

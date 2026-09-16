@@ -119,7 +119,9 @@ width, not from font changes.
 **Numbers are the hero — the OpenType contract:**
 - `tnum` (tabular figures) is **mandatory wherever numbers change or
   align**: hero numerals, odometers, stat rows, delta chips, receipt lines,
-  chart axes, logbook tables. Proportional figures only in running prose.
+  chart axes, logbook tables. Proportional figures in running prose; the
+  F06 page-overview hero is the narrow WLO-0114/R-D3 exception for matching
+  the approved mockup (regular Inter Medium, proportional lining figures).
 - `lnum` always (no oldstyle figures in stats contexts); `zero` (slashed
   zero) in weight/log contexts where 0/O confusion matters; `frac` enabled
   in recipe/serving contexts (F03/F04).
@@ -520,3 +522,19 @@ Phase C flows live in [`flows/`](flows/) — each flow ships wireframe →
 annotated mock → self-review against this document and its spec. The shared
 phone-frame CSS (`flows/_wlo.css`) implements §1–§5 tokens as CSS variables
 so mocks and code diverge only in medium, not in values.
+
+## Weight overview amendment — WLO-0104
+
+Owner-approved page composition supersedes the prior card/tuner overview: current trend, selected-period change and goal, range selector, raw-weight dots plus trend, and a history navigation row. Goal line is always included in the same linear axis domain. `chartGoal` is a dedicated semantic role: dark #F4D35E, light #756000; dashed line and direct label distinguish it without color alone. It is not a held/warning state. Point inspection is a compact date/weight tooltip, with equivalent keyboard/accessibility navigation. Settings owns smoothing/alpha and rare math help; preview has visible Reset. M3 bottom action reserves space above navigation. No fixed30-day summary independent of the selected range. Full design contract: mockups/WLO-0103/README.md.
+
+### Weight overview typography and geometry (WLO-0114)
+
+The original Inter mockup is the visual reference, evaluated at equal screen width with matching data and visible-glyph anchors. This supersedes the WLO-0108 size reductions, which compensated for screenshot display scaling.
+
+`WeightOverviewTypography`: hero 56/66.08sp medium, −2sp tracking; unit 23/28sp regular; eyebrow 14/20.3sp; full date 13/18.85sp; change 24/34.8sp medium, −0.5sp tracking; goal 17/24.65sp medium; supporting 12/17.4sp; history 15/21.75sp; range labels 14/20.3sp (selected semibold, otherwise regular); action 15/21.75sp semibold. The hero uses proportional lining figures under the narrow R-D3 exception; change and aligned numeric rows retain tabular figures. Explicit line-height trim=None retains intended leading instead of silently trimming single-line boxes. All roles scale with system text size.
+
+The overview uses 24dp content gutters, 5dp hero gaps, 23dp before the summary, 18dp before the divider and 17dp before the native segmented row. Change and goal groups are vertically centered, with a standard M3 text button for the goal. The native selector has a 44dp visible height, preserves its minimum touch target and selected semantics, and omits the checkmark. The action uses a plus character at label size.
+
+Chart geometry follows the reference 360×285 SVG aspect within its extended 372-unit plot container: height = contentWidth × 285/360 × 372/364. Plot top/bottom are 22/285 and 232/285 of height; label row is at 257/285; right plot edge reserves 12.5% plus enough space for scaled axis text. The domain remains data-driven and includes the goal with padding; it is not hardcoded to demo weights. Short windows have three date ticks; quarter windows have calendar-month ticks; larger windows retain year-aware ticks. The latest trend has a filled marker. Sparse windows say when readings start.
+
+Preserve Android system bars: the HTML reference has no Android system navigation bar, so its footer cannot be matched physically by drawing under the OS controls. Main content scrolls and the action stays reachable. Other screens retain their typography roles.

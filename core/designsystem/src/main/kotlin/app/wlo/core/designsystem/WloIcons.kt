@@ -24,6 +24,27 @@ public object WloIcons {
     /** Paint source for all glyph paths; `Icon(tint = ...)` recolors at render. */
     private val Black: SolidColor = SolidColor(Color.Black)
 
+    /** Chart settings: two adjustment rails, distinct from an overflow menu. */
+    public val Tune: ImageVector =
+        mark("WloTune") {
+            path(stroke = Black, strokeLineWidth = 1.8f, strokeLineCap = StrokeCap.Round) {
+                moveTo(3f, 7f)
+                lineTo(6f, 7f)
+                moveTo(12f, 7f)
+                lineTo(21f, 7f)
+                moveTo(3f, 17f)
+                lineTo(12f, 17f)
+                moveTo(18f, 17f)
+                lineTo(21f, 17f)
+                moveTo(12f, 7f)
+                arcTo(3f, 3f, 0f, true, true, 6f, 7f)
+                arcTo(3f, 3f, 0f, true, true, 12f, 7f)
+                moveTo(18f, 17f)
+                arcTo(3f, 3f, 0f, true, true, 12f, 17f)
+                arcTo(3f, 3f, 0f, true, true, 18f, 17f)
+            }
+        }
+
     /** Standard vertical overflow menu affordance. */
     public val MoreVertical: ImageVector =
         mark("WloMoreVertical") {

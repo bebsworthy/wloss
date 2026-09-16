@@ -182,7 +182,7 @@ public fun WloApp(
             containerColor = MaterialTheme.colorScheme.background,
             contentColor = MaterialTheme.colorScheme.onBackground,
             topBar = {
-                if (appBarMetadata != null) {
+                if (appBarMetadata != null && currentRoute != WloTabs.WEIGHT) {
                     TopAppBar(
                         title = { Text(text = appBarMetadata.appBarTitle) },
                         navigationIcon = {
@@ -616,6 +616,7 @@ private fun TopLevelRouteSurface(
             ) {
                 onSurfaceChanged("weight")
                 WeightScreen(
+                    showTopBar = true,
                     viewModel = koinViewModel(parameters = { parametersOf(false, BodySectionUi.WEIGHT) }),
                     bodyFatViewModel = koinViewModel(),
                     onOpenMath = { navController.navigate(F06Routes.MATH) },
