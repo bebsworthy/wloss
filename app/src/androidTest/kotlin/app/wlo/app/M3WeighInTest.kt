@@ -295,7 +295,7 @@ public class M3WeighInTest {
         // makes the PREVIEW trend follow the raw readings — a different last
         // value, and the headline is labeled a preview (the saved trend keeps
         // the default smoother).
-        val snappyLast = trailingEwmaLast(SCALARS_WITH_REWEIGH, ALPHA_MAX)
+        val snappyLast = trailingEwmaLast(canonicalWindow, ALPHA_MAX)
         assertNotEquals(trailingEwmaLast(canonicalWindow, ALPHA), snappyLast, 1e-9)
         rule
             .onNodeWithTag("f06-alpha-slider")
@@ -306,8 +306,8 @@ public class M3WeighInTest {
         // The method switch: zero-phase differs from the EWMA at older points,
         // so the weekly delta the preview chip shows changes. Both smoothers
         // run with the α the tuner now holds (0.5 after the slider push).
-        val ewmaDelta = ewmaSeries(SCALARS_WITH_REWEIGH, ALPHA_MAX).let { it.last() - it[it.lastIndex - DELTA_LOOKBACK_DAYS] }
-        val zeroDelta = zeroPhaseSeries(SCALARS_WITH_REWEIGH, ALPHA_MAX).let { it.last() - it[it.lastIndex - DELTA_LOOKBACK_DAYS] }
+        val ewmaDelta = ewmaSeries(canonicalWindow, ALPHA_MAX).let { it.last() - it[it.lastIndex - DELTA_LOOKBACK_DAYS] }
+        val zeroDelta = zeroPhaseSeries(canonicalWindow, ALPHA_MAX).let { it.last() - it[it.lastIndex - DELTA_LOOKBACK_DAYS] }
         assertNotEquals("zero-phase must re-shape the series", ewmaDelta, zeroDelta, 1e-9)
         rule.onNodeWithTag("f06-method-ewma-zero-phase").performClick()
         pollText(formatDelta(zeroDelta))
@@ -433,10 +433,7 @@ public class M3WeighInTest {
         // never repeats the value as visible text — WLO-0030 defect 15).
         assertTrue(
             "each smoother's formula version is documented",
-            rule
-                .onAllNodesWithContentDescription("derived, trend/ewma-v1", substring = true)
-                .fetchSemanticsNodes()
-                .isNotEmpty(),
+            rule.onAllNodesWithText("Formula version: trend/ewma-v1").fetchSemanticsNodes().isNotEmpty(),
         )
     }
 
@@ -457,9 +454,9 @@ public class M3WeighInTest {
         rule.onAllNodesWithTag("f06-row").onFirst().performTouchInput { swipe(centerRight, centerLeft) }
 
         // The undo notice lives in the feed, where the row was.
-        TestNav.awaitTag(rule, "f06-deleted-banner")
+        TestNav.awaitText(rule, "Weigh-in deleted")
         pollFirstRowChanged(deletedValue)
-        rule.onNodeWithTag("f06-undo-delete").performClick()
+        rule.onNodeWithText("Undo").performClick()
         pollFirstRow(deletedValue)
     }
 
