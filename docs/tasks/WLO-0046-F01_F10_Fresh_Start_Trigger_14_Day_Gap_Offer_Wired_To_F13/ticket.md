@@ -1,13 +1,13 @@
 ---
 id: WLO-0046
 title: 'F01/F10 Fresh Start trigger: >=14-day gap offer wired to F13 hide-not-delete (R-B7)'
-status: backlog
+status: canceled
 theme: weight-experience
 release: 2
 created: 2026-09-14T13:38:55Z
-modified: 2026-09-15T21:28:45Z
-closed:
-revision: 51be023cb7cb99ec
+modified: 2026-09-16T05:40:32Z
+closed: 2026-09-16T05:40:32Z
+revision: d458902f0422cf67
 blocks: []
 related: []
 ---
@@ -37,3 +37,7 @@ Demo with backdated seed + the frozen demo clock; arch/ktlint/detekt green.
 - Mechanics (already built): [DataVaultPort.kt](core/ports/src/commonMain/kotlin/app/wlo/core/ports/DataVaultPort.kt) VaultFreshStartReport + vault surface
 - Design: [DESIGN-SYSTEM.md F06 inventory](docs/design/DESIGN-SYSTEM.md) ("Fresh Start render (page-turn)")
 - Note: no dedicated flow prototype exists yet — frame 04's archive framing is the nearest mock; a small frame addition may be wanted.
+
+## Product decision (2026-09-16)
+
+Canceled by owner. Do not detect a 14-day gap or present an unsolicited lapse/Fresh Start prompt. Missing weight history is valid data and the trend resumes without a restart ritual. The existing manual Vault action is outside this ticket and requires a separate contract audit before further work.

@@ -55,4 +55,4 @@ Completed with isolated commits and ticket evidence: WLO-0070 trend-first post-s
 
 The scoped Release 1 weight-core implementation is now complete. The remaining Release 1 program step is WLO-0029: establish signed alpha/stable distribution and begin real-device dogfooding without breaking data continuity. Findings from dogfooding should create focused defects rather than reopening completed contracts.
 
-After dogfood distribution, the recommended Release 2 order is WLO-0046 Fresh Start, WLO-0042 progress ribbon, WLO-0041 home-screen widget, then WLO-0037 OCR input, WLO-0077 measurement-condition insights, and WLO-0076 optional 10-day-best. Advanced tickets remain gated on dogfood evidence.
+After dogfood distribution, the recommended Release 2 order is WLO-0042 progress ribbon, WLO-0041 home-screen widget, then WLO-0037 OCR input, WLO-0077 measurement-condition insights, and WLO-0076 optional 10-day-best. Advanced tickets remain gated on dogfood evidence.

@@ -37,7 +37,7 @@ Core objectives:
   **extra same-day weigh-ins are expected and supported — each is kept as its
   own event** (R-B8); tape measurements every 2–3 weeks; body-fat method checks monthly; Bluetooth sync runs invisibly whenever the scale is stepped on.
 - **Physical/emotional context:** half-awake, barefoot, slightly vulnerable. This is the highest-tension moment of the user's day — the design must remove the verdict feeling entirely.
-- **Episodic:** pairing a new scale (F13), a relapse/long gap (Fresh Start), a plateau (correlation views), a doctor visit (export).
+- **Episodic:** pairing a new scale (F13), a plateau (correlation views), a doctor visit (export).
 - **The single most common flow:**
   1. User steps on the Bluetooth scale → entry appears in WLO via F13 (or: user snaps a photo of the display → on-device OCR fills the field).
   2. A confirmation card animates in: **"Trend 179.1 ↓ 0.6"**, raw 178.4 shown small beneath; single soft haptic.
@@ -106,7 +106,6 @@ ritual with F13's mechanics per R-B7 — F06 only renders both.)
   lost.
 - *Outlier guard:* an entry ±3σ off recent residual triggers a one-line confirm — "4.2 kg above yesterday — keep or correct?" — one tap either way; "correct" means delete the bad entry and re-enter (R-B8 amendment, WLO-0035), and a deleted entry cannot stand as the day's scalar. An admitted typo is fixed, not judged.
 - *Back-fill:* missed a day? Long-press the chart on that date → number pad → the trend recomputes and, for the zero-phase smoother, recent values re-settle with a visible 300 ms ease. Editing history is honest and visible, never silent.
-- *Long gap / relapse:* returning after ≥ 14 days, the Hub offers **Fresh Start**: hide-not-delete everything before a chosen date; old history stays exportable and reversible. No "welcome back, you gained" copy — ever.
 - *Multi-profile [deferred]:* Release 1 has one profile; rows are
   partition-ready. Per-profile stores, locks, unit preferences, and routing
   arrive together in a later multi-profile release.
@@ -164,7 +163,6 @@ ritual with F13's mechanics per R-B7 — F06 only renders both.)
 
 - **[v1] Photo-of-the-scale display** — on-device OCR input for any scale, smart or dumb; the cheapest zero-typing win for the majority without Bluetooth scales.
 - **[v1] Provenance badges + "How we got here" everywhere** — openScale computes provenance but never surfaces it; WLO makes it a first-class UI atom.
-- **[v1] Fresh Start mode** — hide-not-delete with reversible markers; the honest answer to relapses, Happy Scale-proven.
 - **[v1.x] Weight ↔ circumference correlation view** — paired scatter + per-interval deltas ("losing size not weight" made quantitative); extends to any EAV metric the user defines.
 - **[v1.x] Impedance decoder library** — port/credit openScale's per-vendor decoders and published formula set (Navy, RFM, Deurenberg, Gallagher…) with citations in-app; measured-vs-estimated overlay charts with uncertainty bands.
 - **[v1.x] Named milestones** — milestones the user can label ("Beach trip") and share as a card; emotionally loaded dates beat abstract percentages.
