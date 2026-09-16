@@ -1,13 +1,13 @@
 ---
 id: WLO-0088
 title: 'P1: Reconcile weight daily-scalar policy and truthful provenance'
-status: doing
+status: done
 theme: weight-core
 release:
 created: 2026-09-16T07:22:28Z
-modified: 2026-09-16T12:54:02Z
-closed:
-revision: e03bcbadac65ca15
+modified: 2026-09-16T14:02:51Z
+closed: 2026-09-16T14:02:51Z
+revision: 85f1c76a79d68bdd
 blocks: [WLO-0092, WLO-0093, WLO-0094, WLO-0095, WLO-0098, WLO-0099]
 related: [WLO-0087]
 ---
