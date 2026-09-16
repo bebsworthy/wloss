@@ -1,6 +1,5 @@
 package app.wlo.core.designsystem
 
-import android.content.Context
 import android.os.Build
 import android.os.VibrationEffect
 import android.os.Vibrator
@@ -116,7 +115,7 @@ private class ViewWloHaptics(
 
     /** Deep impacts go through the Vibrator's predefined effects; falls back to a view tick. */
     private fun predefined(effectId: Int) {
-        val vibrator = vibrator()
+        val vibrator = vibrator()?.takeIf(Vibrator::hasVibrator)
         if (vibrator != null) {
             vibrator.vibrate(VibrationEffect.createPredefined(effectId))
         } else {
@@ -124,11 +123,7 @@ private class ViewWloHaptics(
         }
     }
 
-    private fun vibrator(): Vibrator? {
-        val context: Context = view.context
-        val service = context.getSystemService(Context.VIBRATOR_SERVICE)
-        return service as? Vibrator
-    }
+    private fun vibrator(): Vibrator? = view.context.getSystemService(Vibrator::class.java)
 
     private companion object {
         const val DOUBLE_TICK_GAP_MS = 80L

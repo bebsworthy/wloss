@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!--
+      Normal, install-time permission used only for the two predefined effects
+      in WloHaptics. View.performHapticFeedback does not require it. Library
+      declaration keeps the permission contract attached to its only owner.
+    -->
+    <uses-permission android:name="android.permission.VIBRATE" />
+</manifest>
