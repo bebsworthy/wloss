@@ -695,12 +695,11 @@ public class GoalsEditorViewModel(
         viewModelScope.launch { documents.writeText(draftKey(id), GoalsEditorDraftIO.encode(draft)) }
     }
 
-    private fun GoalsEditorDraft.displayWeight(unit: MassUnit): String =
-        restoredGoalWeightText(targetWeightText, massUnit, unit)
+    @Suppress("MaxLineLength")
+    private fun GoalsEditorDraft.displayWeight(unit: MassUnit): String = restoredGoalWeightText(targetWeightText, massUnit, unit)
 
-    private fun draftConflictNotice(hasConflict: Boolean): String? {
-        return if (hasConflict) "Your draft was based on a different version. Review differences." else null
-    }
+    @Suppress("MaxLineLength")
+    private fun draftConflictNotice(hasConflict: Boolean): String? = if (hasConflict) "Your draft was based on a different version. Review differences." else null
 
     private suspend fun finishJournal(
         journal: GoalSaveJournal,
