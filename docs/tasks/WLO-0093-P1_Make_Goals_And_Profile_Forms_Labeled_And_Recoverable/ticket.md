@@ -1,13 +1,13 @@
 ---
 id: WLO-0093
 title: 'P1: Make goals and profile forms labeled and recoverable'
-status: doing
+status: done
 theme: weight-core
 release:
 created: 2026-09-16T07:22:28Z
-modified: 2026-09-16T12:47:27Z
-closed:
-revision: 8e531c72f7e98285
+modified: 2026-09-16T14:02:51Z
+closed: 2026-09-16T14:02:51Z
+revision: c29c0ed3e8d203bc
 blocks: [WLO-0092, WLO-0097, WLO-0099]
 related: [WLO-0087]
 ---
