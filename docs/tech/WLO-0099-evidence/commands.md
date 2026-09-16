@@ -30,8 +30,8 @@ Device: `wlo-api29`, Android 10/API 29, 1080×2400 px, 420 dpi, headless.
 ./gradlew :app:connectedDebugAndroidTest
 ```
 
-Result: **Fail** after 17m29s. 78 tests ran: 37 passed, 41 failed, 0 errors,
-0 skipped. Full machine-readable result:
+Initial remediation rerun: **Fail** after 18m06s. 78 tests ran: 44 passed,
+34 failed, 0 errors, 0 skipped. Full machine-readable result:
 `app/build/outputs/androidTest-results/connected/debug/TEST-wlo-api29(AVD) - 10.xml`
 (generated build output, not committed).
 
@@ -39,12 +39,36 @@ Failure clusters:
 
 - Legacy Hub-first expectations after WLO-0096 intentionally made Weight the
   start destination (`expected hub`, received `weight`/`f06/weight`).
-- Tests waiting for removed duplicate-title tags such as `f06-title` while the
-  Weight content itself is visibly rendered.
+- Tests waiting for removed duplicate-title tags while the nested content is
+  visibly rendered.
 - Onboarding/resume expectations that no longer match the simplified WLO-0097
   copy/step sequence; these require separate triage rather than blind retries.
 
-The suite was run once. No failures were hidden with a green rerun.
+The full suite was run once in this remediation pass. No full-suite failures
+were hidden with a green rerun. The relevant repaired classes were then run
+independently under the same API 29 orchestrator configuration:
+
+```text
+./gradlew :app:connectedDebugAndroidTest \
+  -Pandroid.testInstrumentationRunnerArguments.class=app.wlo.app.M3WeighInTest
+```
+
+Result: Pass in 1m10s, 15 tests. This covers capture, canonical trend preview,
+outlier correction, chart controls/math, logbook edit/delete/Undo and rotation.
+
+```text
+./gradlew :app:connectedDebugAndroidTest \
+  -Pandroid.testInstrumentationRunnerArguments.class=app.wlo.app.GoalsEditorParityTest
+```
+
+Result: Pass in 20s, 2 tests.
+
+```text
+./gradlew :app:connectedDebugAndroidTest \
+  -Pandroid.testInstrumentationRunnerArguments.class=app.wlo.app.M6VaultBackupExportTest
+```
+
+Result: Pass in 21s, 2 tests.
 
 ## Not run
 

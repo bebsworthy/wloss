@@ -1,7 +1,7 @@
 # WLO-0099 weight UX validation
 
 Validation date: 2026-09-16 (Europe/Paris)  
-Code under test: `a1c8de0` plus this report-only change  
+Code under test: `6d44a7c` plus this report-only change  
 Host: macOS arm64; offline/local test data only
 
 ## Release decision
@@ -36,7 +36,10 @@ automated coverage, but that does not prove their visual/assistive behavior.
 | Required JVM/unit suite from WLO-0099 | Pass |
 | `./gradlew :app:assembleDebug checkArchitecture` | Pass |
 | `./gradlew ktlintCheck detekt` | Pass after validation fixed WLO-0098 line-length/suppression findings; no behavior change |
-| `./gradlew :app:connectedDebugAndroidTest` on `wlo-api29` | **Fail:** 78 tests, 37 passed, 41 failed |
+| `./gradlew :app:connectedDebugAndroidTest` on `wlo-api29` | **Fail:** 78 tests, 44 passed, 34 failed |
+| Focused `M3WeighInTest` on `wlo-api29` | Pass: 15 tests |
+| Focused `GoalsEditorParityTest` on `wlo-api29` | Pass: 2 tests |
+| Focused `M6VaultBackupExportTest` on `wlo-api29` | Pass: 2 tests |
 
 ## Review traceability A01–A18
 
@@ -124,9 +127,11 @@ device matrix.
 
 1. **P1 release-evidence gap:** no current-API device leg or manual TalkBack,
    keyboard, responsive, 200% font, and lifecycle matrix.
-2. **P1 stale/incompatible instrumentation:** 41 API 29 failures. Most expect
-   the pre-WLO-0096 Hub start route or removed duplicate Weight title tags;
-   onboarding/resume failures also require triage before the gate can close.
+2. **P1 stale/incompatible instrumentation:** the full rerun improved from 41
+   to 34 API 29 failures. Subsequent focused repairs made all 15 Weight, both
+   Goals and both Vault backup/export journeys green, but the full suite has
+   not been rerun again. Most outstanding failures expect the pre-WLO-0096 Hub
+   start route; onboarding/resume failures also require triage before closure.
 3. **P1 performance-evidence gap:** no representative 60-second frame trace or
    prechange comparison.
 4. **P2 physical-feedback gap:** haptics were not tested on physical hardware.
