@@ -78,9 +78,8 @@ public class WeighInReminderWorker(
             )
         }
 
-        public fun notificationsPermitted(context: Context): Boolean {
-            return availability(context) == ReminderAvailability.AVAILABLE
-        }
+        @Suppress("MaxLineLength")
+        public fun notificationsPermitted(context: Context): Boolean = availability(context) == ReminderAvailability.AVAILABLE
 
         public fun availability(context: Context): ReminderAvailability {
             if (Build.VERSION.SDK_INT >= 33 &&
