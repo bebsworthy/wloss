@@ -143,12 +143,10 @@ public class M3WeighInTest {
     public fun doubleWeighIn_keepsBothEvents_andHeroMatchesTheCanonicalTrend() {
         awaitWeightSurface()
 
-        // Weigh in #1: today already carries the seeded morning reading — a
-        // LOWER re-weigh replaces it as the day's scalar (lowest-of-day).
+        // Weigh in #1: today already carries the seeded morning reading. This
+        // afternoon re-weigh remains raw data without replacing that scalar.
         rule.onNodeWithTag("f06-weight-field").performTextClearance()
         rule.onNodeWithTag("f06-weight-field").performTextInput("76.8")
-        rule.onNodeWithTag("f06-time-field").performTextClearance()
-        rule.onNodeWithTag("f06-time-field").performTextInput("07:00")
         rule.onNodeWithTag("f06-save-weighin").performClick()
         pollText("Raw reading 76.8 kg · manual")
         dismissConfirmation()
@@ -161,8 +159,9 @@ public class M3WeighInTest {
 
         // The hero equals a hand-rolled EWMA over the canonical 30-day window
         // (the shared read — Hub and Weight page show the same number);
-        // today's lowest (76.8) REPLACES the seeded reading — same calendar day.
-        val canonicalWindow = SEEDED_SCALARS.takeLast(CANONICAL_WINDOW_DAYS).dropLast(1) + 76.8
+        // The new reading is outside the profile's canonical morning window,
+        // so the morning scalar remains the day's selected trend input.
+        val canonicalWindow = SEEDED_SCALARS.takeLast(CANONICAL_WINDOW_DAYS)
         pollTrend(trailingEwmaLast(canonicalWindow, ALPHA))
         dismissConfirmation()
 
@@ -289,7 +288,7 @@ public class M3WeighInTest {
         rule.onNodeWithTag("f06-weight-field").performTextClearance()
         rule.onNodeWithTag("f06-weight-field").performTextInput("76.8")
         rule.onNodeWithTag("f06-save-weighin").performClick()
-        val canonicalWindow = SEEDED_SCALARS.takeLast(CANONICAL_WINDOW_DAYS).dropLast(1) + 76.8
+        val canonicalWindow = SEEDED_SCALARS.takeLast(CANONICAL_WINDOW_DAYS)
         pollTrend(trailingEwmaLast(canonicalWindow, ALPHA))
         dismissConfirmation()
 
