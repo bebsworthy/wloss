@@ -23,6 +23,10 @@ import org.koin.dsl.module
  */
 public val f06WeightModule: Module =
     module {
+        viewModel {
+            app.wlo.feature.f06.weight.state
+                .MeasurementsViewModel(get(), get(), get(), get(), get())
+        }
         factory {
             val writers = get<TargetsWriters>()
             GoalTargetEditor(get(), get()) { id, version, document ->

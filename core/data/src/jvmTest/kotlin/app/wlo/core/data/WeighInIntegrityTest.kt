@@ -40,6 +40,23 @@ class WeighInIntegrityTest {
     }
 
     @Test
+    fun weightAndOptionalScaleBodyFatCommitTogether() =
+        runTest {
+            val profile = profile()
+            val command = WeighInWriteCommand.New("scale-pair", profile, 100, 77.0, clock.now(), bodyFatPercent = 23.4)
+            failAt = WeighInMutationStage.ATTRIBUTES_WRITTEN
+            assertIs<WloResult.Err>(weighIns.commitWeighIn(command))
+            assertTrue(measurements.range(profile, 100, 100).okOrDie().isEmpty())
+            failAt = null
+            weighIns.commitWeighIn(command).okOrDie()
+            weighIns.commitWeighIn(command).okOrDie()
+            assertEquals(1, weights(profile, 100, 100).size)
+            val fat = measurements.rangeOfKind(profile, MeasurementKind.BODY_FAT, 100, 100).okOrDie().single()
+            assertEquals(23.4, fat.valueReal)
+            assertEquals(MeasurementSource.SCALE, fat.source)
+        }
+
+    @Test
     fun `invalid canonical kg never reaches storage`() =
         runTest {
             val profile = profile()

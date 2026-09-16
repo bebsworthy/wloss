@@ -119,6 +119,7 @@ public fun WeightScreen(
     onOpenMath: () -> Unit,
     onOpenLogbook: (HistoryRange?) -> Unit,
     onEditGoal: () -> Unit,
+    onOpenMeasurements: () -> Unit = {},
     modifier: Modifier = Modifier,
     showTopBar: Boolean = false,
     initialGoalOpen: Boolean = false,
@@ -294,6 +295,12 @@ public fun WeightScreen(
                                 onOpenMath = onOpenMath,
                                 onOpenLogbook = { onOpenLogbook(null) },
                             )
+                            app.wlo.core.designsystem.WloListRow(
+                                label = "Body measurements",
+                                secondary = "Body fat, waist, hips and more",
+                                chevron = true,
+                                onClick = onOpenMeasurements,
+                            )
 
                             notice?.let {
                                 Text(
@@ -365,6 +372,7 @@ public fun WeightScreen(
                 unitSymbol = state.massUnit.symbol,
                 submission = submission,
                 onChange = { viewModel.onEvent(WeighInEvent.WeightChange(it)) },
+                onBodyFatChange = { viewModel.onEvent(WeighInEvent.BodyFatChange(it)) },
                 onDayChange = { viewModel.onEvent(WeighInEvent.SheetDayChange(it)) },
                 onTimeChange = { viewModel.onEvent(WeighInEvent.SheetTimeChange(it)) },
                 onStepUp = { viewModel.onEvent(WeighInEvent.StepperUp) },
@@ -687,10 +695,6 @@ private fun WeightOverview(
                 TextButton(onClick = reset) { Text("Restore defaults") }
                 TextButton(onClick = {
                     onSettingsChange(false)
-                    viewModel.onEvent(WeighInEvent.SectionChange(BodySectionUi.BODY_FAT))
-                }) { Text("Body measurements") }
-                TextButton(onClick = {
-                    onSettingsChange(false)
                     onOpenMath()
                 }) { Text("How the trend is calculated") }
                 WloButton(label = "Done", onClick = { onSettingsChange(false) }, modifier = Modifier.fillMaxWidth())
@@ -791,6 +795,7 @@ private fun WeighInSheetContent(
     unitSymbol: String,
     submission: WeighInSubmissionState,
     onChange: (String) -> Unit,
+    onBodyFatChange: (String) -> Unit,
     onDayChange: (String) -> Unit,
     onTimeChange: (String) -> Unit,
     onStepUp: () -> Unit,
@@ -798,6 +803,7 @@ private fun WeighInSheetContent(
     onSave: () -> Unit,
     onCancel: () -> Unit,
 ) {
+    var showBodyFat by rememberSaveable { mutableStateOf(sheet.bodyFatText.isNotBlank()) }
     val focusManager: FocusManager = LocalFocusManager.current
     Column(
         modifier =
@@ -894,6 +900,21 @@ private fun WeighInSheetContent(
                             stateDescription = "Current weight ${sheet.weightText} $unitSymbol"
                         }.testTag("f06-step-up"),
             )
+        }
+        if (sheet.intent == app.wlo.feature.f06.weight.state.WeighInEditIntent.NewReading) {
+            if (showBodyFat) {
+                OutlinedTextField(
+                    value = sheet.bodyFatText,
+                    onValueChange = onBodyFatChange,
+                    label = { Text("Body fat from scale (%, optional)") },
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                    enabled = submission != WeighInSubmissionState.SAVING,
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+            } else {
+                TextButton(onClick = { showBodyFat = true }) { Text("Add body fat") }
+            }
         }
         sheet.saveError?.let { message ->
             WloBanner(

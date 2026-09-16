@@ -127,7 +127,25 @@ public data class BodyChartPoint(
         get() = methodId ?: "Method not recorded"
 }
 
+/** Optional measurements captured together; one atomic, retry-safe write. */
+public data class MeasurementSession(
+    public val operationId: String,
+    public val profileId: String,
+    public val dayEpochDay: Long,
+    public val capturedAt: Instant,
+    public val readings: List<SessionReading>,
+)
+
+public data class SessionReading(
+    public val metric: String,
+    public val value: Double,
+    public val source: String = "manual",
+)
+
 public interface MeasurementRepository {
+    public suspend fun saveSession(session: MeasurementSession): WloResult<Unit> =
+        WloResult.err(AppError.Storage(cause = null, detail = "measurement session unsupported"))
+
     /**
      * Appends one timestamped event verbatim (multiple weigh-ins per day are
      * normal data) and refreshes the affected day's projection scalars.

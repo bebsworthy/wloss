@@ -178,6 +178,7 @@ public fun WloWeightChart(
     formatWeight: (Double) -> String,
     modifier: Modifier = Modifier,
     formatAxis: (Double) -> String = formatWeight,
+    description: String? = null,
 ) {
     val points =
         remember(samples, trend) {
@@ -268,7 +269,10 @@ public fun WloWeightChart(
                 .focusable()
                 .semantics {
                     contentDescription =
-                        "Weight chart. ${samples.size} recorded weights and ${trend.size} trend values." +
+                        (
+                            description
+                                ?: "Weight chart. ${samples.size} recorded weights and ${trend.size} trend values."
+                        ) +
                         (goalKg?.let { " Goal ${formatWeight(it)}." } ?: "")
                     stateDescription = pointDescription ?: "No point selected"
                     liveRegion = LiveRegionMode.Polite

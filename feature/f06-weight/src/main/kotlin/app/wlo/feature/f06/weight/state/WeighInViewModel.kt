@@ -47,6 +47,10 @@ import app.wlo.core.engines.WeightSample as EngineWeightSample
 
 /** Weigh-in intents (MVI-lite). */
 public sealed interface WeighInEvent {
+    public data class BodyFatChange(
+        public val text: String,
+    ) : WeighInEvent
+
     /** Opens the sheet; [prefillKg] seeds the field (the ±0.1 stepper works from there). */
     public data class OpenSheet(
         public val prefillKg: Double? = null,
@@ -220,6 +224,7 @@ public data class WeighInConfirmationUi(
 
 /** The open weigh-in sheet. */
 public data class SheetUi(
+    public val bodyFatText: String = "",
     public val weightText: String,
     public val dayText: String = "",
     public val timeText: String = "",
@@ -487,6 +492,10 @@ public class WeighInViewModel(
                 sheetPrefillPending = false
                 submission.value = WeighInSubmissionState.IDLE
             }
+            is WeighInEvent.BodyFatChange -> {
+                if (submission.value == WeighInSubmissionState.SAVING) return
+                updateEditedSheet(sheet.value?.copy(bodyFatText = event.text, saveError = null))
+            }
             is WeighInEvent.WeightChange -> {
                 if (submission.value == WeighInSubmissionState.SAVING) return
                 sheetPrefillPending = false
@@ -600,6 +609,16 @@ public class WeighInViewModel(
     private fun save() {
         if (submission.value == WeighInSubmissionState.SAVING) return
         val current = sheet.value ?: return
+        val bodyFat =
+            current.bodyFatText
+                .trim()
+                .replace(',', '.')
+                .toDoubleOrNull()
+        val validBodyFat = bodyFat != null && bodyFat.isFinite() && bodyFat > 0 && bodyFat < 100
+        if (current.bodyFatText.isNotBlank() && !validBodyFat) {
+            updateSheet(current.copy(saveError = "Body fat must be a number between 0 and 100%."))
+            return
+        }
         val parsed = WeighInInputParser.parse(current.weightText, activeUnit)
         if (parsed.isFailure) {
             submission.value = WeighInSubmissionState.INVALID
@@ -647,6 +666,7 @@ public class WeighInViewModel(
                     WeighInEditIntent.NewReading ->
                         WeighInWriteCommand.New(
                             operationId = frozen.operationId,
+                            bodyFatPercent = bodyFat,
                             profileId = id,
                             dayEpochDay = day,
                             weightKg = kilograms,
@@ -763,6 +783,7 @@ public class WeighInViewModel(
             return
         }
         savedStateHandle[SHEET_OPEN_KEY] = true
+        savedStateHandle["weighIn.bodyFat"] = value.bodyFatText
         savedStateHandle[SHEET_WEIGHT_KEY] = value.weightText
         savedStateHandle[SHEET_DAY_KEY] = value.dayText
         savedStateHandle[SHEET_TIME_KEY] = value.timeText
@@ -804,6 +825,7 @@ public class WeighInViewModel(
             }
         return SheetUi(
             weightText = savedStateHandle.get<String>(SHEET_WEIGHT_KEY).orEmpty(),
+            bodyFatText = savedStateHandle.get<String>("weighIn.bodyFat").orEmpty(),
             dayText = savedStateHandle.get<String>(SHEET_DAY_KEY).orEmpty(),
             timeText = savedStateHandle.get<String>(SHEET_TIME_KEY).orEmpty(),
             prefillContext = savedStateHandle.get<String>(SHEET_CONTEXT_KEY).orEmpty(),

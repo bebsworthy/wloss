@@ -70,6 +70,7 @@ internal fun routeTitle(route: String?): String? =
         F04Routes.PANTRY -> "Pantry"
         "f06/weight", "f06/log" -> "Weight"
         F06Routes.MATH -> "Weight calculation"
+        F06Routes.MEASUREMENTS -> "Body measurements"
         F06Routes.BODY_FAT -> "Body fat"
         F06Routes.LOGBOOK -> "Weight logbook"
         F06Routes.LOGBOOK_RANGE -> "Weight logbook"

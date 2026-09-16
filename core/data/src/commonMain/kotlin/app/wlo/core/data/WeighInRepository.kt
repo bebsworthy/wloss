@@ -191,6 +191,7 @@ public sealed interface WeighInWriteCommand {
         override val dayEpochDay: Long,
         override val weightKg: Double,
         override val capturedAt: Instant,
+        public val bodyFatPercent: Double? = null,
         public val source: String = MeasurementSource.MANUAL,
         public val note: String? = null,
     ) : WeighInWriteCommand
@@ -291,6 +292,12 @@ public class RoomWeighInRepository internal constructor(
 
     override suspend fun commitWeighIn(command: WeighInWriteCommand): WloResult<WeighInOutcome> {
         invalidWeight(command.weightKg)?.let { return WloResult.err(it) }
+        if (command is WeighInWriteCommand.New &&
+            command.bodyFatPercent != null &&
+            (!command.bodyFatPercent.isFinite() || command.bodyFatPercent <= 0 || command.bodyFatPercent >= 100)
+        ) {
+            return WloResult.err(AppError.InvalidInput("Invalid body fat percentage"))
+        }
         return weighInMutationGuard("weighIn.commit") {
             db.withWriteTransaction {
                 val existing =
@@ -321,6 +328,17 @@ public class RoomWeighInRepository internal constructor(
             )
         db.measurementEvents().insert(entity)
         mutationProbe(WeighInMutationStage.RAW_EVENT_WRITTEN)
+        command.bodyFatPercent?.let { percent ->
+            val bodyFat =
+                entity.copy(
+                    id = Uuid.random().toString(),
+                    kind = MeasurementKind.BODY_FAT.wireName,
+                    valueReal = percent,
+                    unit = "%",
+                    source = MeasurementSource.SCALE,
+                )
+            db.measurementEvents().insert(bodyFat)
+        }
         writeOperationAttribute(entity.id, command.operationId)
         writeOutlierAttribute(entity.id, verdict)
         mutationProbe(WeighInMutationStage.ATTRIBUTES_WRITTEN)

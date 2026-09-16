@@ -8,6 +8,8 @@ import app.wlo.feature.f06.weight.state.HistoryRange
  * a feature→feature dependency (:app's nav graph wires them).
  */
 public object F06Routes {
+    public const val MEASUREMENTS: String = "f06/measurements"
+
     /** Trend/history: the chart, the smoother tuner, the day log. */
     public const val WEIGHT: String = "f06/weight"
 

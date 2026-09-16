@@ -207,3 +207,7 @@ navigation surface.
 More contains Your profile and Settings. Goals remain in Weight; Diet plan is reached from Plan. AI and Data & backup have one administrative home under Settings. Legacy destinations remain registered; placeholder features are omitted from More until usable.
 
 Settings groups Everyday use (weight unit dialog, reminder), Privacy (app lock, AI, diagnostics), and Data (Data & backup, Health Connect). Native M3 list rows show current simple preference values; filled surfaces group related rows without individual outlined cards. Health Connect is independent from file operations. Backup owns scheduling; Storage names attachment deletion explicitly and requires confirmation. Cloud permissions remain independent per capability and distinct from installed local models.
+
+### WLO-0122 — body measurements
+
+Weight → Body measurements is visible feature navigation, outside chart settings. Its overview leads to metric history and optional subset entry. Body fat is source/method-aware; tape estimation is secondary. Circumferences are independent, optional measurements. A manual weigh-in can include the scale's body-fat percentage in the same save.

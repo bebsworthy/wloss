@@ -223,6 +223,64 @@ public class RoomMeasurementRepository public constructor(
             )
         }
 
+    override suspend fun saveSession(session: MeasurementSession): WloResult<Unit> {
+        val metrics = setOf("body-fat", "waist", "hip", "chest", "left-thigh", "right-thigh", "left-arm", "right-arm")
+        if (session.operationId.isBlank() ||
+            session.readings.isEmpty() ||
+            session.readings
+                .map { it.metric }
+                .distinct()
+                .size != session.readings.size ||
+            session.readings.any {
+                it.metric !in metrics ||
+                    !it.value.isFinite() ||
+                    it.value <= 0 ||
+                    (it.metric == "body-fat" && it.value >= 100) ||
+                    it.source !in setOf("manual", "scale")
+            }
+        ) {
+            return WloResult.err(AppError.InvalidInput("Invalid measurements"))
+        }
+        return storageGuard("measurement.saveSession") {
+            db.withWriteTransaction {
+                val operation = "${session.profileId}:${session.operationId}"
+                if (attrDao.eventForAttribute("session-operation", operation) != null) return@withWriteTransaction
+                session.readings.forEach { reading ->
+                    val bodyFat = reading.metric == "body-fat"
+                    val event =
+                        MeasurementEventEntity(
+                            id = Uuid.random().toString(),
+                            profileId = session.profileId,
+                            dayEpochDay = session.dayEpochDay,
+                            kind = if (bodyFat) MeasurementKind.BODY_FAT.wireName else MeasurementKind.CUSTOM.wireName,
+                            valueReal = reading.value,
+                            unit = if (bodyFat) "%" else "cm",
+                            source = reading.source,
+                            capturedAtEpochMs = session.capturedAt.toEpochMilliseconds(),
+                            note = null,
+                        )
+                    dao.insert(event)
+                    bodyMutationProbe(BodyMeasurementMutationStage.TAPE_EVENT_WRITTEN)
+                    attrDao.upsertAll(
+                        listOf(
+                            MeasurementEventAttrEntity(event.id, "session-operation", operation, null),
+                            MeasurementEventAttrEntity(event.id, BODY_METRIC_ATTR, reading.metric, null),
+                            MeasurementEventAttrEntity(
+                                event.id,
+                                BODY_METHOD_ATTR,
+                                if (bodyFat) "reported-${reading.source}" else "tape",
+                                null,
+                            ),
+                        ),
+                    )
+                }
+                bodyMutationProbe(BodyMeasurementMutationStage.ATTRIBUTES_WRITTEN)
+                projector.refresh(session.profileId, session.dayEpochDay, session.dayEpochDay)
+                bodyMutationProbe(BodyMeasurementMutationStage.PROJECTION_REBUILT)
+            }
+        }
+    }
+
     override suspend fun saveBodyMeasurement(command: BodyMeasurementCommand): WloResult<BodyMeasurementResult> {
         if (
             command.operationId.isBlank() ||

@@ -70,6 +70,83 @@ class BodyMeasurementRepositoryTest {
             }
         }
 
+    @Test
+    fun optionalSessionIsAtomicAndRetrySafe() =
+        runTest {
+            val profile = profile()
+            val session =
+                MeasurementSession(
+                    "session",
+                    profile,
+                    20000,
+                    clock.now(),
+                    listOf(SessionReading("waist", 84.0), SessionReading("body-fat", 23.4, "scale")),
+                )
+            val failing =
+                RoomMeasurementRepository(db, projector) { stage ->
+                    if (stage == BodyMeasurementMutationStage.ATTRIBUTES_WRITTEN) error("storage unavailable")
+                }
+            assertIs<WloResult.Err>(failing.saveSession(session))
+            assertEquals(0, db.measurementEvents().count(profile))
+            val repository = RoomMeasurementRepository(db, projector)
+            repository.saveSession(session).okOrDie()
+            repository.saveSession(session).okOrDie()
+            assertEquals(2, db.measurementEvents().count(profile))
+            val body = repository.bodyFatChart(profile, 20000, 20000).okOrDie().single()
+            assertEquals("scale", body.source)
+            assertEquals(23.4, body.valuePercent)
+            assertEquals("reported-scale", body.methodId)
+            val attrs = repository.attrsInRange(profile, 20000, 20000).okOrDie()
+            assertEquals(1, attrs.count { it.attr == "metric" && it.valueText == "waist" })
+        }
+
+    @Test
+    fun eachCircumferenceCanBeSavedIndependently() =
+        runTest {
+            val profile = profile()
+            val repository = RoomMeasurementRepository(db, projector)
+            val metrics = listOf("waist", "hip", "chest", "left-thigh", "right-thigh", "left-arm", "right-arm")
+            metrics.forEachIndexed { index, key ->
+                repository
+                    .saveSession(
+                        MeasurementSession(
+                            key,
+                            profile,
+                            20000,
+                            clock.now(),
+                            listOf(SessionReading(key, 50.0 + index)),
+                        ),
+                    ).okOrDie()
+            }
+            assertEquals(7, db.measurementEvents().count(profile))
+            assertEquals(0, repository.bodyFatChart(profile, 20000, 20000).okOrDie().size)
+            assertEquals(
+                metrics.toSet(),
+                repository
+                    .attrsInRange(profile, 20000, 20000)
+                    .okOrDie()
+                    .filter { it.attr == "metric" }
+                    .map { it.valueText }
+                    .toSet(),
+            )
+        }
+
+    @Test
+    fun invalidSessionWritesNothing() =
+        runTest {
+            val profile = profile()
+            val repository = RoomMeasurementRepository(db, projector)
+            listOf(
+                emptyList(),
+                listOf(SessionReading("waist", Double.NaN)),
+                listOf(SessionReading("body-fat", 100.0)),
+                listOf(SessionReading("chest", -1.0)),
+            ).forEach { rows ->
+                assertIs<WloResult.Err>(repository.saveSession(MeasurementSession("bad", profile, 20000, clock.now(), rows)))
+            }
+            assertEquals(0, db.measurementEvents().count(profile))
+        }
+
     private suspend fun profile(): String = profiles.create(NewProfile(heightCm = 170.0), clock.now()).okOrDie().id
 
     private fun command(

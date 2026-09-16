@@ -182,7 +182,8 @@ public fun WloApp(
             containerColor = MaterialTheme.colorScheme.background,
             contentColor = MaterialTheme.colorScheme.onBackground,
             topBar = {
-                if (appBarMetadata != null && currentRoute != WloTabs.WEIGHT) {
+                val customAppBar = currentRoute == WloTabs.WEIGHT || currentRoute == F06Routes.MEASUREMENTS
+                if (appBarMetadata != null && !customAppBar) {
                     TopAppBar(
                         title = { Text(text = appBarMetadata.appBarTitle) },
                         navigationIcon = {
@@ -534,6 +535,7 @@ private fun RouteSurface(
                 bodyFatViewModel = koinViewModel(),
                 onOpenMath = { navController.navigate(F06Routes.MATH) },
                 onOpenLogbook = { range -> navController.navigate(F06Routes.logbook(range)) },
+                onOpenMeasurements = { navController.navigate(F06Routes.MEASUREMENTS) },
                 onEditGoal = {},
                 initialGoalOpen = true,
                 onGoalClosed = { navController.popBackStack() },
@@ -543,6 +545,13 @@ private fun RouteSurface(
 
         // The profile-facts editor (WLO-0035 W4): onboarding answers, correctable.
         "app/profile" -> ProfileFactsScreen()
+        F06Routes.MEASUREMENTS ->
+            app.wlo.feature.f06.weight.ui.MeasurementsScreen(
+                viewModel = koinViewModel(),
+                onEstimate = { navController.navigate(F06Routes.BODY_FAT) },
+                onBack = { navController.popBackStack() },
+                registerUp = registerUpHandler,
+            )
 
         F12Routes.STUDIO ->
             AiStudioScreen(
@@ -606,6 +615,7 @@ private fun RouteSurface(
                 bodyFatViewModel = koinViewModel(),
                 onOpenMath = { navController.navigate(F06Routes.MATH) },
                 onOpenLogbook = { range -> navController.navigate(F06Routes.logbook(range)) },
+                onOpenMeasurements = { navController.navigate(F06Routes.MEASUREMENTS) },
                 onEditGoal = { navController.navigate(F01Routes.STUDIO) },
             )
 
@@ -642,6 +652,7 @@ private fun TopLevelRouteSurface(
                     bodyFatViewModel = koinViewModel(),
                     onOpenMath = { navController.navigate(F06Routes.MATH) },
                     onOpenLogbook = { range -> navController.navigate(F06Routes.logbook(range)) },
+                    onOpenMeasurements = { navController.navigate(F06Routes.MEASUREMENTS) },
                     onEditGoal = { navController.navigate(F01Routes.STUDIO) },
                 )
             }
@@ -750,6 +761,7 @@ private fun tomorrowEpochDay(): Long {
 private val APP_DETAIL_ROUTES =
     listOf(
         "app/profile",
+        F06Routes.MEASUREMENTS,
         "app/settings/reminder",
         "app/settings/lock",
         "app/settings/diagnostics",
