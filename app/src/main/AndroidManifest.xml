@@ -16,10 +16,23 @@
 
     <application
         android:name=".WloApplication"
+        android:allowBackup="false"
+        android:dataExtractionRules="@xml/data_extraction_rules"
+        android:fullBackupContent="@xml/backup_rules"
         android:label="WLO"
         android:icon="@drawable/ic_launcher"
         android:supportsRtl="true"
         android:theme="@style/Theme.Wlo">
+
+        <!--
+          WLO-0058: Android's implicit cloud backup and device-transfer channels
+          are disabled. Health data moves only through the user-selected SAF
+          export/backup flow, whose contents and destination are explicit.
+
+          allowBackup=false is the legacy/cloud backstop. Android 12+ may ignore
+          it for device-to-device migration, so both API-era rule files also
+          exclude every credential- and device-protected storage domain.
+        -->
 
         <!--
           R-D1: the app is dark-first; Theme.Wlo (values/) is the dark canonical

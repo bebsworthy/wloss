@@ -52,7 +52,9 @@ Core objectives:
 
 **The built-in metric catalog**
 
-- **Core:** weight (kg/lb/st, profile-sticky), body-fat % (multi-method), body water, muscle mass, bone mass — whatever the scale or the user provides.
+- **Core:** weight (canonical kg storage; app-wide `kg`/`lb`
+  display in the single-profile release), body-fat % (multi-method), body
+  water, muscle mass, bone mass — whatever the scale or the user provides.
 - **Girth sites (measured every 2–3 weeks, the app reminds gently):** neck, shoulders, chest, waist, abdomen, hips, biceps, forearm, thigh, calf (Hevy's 9-site practice, extended). New entries prefill last values so updating three sites takes three taps, not three forms.
 - **Derived:** BMI, waist-to-height, waist-to-hip — computed from measured inputs, never entered.
 - **Custom:** unlimited user-defined metric types via the EAV store (ketones, waking pulse, morning coffee, mood) — each gets entry, chart, trend stats, and a CSV column automatically.
@@ -65,11 +67,12 @@ Core objectives:
   collapsed, overwritten, or judged (owner note: people re-weigh after coffee,
   a walk, or the bathroom to "get their win"; that psychology is supported and
   recorded, and it is partly why the gut tracker exists beside the scale). The
-  **daily scalar is a derived view**: for weight, lowest-of-day wins (Happy
-  Scale's rule; best estimator of true morning mass), timestamp normalized to
-  noon; last-in wins for girths. Raw points stay queryable (time-of-day lens,
-  weigh-count stats) and are included in exports. Duplicates deduped silently,
-  visible in an import log.
+  **daily scalar is a versioned derived view**, never an ingestion rule. The
+  lowest-of-day/noon-normalized candidate remains available for benchmarking,
+  but WLO-0072 compares it with first-of-day, consistent-time-window, and
+  median candidates before Release 1 freezes a policy. Girths use last-in-day.
+  Raw events and durable source identity are preserved; only a repeat delivery
+  of the same source record updates an existing event.
 - **Trend weight — selectable smoothers (the math is in-app documentation):**
   - *EWMA (default):* `trend_t = α·x_t + (1−α)·trend_{t−1}` (α ≈ 0.1–0.3, user-tunable). Past-only; lags a few days; rock-stable.
   - *Zero-phase (option):* centered filter using past **and future** weights; near-zero lag; honestly documented side effect — recent values revise slightly as new data lands, and during plateaus it can briefly project below any achieved weight (Happy Scale's documented caveat, shown as a note, not hidden).
@@ -83,7 +86,10 @@ Core objectives:
 
 - Daily scalar series per metric + trend series; progress-ribbon geometry; milestone breakdown (goal split into milestone weights, each with a target date rendered from **F07**'s forecast); correlation datasets (weight ↔ any girth); import log; export-ready series (F13).
 
-**State owned by F06:** the measurement store, smoother selection/α, body-fat method registry and headline pick, lowest-of-day + import-log policy, girth-site catalog. (Milestone definitions are F01's; Fresh Start is F01's ritual with F13's mechanics per R-B7 — F06 only renders both.)
+**State owned by F06:** the measurement store, daily-scalar/smoother policy
+versions, body-fat method registry and headline pick, import log, and
+girth-site catalog. (Milestone definitions are F01's; Fresh Start is F01's
+ritual with F13's mechanics per R-B7 — F06 only renders both.)
 
 ## 4. User Interaction Model
 
@@ -100,16 +106,23 @@ Core objectives:
 - *Outlier guard:* an entry ±3σ off recent residual triggers a one-line confirm — "4.2 kg above yesterday — keep or correct?" — one tap either way; "correct" means delete the bad entry and re-enter (R-B8 amendment, WLO-0035), and a deleted entry cannot stand as the day's scalar. An admitted typo is fixed, not judged.
 - *Back-fill:* missed a day? Long-press the chart on that date → number pad → the trend recomputes and, for the zero-phase smoother, recent values re-settle with a visible 300 ms ease. Editing history is honest and visible, never silent.
 - *Long gap / relapse:* returning after ≥ 14 days, the Hub offers **Fresh Start**: hide-not-delete everything before a chosen date; old history stays exportable and reversible. No "welcome back, you gained" copy — ever.
-- *Multi-profile:* per-profile stores (couples sharing a device), each with its own biometric lock; the weigh-in card is profile-aware without a picker in the common single-user case.
+- *Multi-profile [deferred]:* Release 1 has one profile; rows are
+  partition-ready. Per-profile stores, locks, unit preferences, and routing
+  arrive together in a later multi-profile release.
 
 **Input minimization**
 
-- Never typed in the common case: weight (scale/OCR/Health Connect), body-fat (scale decode), girth increments (new tape entries prefill last values, openScale pattern), unit (profile-level, sticky).
+- Never typed in the common case: weight (OCR/Health Connect or manual entry),
+  body-fat (import), girth increments (new tape entries prefill last values),
+  unit (app-wide and sticky in Release 1).
 - One-tap shortcuts: "same as yesterday" for girths; long-press chart to back-fill a missed day from memory; re-pair scale from the failure card in one tap.
 
 **Micro-interactions**
 
-- **Trend confirmation haptic:** save = one soft tick. Trend delta negative = the tick plus a downward-drawing arrow that settles with a spring — the *direction* is celebrated, magnitude never compared to yesterday's raw number. Delta positive = same tick, neutral color, no sad animation; a gain day feels identical in effort, different only in the small print.
+- **Trend confirmation haptic:** save = one soft tick. The arrow describes the
+  direction relative to the selected loss, maintenance, or gain goal; it never
+  assigns moral color. Up and down use the same motion and neutral/accent roles,
+  with raw-day magnitude kept in the small print.
 - **Odometer numerals:** trend value rolls digit-by-digit (400 ms) on the confirmation card and Hub hero number.
 - **Progress ribbon:** green band above / neutral band below the trend line; thickness = change vs. N days ago (default 30, user-adjustable with a scrubber). New data makes the band *breathe* — a 200 ms thickness ease. The user literally watches progress accumulate as area.
 - **Milestone moment:** full-bleed card, giant numeral count-up, distinct two-note celebration haptic, shareable card render (F11 may attach a badge).
@@ -117,7 +130,7 @@ Core objectives:
 
 **Data-quality gating**
 
-- Trend line needs ≥ 3 points in the trailing 7 days before it renders (below that: dots only, "keep weighing — trend forms in a few days").
+- Trend line needs ≥ 3 daily scalars in the **selected display window** before it renders; the N-days-ago reference/ribbon uses the same gate. Below that the chart keeps the dots and states whether the trend is warming up or resumes with the next entry. An empty window says so, keeps its real time frame, and may offer the smallest wider window that contains data.
 - Milestone dates and any forward projection are **F07's** to compute and gate; F06 renders them but refuses to invent dates from thin data.
 - Body-fat from impedance always carries an honest uncertainty note (±3–4% typical); no false precision, MeThreeSixty-complaint-proof.
 
@@ -140,7 +153,9 @@ Core objectives:
 ## 7. Relations to Other Features
 
 - **Consumes from:** **F13** — Bluetooth scale drivers, Health Connect import/export, backup; **F01** — goal weight, start weight, target date; **F05** — explicit bodyweight writes from bodyweight exercises; **F12** — nothing (no cloud call exists in F06; OCR is on-device by design).
-- **Feeds into:** **F07** — the daily scalar series and trend series: *the* core input of the entire energy engine (TDEE solve, forecast, check-in math all consume F06's frozen semantics — lowest-of-day, noon-normalized); **F05** — bodyweight for lift scaling; **F08** — weight/girth context aligned to silhouette timeline entries; **F10** — daily hero number and weigh-in reminder; **F11** — milestone/streak/record events and trend data for report cards.
+- **Feeds into:** **F07** — the versioned daily-scalar and trend series, the
+  core engine input; **F05** — bodyweight for lift scaling; **F08** —
+  weight/girth context; **F10** — trend and reminder; **F11** — progress data.
 - **Shared concepts:** Provenance (co-owner of the pattern), Trend weight (F06 computes; F07 consumes — smoothing lives in exactly one place), Targets (read-only here), EAV store (F06 owns the schema; F09 and custom metrics ride it).
 - **Boundary notes:** F06 never computes calories, TDEE, or goal dates (F07); never judges intake (F02); never edits goals (F01). F08 handles photos/visual body analysis; F06 handles numbers — a shared timeline view links them.
 
@@ -163,12 +178,20 @@ Core objectives:
 - **Highest-sensitivity data in the app.** Weight history can signal an eating disorder, pregnancy, or illness. Protections: biometric lock on the metrics area (per-profile, Happy Scale pattern); discreet mode (hero number hidden until tapped); exports are explicit user actions only.
 - **No cloud path exists** — no consent category, no network call, no telemetry. The scale photo is processed in memory and never persisted unless the user saves it deliberately.
 - **Body-image hard rules:** no ideal-weight moralizing, no BMI lectures, no red gain-alarms, no comparisons to other humans or populations; eating-disorder-adjacent patterns (rapid loss, obsessive frequency) trigger a gentle, dismissable info card with professional-resource pointers — once, never nagged.
+- Raw tracking remains available when the shared
+  [weight-goal eligibility contract](../research/weight-goal-safety-contract.md)
+  holds or declines automated targets and dates. F06 must not infer a diagnosis
+  from weigh-in frequency, pace, body size, or any single measurement.
 - **Free forever:** all history, charts, smoothers, custom metrics and exports are un-gated — the anti-Happy-Scale-Deluxe, anti-MeThreeSixty-Premium guarantee (synthesis §4: never paywall a user's own data).
 
 ## 10. Open Questions
 
 - **Zero-phase smoother spec:** centered MA vs. double-exponential-with-backward-pass vs. Happy Scale's proprietary equivalent — needs an implementation decision plus a documented-behavior spec (the "revises recent values" UX must be designed, not discovered).
 - **Default α for EWMA:** 0.1 (stable, laggy) vs. 0.25 (responsive) — propose shipping 0.15 with the tuner visible; master doc should ratify. *(Resolved: R-A2 — default 0.15, tuner visible.)*
-- **Import-rule edge cases:** fasting-day weigh-ins, multiple users on one scale stream via Health Connect, timezone shifts while traveling — lowest-of-day is frozen, but dedup vs. conflict policy needs a final call. *(Multi-user-on-one-stream is moot for v1 per R-B9 — single-profile; the policy matters from [v1.x]. Fasting-day and timezone parts remain open.)*
-- **F07 contract:** the exact series contract (fields, gating flags, uncertainty values) F06 exports for engine consumption should be co-signed by the F07 spec — this doc assumes trend + residualσ + coverage% are sufficient; F07 should confirm. *(Resolved: R-B5 — daily scalars + trend + residual σ + coverage % + provenance flags, under lowest-of-day/noon-normalized semantics.)*
+- **Daily-scalar edge cases:** fasting days and timezone shifts remain benchmark
+  scenarios for WLO-0072. Health Connect dedup is resolved by durable source
+  identity; it is not part of scalar selection.
+- **F07 contract:** resolved by R-B5 — versioned daily scalars + trend +
+  residual σ + coverage % + provenance flags; WLO-0072 selects the Release 1
+  scalar policy.
 - **Milestone date rendering:** confirmed dependency on F07's forecast engine — if F07 is in DEVELOPING state, F06 milestones show ranges only; boundary behavior to be locked jointly.

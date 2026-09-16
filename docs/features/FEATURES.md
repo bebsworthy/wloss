@@ -19,7 +19,7 @@ follow is [`TEMPLATE.md`](TEMPLATE.md). Companion docs:
 | F05 | Exercise Planning & Tracking | [F05](F05-exercise.md) | Movement tracker: strength logging loop + first-class cardio (live GPS/HR sessions); explainable adaptation; expenditure context | none (see R-C2) |
 | F06 | Weight & Body Metrics | [F06](F06-weight-body-metrics.md) | The honest measurement layer: trend weight, provenance, EAV metrics | none — local math only |
 | F07 | Energy & Metabolism Engine | [F07](F07-energy-engine.md) | On-device adaptive TDEE, 3-band decelerating forecast, weekly check-in | none — the privacy flagship |
-| F08 | Silhouette Tracker | [F08](F08-silhouette.md) | Guided private body-photo ritual + on-device compare studio | owns `silhouette` (near-never) |
+| F08 | Silhouette Tracker | [F08](F08-silhouette.md) | Transient guided camera capture → vector outlines only; no body-photo retention | owns `silhouette` (near-never) |
 | F09 | Gut & Poop Tracker | [F09](F09-gut-tracker.md) | 10-second Bristol logging + the plan↔gut correlation moat | owns `poop-photo` |
 | F10 | Daily Hub & Nudges | [F10](F10-daily-hub.md) | One home surface; the app-wide respectful notification policy | none (nudge copy: `insights-chat`, opt-in) |
 | F11 | Insights, Statistics & Gamification | [F11](F11-insights-gamification.md) | Stats hub, report cards, forgiving streak economy, share cards | consumes `insights-chat` (prose only) |
@@ -34,6 +34,47 @@ them one system instead of five trackers.
 ---
 
 ## 2. How it works together
+
+### 2.0 Weight-first release contract (WLO-0068)
+
+This section is authoritative when older feature specs, research checklists,
+or prototypes use `v1` more broadly.
+
+**Promise.** Release 1 is a complete, trustworthy raw weight → weight trend →
+goal loop. It supports **loss, maintenance, and gain** as first-class goal
+modes. Raw events remain inspectable; derived values name their method and
+provenance; forecasts are ranges with visible data-quality states.
+
+**Launch journey.** First launch asks for (1) the app-wide body-mass unit,
+`kg` or `lb`, (2) an optional goal mode
+and target/range, and (3) import from Health Connect/file or a manual first
+weigh-in. Every step after unit selection is skippable. Saving or importing a
+measurement lands on **Weight**, the default and primary destination. Diet,
+nutrition, exercise, silhouette, and digestion setup are optional later
+journeys; none blocks a usable weight tracker.
+
+**Goal safety contract.** Raw weight tracking never requires a goal. Generic
+automated targets and forecast dates use the single WLO-0080 eligibility
+result documented in
+[`../research/weight-goal-safety-contract.md`](../research/weight-goal-safety-contract.md).
+The goal engine is adult-only; unanswered screening, pregnancy/breastfeeding,
+eating-disorder concern, medically influenced weight, unsupported pace, or a
+sub-floor plan holds targets and dates without disabling the weight record.
+This is a product-support boundary, not medical advice or diagnosis.
+
+| Horizon | Included capability |
+|---|---|
+| **Release 1 — weight core** | correct kg/lb entry and display; event log and edit/delete; honest trend/chart states; accessible entry; post-save trend result; lifecycle/error reliability; Health Connect weight import with durable source identity; benchmarked daily-scalar policy; calibrated forecast ranges; loss/maintenance/gain safety; goal editing and progress |
+| **Release 2 — weight experience** | progress ribbon; OCR scale display; home-screen weight widget; Fresh Start; discreet mode; optional 10-day-best view; measurement-condition insights |
+| **Deferred / advanced** | user-tunable smoothing and smoother comparison; custom metrics; elaborate milestone celebrations; Bluetooth-scale drivers; multi-profile vault partitions; broader food, planning, exercise, silhouette, digestion, and AI suite release work |
+
+Release 1 stores one profile while keeping `profileId` in every row. Body mass
+has one app-wide display setting; multi-profile may promote it to per-profile
+without changing canonical kg storage. Length uses `cm`/`in` under the same
+metric/imperial preference. Health Connect identity is source record ID + data
+origin + recording method + version/update metadata; duplicate deliveries
+update the same local event. A daily scalar is a separate, versioned derived
+view and never destroys or merges source events.
 
 ### 2.1 The shared data spine
 
@@ -101,9 +142,10 @@ competitor closes: *measure → decide → plan → shop → log → measure.*
    around the *measured* TDEE → near goal the deceleration model bends the cone
    instead of lying linearly. *(F01+F07+F06; the open gap in all 18 researched apps.)*
 2. **The stall that isn't.** Scale flat 14 days → F08's quiet-scale card shows
-   "−2.3 cm in 6 weeks" → F07 reframes the plateau as rising measured TDEE and
-   proposes the upward target → F09 annotates the water-weight noise. Four
-   features turn the category's #1 quit-moment into the app's best moment.
+   "−2.3 cm in 6 weeks" → F07 describes approximate intake/burn balance and
+   names a TDEE change only when two quality-passing uncertainty intervals do
+   not overlap → F09 annotates the water-weight noise. Four features turn the
+   category's #1 quit-moment into the app's best moment.
 3. **The proof.** "Lentils don't love me back": F03 planned the curry, F02
    logged the fiber, F09 pairs the outcome 19 h later → trigger report unlocks
    at day 14 → doctor PDF exports the whole story. *(The plan↔poop loop exists
@@ -171,8 +213,10 @@ these are binding until amended *here* (feature docs must not re-litigate them).
   there is exactly one target, never two competing numbers.
 - **R-B4 — Adherence metrics:** F03 computes (plan coverage, energy fidelity,
   swap gravity, cook realism); F11 consumes read-only. One definition per number.
-- **R-B5 — F06→F07 series contract** frozen: daily scalars + trend + residual σ
-  + coverage % + provenance flags, under lowest-of-day/noon-normalized semantics.
+- **R-B5 — F06→F07 series contract** frozen: versioned daily scalars + trend +
+  residual σ + coverage % + provenance flags. Lowest-of-day/noon-normalized is
+  a benchmark candidate, not an ingestion or dedup rule; WLO-0072 validates it
+  against first-of-day, consistent-window, and median policies before release.
 - **R-B6 — F09 classifier personalization:** correction-cache prior over a
   frozen on-device model in v1 (shared mechanism with F02's dish priors);
   on-device fine-tuning is [future], pending an F12 platform ruling.
@@ -183,7 +227,7 @@ these are binding until amended *here* (feature docs must not re-litigate them).
   measurement is stored as a timestamped event; **multiple weigh-ins per day —
   including the post-bathroom "now I get my win" re-weigh — are kept verbatim**,
   never collapsed, overwritten, or judged. "One value per day" semantics
-  (lowest-of-day for weight, last-in for girths) are **derived views** consumed
+  (a versioned daily policy for weight, last-in for girths) are **derived views** consumed
   by trend math, F07, and exports; the raw points stay queryable (time-of-day
   lens, weigh-count stats) and ship in exports. *Amendment (owner ruling,
   2026-09-14, WLO-0035):* the verbatim rule governs ingestion and automatic
@@ -392,11 +436,14 @@ Ratified 2026-09-11.*
   as "records" — deliberately not a camera or body glyph, so it stays
   neutral in any context.
 - **R-D10 — Units: metric default, imperial a user setting (owner ruling).**
-  kg (and metric throughout) is the default and fallback unit system; lb/lb
-  -per-week is a user setting. Every mass/length render is settings-driven —
+  kg (and metric throughout) is the default and fallback; `lb` is the imperial
+  body-mass choice and pace follows that choice. Stone is not supported.
+  Release 1 has one app-wide preference because it has one profile; a later
+  multi-profile release may make it profile-scoped. Every mass/length render is settings-driven —
   no unit is ever hardcoded in copy. The prototypes demo the default (kg)
-  unless a page's meta declares otherwise; a unit chip on entry surfaces
-  ("kg") reflects the active setting.
+  unless a page's meta declares otherwise; an entry suffix/label ("kg")
+  reflects the active setting but is not a switch. Unit changes live only in
+  Settings so an accidental tap cannot reinterpret input.
 - **R-D11 — Copy discipline: information earns its place (owner ruling).**
   User-facing copy never contains: motion/haptic parameters (ms values,
   haptic names, easing/spring vocabulary), ruling IDs (R-\*) or feature IDs
@@ -501,9 +548,10 @@ math), F07 (engine version tags), F08 (angle set), F09 (fiber target), F11
 
 ---
 
-## 5. What v1 must include (roll-up)
+## 5. Long-range feature-complete scope (formerly the v1 roll-up)
 
-From the specs' `[v1]` tags and rulings: zero-account onboarding + plan studio
+This is the full-suite target represented by historical `[v1]` tags. It does
+not override the sequenced Release 1 matrix in §2.0: zero-account onboarding + plan studio
 (F01) · full input ladder with correction loop + sanity rails (F02) · planner +
 generation + swaps (F03) · generated list, pantry, staples, reconciliation
 (F04) · logging loop, rule engine, heatmap (F05) · trend weight, smoothers,
@@ -584,7 +632,12 @@ Validation invariants — rejections are hard, never silent clamps:
    raising eating targets; F05/F13 inputs are read-only context.
 3. **Schedule sum** — weekly-cadence schedules must sum to the weekly
    budget.
-4. **Pace cap** — `pacePctPerWeek` clamped to ±1.0 % body weight/week.
+4. **Pace and eligibility** — active targets must first pass the shared
+   WLO-0080 eligibility result. Pace is rejected, never silently clamped: loss
+   uses the lower of 1.0% body weight/week and 0.9 kg/week; maintenance uses
+   zero; gain uses WLO's conservative 0.5%/week product cap. See the cited
+   [safety contract](../research/weight-goal-safety-contract.md); these are app
+   support boundaries, not individualized medical advice.
 
 AI proposals (template refinement, [v1.x] per R-S10) are drafts against
 this API: apply/discard, never auto-commit.

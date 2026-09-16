@@ -1,0 +1,62 @@
+{
+  "corpusVersion": "forecast-calibration-v1",
+  "horizonsDays": [28, 56],
+  "scenarios": [
+    {
+      "name": "female-steady-loss",
+      "sex": "female",
+      "ageYears": 32,
+      "heightCm": 165.0,
+      "activityLevel": "moderate",
+      "startWeightKg": 84.2,
+      "goalWeightKg": 78.0,
+      "intakeKcal": 1900.0,
+      "actualTdeeAtStartKcal": 2410.0,
+      "actualTdeeWeightCoefficient": 8.0,
+      "dailyAdaptationKcal": -0.35,
+      "measuredTdeeErrorKcal": 35.0
+    },
+    {
+      "name": "male-higher-deficit",
+      "sex": "male",
+      "ageYears": 40,
+      "heightCm": 180.0,
+      "activityLevel": "light",
+      "startWeightKg": 100.0,
+      "goalWeightKg": 90.0,
+      "intakeKcal": 2200.0,
+      "actualTdeeAtStartKcal": 2810.0,
+      "actualTdeeWeightCoefficient": 12.0,
+      "dailyAdaptationKcal": -0.65,
+      "measuredTdeeErrorKcal": -45.0
+    },
+    {
+      "name": "other-shallow-loss",
+      "sex": null,
+      "ageYears": 45,
+      "heightCm": 176.0,
+      "activityLevel": "light",
+      "startWeightKg": 90.0,
+      "goalWeightKg": 85.0,
+      "intakeKcal": 2400.0,
+      "actualTdeeAtStartKcal": 2620.0,
+      "actualTdeeWeightCoefficient": 10.0,
+      "dailyAdaptationKcal": -0.25,
+      "measuredTdeeErrorKcal": 20.0
+    },
+    {
+      "name": "measured-plateau",
+      "sex": "female",
+      "ageYears": 50,
+      "heightCm": 168.0,
+      "activityLevel": "sedentary",
+      "startWeightKg": 75.0,
+      "goalWeightKg": 70.0,
+      "intakeKcal": 2200.0,
+      "actualTdeeAtStartKcal": 2200.0,
+      "actualTdeeWeightCoefficient": 10.0,
+      "dailyAdaptationKcal": 0.0,
+      "measuredTdeeErrorKcal": 0.0
+    }
+  ]
+}

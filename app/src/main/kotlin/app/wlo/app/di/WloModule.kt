@@ -100,7 +100,7 @@ public val appModule: Module =
         // The Settings surface's app-lock state (M6 PART B).
         viewModel {
             app.wlo.app.ui.settings
-                .SettingsViewModel(settings = get(), appLock = get(), appContext = get())
+                .SettingsViewModel(settings = get(), profiles = get(), appLock = get(), appContext = get())
         }
         // The profile-facts editor (WLO-0035 W4): onboarding answers, correctable.
         viewModel {
@@ -153,7 +153,13 @@ public val platformModule: Module =
                 foodRepository = get<FoodRepository>(),
             )
         }
-        single<WeighInRepository> { RoomWeighInRepository(measurements = get<MeasurementRepository>()) }
+        single<WeighInRepository> {
+            RoomWeighInRepository(
+                db = get<WloDatabase>(),
+                measurements = get<MeasurementRepository>(),
+                projector = get(),
+            )
+        }
         single<TargetsRepository> { RoomTargetsRepository(db = get<WloDatabase>()) }
         single<DayProjectionRepository> {
             RoomDayProjectionRepository(
@@ -329,10 +335,17 @@ public val platformModule: Module =
                 projector = get<app.wlo.core.data.DayProjector>(),
             )
         }
+        single {
+            app.wlo.core.vault.CsvImportCommitter(
+                db = get<WloDatabase>(),
+                projector = get(),
+                clock = get(),
+            )
+        }
         // BackupScheduler port impl: WorkManager daily once a folder is chosen.
         single<app.wlo.core.ports.BackupScheduler> {
             app.wlo.core.vault
-                .WorkManagerBackupScheduler(context = get<Context>())
+                .WorkManagerBackupScheduler(context = get<Context>(), settings = get())
         }
         // App-lock state holder (PART B renders the lock surface + gate flow).
         single {
@@ -364,7 +377,7 @@ public val platformModule: Module =
                 settings = get(),
                 documents = get(),
                 db = get(),
-                measurements = get(),
+                csvCommitter = get(),
                 diaries = get(),
                 profiles = get(),
                 clock = get(),

@@ -46,7 +46,7 @@ synthesis §3/C1, §2.2).
 | `outline` | `#2A323D` | Hairlines, dividers (1 dp) |
 | `text-primary` | `#E8ECF1` | Body & numerals (≥ 13:1 on `bg`) |
 | `text-secondary` | `#9AA6B5` | Labels, axis text (≥ 4.5:1) |
-| `text-tertiary` | `#5C6875` | Disabled, faint gaps (R-U13 dots) |
+| `text-tertiary` | `#808C9A` | Secondary receipts and faint gaps (R-U13 dots); 4.68:1 minimum on dark surfaces |
 
 Light theme: `bg #F7F8FA`, `surface #FFFFFF`, `surface-sunken #EEF1F4`,
 `text-primary #171C23`. Both themes: text ≥ 4.5:1 (WCAG AA), large numerals
@@ -58,7 +58,7 @@ and chart lines ≥ 3:1 (WCAG 1.4.11).
 |---|---|---|---|
 | `accent` (WLO teal) | `#3DD6A5` | Primary actions, trend-down, "on track", confidence ≥ 0.7, fiber ring fill | — |
 | `accent-dim` | `#1F6B54` | Accent fills at 30–40% tonal weight (rings, bands) | — |
-| `neutral-delta` | `#8A93A6` | Trend-up / gain rendering (F06: gains render neutral) | alarm, red |
+| `neutral-delta` | `#8A93A6` | Informational weight direction; goal mode determines meaning, never moral color | alarm, red |
 | `held` (amber) | `#E8B34B` | `held` data states, rough-guess strip, provider errors | pulsing more than once |
 | `developing` | `#7FA6C9` | `developing`/`updating` states, ESTIMATED chip, formula-estimate notes | — |
 | `info` | `#6FB7FF` | Purely informational callouts, offline glyph | urgency |
@@ -152,9 +152,10 @@ sweaty/wet/one-handed contexts never get density concessions. One-handed
 reach: primary actions live in the bottom third; destructive/config actions
 top-right or behind long-press. RTL: layouts mirror; charts do **not**
 mirror time axes; tabular numerals stay LTR (Unicode bidi isolation on
-number runs). Locale: aisle taxonomy, units (kg/lb, kcal/kJ), date formats
-and week-start day are locale/profile settings (F04 aisles editable
-wholesale; F06 unit sticky).
+number runs). Locale: aisle taxonomy, units (kg/lb, cm/in, kcal/kJ), date formats
+  and week-start day are settings (F04 aisles editable wholesale). Release 1
+  body mass supports kg/lb as one app-wide sticky choice; per-profile unit
+  preferences arrive with multi-profile.
 
 ---
 
@@ -384,11 +385,23 @@ Aisle-ordered list (user-order respected forever; headers collapse) · Check-off
 
 ### 7.7 F06 — Weight & Body
 
-Trend confirmation card (frozen: "Trend 179.1 ↓ 0.6", raw small beneath; gain identical, neutral) · Number pad (equal first-class, back-datable) · OCR viewfinder (brackets snap green; value flies) · Weight chart (scale dots + trend + ribbon; 30d/90d/1y/all; long-press back-fill) · Progress ribbon (N-day gear/scrubber) · Odometer numerals · Compare-modes overlay (all smoothers) · Smoother selector + α tuner (α default 0.15 R-A2; failure modes documented in-app) · Body-fat method registry (multi-series; never merged silently; ±3–4 % honesty note) · Girth entry (10 sites, prefill, "same as yesterday") · EAV custom metrics · History card (compressed: days → weeks → months → quarters; count + Δ + closing weight per bucket; gaps shown; buckets tap through — WLO-0055) · Logbook page (raw, provenance marks; sticky month headers carry the month; windowed feed with "Load earlier (N more)") · Import log (dedup visible) · Milestone breakdown (F07 ranges; ranges-only when DEVELOPING) · Milestone moment card (full-bleed count-up, two-note haptic) · Fresh Start render (page-turn; R-B7) · Discreet mode (hero hidden until tapped) · Biometric lock (per-profile) · Weight↔girth correlation view [v1.x] · Impedance decoder library [v1.x] (openScale credited) · Named milestones [v1.x] · Measurement-quality hints [v1.x] · Weigh-time consistency lens [v1.x] · Time-of-day lens + weigh-count stats (R-B8) · Day view (re-weighs join quietly) · Doctor summary (one-page) · Household auto-detection [future] · Gold-standard anchors [future] · Body-number fusion [moonshot].
+**Release 1:** trend confirmation card (`Weight trend`, raw small beneath;
+identical neutral motion in either direction) · accessible entry in kg/lb ·
+honest raw+trend chart · logbook and import identity · loss/maintenance/gain
+goal state · goal editor/progress · Health Connect weight import. **Release 2:**
+OCR viewfinder · progress ribbon · widget · Fresh Start · discreet mode ·
+optional 10-day-best · measurement-condition insights. **Deferred:** smoother
+comparison/tuning · body-fat/girth/EAV custom metrics · milestone celebration ·
+Bluetooth scale drivers · multi-profile lock · advanced correlations.
 
 ### 7.8 F07 — Energy Engine
 
-Check-in card (**frozen anatomy, top→bottom**: 1 status chip · 2 trend row · 3 adherence row + day dots + inline fix · 4 expenditure row · 5 proposal row + delta chips · 6 Apply/Keep/Discuss; "Computed on your device" stated once) · Status chip (amber pulse once when held) · Reason chip (names fix, one tap) · Day-status dots · Four-term breakdown (BMR + Adjustment + Activity + Exercise context; Adjustment glows at plateau) · "How we got here" trail (excluded rough days named: "2 rough days excluded") · Algorithms page (both engines, constants, changelog, "reproduce it yourself" recipe) · Decision ledger (input snapshot, estimate, decision; reversible) · Check-in history timeline · Forecast cone (700 ms bloom; widening displayed) · 3-band dates ("on trend **Oct 14** · range **Sep 28 – Nov 2**"; "an estimate, not a promise") · Energy-balance chart (intake bars / expenditure line / deficit shading) · TDEE longitudinal chart (event markers) · Energy mini-card (daily, Hub) · F07 widget ("burn 2,410 · trend ↓0.6") · Atypical-week flag · Dual-engine overlay [v1.x] · Scenario simulator [v1.x] · Diet-break choreography [v1.x] · Adjustment-term storytelling [v1.x] · Reverse check-in [v1.x] · Engine telemetry [future] · Bayesian engine [moonshot] · Self-experiment mode [moonshot] · Maintenance graduation [future] · Professional-guidance card (gentle, once, dismissable).
+Release 1 goal engine: loss/maintenance/gain mode parity · quality-state chip ·
+cold-start formula ranges · calibrated forecast cone · goal editor/progress ·
+safety counter-proposals · local explainers and provenance. Broader nutrition
+check-in anatomy, measured-TDEE adjustment, dual-engine overlay, scenario
+simulator, diet-break choreography, and engine telemetry follow their owning
+tickets and release gates.
 
 ### 7.9 F08 — Silhouette ("Archive")
 

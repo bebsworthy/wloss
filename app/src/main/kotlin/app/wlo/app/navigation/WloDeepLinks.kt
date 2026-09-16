@@ -17,19 +17,20 @@ public object WloDeepLinks {
 
     /** The five tab roots, in navigation order (R-D2). */
     public val TAB_ROUTES: List<String> =
-        listOf(WloTabs.HUB, WloTabs.PLAN, WloTabs.INSIGHTS, WloTabs.ARCHIVE, WloTabs.DIGESTION)
+        listOf(WloTabs.WEIGHT, WloTabs.HUB, WloTabs.PLAN, WloTabs.INSIGHTS, WloTabs.MORE)
 
     /** The IA.md §3 registry: source · deep link · target. */
     public val REGISTRY: List<DeepLinkEntry> =
         listOf(
             // --- tabs (IA §1) ---
+            entry("wlo://weight", WloTabs.WEIGHT),
             entry("wlo://hub", WloTabs.HUB),
             entry("wlo://plan", WloTabs.PLAN),
             entry("wlo://insights", WloTabs.INSIGHTS),
+            entry("wlo://more", WloTabs.MORE),
             entry("wlo://archive", WloTabs.ARCHIVE),
             entry("wlo://digestion", WloTabs.DIGESTION),
             // --- real screens (M3) ---
-            entry("wlo://weight", "f06/weight"),
             entry("wlo://weight/log", "f06/log"),
             // M4 PART B: the F02 capture flow (photo/barcode/label + the
             // correction loop) is real; the manual ladder keeps log/search.

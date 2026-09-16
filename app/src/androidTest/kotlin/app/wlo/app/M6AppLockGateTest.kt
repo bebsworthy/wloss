@@ -8,6 +8,7 @@ import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performClick
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import app.wlo.core.datastore.SettingsStore
+import app.wlo.core.vault.AppLockPosture
 import app.wlo.core.vault.LockTimeout
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
@@ -84,7 +85,7 @@ public class M6AppLockGateTest {
         waitUntil { gateVisible() }
         rule.waitForIdle()
         TestNav.awaitTag(rule, "applock-no-credential")
-        assertTrue(controller.locked.value, "the controller must be in the locked state")
+        assertTrue(controller.posture.value == AppLockPosture.LOCKED, "the controller must be in the locked state")
 
         // The honest escape hatch: no credential anywhere → turn it off.
         rule

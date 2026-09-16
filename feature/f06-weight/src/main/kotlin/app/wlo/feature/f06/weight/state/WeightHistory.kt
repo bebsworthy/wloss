@@ -154,9 +154,23 @@ public object WeightHistory {
 /** Bucket and month label formatting, shared by the card and the logbook feed. */
 public object HistoryLabels {
     private val WEEKDAYS = listOf("Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun")
-    private val MONTHS_SHORT = listOf("Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec")
+    private val MONTHS_SHORT =
+        listOf("Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec")
     private val MONTHS_FULL =
-        listOf("January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December")
+        listOf(
+            "January",
+            "February",
+            "March",
+            "April",
+            "May",
+            "June",
+            "July",
+            "August",
+            "September",
+            "October",
+            "November",
+            "December",
+        )
 
     /** The history card's bucket label ("Today", "Thu 11", "Aug 25 – 31", "Sep 2026", "Q2 2026"). */
     public fun bucketLabel(
@@ -205,7 +219,9 @@ public object HistoryLabels {
         return if (from.monthNumber == to.monthNumber) {
             "${MONTHS_SHORT[from.monthNumber - 1]} ${from.dayOfMonth} – ${to.dayOfMonth}"
         } else {
-            "${MONTHS_SHORT[from.monthNumber - 1]} ${from.dayOfMonth} – ${MONTHS_SHORT[to.monthNumber - 1]} ${to.dayOfMonth}"
+            val fromLabel = "${MONTHS_SHORT[from.monthNumber - 1]} ${from.dayOfMonth}"
+            val toLabel = "${MONTHS_SHORT[to.monthNumber - 1]} ${to.dayOfMonth}"
+            "$fromLabel – $toLabel"
         }
     }
 }

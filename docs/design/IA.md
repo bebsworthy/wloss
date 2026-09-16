@@ -2,16 +2,18 @@
 
 *Phase B deliverable (`docs/design/KICKOFF.md`). Companion:
 [DESIGN-SYSTEM.md](DESIGN-SYSTEM.md) (tokens & components). Authority:
-[F10](../features/F10-daily-hub.md) (Hub is the single home surface),
-[FEATURES §2.2–2.3](../features/FEATURES.md) (Day/Week loops), R-U7 (naming),
-R-U12 (one widget framework), R-U17 (hero-slot promotion).*
+[FEATURES §2.0](../features/FEATURES.md) (weight-first release contract), then
+§2.2–2.3 (Day/Week loops), R-U7 (naming), R-U12 (one widget framework), and
+R-U17 (hero-slot promotion).*
 
 ---
 
 ## 1. Navigation model
 
-**Five-tab bottom navigation + one flow-over-context capture layer**
-(R-D2):
+**Five top-level destinations + flow-over-context capture layers**
+(R-D2): compact windows use a Material 3 navigation bar; windows at 600 dp
+or wider use a Material 3 navigation rail. Nested destinations hide that
+top-level chrome and use a Material 3 top app bar with Up navigation.
 
 ```
 ┌────────────────────────────────────────────────┐
@@ -19,38 +21,36 @@ R-U12 (one widget framework), R-U17 (hero-slot promotion).*
 │   < surface >                                  │
 │                                                │
 ├────────────────────────────────────────────────┤
-│  Hub    Plan    Insights   Archive   Digestion │
+│ Weight    Hub    Plan    Insights     More     │
 └────────────────────────────────────────────────┘
 ```
 
 | Tab | Feature | Contents |
 |---|---|---|
-| **Hub** | F10 | Default surface; Adaptive Day Model card stack; quick-action rail; weigh-in entry |
+| **Weight** | F06 + F07 | **Default and primary surface**; trend/raw chart, goal state, weigh-in, history, forecast, and logbook |
+| **Hub** | F10 | Optional broader day surface; Adaptive Day Model card stack and quick-action rail |
 | **Plan** | F03 + F04 | Segmented: **Plan** (week grid) · **Recipes** · **List** · **Pantry** — the plan→shop→stock pipeline in one place, because the Week loop crosses it end-to-end |
 | **Insights** | F11 | Report card, stats hub, streaks, badges, share cards |
-| **Archive** | F08 | Lock gate → timeline grid, compare studio, capture ritual (name frozen by R-U7; user-renamable) |
-| **Digestion** | F09 | Quick-tile Bristol entry, heatmap, fiber target, correlations (name per R-U7; user-renamable) |
+| **More** | cross-feature | Archive, Digestion, Exercise, Data Vault, AI and Settings; each keeps its own named destination and discretion gate |
 
 **Decisions and rationale:**
 
-- **Why tabs at all:** the specs name tab-level homes — F03 "Planner tab",
-  F11 "Bottom-nav Insights tab", F08/F09 "nav section". A pure hub-centric
-  stack would bury flagship surfaces behind taps.
-- **Why Archive and Digestion are visible tabs, not a "More" sheet:** both
-  are differentiator features; both are already discretion-gated (biometric
-  lock, R-U7 naming). Hiding them behind "More" would read as the app being
-  ashamed of them — the exact instinct R-U7 exists to prevent. Renaming
-  remains the user's discretion lever.
-- **Capture is not a tab.** F02's shutter is the *primary action of the
-  app*, so it lives on the Hub as the lead quick-action (plus FAB on other
+- **Why Weight is first:** Release 1 promises a complete weight loop, so launch,
+  first-run completion, app icon, widget, and weight notifications resolve to
+  Weight. Hub remains a top-level day surface but is not an onboarding gate.
+- **Why More:** five stable destinations fit Material navigation without
+  hiding the release promise. Archive and Digestion remain plainly named,
+  user-renamable surfaces inside More; placement is sequencing, not shame.
+- **Food capture is not a tab.** F02's shutter is the Hub's lead action (and
+  may be a FAB on relevant broader-suite surfaces), while weigh-in is Weight's
+  primary action. Food capture opens
   tab surfaces), and opens **full-screen over whatever context invoked it**
  — logging is a flow, not a destination. Entry points (all spec'd): Hub
   rail, today's-plan card ("log as planned" prefills from F03), "correct"
   on any diary entry, notification quick-capture, Food Memory one-tap.
-- **F06 (Weight & Body) has no tab.** It is reached in the Day loop: the
-  weigh-in card (morning), the hero card tap (trend/history), girth entries,
-  logbook. Its full history is one tap from the number the user is already
-  looking at.
+- **F06/F07 own Weight.** Weigh-in, trend, goal progress, forecast, history,
+  and logbook form one primary destination. Advanced body metrics stay below
+  the core weight loop and follow the release matrix.
 - **F01 (Plan Studio)** lives in Settings → Plan Studio, plus its flow
   roles: first-run wizard, F07 check-in "adjust plan" deep link (pre-filled
   diff), F10 30-day review nudge, post-import CTA.
@@ -58,17 +58,16 @@ R-U12 (one widget framework), R-U17 (hero-slot promotion).*
   = Settings → Data Vault / Scales. Neither is a tab: consent and plumbing
   are visited deliberately, not browsed (F12's point-of-use sheets carry
   consent to where the data is instead).
-- **Settings** sits top-right on the Hub header (gear); every tab reaches it
-  via its own overflow. No drawer — WLO has no surface that earns a second
-  navigation axis.
+- **Settings** is in More and remains reachable from every top-level surface's
+  overflow. No drawer — WLO has no surface that earns a second navigation axis.
 - **Back as a loop-closer:** capture and check-in flows commit-or-cancel
   back to the invoking context (the Hub ring animating on return is part of
   the save arc, F02).
 
 ### 1.1 Badge / attention model
 
-Tab badges are *never* nag counters. The only badge states: check-in card
-pending on check-in day (Hub hero, R-U17), report-card-ready pill
+Tab badges are *never* nag counters. The only badge states: a check-in-ready
+indicator on Weight, report-card-ready pill
 (Insights, R-U2), backup-health dot (Hub, F13). Gut/Archive never badge for
 "not logged" (R-U13); their capture-due cards appear only on cadence-relative
 reminder days (R-U13/R-U1 budget).
@@ -144,15 +143,17 @@ so the widget stays coarse (deep-links + ≤2 actions).
 
 ---
 
-## 5. First-run (F01): a flow, not a modal gauntlet
+## 5. First-run (F01): reach a useful Weight surface first
 
-Shape (spec §3, < 3 minutes, zero account, zero network): one welcome card
-(value + architecture, one sentence each) → goal dials → live forecast
-bloom (ESTIMATED chip) → template gallery → 8-card swipe quiz → schedule
-bars (skippable) → milestone ladder → **Start** writes Plan v1 and lands on
-the Hub.
+Release 1 shape (zero account, zero network): one welcome card → app-wide
+body-mass unit (`kg`/`lb`) → optional loss/maintenance/gain goal → choose
+Health Connect/file import or manual first weigh-in → **Weight**. If goal or
+measurement is skipped, Weight renders an honest empty state with the relevant
+single action. Diet-plan setup is offered later from Hub/Plan/Settings and is
+never required to complete first run.
 
-Rules: every step is skippable — skipped fields are flagged `estimated`,
+Rules: every step after unit is skippable — skipped fields are absent rather
+than invented; derived cold-start values are flagged `estimated`,
 framed "later", never "incomplete" (F01 §6); no permissions asked during
 the wizard — the notification permission is requested *in context, once,
 after the first successful log* (F10 §4); "coming from another app?" import

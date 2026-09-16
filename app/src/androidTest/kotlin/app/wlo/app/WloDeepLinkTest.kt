@@ -39,9 +39,9 @@ public class WloDeepLinkTest {
             ActivityScenario.launch<MainActivity>(
                 Intent(ApplicationProvider.getApplicationContext(), MainActivity::class.java),
             )
-        awaitRoute(fresh, "hub")
+        awaitRoute(fresh, "f06/weight")
         OnboardingRobot.driveThroughWizardWithUiAutomator()
-        awaitSurface(fresh, "hub")
+        awaitSurface(fresh, "weight")
 
         fresh.onActivity { activity ->
             activity.deliverNewIntentForVerification(
@@ -65,7 +65,7 @@ public class WloDeepLinkTest {
         // No scenario.use here: ActivityScenario.close() can time out waiting
         // for DESTROYED after an in-flight re-delivery; finish explicitly.
         val scenario = ActivityScenario.launch(MainActivity::class.java)
-        awaitRoute(scenario, "hub")
+        awaitRoute(scenario, "f06/weight")
         scenario.onActivity { activity ->
             activity.deliverNewIntentForVerification(
                 Intent(activity, MainActivity::class.java).setData(Uri.parse("wlo://digestion")),

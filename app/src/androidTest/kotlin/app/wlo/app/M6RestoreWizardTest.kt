@@ -115,10 +115,9 @@ public class M6RestoreWizardTest {
     /**
      * Drives the system document picker: roots drawer → Downloads root →
      * file. The picker may open on RECENT — never assume the Downloads
-     * listing is in front of us. The drawer's "Open from" header (and the
-     * toolbar title, which can carry the same string) is handled BOUNDEDLY:
-     * aim it at Downloads at most three times, then close it with back and
-     * hunt for the file whatever the chrome says.
+     * listing is in front of us. Do not use Back as a drawer-recovery action:
+     * on API 29 the toolbar can also be titled "Open from", and a mistaken
+     * Back closes DocumentsUI (making an otherwise valid restore flaky).
      */
     private fun pickInDocumentsUi(
         ui: UiDevice,
@@ -127,11 +126,14 @@ public class M6RestoreWizardTest {
         val deadline = System.currentTimeMillis() + 60_000
         var picked = false
         var inDownloads = false
-        var drawerActions = 0
         while (System.currentTimeMillis() < deadline && !picked) {
-            val drawerOpen = ui.hasObject(By.text("Open from"))
-            if (drawerOpen && drawerActions < 3) {
-                drawerActions++
+            val file: UiObject2? = ui.findObjects(By.textContains(fileName)).firstOrNull()
+            if (file != null) {
+                file.click()
+                picked = true
+                break
+            }
+            if (!inDownloads) {
                 val entry =
                     ui.findObjects(By.text("Downloads")).firstOrNull { it.visibleCenter.x < 500 }
                 if (entry != null) {
@@ -142,30 +144,6 @@ public class M6RestoreWizardTest {
                 }
                 ui.findObject(By.desc("Show roots"))?.click()
                 Thread.sleep(900)
-                continue
-            }
-            if (drawerOpen) {
-                // Stuck drawer: close it and hunt for the file anyway.
-                ui.pressBack()
-                Thread.sleep(900)
-            }
-            val file: UiObject2? = ui.findObjects(By.textContains(fileName)).firstOrNull()
-            if (file != null) {
-                file.click()
-                picked = true
-                break
-            }
-            if (!inDownloads) {
-                ui.findObject(By.desc("Show roots"))?.click()
-                Thread.sleep(1_000)
-                drawerActions++
-                val entry =
-                    ui.findObjects(By.text("Downloads")).firstOrNull { it.visibleCenter.x < 500 }
-                if (entry != null) {
-                    entry.click()
-                    Thread.sleep(1_000)
-                }
-                if (ui.hasObject(By.textContains("FILES ON DOWNLOADS"))) inDownloads = true
             } else {
                 // The Downloads listing grows across runs — scroll it while
                 // searching (the file may sit below the fold).
@@ -247,13 +225,12 @@ public class M6RestoreWizardTest {
         clickText(ui, "Validate")
 
         waitUntilUi(ui, "Validated")
-        waitUntilUi(ui, "rows total")
         assertTrue(inApp("measurements"), "the report must show the measurements section")
 
         scrollAndClick(ui, "Continue")
-        // The report's Continue commits DIRECTLY (confirmCommit) — the
-        // confirm step is currently unreachable from the report (flagged for
-        // the UX review); the apply itself is the all-or-nothing transaction.
+        waitUntilUi(ui, "Apply this restore?")
+        runBlocking { assertEquals(0, db.profiles().all().size, "Continue must not mutate before explicit Apply") }
+        scrollAndClick(ui, "Apply restore")
         waitUntilUi(ui, "Restored")
 
         // Logical equality with the seed spec — the wizard rebuilt everything.

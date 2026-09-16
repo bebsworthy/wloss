@@ -80,6 +80,7 @@ public class NetworkDispatcher(
     private val cacheLock = Any()
     private val cache = ResponseLruCache(cacheMaxEntries)
 
+    @Suppress("TooGenericExceptionCaught") // Result is the port boundary; cancellation is handled separately.
     override suspend fun <R : Any> dispatch(request: EgressRequest<R>): Result<R> {
         denialFor(request.purpose, request.userInitiated, request.host)?.let { reason ->
             writeReceipt(request.purpose, request.host, request.operation, bytes = 0, EgressOutcome.DENIED)
@@ -97,7 +98,23 @@ public class NetworkDispatcher(
             }
         }
 
-        val result = runCatching { request.block() }
+        val result =
+            try {
+                Result.success(request.block())
+            } catch (cancelled: CancellationException) {
+                withContext(NonCancellable) {
+                    writeReceipt(
+                        request.purpose,
+                        request.host,
+                        request.operation,
+                        request.expectedBytes ?: 0L,
+                        EgressOutcome.FAILED,
+                    )
+                }
+                throw cancelled
+            } catch (failure: Exception) {
+                Result.failure(failure)
+            }
         writeReceipt(
             purpose = request.purpose,
             host = request.host,
@@ -111,6 +128,7 @@ public class NetworkDispatcher(
         return result
     }
 
+    @Suppress("TooGenericExceptionCaught") // Result is the port boundary; cancellation is handled separately.
     override suspend fun download(
         request: EgressDownload,
         sink: Sink,

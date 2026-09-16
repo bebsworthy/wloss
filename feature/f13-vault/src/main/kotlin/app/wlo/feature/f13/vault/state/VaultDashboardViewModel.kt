@@ -2,7 +2,8 @@ package app.wlo.feature.f13.vault.state
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import app.wlo.core.datastore.SettingsStore
+import app.wlo.core.ports.BackupRequest
+import app.wlo.core.ports.BackupScheduler
 import app.wlo.core.ports.DataVaultPort
 import app.wlo.core.ports.VaultBackupState
 import app.wlo.core.ports.VaultFreshStartReport
@@ -32,7 +33,7 @@ public data class VaultDashboardUiState(
  */
 public class VaultDashboardViewModel(
     private val vault: DataVaultPort,
-    private val settings: SettingsStore,
+    private val scheduler: BackupScheduler,
 ) : ViewModel() {
     private val usage = MutableStateFlow<List<VaultPartitionUsage>>(emptyList())
     private val backup = MutableStateFlow<VaultBackupState?>(null)
@@ -83,7 +84,11 @@ public class VaultDashboardViewModel(
 
     public fun setAutoBackup(enabled: Boolean) {
         viewModelScope.launch {
-            settings.setBackupAutoEnabled(enabled)
+            val current = vault.backupState()
+            scheduler.setEnabled(
+                enabled = enabled,
+                request = current.folderUri?.let { BackupRequest(destinationUri = it, includeVault = false) },
+            )
             backup.value = vault.backupState()
         }
     }

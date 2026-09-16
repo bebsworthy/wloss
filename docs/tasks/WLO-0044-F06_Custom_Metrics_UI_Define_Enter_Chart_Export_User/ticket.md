@@ -1,13 +1,13 @@
 ---
 id: WLO-0044
 title: 'F06 custom metrics UI: define / enter / chart / export user-defined EAV metrics'
-status: todo
-theme:
-release:
+status: backlog
+theme: weight-advanced
+release: 3
 created: 2026-09-14T13:38:34Z
-modified: 2026-09-14T13:52:56Z
+modified: 2026-09-15T21:31:02Z
 closed:
-revision: 032f7fa9d42b0595
+revision: 2d4de0ec2ab37d6b
 blocks: []
 related: []
 ---

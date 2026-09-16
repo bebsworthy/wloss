@@ -63,6 +63,7 @@ import app.wlo.core.model.ConstantsRegistry
 import app.wlo.core.model.DerivedValue
 import app.wlo.core.model.Provenance
 import app.wlo.core.model.Sex
+import app.wlo.core.model.WeightGoalEligibility
 import app.wlo.feature.f01.onboarding.domain.Milestones
 import app.wlo.feature.f01.onboarding.state.OnboardingEvent
 import app.wlo.feature.f01.onboarding.state.OnboardingStep
@@ -116,7 +117,8 @@ internal fun WelcomeStep(state: OnboardingUiState) {
             )
         }
 
-        WloCard(header = { WloCardHeader(title = "The next 7 steps") }) {
+        WloCard(header = { WloCardHeader(title = "The next 8 steps") }) {
+            StepHintRow("Units", "kilograms or pounds")
             StepHintRow("Goal & pace", "two numbers · one slider")
             StepHintRow("Forecast", "three bands · an honest range")
             StepHintRow("Diet template", "${state.templates.size} cards · one pick")
@@ -131,13 +133,57 @@ internal fun WelcomeStep(state: OnboardingUiState) {
     }
 }
 
+/**
+ * The one and only onboarding unit choice (WLO-0052). Values are stored in
+ * canonical kg; this controls every display and input edge. The same choice
+ * is available later only from Settings.
+ */
+@Composable
+internal fun UnitStep(
+    state: OnboardingUiState,
+    viewModel: OnboardingViewModel,
+    haptics: WloHaptics,
+) {
+    Column(verticalArrangement = Arrangement.spacedBy(WloSpacing.SCREEN)) {
+        Text(text = "How do you measure weight?", style = wloType.titleL)
+        Text(
+            text =
+                "Choose the unit you already use. You can change it later in Settings; " +
+                    "your stored data never changes.",
+            style = wloType.body,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        WloCard(header = { WloCardHeader(title = "Weight unit") }) {
+            Row(horizontalArrangement = Arrangement.spacedBy(WloSpacing.TIGHT)) {
+                MassUnit.entries.forEach { unit ->
+                    SelectChip(
+                        label = unit.unitChoiceLabel(),
+                        selected = state.massUnit == unit,
+                        modifier = Modifier.testTag("onboarding-unit-${unit.symbol}"),
+                        onClick = {
+                            haptics.perform(WloHaptic.Tick)
+                            viewModel.onEvent(OnboardingEvent.SetMassUnit(unit))
+                        },
+                    )
+                }
+            }
+        }
+        Text(
+            text = "Calculations stay equally precise in either unit.",
+            style = wloType.caption,
+            color = wloExtendedColors.textTertiary,
+        )
+    }
+}
+
 @Composable
 internal fun GoalStep(
     state: OnboardingUiState,
     viewModel: OnboardingViewModel,
     haptics: WloHaptics,
 ) {
-    val unit = MassUnit.DEFAULT.symbol
+    val massUnit = state.massUnit
+    val lengthUnit = state.lengthUnit
     Column(verticalArrangement = Arrangement.spacedBy(WloSpacing.SCREEN)) {
         WloCard(header = { WloCardHeader(title = "About you") }) {
             FlowRow(
@@ -190,10 +236,22 @@ internal fun GoalStep(
             )
             StepperRow(
                 label = "height",
-                value = "${state.heightCm.roundToInt()} ${LengthUnit.DEFAULT.symbol}",
+                value = formatHeight(state.heightCm, lengthUnit),
                 testTag = "height",
-                onMinus = { viewModel.onEvent(OnboardingEvent.SetHeightCm(state.heightCm - 1.0)) },
-                onPlus = { viewModel.onEvent(OnboardingEvent.SetHeightCm(state.heightCm + 1.0)) },
+                onMinus = {
+                    viewModel.onEvent(
+                        OnboardingEvent.SetHeightCm(
+                            lengthUnit.toCentimeters(lengthUnit.fromCentimeters(state.heightCm) - 1.0),
+                        ),
+                    )
+                },
+                onPlus = {
+                    viewModel.onEvent(
+                        OnboardingEvent.SetHeightCm(
+                            lengthUnit.toCentimeters(lengthUnit.fromCentimeters(state.heightCm) + 1.0),
+                        ),
+                    )
+                },
             )
             Text(text = "A normal day moves…", style = wloType.label, color = wloExtendedColors.textTertiary)
             FlowRow(
@@ -214,17 +272,41 @@ internal fun GoalStep(
         WloCard(header = { WloCardHeader(title = "Goal") }) {
             StepperRow(
                 label = "current weight",
-                value = "${state.currentWeightKg} $unit",
+                value = massUnit.format(state.currentWeightKg),
                 testTag = "current-weight",
-                onMinus = { viewModel.onEvent(OnboardingEvent.SetCurrentWeightKg(state.currentWeightKg - 0.5)) },
-                onPlus = { viewModel.onEvent(OnboardingEvent.SetCurrentWeightKg(state.currentWeightKg + 0.5)) },
+                onMinus = {
+                    viewModel.onEvent(
+                        OnboardingEvent.SetCurrentWeightKg(
+                            massUnit.toKilograms(massUnit.fromKilograms(state.currentWeightKg) - WEIGHT_STEP),
+                        ),
+                    )
+                },
+                onPlus = {
+                    viewModel.onEvent(
+                        OnboardingEvent.SetCurrentWeightKg(
+                            massUnit.toKilograms(massUnit.fromKilograms(state.currentWeightKg) + WEIGHT_STEP),
+                        ),
+                    )
+                },
             )
             StepperRow(
                 label = "target weight",
-                value = "${state.goalWeightKg} $unit",
+                value = massUnit.format(state.goalWeightKg),
                 testTag = "goal-weight",
-                onMinus = { viewModel.onEvent(OnboardingEvent.SetGoalWeightKg(state.goalWeightKg - 0.5)) },
-                onPlus = { viewModel.onEvent(OnboardingEvent.SetGoalWeightKg(state.goalWeightKg + 0.5)) },
+                onMinus = {
+                    viewModel.onEvent(
+                        OnboardingEvent.SetGoalWeightKg(
+                            massUnit.toKilograms(massUnit.fromKilograms(state.goalWeightKg) - WEIGHT_STEP),
+                        ),
+                    )
+                },
+                onPlus = {
+                    viewModel.onEvent(
+                        OnboardingEvent.SetGoalWeightKg(
+                            massUnit.toKilograms(massUnit.fromKilograms(state.goalWeightKg) + WEIGHT_STEP),
+                        ),
+                    )
+                },
             )
             WloDeltaChip(
                 value =
@@ -235,7 +317,7 @@ internal fun GoalStep(
                             inputs = listOf("current=${state.currentWeightKg}", "goal=${state.goalWeightKg}"),
                         ),
                     ),
-                format = { MassUnit.DEFAULT.format(it) },
+                format = massUnit::format,
                 context = "to goal",
             )
         }
@@ -283,7 +365,7 @@ internal fun GoalStep(
                                     inputs = listOf("pace=${state.pacePctPerWeek}", "weight=${state.currentWeightKg}"),
                                 ),
                             ),
-                        format = { MassUnit.DEFAULT.format(it) },
+                        format = massUnit::format,
                     )
                 }
             } else {
@@ -302,6 +384,29 @@ internal fun GoalStep(
                 )
             }
         }
+
+        WloCard(header = { WloCardHeader(title = "Goal safety check") }) {
+            WeightGoalSafetyControls(
+                pregnant = state.pregnant,
+                breastfeeding = state.breastfeeding,
+                eatingDisorderConcern = state.eatingDisorderConcern,
+                medicallyInfluencedWeight = state.medicallyInfluencedWeight,
+                onAnswer = { question, answer ->
+                    viewModel.onEvent(OnboardingEvent.SetGoalSafety(question, answer))
+                },
+                testTagPrefix = "onboarding-goal-safety",
+            )
+            WloBanner(
+                text = "${state.goalSafetyCopy.title}. ${state.goalSafetyCopy.body}",
+                tone =
+                    if (state.goalEligibility is WeightGoalEligibility.Eligible) {
+                        WloBannerTone.Info
+                    } else {
+                        WloBannerTone.Warning
+                    },
+                modifier = Modifier.testTag("onboarding-goal-safety-status"),
+            )
+        }
     }
 }
 
@@ -315,8 +420,14 @@ internal fun ForecastStep(
         WloCard(header = { WloCardHeader(title = "Forecast") }) {
             Text(
                 text =
-                    "This plan starts at maintenance — set a target below your " +
-                        "current weight and the forecast blooms here.",
+                    when (state.forecastResult) {
+                        is app.wlo.core.engines.GoalForecastResult.Held ->
+                            "Forecast held — the current inputs cannot support a new date yet."
+                        is app.wlo.core.engines.GoalForecastResult.Withheld ->
+                            "Forecast withheld — complete the safety check to see whether generic goal math applies."
+                        else ->
+                            "A forecast needs valid body facts, a goal, and a daily budget. No date is guessed."
+                    },
                 style = wloType.body,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -324,8 +435,18 @@ internal fun ForecastStep(
         return
     }
     Column(verticalArrangement = Arrangement.spacedBy(WloSpacing.SCREEN)) {
+        val developing = state.forecastResult as? app.wlo.core.engines.GoalForecastResult.Developing
+        if (developing != null) {
+            WloBanner(
+                text =
+                    "Forecast developing — ${developing.usableDays} of " +
+                        "${developing.requiredUsableDays} usable days. This range is provisional.",
+                tone = WloBannerTone.Info,
+                modifier = Modifier.testTag("onboarding-forecast-developing"),
+            )
+        }
         WloForecastCard(
-            bands = toUiBands(state, forecast),
+            bands = toUiBands(state, forecast, pointDateEligible = developing == null),
             goalWeight =
                 DerivedValue(
                     state.goalWeightKg,
@@ -333,7 +454,7 @@ internal fun ForecastStep(
                 ),
             estimate = DerivedValue(forecast.tdeeEstimateKcal, forecast.provenance),
             plannedIntakeKcal = state.budgetKcal,
-            formatWeight = { MassUnit.DEFAULT.format(it) },
+            formatWeight = state.massUnit::format,
             formatKcal = ::formatKcal,
             onExplain = onExplain,
         )
@@ -350,7 +471,7 @@ internal fun ForecastStep(
                                 inputs = listOf("intake=${state.budgetKcal ?: "default"}"),
                             ),
                         ),
-                    format = ::formatKgPerWeek,
+                    format = { formatMassPerWeek(it, state.massUnit) },
                 )
                 WloStatDivider()
                 WloStatRow(
@@ -363,10 +484,10 @@ internal fun ForecastStep(
                                 inputs = listOf("deceleration=bmr-falls-with-weight"),
                             ),
                         ),
-                    format = ::formatKgPerWeek,
+                    format = { formatMassPerWeek(it, state.massUnit) },
                 )
                 Text(
-                    text = "The last kilos take longer — that's expected, not failure.",
+                    text = "The last stretch takes longer — that's expected, not failure.",
                     style = wloType.caption,
                     color = wloExtendedColors.textTertiary,
                 )
@@ -810,13 +931,13 @@ internal fun ReviewStep(state: OnboardingUiState) {
                 ) {
                     WloTag(text = "You are here")
                     Text(
-                        text = MassUnit.DEFAULT.format(state.currentWeightKg),
+                        text = state.massUnit.format(state.currentWeightKg),
                         style = wloType.receipt,
                         color = wloExtendedColors.textTertiary,
                     )
                 }
                 state.milestones.forEach { rung ->
-                    RungRow(rung)
+                    RungRow(rung, state.massUnit)
                 }
             }
         }
@@ -824,7 +945,10 @@ internal fun ReviewStep(state: OnboardingUiState) {
 }
 
 @Composable
-private fun RungRow(rung: Milestones.Rung) {
+private fun RungRow(
+    rung: Milestones.Rung,
+    massUnit: MassUnit,
+) {
     Row(
         modifier = Modifier.fillMaxWidth().height(WloSpacing.ROW_MIN),
         verticalAlignment = Alignment.CenterVertically,
@@ -833,9 +957,9 @@ private fun RungRow(rung: Milestones.Rung) {
         Text(
             text =
                 if (rung.isGoal) {
-                    "${MassUnit.DEFAULT.format(rung.weightKg)} — goal"
+                    "${massUnit.format(rung.weightKg)} — goal"
                 } else {
-                    MassUnit.DEFAULT.format(rung.weightKg)
+                    massUnit.format(rung.weightKg)
                 },
             style = wloType.statS,
             color = if (rung.isGoal) MaterialTheme.colorScheme.primary else Color.Unspecified,
@@ -870,8 +994,8 @@ internal fun ForecastExplainerSheet(
             ExplainerRow("formula", forecast.modelVersion)
             ExplainerRow("burn formula", forecast.bmrVersion)
             ExplainerRow("energy rule", "${ConstantsRegistry.KCAL_PER_KG_FAT.toInt()} kcal per kg")
-            ExplainerRow("start", MassUnit.DEFAULT.format(state.currentWeightKg))
-            ExplainerRow("goal", MassUnit.DEFAULT.format(state.goalWeightKg))
+            ExplainerRow("start", state.massUnit.format(state.currentWeightKg))
+            ExplainerRow("goal", state.massUnit.format(state.goalWeightKg))
             ExplainerRow("planned intake", formatKcal(state.budgetKcal ?: DietTemplateApplier.DEFAULT_BUDGET_KCAL))
             ExplainerRow("a normal day", state.activityLevel.wireName)
         }
@@ -1009,6 +1133,7 @@ private fun StepHintRow(
 private fun toUiBands(
     state: OnboardingUiState,
     forecast: ForecastBands,
+    pointDateEligible: Boolean = true,
 ): WloForecastBands =
     WloForecastBands(
         startWeightKg = state.currentWeightKg,
@@ -1020,6 +1145,7 @@ private fun toUiBands(
         optimisticFinishEpochDay = forecast.optimistic.finishEpochDay,
         expectedFinishEpochDay = forecast.expected.finishEpochDay,
         pessimisticFinishEpochDay = forecast.pessimistic.finishEpochDay,
+        pointDateEligible = pointDateEligible,
         expectedPaceKgPerWeek = forecast.expected.weeklyRatesKg.firstOrNull(),
     )
 
@@ -1059,7 +1185,32 @@ private fun exclusionLine(state: OnboardingUiState): String {
 
 internal fun formatKcal(value: Double): String = "%,d kcal".format(value.roundToInt())
 
-internal fun formatKgPerWeek(value: Double): String = "%.2f kg/wk".format(value)
+internal fun formatMassPerWeek(
+    valueKg: Double,
+    unit: MassUnit,
+): String = "%.2f %s/wk".format(unit.fromKilograms(valueKg), unit.symbol)
+
+private val OnboardingUiState.lengthUnit: LengthUnit
+    get() =
+        when (massUnit) {
+            MassUnit.KILOGRAM -> LengthUnit.CENTIMETER
+            MassUnit.POUND -> LengthUnit.INCH
+        }
+
+private fun formatHeight(
+    heightCm: Double,
+    unit: LengthUnit,
+): String =
+    when (unit) {
+        LengthUnit.CENTIMETER -> "${unit.fromCentimeters(heightCm).roundToInt()} ${unit.symbol}"
+        LengthUnit.INCH -> "%.1f %s".format(unit.fromCentimeters(heightCm), unit.symbol)
+    }
+
+private fun MassUnit.unitChoiceLabel(): String =
+    when (this) {
+        MassUnit.KILOGRAM -> "Kilograms (kg)"
+        MassUnit.POUND -> "Pounds (lb)"
+    }
 
 internal fun formatPctPerWeek(value: Double): String = "%.2f %%/wk".format(value)
 
@@ -1114,3 +1265,4 @@ private const val FORMULA_GOAL_DELTA: String = "f01/goal-draft-v1"
 private const val FORMULA_TEMPLATE: String = "f01/template-v1"
 private const val FORMULA_CONSTRAINT: String = "constraints/deterministic-v1"
 private const val FORMULA_SCHEDULE_PIN: String = "schedule/pinned-total-v1"
+private const val WEIGHT_STEP: Double = 0.5

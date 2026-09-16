@@ -3,27 +3,29 @@
 # Board order
 
 ## idea
-- WLO-0038
 - WLO-0039
+
+## backlog
+- WLO-0037
+- WLO-0041
+- WLO-0075
+- WLO-0076
+- WLO-0077
+- WLO-0078
+- WLO-0054
+- WLO-0042
+- WLO-0044
 - WLO-0046
 - WLO-0047
 - WLO-0048
-
-## backlog
 - WLO-0029
-- WLO-0037
-- WLO-0041
 
 ## todo
-- WLO-0042
-- WLO-0044
 - WLO-0045
-- WLO-0051
-- WLO-0052
-- WLO-0053
-- WLO-0054
+- WLO-0070
+- WLO-0038
+- WLO-0083
+- WLO-0084
 
 ## doing
-- WLO-0050
-- WLO-0055
-- WLO-0056
+- WLO-0079

@@ -146,6 +146,7 @@ class WeightHistoryTest {
                     ),
                 today = today,
             )
+
         fun label(start: Long): String = HistoryLabels.bucketLabel(buckets.first { it.startDay == start }, today)
         assertEquals("Today", label(today))
         assertEquals("Thu 10", label(day("2026-09-10"))) // inside a daily bucket

@@ -1,5 +1,6 @@
 package app.wlo.feature.f01.onboarding.domain
 
+import app.wlo.core.common.MassUnit
 import app.wlo.core.documents.DocumentCodec
 import app.wlo.core.documents.DocumentEnvelope
 import app.wlo.core.documents.PreferenceProfile
@@ -20,12 +21,18 @@ import kotlinx.serialization.serializer
 public data class OnboardingDraft(
     /** The step the user was on; restore lands exactly there. */
     public val step: String = "WELCOME",
+    /** Global display preference; values remain canonical kg everywhere else. */
+    public val massUnit: String? = MassUnit.KILOGRAM.name,
     public val sex: String? = null,
     public val birthYear: Int? = null,
     public val heightCm: Double? = null,
     public val currentWeightKg: Double? = null,
     public val goalWeightKg: Double? = null,
     public val pacePctPerWeek: Double? = null,
+    public val pregnant: String? = null,
+    public val breastfeeding: String? = null,
+    public val eatingDisorderConcern: String? = null,
+    public val medicallyInfluencedWeight: String? = null,
     public val activityLevel: String? = null,
     public val templateId: String? = null,
     public val constraints: List<String> = emptyList(),

@@ -5,7 +5,6 @@ import app.wlo.core.common.WloResult
 import app.wlo.core.database.WloDatabase
 import app.wlo.core.database.jvmDatabaseBuilder
 import app.wlo.core.datastore.SettingsStoreFactory
-import app.wlo.core.model.MeasurementAttr
 import app.wlo.core.model.MeasurementKind
 import app.wlo.core.model.MeasurementSource
 import app.wlo.core.testing.FakeClock
@@ -36,7 +35,7 @@ class WeighInEditReplaceTest {
     private val measurements = RoomMeasurementRepository(db, projector)
     private val targets = RoomTargetsRepository(db)
     private val projection = RoomDayProjectionRepository(db, projector, targets)
-    private val weighIns = RoomWeighInRepository(measurements)
+    private val weighIns = RoomWeighInRepository(db, measurements, projector)
 
     @AfterTest
     fun tearDown() {
@@ -85,26 +84,19 @@ class WeighInEditReplaceTest {
             repeat(30) { index -> weighIn(profile, day - 30 + index, 77.0) }
             val original = weighIn(profile, day, 77.0)
 
-            // The replace: append corrected (a σ-breaking correction — the
-            // guard flags it, the event stores either way), carry attrs, mark
-            // edited, retire the original.
+            // The repository owns the whole replacement transaction: corrected
+            // event + flags + retirement + derived suffix.
             clock.advanceBy(60_000)
             val corrected =
                 weighIns
-                    .appendWeighIn(
-                        profileId = profile,
+                    .replaceWeighIn(
+                        eventId = original.event.id,
                         dayEpochDay = day,
                         weightKg = 80.4,
                         capturedAt = clock.now(),
-                        source = MeasurementSource.MANUAL,
+                        editedDescription = "was 77.0",
                     ).okOrDie()
-            measurements.attachAttrs(
-                corrected.event.id,
-                listOf(
-                    MeasurementAttr(eventId = corrected.event.id, attr = "edited", valueText = "was 77.0"),
-                ),
-            )
-            weighIns.deleteWeighIn(original.event.id, clock.now()).okOrDie()
+            val replacement = corrected.replacement.event
 
             val dayEvents =
                 measurements
@@ -112,8 +104,8 @@ class WeighInEditReplaceTest {
                     .okOrDie()
                     .filter { it.kind == MeasurementKind.WEIGHT }
             assertEquals(listOf(80.4), dayEvents.map { it.valueReal })
-            val attrs = measurements.attrsOf(corrected.event.id).okOrDie()
-            assertTrue(attrs.any { it.attr == "edited" }, "the replacement carries the edited mark")
+            val attrs = measurements.attrsOf(replacement.id).okOrDie()
+            assertTrue(attrs.any { it.attr == WeighInAttribute.EDITED.wireName }, "the replacement carries the edited mark")
             assertTrue(attrs.none { it.eventId == original.event.id }, "the original is gone with its sidecar")
         }
     }

@@ -4,6 +4,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.semantics
 
 /**
  * The screen-level title (DESIGN-SYSTEM.md §2 `title-l` slot, WLO-0031): one
@@ -23,5 +25,5 @@ public fun WloScreenTitle(
     Text(
         text = title,
         style = wloType.titleL,
-        modifier = modifier.padding(top = WloSpacing.SCREEN),
+        modifier = modifier.semantics { heading() }.padding(top = WloSpacing.SCREEN),
     )

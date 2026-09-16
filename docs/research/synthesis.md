@@ -77,7 +77,13 @@ Every v1 feature survives contact with the market. What changes after research i
 - The gap neither touches: **exercise is disconnected from nutrition and weight.**
   Neither computes energy balance. WLO's intake+output+trend loop is unique in this set.
 
-### 1.5 Weight & metrics tracking with forecasting ✅ validated — the geek core
+### 1.5 Weight & metrics tracking with forecasting ✅ validated — the launch core
+
+Research evidence describes competitor behavior, not WLO's storage contract.
+In particular, Happy Scale's lowest-of-day rule is one scalar candidate to
+benchmark; it is not a deduplication rule. WLO preserves distinct source events
+and Health Connect identity, then derives a separately versioned daily series.
+The weight-first Release 1 boundary is authoritative in `FEATURES.md` §2.0.
 - Happy Scale: trend weight with **4 selectable smoothers** (EWMA, 7-day MA,
   proprietary zero-phase smoother, Holt double-exponential), lowest-of-day import rule,
   goal-date predictions, named predictions ("Wedding Day") with a "How we got here"
@@ -178,9 +184,9 @@ Ranked by (value to the numbers-geek) × (fit with local-first) × (cost).
 16. **Data portability as a feature** *(Waistline's versioned JSON export/import,
     plop's PDF doctor report)* — "Mealime is shutting down; your data isn't" is a
     marketing wedge WLO gets for free by being local.
-17. **Fresh Start + multi-profile + biometric lock** *(Happy Scale, Happy Poop)* —
-    hide-not-delete for relapses; profiles for couples; discreet mode + hidden
-    gallery for silhouette and poop photos.
+17. **Fresh Start + discreet mode** *(Happy Scale, Happy Poop)* —
+    hide-not-delete for relapses and sensitive-number controls fit Release 2;
+    multi-profile is deferred while the schema remains partition-ready.
 
 ---
 

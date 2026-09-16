@@ -13,9 +13,9 @@ import kotlinx.serialization.Serializable
 public data class Profile(
     public val id: String,
     public val sex: Sex?,
-    public val birthYear: Int,
-    public val heightCm: Double,
-    public val startWeightKg: Double,
+    public val birthYear: Int?,
+    public val heightCm: Double?,
+    public val startWeightKg: Double?,
     public val activityLevel: ActivityLevel,
     /** Metric default, imperial a user setting (R-D10). */
     public val unitPreference: UnitSystem = UnitSystem.METRIC,
@@ -24,7 +24,7 @@ public data class Profile(
     public val archivedAt: Instant? = null,
 ) {
     /** Age in whole years at [Instant] (deterministic; engines take the year in). */
-    public fun ageAtYear(year: Int): Int = (year - birthYear).coerceAtLeast(0)
+    public fun ageAtYear(year: Int): Int? = birthYear?.let { (year - it).coerceAtLeast(0) }
 }
 
 /** Recorded sex; `null` = undisclosed (floors/BMR then use registry defaults). */

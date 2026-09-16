@@ -18,6 +18,7 @@ import app.wlo.app.navigation.WloApp
 import app.wlo.app.ui.lock.LockGateScreen
 import app.wlo.core.designsystem.WloTheme
 import app.wlo.core.vault.AppLockController
+import app.wlo.core.vault.AppLockPosture
 import app.wlo.core.vault.LockTimeout
 import app.wlo.core.vault.applyFlagSecure
 import kotlinx.coroutines.flow.first
@@ -91,6 +92,9 @@ public class MainActivity : FragmentActivity() {
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        // Fail closed before Compose (or even the first destination callback)
+        // can expose a sensitive route in a screenshot/recents thumbnail.
+        applyFlagSecure(this, "applock/gate")
         enableEdgeToEdge(
             statusBarStyle = SystemBarStyle.dark(Color.TRANSPARENT),
             navigationBarStyle = SystemBarStyle.dark(Color.TRANSPARENT),
@@ -99,7 +103,15 @@ public class MainActivity : FragmentActivity() {
         val koin = GlobalContext.get()
         val appLock = koin.get<AppLockController>()
         val settings = koin.get<app.wlo.core.datastore.SettingsStore>()
-        lockTimeout = LockTimeout.fromWire(runBlocking { settings.lockTimeout.first() })
+        val (appLockEnabled, startupTimeout) =
+            runBlocking {
+                settings.appLockEnabled.first() to LockTimeout.fromWire(settings.lockTimeout.first())
+            }
+        lockTimeout = startupTimeout
+        // A newly constructed controller is UNRESOLVED. Resolve it before
+        // setContent: enabled always means LOCKED after cold start/process
+        // death because an earlier background timestamp cannot be trusted.
+        appLock.resolveStartup(appLockEnabled)
 
         // App lock: background timestamps + the CONFIGURED timeout. The timeout
         // is re-read on every ON_START (PART B: a Settings change applies to
@@ -124,9 +136,13 @@ public class MainActivity : FragmentActivity() {
         setContent {
             // R-D1: dark is canonical; the light scheme is future work.
             WloTheme(darkTheme = true) {
-                val locked by appLock.locked.collectAsStateWithLifecycle()
-                val appLockEnabled by settings.appLockEnabled.collectAsStateWithLifecycle(initialValue = false)
-                val gateShowing = locked && appLockEnabled
+                val lockPosture by appLock.posture.collectAsStateWithLifecycle()
+                val persistedLockEnabled by
+                    settings.appLockEnabled.collectAsStateWithLifecycle(initialValue = appLockEnabled)
+                // UNRESOLVED is also gate posture. It should normally last
+                // only until the synchronous startup read above, but keeping
+                // this branch fail-closed prevents future async regressions.
+                val gateShowing = persistedLockEnabled && lockPosture != AppLockPosture.UNLOCKED
                 // Discreet mode: while the gate shows, the window is FLAG_SECURE
                 // too (the gate route is in SecureSurfaces) — no recents leak.
                 val secureRoute = if (gateShowing) "applock/gate" else currentDestinationForVerification

@@ -23,6 +23,9 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewModelScope
 import app.wlo.app.notification.WeighInReminder
+import app.wlo.core.common.MassUnit
+import app.wlo.core.common.getOrNull
+import app.wlo.core.data.ProfileRepository
 import app.wlo.core.datastore.SettingsStore
 import app.wlo.core.designsystem.SelectChip
 import app.wlo.core.designsystem.WloCard
@@ -33,6 +36,7 @@ import app.wlo.core.designsystem.WloSpacing
 import app.wlo.core.designsystem.WloSwitchRow
 import app.wlo.core.designsystem.wloExtendedColors
 import app.wlo.core.designsystem.wloType
+import app.wlo.core.model.UnitSystem
 import app.wlo.core.vault.AppLockController
 import app.wlo.core.vault.LockTimeout
 import app.wlo.core.vault.canPromptBiometric
@@ -54,6 +58,7 @@ public fun SettingsScreen(
     onOpenAiStudio: () -> Unit,
     onOpenVault: () -> Unit,
     onOpenGoals: () -> Unit,
+    onOpenPlanStudio: () -> Unit,
     onOpenProfile: () -> Unit,
 ) {
     val viewModel: SettingsViewModel = koinViewModel()
@@ -106,12 +111,40 @@ public fun SettingsScreen(
             modifier = Modifier.testTag("settings-open-goals"),
         )
         WloListRow(
+            label = "Diet Plan Studio",
+            secondary = "Optional meal targets and diet-plan setup",
+            chevron = true,
+            onClick = onOpenPlanStudio,
+            modifier = Modifier.testTag("settings-open-plan-studio"),
+        )
+        WloListRow(
             label = "Profile",
             secondary = "Sex, birth year, height, activity — the facts the math reads",
             chevron = true,
             onClick = onOpenProfile,
             modifier = Modifier.testTag("settings-open-profile"),
         )
+
+        WloCard(
+            modifier = Modifier.testTag("settings-weight-unit"),
+            header = { WloCardHeader(title = "Weight unit") },
+        ) {
+            Text(
+                text = "Changes how weights are displayed and entered. Stored measurements stay unchanged.",
+                style = wloType.body,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Row(horizontalArrangement = Arrangement.spacedBy(WloSpacing.TIGHT)) {
+                for (unit in MassUnit.entries) {
+                    SelectChip(
+                        label = unit.settingsLabel(),
+                        selected = state.massUnit == unit,
+                        onClick = { viewModel.setMassUnit(unit) },
+                        modifier = Modifier.testTag("settings-unit-${unit.symbol}"),
+                    )
+                }
+            }
+        }
 
         // --- App lock (F13 §3) ------------------------------------------------
         WloCard(
@@ -219,6 +252,7 @@ private fun timeoutLabel(timeout: LockTimeout): String =
 
 /** Settings state: the app-lock posture (F13 §3) + the reminder (F06 §4). */
 public data class SettingsUiState(
+    public val massUnit: MassUnit = MassUnit.KILOGRAM,
     public val appLockEnabled: Boolean = false,
     public val lockTimeout: LockTimeout = LockTimeout.ONE_MINUTE,
     public val reminderEnabled: Boolean = false,
@@ -227,13 +261,18 @@ public data class SettingsUiState(
 
 public class SettingsViewModel(
     private val settings: SettingsStore,
+    private val profiles: ProfileRepository,
     private val appLock: AppLockController,
     private val appContext: Context,
 ) : ViewModel() {
     public val state: StateFlow<SettingsUiState> =
         combine(
-            combine(settings.appLockEnabled, settings.lockTimeout) { enabled, timeout ->
-                SettingsUiState(appLockEnabled = enabled, lockTimeout = LockTimeout.fromWire(timeout))
+            combine(settings.massUnit, settings.appLockEnabled, settings.lockTimeout) { massUnit, enabled, timeout ->
+                SettingsUiState(
+                    massUnit = massUnit,
+                    appLockEnabled = enabled,
+                    lockTimeout = LockTimeout.fromWire(timeout),
+                )
             },
             settings.weighInReminderEnabled,
             settings.weighInReminderMinuteOfDay,
@@ -255,6 +294,19 @@ public class SettingsViewModel(
         }
     }
 
+    /**
+     * DataStore is the global render authority. The active profile retains a
+     * compatibility mirror for existing vault documents and restores.
+     */
+    public fun setMassUnit(unit: MassUnit) {
+        viewModelScope.launch {
+            settings.setMassUnit(unit)
+            profiles.active().getOrNull()?.let { profile ->
+                profiles.setUnitPreference(profile.id, unit.toUnitSystem())
+            }
+        }
+    }
+
     public fun setAppLock(enabled: Boolean) {
         viewModelScope.launch { settings.setAppLockEnabled(enabled) }
     }
@@ -271,3 +323,15 @@ public class SettingsViewModel(
         }
     }
 }
+
+private fun MassUnit.settingsLabel(): String =
+    when (this) {
+        MassUnit.KILOGRAM -> "Kilograms (kg)"
+        MassUnit.POUND -> "Pounds (lb)"
+    }
+
+private fun MassUnit.toUnitSystem(): UnitSystem =
+    when (this) {
+        MassUnit.KILOGRAM -> UnitSystem.METRIC
+        MassUnit.POUND -> UnitSystem.IMPERIAL
+    }

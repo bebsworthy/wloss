@@ -3,8 +3,10 @@ package app.wlo.feature.f01.onboarding.state
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import app.wlo.core.common.ClockPort
+import app.wlo.core.common.MassUnit
 import app.wlo.core.data.NewProfile
 import app.wlo.core.datastore.JsonDocumentStore
+import app.wlo.core.datastore.SettingsStore
 import app.wlo.core.documents.ConstraintApplier
 import app.wlo.core.documents.DietTemplate
 import app.wlo.core.documents.DietTemplateApplier
@@ -12,12 +14,20 @@ import app.wlo.core.documents.TargetsDocument
 import app.wlo.core.engines.ForecastEngine
 import app.wlo.core.model.ActivityLevel
 import app.wlo.core.model.ConstantsRegistry
+import app.wlo.core.model.SafetyAnswer
 import app.wlo.core.model.Sex
+import app.wlo.core.model.UnitSystem
+import app.wlo.core.model.WeightGoalEligibility
+import app.wlo.core.model.WeightGoalMode
+import app.wlo.core.model.WeightGoalSafetyCopyPolicy
 import app.wlo.feature.f01.onboarding.domain.FinishOnboarding
+import app.wlo.feature.f01.onboarding.domain.GoalEditorSafety
 import app.wlo.feature.f01.onboarding.domain.Milestones
 import app.wlo.feature.f01.onboarding.domain.OnboardingDraft
 import app.wlo.feature.f01.onboarding.domain.OnboardingDraftIO
 import app.wlo.feature.f01.onboarding.domain.TemplateLibrary
+import app.wlo.feature.f01.onboarding.domain.WeightGoalPreview
+import app.wlo.feature.f01.onboarding.domain.WeightGoalPreviewInput
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -39,6 +49,10 @@ public sealed interface OnboardingEvent {
         public val sex: Sex?,
     ) : OnboardingEvent
 
+    public data class SetMassUnit(
+        public val unit: MassUnit,
+    ) : OnboardingEvent
+
     public data class SetBirthYear(
         public val year: Int,
     ) : OnboardingEvent
@@ -57,6 +71,11 @@ public sealed interface OnboardingEvent {
 
     public data class SetPacePct(
         public val pacePctPerWeek: Double,
+    ) : OnboardingEvent
+
+    public data class SetGoalSafety(
+        public val question: GoalSafetyQuestion,
+        public val answer: SafetyAnswer,
     ) : OnboardingEvent
 
     public data class SetActivity(
@@ -120,6 +139,7 @@ public class OnboardingViewModel(
     private val library: TemplateLibrary,
     private val finisher: FinishOnboarding,
     private val documents: JsonDocumentStore,
+    private val settings: SettingsStore,
     private val clock: ClockPort,
 ) : ViewModel() {
     /** The shipped library, loaded lazily at holder construction. */
@@ -147,6 +167,10 @@ public class OnboardingViewModel(
             OnboardingEvent.Next -> moveBy(1)
             OnboardingEvent.Back -> moveBy(-1)
             OnboardingEvent.Skip -> skip()
+            is OnboardingEvent.SetMassUnit -> {
+                update { it.copy(massUnit = event.unit) }
+                viewModelScope.launch { settings.setMassUnit(event.unit) }
+            }
             is OnboardingEvent.SetSex -> update { it.copy(sex = event.sex) }
             is OnboardingEvent.SetBirthYear -> update { it.copy(birthYear = event.year.coerceIn(1930, 2010)) }
             is OnboardingEvent.SetHeightCm -> update { it.copy(heightCm = event.heightCm.coerceIn(120.0, 220.0)) }
@@ -172,6 +196,16 @@ public class OnboardingViewModel(
                     val pace =
                         if (atWall) state.paceWallPctPerWeek else snapped.coerceAtMost(state.paceWallPctPerWeek)
                     state.copy(pacePctPerWeek = pace.round2())
+                }
+            is OnboardingEvent.SetGoalSafety ->
+                update { state ->
+                    when (event.question) {
+                        GoalSafetyQuestion.PREGNANT -> state.copy(pregnant = event.answer)
+                        GoalSafetyQuestion.BREASTFEEDING -> state.copy(breastfeeding = event.answer)
+                        GoalSafetyQuestion.EATING_DISORDER -> state.copy(eatingDisorderConcern = event.answer)
+                        GoalSafetyQuestion.MEDICALLY_INFLUENCED ->
+                            state.copy(medicallyInfluencedWeight = event.answer)
+                    }
                 }
             is OnboardingEvent.SetActivity -> update { it.copy(activityLevel = event.level) }
             is OnboardingEvent.SelectTemplate -> update { it.copy(selectedTemplateId = event.templateId) }
@@ -243,6 +277,10 @@ public class OnboardingViewModel(
     private fun start() {
         val state = _uiState.value
         if (state.finishing) return
+        if (state.goalEligibility !is WeightGoalEligibility.Eligible) {
+            _uiState.value = state.copy(error = "${state.goalSafetyCopy.title}. ${state.goalSafetyCopy.body}")
+            return
+        }
         val template = state.selectedTemplate ?: state.templates.firstOrNull { it.isDefault } ?: return
         _uiState.value = state.copy(finishing = true, error = null)
         viewModelScope.launch {
@@ -256,10 +294,12 @@ public class OnboardingViewModel(
                             heightCm = state.heightCm,
                             startWeightKg = state.currentWeightKg,
                             activityLevel = state.activityLevel,
+                            unitPreference = state.massUnit.toUnitSystem(),
                         ),
                     template = template,
                     draftTargets = state.draftTargets ?: draftFor(state, template),
                     draftWeightKg = state.currentWeightKg,
+                    safetyInput = safetyInput(state),
                     timeZone = zone,
                 )
             when (outcome) {
@@ -308,24 +348,40 @@ public class OnboardingViewModel(
                 t - pace / 100.0 * state.currentWeightKg * ConstantsRegistry.KCAL_PER_KG_FAT / 7.0
             }
 
+        val safetyInput = safetyInput(state.copy(pacePctPerWeek = pace), budget)
+        val eligibility =
+            app.wlo.core.model.WeightGoalSafety
+                .evaluate(safetyInput)
+
+        val preview =
+            WeightGoalPreview.evaluate(
+                WeightGoalPreviewInput(
+                    ageYears = age,
+                    sex = state.sex,
+                    heightCm = state.heightCm,
+                    activityLevel = state.activityLevel,
+                    currentWeightKg = state.currentWeightKg,
+                    targetWeightKg = state.goalWeightKg,
+                    mode = WeightGoalMode.LOSS,
+                    requestedPacePctPerWeek = pace,
+                    targetEpochDay = null,
+                    plannedDailyEnergyKcal = budget,
+                    pregnant = state.pregnant,
+                    breastfeeding = state.breastfeeding,
+                    eatingDisorderConcern = state.eatingDisorderConcern,
+                    medicallyInfluencedWeight = state.medicallyInfluencedWeight,
+                    todayEpochDay = clockEpochDay(),
+                    now = clock.now(),
+                ),
+            )
         val forecast =
-            if (state.currentWeightKg > 0.0 && state.goalWeightKg < state.currentWeightKg) {
-                ForecastEngine.coldStart(
-                    input =
-                        ForecastEngineColdStart.input(
-                            sex = state.sex,
-                            ageYears = age,
-                            heightCm = state.heightCm,
-                            startTrendKg = state.currentWeightKg,
-                            goalWeightKg = state.goalWeightKg,
-                            activityLevel = state.activityLevel,
-                            intakeKcal = budget ?: DietTemplateApplier.DEFAULT_BUDGET_KCAL,
-                            startEpochDay = clockEpochDay(),
-                            startInstant = clock.now(),
-                        ),
-                )
-            } else {
-                null
+            when (val result = preview.forecast) {
+                is app.wlo.core.engines.GoalForecastResult.Available -> result.bands
+                is app.wlo.core.engines.GoalForecastResult.Developing -> result.bands
+                is app.wlo.core.engines.GoalForecastResult.Held,
+                is app.wlo.core.engines.GoalForecastResult.Withheld,
+                null,
+                -> null
             }
 
         val application =
@@ -358,11 +414,31 @@ public class OnboardingViewModel(
             formulaTdeeKcal = tdee,
             budgetKcal = budget,
             forecast = forecast,
+            forecastResult = preview.forecast,
             draftTargets = draftTargets,
             milestones = milestones,
             application = application,
+            goalEligibility = preview.eligibility,
+            goalSafetyCopy = WeightGoalSafetyCopyPolicy.forResult(preview.eligibility),
         )
     }
+
+    private fun safetyInput(
+        state: OnboardingUiState,
+        budget: Double? = state.budgetKcal,
+    ) = GoalEditorSafety.input(
+        ageYears = clock.now().toLocalDateTime(TimeZone.currentSystemDefault()).year - state.birthYear,
+        currentWeightKg = state.currentWeightKg,
+        sex = state.sex,
+        mode = WeightGoalMode.LOSS,
+        targetWeightKg = state.goalWeightKg,
+        pacePctPerWeek = state.pacePctPerWeek,
+        plannedDailyEnergyKcal = budget,
+        pregnant = state.pregnant,
+        breastfeeding = state.breastfeeding,
+        eatingDisorderConcern = state.eatingDisorderConcern,
+        medicallyInfluencedWeight = state.medicallyInfluencedWeight,
+    )
 
     private fun draftFor(
         state: OnboardingUiState,
@@ -397,12 +473,16 @@ public class OnboardingViewModel(
     private fun restoreDraft() {
         viewModelScope.launch {
             val draft = documents.readText(FinishOnboarding.DRAFT_KEY)?.let(OnboardingDraftIO::decode)
+            val storedUnit = settings.massUnitOnce()
             _uiState.value =
                 if (draft != null) {
-                    recompute(fromDraft(draft))
+                    recompute(fromDraft(draft, storedUnit))
                 } else {
-                    recompute(_uiState.value).copy(restoreAttempted = true)
+                    recompute(_uiState.value.copy(massUnit = storedUnit)).copy(restoreAttempted = true)
                 }
+            // An explicit draft choice wins over the compatibility mirror
+            // after process death; all values themselves remain canonical kg.
+            settings.setMassUnit(_uiState.value.massUnit)
         }
     }
 
@@ -418,12 +498,17 @@ public class OnboardingViewModel(
     private fun toDraft(state: OnboardingUiState): OnboardingDraft =
         OnboardingDraft(
             step = state.step.name,
+            massUnit = state.massUnit.name,
             sex = state.sex?.wireName,
             birthYear = state.birthYear,
             heightCm = state.heightCm,
             currentWeightKg = state.currentWeightKg,
             goalWeightKg = state.goalWeightKg,
             pacePctPerWeek = state.pacePctPerWeek,
+            pregnant = state.pregnant.name,
+            breastfeeding = state.breastfeeding.name,
+            eatingDisorderConcern = state.eatingDisorderConcern.name,
+            medicallyInfluencedWeight = state.medicallyInfluencedWeight.name,
             activityLevel = state.activityLevel.wireName,
             templateId = state.selectedTemplateId,
             constraints = state.constraints,
@@ -432,10 +517,14 @@ public class OnboardingViewModel(
             startedAtEpochMs = clock.now().toEpochMilliseconds(),
         )
 
-    private fun fromDraft(draft: OnboardingDraft): OnboardingUiState =
+    private fun fromDraft(
+        draft: OnboardingDraft,
+        storedUnit: MassUnit,
+    ): OnboardingUiState =
         OnboardingUiState(
             step = OnboardingStep.fromNameOrNull(draft.step) ?: OnboardingStep.WELCOME,
             restoreAttempted = true,
+            massUnit = draft.massUnit?.let { name -> MassUnit.entries.firstOrNull { it.name == name } } ?: storedUnit,
             templates = shipped,
             selectedTemplateId = draft.templateId ?: shipped.firstOrNull { it.isDefault }?.id,
             sex = Sex.fromWireName(draft.sex),
@@ -444,6 +533,10 @@ public class OnboardingViewModel(
             currentWeightKg = draft.currentWeightKg ?: OnboardingUiState.DEFAULT_WEIGHT_KG,
             goalWeightKg = draft.goalWeightKg ?: OnboardingUiState.DEFAULT_GOAL_KG,
             pacePctPerWeek = draft.pacePctPerWeek ?: OnboardingUiState.DEFAULT_PACE_PCT,
+            pregnant = draft.pregnant.toSafetyAnswer(),
+            breastfeeding = draft.breastfeeding.toSafetyAnswer(),
+            eatingDisorderConcern = draft.eatingDisorderConcern.toSafetyAnswer(),
+            medicallyInfluencedWeight = draft.medicallyInfluencedWeight.toSafetyAnswer(),
             activityLevel =
                 draft.activityLevel
                     ?.let { ActivityLevel.fromWireName(it) }
@@ -472,28 +565,11 @@ public class OnboardingViewModel(
     private fun Double.round2(): Double = kotlin.math.round(this * 100.0) / 100.0
 }
 
-/** Local shim so the cold-start input construction reads cleanly above. */
-private object ForecastEngineColdStart {
-    fun input(
-        sex: Sex?,
-        ageYears: Int,
-        heightCm: Double,
-        startTrendKg: Double,
-        goalWeightKg: Double,
-        activityLevel: ActivityLevel,
-        intakeKcal: Double,
-        startEpochDay: Long,
-        startInstant: kotlinx.datetime.Instant,
-    ): app.wlo.core.engines.ColdStartInput =
-        app.wlo.core.engines.ColdStartInput(
-            sex = sex,
-            ageYears = ageYears,
-            heightCm = heightCm,
-            startTrendKg = startTrendKg,
-            goalWeightKg = goalWeightKg,
-            activityLevel = activityLevel,
-            intakeKcal = intakeKcal,
-            startEpochDay = startEpochDay,
-            startInstant = startInstant,
-        )
-}
+private fun String?.toSafetyAnswer(): SafetyAnswer =
+    this?.let { name -> SafetyAnswer.entries.firstOrNull { it.name == name } } ?: SafetyAnswer.NOT_ANSWERED
+
+private fun MassUnit.toUnitSystem(): UnitSystem =
+    when (this) {
+        MassUnit.KILOGRAM -> UnitSystem.METRIC
+        MassUnit.POUND -> UnitSystem.IMPERIAL
+    }

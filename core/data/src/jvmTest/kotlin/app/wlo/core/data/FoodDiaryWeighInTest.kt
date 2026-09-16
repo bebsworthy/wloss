@@ -47,7 +47,7 @@ class FoodDiaryWeighInTest {
     private val foods = RoomFoodRepository(db)
     private val diary = RoomDiaryRepository(db, projector, foods)
     private val measurements = RoomMeasurementRepository(db, projector)
-    private val weighIns = RoomWeighInRepository(measurements)
+    private val weighIns = RoomWeighInRepository(db, measurements, projector)
     private val targets = RoomTargetsRepository(db)
     private val projection = RoomDayProjectionRepository(db, projector, targets)
 
@@ -388,7 +388,7 @@ class FoodDiaryWeighInTest {
 
             // The event is stored anyway (R-B8), with the flag on the EAV sidecar.
             val attrs = measurements.attrsOf(jumped.event.id).okOrDie()
-            assertEquals(RoomWeighInRepository.OUTLIER_ATTR, attrs.single().attr)
+            assertEquals(WeighInAttribute.OUTLIER.wireName, attrs.single().attr)
             assertEquals("flagged", attrs.single().valueText)
 
             val raw = weighIns.dayWeighIns(profileId, day0 + 5).okOrDie()

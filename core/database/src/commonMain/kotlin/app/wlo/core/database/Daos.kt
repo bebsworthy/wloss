@@ -270,6 +270,29 @@ public interface ConsentLedgerDao {
     @Insert(onConflict = OnConflictStrategy.IGNORE)
     public suspend fun appendAllIgnoring(entries: List<ConsentLedgerEntity>)
 
+    /**
+     * Restore-only insert that preserves sequence 0. Room treats 0 as
+     * "generate a key" for [ConsentLedgerEntity]'s auto-generated primary
+     * key, which would rewrite a verified genesis row and break suffix replay.
+     */
+    @Query(
+        """
+        INSERT OR IGNORE INTO consent_ledger
+            (seq, profileId, capability, decision, atEpochMs, prevHashHex, hashHex)
+        VALUES
+            (:seq, :profileId, :capability, :decision, :atEpochMs, :prevHashHex, :hashHex)
+        """,
+    )
+    public suspend fun appendRestoredIgnoring(
+        seq: Long,
+        profileId: String,
+        capability: String,
+        decision: String,
+        atEpochMs: Long,
+        prevHashHex: String,
+        hashHex: String,
+    )
+
     /** F13 restore reconciliation: the local chain head (null = empty ledger). */
     @Query("SELECT * FROM consent_ledger ORDER BY seq DESC LIMIT 1")
     public suspend fun last(): ConsentLedgerEntity?

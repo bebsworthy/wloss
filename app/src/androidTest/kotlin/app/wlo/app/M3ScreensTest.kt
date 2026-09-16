@@ -2,10 +2,10 @@ package app.wlo.app
 
 import android.os.SystemClock
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
+import androidx.compose.ui.test.onAllNodesWithContentDescription
 import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onFirst
-import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
@@ -15,6 +15,7 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.rule.GrantPermissionRule
 import androidx.test.uiautomator.UiDevice
 import app.wlo.app.di.FixedClock
+import app.wlo.app.navigation.WloTabs
 import app.wlo.core.common.ClockPort
 import kotlinx.datetime.Clock
 import kotlinx.datetime.LocalDateTime
@@ -71,7 +72,7 @@ public class M3ScreensTest {
         // Ladder: the hub camera tile now opens the REAL capture flow (M4
         // PART B); the manual ladder is its R-U15 twin, one tap away — which
         // this also exercises.
-        rule.onAllNodesWithText("Log food").onFirst().performClick()
+        rule.onNodeWithTag("hub-log-food", useUnmergedTree = true).performScrollTo().performClick()
         TestNav.awaitTag(rule, "f02-capture-viewfinder")
         rule.onNodeWithTag("f02-capture-manual", useUnmergedTree = true).performClick()
         TestNav.awaitTag(rule, "f02-search-field")
@@ -111,7 +112,9 @@ public class M3ScreensTest {
         backTo(ui, "hub-quick-actions")
 
         // Weigh-in sheet, the outlier prompt, the trend chart + tuner, math docs.
-        rule.onAllNodesWithText("Weigh in").onFirst().performClick()
+        rule.onNodeWithTag("hub-trend-card", useUnmergedTree = true).performScrollTo().performClick()
+        TestNav.awaitTag(rule, "f06-title")
+        rule.onNodeWithTag("f06-open-sheet", useUnmergedTree = true).performClick()
         TestNav.awaitTag(rule, "f06-weighin-sheet")
         shot("m3-weighin-sheet")
         rule.onNodeWithTag("f06-weight-field", useUnmergedTree = true).performTextClearance()
@@ -127,17 +130,14 @@ public class M3ScreensTest {
         rule.onNodeWithTag("f06-open-math", useUnmergedTree = true).performScrollTo().performClick()
         TestNav.awaitTag(rule, "f06-math-title")
         shot("m3-math-doc")
-        ui.pressBack()
+        backTo(ui, "hub-quick-actions")
 
         // Documented stubs — reached by rail taps only (deep links in a
         // rule-based test hang the rule's teardown; the M1 note's trap).
-        rule.onNodeWithContentDescription("Hub", useUnmergedTree = true).performClick()
-        TestNav.awaitTag(rule, "hub-quick-actions")
-        rule.onAllNodesWithText("Digestion").onFirst().performClick()
+        rule.onNodeWithTag("hub-digestion", useUnmergedTree = true).performScrollTo().performClick()
         TestNav.awaitTag(rule, "title-stub")
         shot("m3-stub-gut")
-        rule.onNodeWithContentDescription("Hub", useUnmergedTree = true).performClick()
-        TestNav.awaitTag(rule, "hub-quick-actions")
+        backTo(ui, "hub-quick-actions")
         SystemClock.sleep(500)
     }
 
@@ -162,6 +162,17 @@ public class M3ScreensTest {
         )
         TestNav.awaitTag(rule, "hub-close-card")
         shot("m3-hub-evening")
+    }
+
+    @Test
+    public fun hubSurface_activityRecreationRefreshesTheLifecycleSnapshot() {
+        SeedingRobot.onboardAndSeedWeek()
+        rule.onAllNodesWithContentDescription("Hub", useUnmergedTree = true).onFirst().performClick()
+        TestNav.awaitTag(rule, "hub-trend-card")
+
+        rule.activityRule.scenario.recreate()
+
+        TestNav.awaitTag(rule, "hub-trend-card")
     }
 
     private fun shot(name: String) {
@@ -189,22 +200,50 @@ public class M3ScreensTest {
     }
 
     /**
-     * Backs through the IME / bottom-sheet layers (whichever hold) and, once
-     * they are gone, pops the surface by tab; waits for [hubTag] on the Hub.
+     * Backs through the IME, bottom-sheet and nested-route layers until the
+     * Hub owns the shell again. Nested destinations deliberately replace the
+     * Material 3 navigation bar with an app bar, so a tab is not an available
+     * escape hatch while those layers are being dismissed.
      */
     private fun backTo(
         ui: UiDevice,
         hubTag: String,
     ) {
-        ui.pressBack()
-        ui.pressBack()
-        val deadline = System.currentTimeMillis() + TIMEOUT_MS
-        while (System.currentTimeMillis() < deadline) {
-            if (rule.onAllNodesWithTag(hubTag, useUnmergedTree = true).fetchSemanticsNodes().isNotEmpty()) return
-            Thread.sleep(POLL_MS)
+        dismissIme(ui)
+        SystemClock.sleep(BACK_SETTLE_MS)
+        repeat(MAX_BACK_STEPS) {
+            if (currentRoute() == WloTabs.HUB) {
+                TestNav.awaitTag(rule, hubTag)
+                return
+            }
+
+            val sheetVisible =
+                listOf("f02-entry-sheet", "f02-custom-sheet", "f02-portion-sheet")
+                    .any { tag ->
+                        rule.onAllNodesWithTag(tag, useUnmergedTree = true).fetchSemanticsNodes().isNotEmpty()
+                    }
+            if (sheetVisible) {
+                ui.pressBack()
+            } else {
+                val navigateUp = rule.onAllNodesWithContentDescription("Navigate up", useUnmergedTree = true)
+                check(navigateUp.fetchSemanticsNodes().isNotEmpty()) {
+                    "nested route has neither a dismissible sheet nor Navigate up; route=${currentRoute()}"
+                }
+                navigateUp.onFirst().performClick()
+            }
+            SystemClock.sleep(BACK_SETTLE_MS)
         }
-        rule.onNodeWithContentDescription("Hub", useUnmergedTree = true).performClick()
+
+        check(currentRoute() == WloTabs.HUB) {
+            "back navigation did not return to the Hub; route=${currentRoute()}"
+        }
         TestNav.awaitTag(rule, hubTag)
+    }
+
+    private fun currentRoute(): String? {
+        var route: String? = null
+        rule.activityRule.scenario.onActivity { activity -> route = activity.currentDestinationForVerification }
+        return route
     }
 
     /** Hides the keyboard with ESC (a back press could pop a nav layer instead). */
@@ -229,5 +268,7 @@ public class M3ScreensTest {
     private companion object {
         const val TIMEOUT_MS: Long = 15_000
         const val POLL_MS: Long = 200L
+        const val BACK_SETTLE_MS: Long = 350L
+        const val MAX_BACK_STEPS: Int = 6
     }
 }

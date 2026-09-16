@@ -2,7 +2,7 @@
 
 ## Project
 
-WLO ("wloss") is an **Android weight-loss companion app**, **fully local-first**: all
+WLO ("wloss") is an **Android weight-management companion app**, **fully local-first**: all
 user private data lives on the device. No cloud account, no server. Remote AI is
 opt-in per AI capability, with a user-provided API key and maximum provider
 compatibility.
@@ -32,7 +32,21 @@ rich statistics, data visualizations, trends, forecasting, and tasteful
 gamification. Design must be **beautiful, minimalist, and dense with rich
 micro-interactions** — polish is a feature, not a garnish.
 
-## Core feature set (v1 scope as described by the product owner)
+## Launch promise and first release
+
+WLO launches first as the most trustworthy weight tracker on Android: raw
+measurements remain inspectable, the weight trend is explainable, and goal
+progress and forecast ranges never pretend to know more than the data supports.
+Loss, maintenance, and gain are first-class goal modes. Weight is the default
+and primary app destination; broader planning and health features grow around
+that complete raw weight → trend → goal loop.
+
+First run asks only for the body-mass unit, an optional goal, and a first
+measurement or import. Diet planning is an optional follow-on, not a gate to
+using the weight tracker. The authoritative release boundary and capability
+matrix are in `docs/features/FEATURES.md` §2.0.
+
+## Broader product feature set
 
 1. **Multi-diet plan via templates** — pick/adapt diet templates (e.g. calorie
    deficit, keto, mediterranean, high-protein…), with per-diet rules.
@@ -41,8 +55,8 @@ micro-interactions** — polish is a feature, not a garnish.
 3. **Exercise planning & tracking** — workouts, sessions, progression.
 4. **Weight & measurement tracking** — metrics (weight, body circumference,
    body-fat %, …), plus **forecasting** (goal-date projection, trend lines).
-5. **Silhouette tracker** — periodic body photos, aligned/side-by-side
-   comparison over time, all stored locally.
+5. **Silhouette tracker** — periodic in-memory camera capture converted to
+   vector outlines for aligned comparison. Body photographs are never stored.
 6. **Poop tracker** — bowel-movement logging (e.g. Bristol scale) correlated
    with diet.
 7. **More to be discovered via competitive research** — see `docs/research/`.
@@ -64,11 +78,11 @@ micro-interactions** — polish is a feature, not a garnish.
   Every manual field is a design failure to be reduced.
 - **Privacy by architecture** — local-only storage; exports are explicit;
   nothing leaves the device without the matching per-capability consent being
-  on.
+  on. Android system cloud backup and implicit device-to-device transfer are
+  disabled; portability uses only a user-selected SAF export/backup location.
 
 ## Current phase
 
-Phase 0 — **Design & research**. Competitive analysis of 10–20 diet/food/
-shopping/fitness/health tracker apps lives in `docs/research/`, with a
-synthesis mapping their features onto: (a) already planned, (b) good fit to
-add, (c) plan for a future version, (d) redundant/skip.
+Implementation is in progress. Competitive and product research remains in
+`docs/research/`; the weight-first release contract in `FEATURES.md` governs
+sequencing when older research or prototypes describe a broader v1.

@@ -47,10 +47,9 @@
   <div class="flowunit">
     <div class="phone wf"><div class="screen">
       <div class="wf-box solid row">status bar</div>
-      <div class="wf-box row">Weigh-in header · unit chip (kg, profile-sticky)</div>
-      <div class="wf-box row">Segmented: Scale · Snap · Type — equal weight, no default-shaming</div>
-      <div class="wf-box grid" style="grid-template-columns:1fr 1fr;"><div>Bluetooth: “92.1 arriving…”</div><div>OCR thumb: brackets + value</div></div>
-      <div class="wf-note">↑ assists offered above the pad, never instead (R-U15)</div>
+      <div class="wf-box row">Weigh-in header · app-wide unit label (kg/lb; change in Settings)</div>
+      <div class="wf-box row">Release 1: Type · Health Connect import</div>
+      <div class="wf-box row">Release 2 assist: Snap/OCR · deferred: Bluetooth</div>
       <div class="wf-box">Display: 81.2 · kg · ±0.1 stepper</div>
       <div class="wf-box tall">Number pad 1–9 · . · 0 · ⌫</div>
       <div class="wf-box row">date chip: this morning · back-date</div>
@@ -66,7 +65,7 @@
       <div class="wf-box hero">CONFIRMATION (frozen order): 1 trend hero “81.2 ↓ 0.3” (odometer) → 2 raw “80.9 scale” small → 3 progress ribbon</div>
       <div class="wf-note">↑ single soft tick on save · gain = identical anatomy, neutral color</div>
       <div class="wf-box tall">Gain-day variant inset: same card, ↑ delta in neutral, same tick</div>
-      <div class="wf-box row">re-weighs join quietly (R-B8) · back to Hub → 01</div>
+      <div class="wf-box row">re-weighs join quietly (R-B8) · back to Weight</div>
     </div></div>
     <div class="caption annotation"><b>Confirmation card.</b> The frozen F06 anatomy — trend-first, raw as small print, ribbon beneath; the whole ritual ends in one haptic.</div>
   </div>
@@ -92,7 +91,7 @@
       <div class="wf-box row">body-fat (estimated ±3–4 %) · BMI behind “on request”</div>
       <div class="wf-box">dots-only inset (week 1): “keep weighing — trend forms in a few days”</div>
       <div class="wf-box row">logbook: every entry + provenance · long-press = back-fill</div>
-      <div class="wf-box row">nav: Hub · Plan · Insights · Archive · Digestion</div>
+      <div class="wf-box row">nav: Weight · Hub · Plan · Insights · More</div>
     </div></div>
     <div class="caption annotation"><b>Trend history.</b> Scale dots stay queryable; the trend line is gated (≥3 points in trailing 7 days); BMI renders only on request.</div>
   </div>
@@ -112,7 +111,7 @@
       <div class="screen">
         <div class="apphead">
           <div class="brand">Weigh-in <small>Friday · 07:12</small></div>
-          <div class="actions"><span class="chip" title="unit is profile-sticky">kg</span></div>
+          <div class="actions"><span class="receipt" title="display unit; change in Settings">kg</span></div>
         </div>
 
         <div class="seg">
@@ -224,7 +223,7 @@
           <div class="receipt faint" style="margin-top:4px;">same tick · same motion · neutral color — a gain day feels identical in effort, different only in the small print.</div>
         </div>
 
-        <div class="receipt faint" style="margin:2px 4px;">re-weighs join the day quietly · back to the Hub hero</div>
+        <div class="receipt faint" style="margin:2px 4px;">re-weighs join the day quietly · back to Weight</div>
       </div>
       <span class="pin" style="top:126px; left:120px;">4</span>
       <span class="pin" style="top:250px; right:30px;">5</span>
@@ -349,11 +348,11 @@
         <div class="receipt faint" style="margin:0 4px 8px;">long-press a day to log it later</div>
 
         <div class="navbar">
-          <div class="tab active"><span class="ic">◉</span>Hub</div>
+          <div class="tab active"><span class="ic">⚖</span>Weight</div>
+          <div class="tab"><span class="ic">◉</span>Hub</div>
           <div class="tab"><span class="ic">▦</span>Plan</div>
           <div class="tab"><span class="ic">✦</span>Insights</div>
-          <div class="tab"><span class="ic ic-arch"></span>Archive</div>
-          <div class="tab"><span class="ic">🌿</span>Digestion</div>
+          <div class="tab"><span class="ic">•••</span>More</div>
         </div>
       </div>
       <span class="pin" style="top:34px; right:100px;">9</span>
@@ -369,7 +368,7 @@
         <li><span class="pin-ref">10</span>Chart = scale dots (raw, always queryable) + trend line + ribbon; 30d/90d/1y/all; the ribbon’s N-day reference is user-adjustable with a scrubber. Provenance chip names the smoother (α 0.15 per R-A2); “smoother” opens selector + compare-modes overlay with each smoother’s lag and failure modes documented in-app.</li>
         <li><span class="pin-ref">11</span>Data-quality gate: the trend line needs ≥3 points in the trailing 7 days — below that, dots only and the kindest true sentence in the app: “keep weighing — trend forms in a few days”.</li>
         <li><span class="pin-ref">12</span>Body-fat carries its honest ±3–4 % chip (estimated, never merged with measured series); BMI renders only behind “on request” — computed, badged derived, ranges not verdicts, no lectures.</li>
-        <li><span class="pin-ref">13</span>Nav per R-U7: “Digestion” (renamable — nothing says “gut” by default) and “Archive”, which opens on the lock gate (flow 09, mock 1), never on content.</li>
+        <li><span class="pin-ref">13</span>Weight is the default primary destination. Archive and Digestion retain their neutral, renamable names within More and keep their discretion gates.</li>
       </ol>
     </div>
   </div>

@@ -29,11 +29,13 @@ import kotlinx.coroutines.launch
 import kotlin.math.roundToInt
 
 /**
- * The swipe-to-reveal trigger row (WLO-0050 owner spec; the custom-gesture
- * path of the official swipe-to-dismiss guidance, which defers non-stock
- * behaviors to a hand-managed drag): the content drags horizontally as one
- * piece, revealing a trailing action in the space it vacates — never a
- * color fill, never an overlap.
+ * The swipe-to-reveal trigger row (WLO-0050). Material 3's
+ * `SwipeToDismissBox` cannot implement WLO's release-gated, velocity-blind
+ * trigger at a custom 90% threshold: its anchored swipe state may settle from
+ * velocity and models dismissal rather than a non-overlapping reveal. This
+ * custom gesture therefore keeps the content as one horizontally moving piece,
+ * revealing a trailing action in the space it vacates — never a color fill,
+ * never an overlap.
  *
  * The action NEVER fires mid-drag and velocity is ignored entirely — a
  * flick can never trigger it. The decision is made exactly once, on

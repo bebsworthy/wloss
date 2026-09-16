@@ -10,11 +10,18 @@ complexity:
   TooManyFunctions:
     active: false
   LongMethod:
-    active: false
+    active: true
+    # Compose screen functions are declarative trees; this catches true
+    # outliers without forcing extraction solely to satisfy a line count.
+    threshold: 240
   LongParameterList:
-    active: false
+    active: true
+    functionThreshold: 14
+    constructorThreshold: 16
+    ignoreDefaultParameters: true
   CyclomaticComplexMethod:
-    active: false
+    active: true
+    threshold: 45
 
 style:
   MagicNumber:
@@ -31,9 +38,13 @@ style:
 
 exceptions:
   TooGenericExceptionCaught:
-    active: false
+    active: true
+    # Boundaries may translate third-party failures, but must use a named
+    # variable and preserve cancellation where coroutines are involved.
+    allowedExceptionNameRegex: '(_|(ignore|expected).*)'
   SwallowedException:
-    active: false
+    active: true
+    allowedExceptionNameRegex: '(_|(ignore|expected).*)'
 
 naming:
   FunctionNaming:

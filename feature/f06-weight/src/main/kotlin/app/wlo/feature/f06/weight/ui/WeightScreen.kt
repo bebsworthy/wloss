@@ -4,10 +4,13 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Slider
@@ -16,12 +19,22 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusManager
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.semantics.LiveRegionMode
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.liveRegion
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.stateDescription
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import app.wlo.core.designsystem.ProvenanceChip
 import app.wlo.core.designsystem.SelectChip
@@ -51,8 +64,14 @@ import app.wlo.feature.f06.weight.state.RatiosUi
 import app.wlo.feature.f06.weight.state.SheetUi
 import app.wlo.feature.f06.weight.state.VerdictUi
 import app.wlo.feature.f06.weight.state.WeighInEvent
+import app.wlo.feature.f06.weight.state.WeighInSubmissionState
 import app.wlo.feature.f06.weight.state.WeighInUiState
 import app.wlo.feature.f06.weight.state.WeighInViewModel
+import app.wlo.feature.f06.weight.state.WeightLoadState
+import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
+import kotlinx.coroutines.launch
 
 /**
  * The F06 weight surface (owner review WLO-0030): trend-first hero — one
@@ -82,6 +101,8 @@ public fun WeightScreen(
     val sheet: SheetUi? by viewModel.sheetState.collectAsStateWithLifecycle()
     val verdict: VerdictUi? by viewModel.verdictState.collectAsStateWithLifecycle()
     val notice: String? by viewModel.noticeState.collectAsStateWithLifecycle()
+    val submission: WeighInSubmissionState by viewModel.submissionState.collectAsStateWithLifecycle()
+    WeightLifecycleRefresh(viewModel)
 
     Column(
         modifier =
@@ -96,6 +117,19 @@ public fun WeightScreen(
             title = "Weight",
             modifier = Modifier.testTag("f06-title"),
         )
+
+        when (val load = state.loadState) {
+            WeightLoadState.Loading -> CircularProgressIndicator(modifier = Modifier.testTag("f06-loading"))
+            is WeightLoadState.Error ->
+                WloBanner(
+                    text = load.message,
+                    tone = WloBannerTone.Warning,
+                    actionLabel = "Retry",
+                    action = { viewModel.onEvent(WeighInEvent.Refresh) },
+                    modifier = Modifier.testTag("f06-load-error"),
+                )
+            WeightLoadState.Content, WeightLoadState.Empty -> Unit
+        }
 
         // One screen, different series (R2, WLO-0035) — segments, not routes.
         Row(horizontalArrangement = Arrangement.spacedBy(WloSpacing.TIGHT)) {
@@ -131,15 +165,15 @@ public fun WeightScreen(
                         modifier = Modifier.testTag("f06-outlier-banner"),
                     )
                     Row(horizontalArrangement = Arrangement.spacedBy(WloSpacing.CARD)) {
-                        WloSecondaryButton(
+                        WloButton(
                             label = "Keep",
                             onClick = { viewModel.onEvent(WeighInEvent.KeepFlagged) },
                             modifier = Modifier.weight(1f).testTag("f06-outlier-keep"),
                         )
-                        WloButton(
-                            label = "Delete",
-                            onClick = { viewModel.onEvent(WeighInEvent.DeleteFlagged) },
-                            modifier = Modifier.weight(1f).testTag("f06-outlier-delete"),
+                        WloSecondaryButton(
+                            label = "Correct",
+                            onClick = { viewModel.onEvent(WeighInEvent.CorrectFlagged) },
+                            modifier = Modifier.weight(1f).testTag("f06-outlier-correct"),
                         )
                     }
                 }
@@ -158,7 +192,7 @@ public fun WeightScreen(
                                 // here" content, never a dead info mark.
                                 ProvenanceChip(
                                     value = current,
-                                    format = { kg -> "${format1(kg)} kg" },
+                                    format = state.massUnit::format,
                                     onClick = onOpenMath,
                                 )
                             }
@@ -169,14 +203,16 @@ public fun WeightScreen(
                 if (current != null) {
                     WloHeroStat(
                         value = current,
-                        format = ::format1,
-                        unit = "kg",
+                        format = state.massUnit::formatNumber,
+                        unit = state.massUnit.symbol,
                         delta =
                             if (delta7 != null) {
                                 {
                                     WloDeltaChip(
                                         value = delta7,
-                                        format = { magnitude -> "${format1(magnitude)} kg / 7 d" },
+                                        format = { magnitude ->
+                                            "${state.massUnit.formatNumber(magnitude)} ${state.massUnit.symbol} / 7 d"
+                                        },
                                         style = wloType.statM,
                                         context = "trend delta",
                                     )
@@ -203,54 +239,7 @@ public fun WeightScreen(
                 )
             }
 
-            state.trend?.let { trend ->
-                WloCard(modifier = Modifier.testTag("f06-trend-card")) {
-                    WloCardHeader(title = "Trend")
-                    Row(horizontalArrangement = Arrangement.spacedBy(WloSpacing.TIGHT)) {
-                        for (candidate in ChartWindowUi.entries) {
-                            SelectChip(
-                                label = candidate.label,
-                                selected = candidate == state.window,
-                                onClick = { viewModel.onEvent(WeighInEvent.WindowChange(candidate)) },
-                                modifier = Modifier.testTag("f06-window-${candidate.name.lowercase()}"),
-                            )
-                        }
-                    }
-                    WloTrendChart(
-                        samples = trend.samples,
-                        trend = trend.trend,
-                        currentTrend = null,
-                        formatWeight = { kg -> "${format1(kg)} kg" },
-                        reference = trend.reference,
-                        describe = trend.description,
-                    )
-                    if (!trend.trendLineVisible) {
-                        Text(
-                            text = "Keep weighing — the trend forms in a few days.",
-                            style = wloType.caption,
-                            color = wloExtendedColors.textTertiary,
-                        )
-                    }
-                    SmootherTuner(
-                        method = state.method,
-                        alpha = state.alpha,
-                        onMethod = { viewModel.onEvent(WeighInEvent.MethodChange(it)) },
-                        onAlpha = { viewModel.onEvent(WeighInEvent.AlphaChange(it)) },
-                    )
-                    if (trend.preview) {
-                        Text(
-                            text = "Preview — the saved trend keeps the default smoother.",
-                            style = wloType.caption,
-                            color = wloExtendedColors.held,
-                        )
-                    }
-                    WloSecondaryButton(
-                        label = "How the math works",
-                        onClick = onOpenMath,
-                        modifier = Modifier.fillMaxWidth().testTag("f06-open-math"),
-                    )
-                }
-            }
+            WeightTrendCard(state = state, viewModel = viewModel, onOpenMath = onOpenMath)
 
             WloCard(modifier = Modifier.testTag("f06-history-card")) {
                 WloCardHeader(title = "History")
@@ -305,11 +294,12 @@ public fun WeightScreen(
         WloSheet(
             onDismissRequest = { viewModel.onEvent(WeighInEvent.DismissSheet) },
             modifier = Modifier.testTag("f06-weighin-sheet"),
+            title = "Weigh in",
         ) {
             WeighInSheetContent(
-                weightText = current.weightText,
-                dayText = current.dayText,
-                timeText = current.timeText,
+                sheet = current,
+                unitSymbol = state.massUnit.symbol,
+                submission = submission,
                 onChange = { viewModel.onEvent(WeighInEvent.WeightChange(it)) },
                 onDayChange = { viewModel.onEvent(WeighInEvent.SheetDayChange(it)) },
                 onTimeChange = { viewModel.onEvent(WeighInEvent.SheetTimeChange(it)) },
@@ -320,6 +310,86 @@ public fun WeightScreen(
         }
     }
 }
+
+@Composable
+private fun WeightTrendCard(
+    state: WeighInUiState,
+    viewModel: WeighInViewModel,
+    onOpenMath: () -> Unit,
+) {
+    val trend = state.trend ?: return
+    WloCard(modifier = Modifier.testTag("f06-trend-card")) {
+        WloCardHeader(title = "Trend")
+        Row(horizontalArrangement = Arrangement.spacedBy(WloSpacing.TIGHT)) {
+            for (candidate in ChartWindowUi.entries) {
+                SelectChip(
+                    label = candidate.label,
+                    selected = candidate == state.window,
+                    onClick = { viewModel.onEvent(WeighInEvent.WindowChange(candidate)) },
+                    modifier = Modifier.testTag("f06-window-${candidate.name.lowercase()}"),
+                )
+            }
+        }
+        WloTrendChart(
+            samples = trend.samples,
+            trend = trend.trend,
+            currentTrend = null,
+            formatWeight = state.massUnit::format,
+            windowStartDay = trend.windowStartDay,
+            windowEndDay = trend.windowEndDay,
+            reference = trend.reference,
+            describe = trend.description,
+            alwaysShowTickYear = trend.alwaysShowTickYear,
+            emptyMessage = trend.stateCopy,
+            emptyActionLabel = trend.emptyActionWindow?.let { "Show ${it.label}" },
+            onEmptyAction =
+                trend.emptyActionWindow?.let { target ->
+                    { viewModel.onEvent(WeighInEvent.WindowChange(target)) }
+                },
+        )
+        if (trend.samples.isNotEmpty() && trend.stateCopy != null) {
+            Text(trend.stateCopy, style = wloType.caption, color = wloExtendedColors.textTertiary)
+        }
+        if (trend.samples.isNotEmpty()) {
+            SmootherTuner(
+                method = state.method,
+                alpha = state.alpha,
+                onMethod = { viewModel.onEvent(WeighInEvent.MethodChange(it)) },
+                onAlpha = { viewModel.onEvent(WeighInEvent.AlphaChange(it)) },
+            )
+            if (trend.preview) {
+                Text(
+                    text = "Preview — the saved trend keeps the default smoother.",
+                    style = wloType.caption,
+                    color = wloExtendedColors.held,
+                )
+            }
+        }
+        WloSecondaryButton(
+            label = "How the math works",
+            onClick = onOpenMath,
+            modifier = Modifier.fillMaxWidth().testTag("f06-open-math"),
+        )
+    }
+}
+
+@Composable
+private fun WeightLifecycleRefresh(viewModel: WeighInViewModel) {
+    val refreshScope = rememberCoroutineScope()
+    LifecycleResumeEffect(viewModel) {
+        viewModel.onEvent(WeighInEvent.Refresh)
+        val boundaryMonitor =
+            refreshScope.launch {
+                while (currentCoroutineContext().isActive) {
+                    delay(BOUNDARY_POLL_MILLIS)
+                    viewModel.onEvent(WeighInEvent.BoundaryCheck)
+                }
+            }
+        onPauseOrDispose { boundaryMonitor.cancel() }
+    }
+}
+
+private const val BOUNDARY_POLL_MILLIS: Long = 60_000L
 
 /** The smoother selection + the visible α tuner (R-A2: default 0.15, in the open). */
 @Composable
@@ -415,9 +485,9 @@ private fun HistoryRow(
  */
 @Composable
 private fun WeighInSheetContent(
-    weightText: String,
-    dayText: String,
-    timeText: String,
+    sheet: SheetUi,
+    unitSymbol: String,
+    submission: WeighInSubmissionState,
     onChange: (String) -> Unit,
     onDayChange: (String) -> Unit,
     onTimeChange: (String) -> Unit,
@@ -425,56 +495,113 @@ private fun WeighInSheetContent(
     onStepDown: () -> Unit,
     onSave: () -> Unit,
 ) {
-    Text(text = "Weigh in", style = wloType.title)
-    Text(
-        text = "Same conditions help the trend read true. Missed a day? Enter it below — blank time reads as noon.",
-        style = wloType.caption,
-        color = wloExtendedColors.textTertiary,
-    )
-    OutlinedTextField(
-        value = weightText,
-        onValueChange = onChange,
-        modifier = Modifier.fillMaxWidth().testTag("f06-weight-field"),
-        singleLine = true,
-        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
-        textStyle = wloType.statL,
-        placeholder = { Text("kg", style = wloType.body, color = wloExtendedColors.textTertiary) },
-    )
-    Row(horizontalArrangement = Arrangement.spacedBy(WloSpacing.TIGHT)) {
+    val focusManager: FocusManager = LocalFocusManager.current
+    Column(
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .verticalScroll(rememberScrollState())
+                .imePadding(),
+        verticalArrangement = Arrangement.spacedBy(WloSpacing.CARD),
+    ) {
+        Text(
+            text = sheet.prefillContext,
+            style = wloType.caption,
+            color = wloExtendedColors.textTertiary,
+            modifier = Modifier.testTag("f06-prefill-context"),
+        )
         OutlinedTextField(
-            value = dayText,
+            value = sheet.weightText,
+            onValueChange = onChange,
+            modifier = Modifier.fillMaxWidth().testTag("f06-weight-field"),
+            singleLine = true,
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal, imeAction = ImeAction.Done),
+            keyboardActions = KeyboardActions(onDone = { focusManager.clearFocus() }),
+            textStyle = wloType.statL,
+            label = { Text("Weight ($unitSymbol)") },
+            placeholder = { Text("Enter weight", style = wloType.body, color = wloExtendedColors.textTertiary) },
+            isError = sheet.weightError != null,
+            supportingText =
+                sheet.weightError?.let { message ->
+                    {
+                        Text(
+                            text = message,
+                            modifier =
+                                Modifier
+                                    .semantics { liveRegion = LiveRegionMode.Polite }
+                                    .testTag("f06-weight-error"),
+                        )
+                    }
+                },
+        )
+        WeightDatePickerButton(
+            value = sheet.dayText,
             onValueChange = onDayChange,
-            modifier = Modifier.weight(1f).testTag("f06-day-field"),
-            singleLine = true,
-            textStyle = wloType.body,
-            placeholder = { Text("YYYY-MM-DD", style = wloType.caption, color = wloExtendedColors.textTertiary) },
+            modifier = Modifier.fillMaxWidth(),
+            testTag = "f06-day-field",
         )
-        OutlinedTextField(
-            value = timeText,
+        WeightTimePickerButton(
+            value = sheet.timeText,
             onValueChange = onTimeChange,
-            modifier = Modifier.weight(1f).testTag("f06-time-field"),
-            singleLine = true,
-            textStyle = wloType.body,
-            placeholder = { Text("HH:MM", style = wloType.caption, color = wloExtendedColors.textTertiary) },
+            modifier = Modifier.fillMaxWidth(),
+            testTag = "f06-time-field",
+        )
+        sheet.whenError?.let { message ->
+            Text(
+                text = message,
+                style = wloType.caption,
+                color = MaterialTheme.colorScheme.error,
+                modifier =
+                    Modifier
+                        .semantics { liveRegion = LiveRegionMode.Polite }
+                        .testTag("f06-when-error"),
+            )
+        }
+        Row(horizontalArrangement = Arrangement.spacedBy(WloSpacing.CARD)) {
+            WloSecondaryButton(
+                label = "−0.1",
+                onClick = onStepDown,
+                modifier =
+                    Modifier
+                        .weight(1f)
+                        .semantics {
+                            contentDescription = "Decrease weight by 0.1 $unitSymbol"
+                            stateDescription = "Current weight ${sheet.weightText} $unitSymbol"
+                        }.testTag("f06-step-down"),
+            )
+            WloSecondaryButton(
+                label = "+0.1",
+                onClick = onStepUp,
+                modifier =
+                    Modifier
+                        .weight(1f)
+                        .semantics {
+                            contentDescription = "Increase weight by 0.1 $unitSymbol"
+                            stateDescription = "Current weight ${sheet.weightText} $unitSymbol"
+                        }.testTag("f06-step-up"),
+            )
+        }
+        sheet.saveError?.let { message ->
+            WloBanner(
+                text = message,
+                tone = WloBannerTone.Warning,
+                modifier =
+                    Modifier
+                        .semantics { liveRegion = LiveRegionMode.Polite }
+                        .testTag("f06-save-error"),
+            )
+        }
+        WloButton(
+            label = if (submission == WeighInSubmissionState.SAVING) "Saving…" else "Save weigh-in",
+            onClick = onSave,
+            enabled = submission != WeighInSubmissionState.SAVING,
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .semantics { liveRegion = LiveRegionMode.Polite }
+                    .testTag("f06-save-weighin"),
         )
     }
-    Row(horizontalArrangement = Arrangement.spacedBy(WloSpacing.CARD)) {
-        WloSecondaryButton(
-            label = "−0.1",
-            onClick = onStepDown,
-            modifier = Modifier.weight(1f).testTag("f06-step-down"),
-        )
-        WloSecondaryButton(
-            label = "+0.1",
-            onClick = onStepUp,
-            modifier = Modifier.weight(1f).testTag("f06-step-up"),
-        )
-    }
-    WloButton(
-        label = "Save weigh-in",
-        onClick = onSave,
-        modifier = Modifier.fillMaxWidth().testTag("f06-save-weighin"),
-    )
 }
 
 private fun methodLabel(method: TrendMethod): String =

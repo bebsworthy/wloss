@@ -2,14 +2,14 @@
 id: WLO-0041
 title: 'F06 home-screen widget: today''s trend + one-tap weigh-in (Glance)'
 status: backlog
-theme:
-release:
+theme: weight-experience
+release: 2
 created: 2026-09-14T13:37:55Z
-modified: 2026-09-14T13:52:56Z
+modified: 2026-09-15T21:28:45Z
 closed:
-revision: c9650b50b5da0eb5
+revision: 57fd04770f09b44c
 blocks: []
-related: []
+related: [WLO-0047]
 ---
 
 # Description

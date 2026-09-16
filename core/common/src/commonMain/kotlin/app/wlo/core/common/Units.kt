@@ -1,6 +1,7 @@
 package app.wlo.core.common
 
 import app.wlo.core.model.MeasureUnit
+import kotlin.math.abs
 import kotlin.math.roundToLong
 
 /**
@@ -20,14 +21,16 @@ public enum class MassUnit(
 
     public fun toKilograms(value: Double): Double = value * kgPerUnit
 
-    /** Display string like "81.2 kg" (one decimal, tabular-figure friendly). */
-    public fun format(kg: Double): String {
-        val converted = fromKilograms(kg)
-        val tenths = (converted * 10).roundToLong()
-        val whole = tenths / 10
-        val fraction = tenths % 10
-        return "$whole.$fraction $symbol"
+    /** Numeral-only display value, rounded at the unit boundary. */
+    public fun formatNumber(kg: Double): String {
+        val tenths = (fromKilograms(kg) * 10).roundToLong()
+        val magnitude = abs(tenths)
+        val sign = if (tenths < 0) "-" else ""
+        return "$sign${magnitude / 10}.${magnitude % 10}"
     }
+
+    /** Display string like "81.2 kg" (one decimal, tabular-figure friendly). */
+    public fun format(kg: Double): String = "${formatNumber(kg)} $symbol"
 
     public companion object {
         public val DEFAULT: MassUnit = KILOGRAM

@@ -23,10 +23,10 @@ public class OnboardingResumeTest {
         val ui: UiDevice = OnboardingRobot.device()
         val first = ActivityScenario.launch(MainActivity::class.java)
 
-        clickWhenPresent(ui, "Set up my plan")
         clickWhenPresent(ui, "Continue")
-        // On the forecast step: the honest hedge is on screen.
-        assertTrue("the forecast step never appeared", waitForKeyword(ui, FORECAST_MARKER))
+        clickWhenPresent(ui, "Kilograms")
+        clickWhenPresent(ui, "Continue")
+        assertTrue("the optional goal step never appeared", waitForKeyword(ui, GOAL_MARKER))
 
         // Give the draft write a beat, then close the app mid-flow.
         Thread.sleep(1_500)
@@ -35,11 +35,11 @@ public class OnboardingResumeTest {
 
         ActivityScenario.launch(MainActivity::class.java)
         assertTrue(
-            "the relaunch did not resume the draft at the forecast step",
-            waitForKeyword(ui, FORECAST_MARKER),
+            "the relaunch did not resume the draft at the optional goal step",
+            waitForKeyword(ui, GOAL_MARKER),
         )
         // And it did NOT restart from the top.
-        val restarted = ui.findObjects(By.textContains("Set up my plan")).isNotEmpty()
+        val restarted = ui.findObjects(By.textContains("Your data stays on this device")).isNotEmpty()
         assertTrue("the wizard restarted from step one — draft was lost", !restarted)
     }
 
@@ -74,6 +74,6 @@ public class OnboardingResumeTest {
     }
 
     private companion object {
-        const val FORECAST_MARKER: String = "an estimate, not a promise"
+        const val GOAL_MARKER: String = "A goal is optional"
     }
 }

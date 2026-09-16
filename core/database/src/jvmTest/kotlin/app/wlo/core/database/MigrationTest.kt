@@ -313,18 +313,40 @@ class MigrationTest {
         }
 
     @Test
-    fun v1DatabaseChainsThroughToV6() =
+    fun migrate6To7_preservesExistingProfileAndAllowsUnknownFacts() =
+        runTest {
+            helper.createDatabase(6).use { connection ->
+                connection.exec(
+                    "INSERT INTO profiles (id, sex, birthYear, heightCm, startWeightKg, activityLevel, " +
+                        "unitPreference, createdAtEpochMs) VALUES ('known', NULL, 1990, 175.0, 80.0, " +
+                        "'sedentary', 'metric', 1000)",
+                )
+            }
+            helper.runMigrationsAndValidate(7, listOf(Migrations.MIGRATION_6_7)).use { connection ->
+                assertEquals(1990L, queryLong(connection, "SELECT birthYear FROM profiles WHERE id='known'"))
+                connection.exec(
+                    "INSERT INTO profiles (id, sex, birthYear, heightCm, startWeightKg, activityLevel, " +
+                        "unitPreference, createdAtEpochMs) VALUES ('minimal', NULL, NULL, NULL, NULL, " +
+                        "'sedentary', 'metric', 2000)",
+                )
+                assertEquals(1L, queryLong(connection, "SELECT COUNT(*) FROM profiles WHERE id='minimal'"))
+            }
+        }
+
+    @Test
+    fun v1DatabaseChainsThroughToV7() =
         runTest {
             helper.createDatabase(1).close()
             helper
                 .runMigrationsAndValidate(
-                    6,
+                    7,
                     listOf(
                         Migrations.MIGRATION_1_2,
                         Migrations.MIGRATION_2_3,
                         Migrations.MIGRATION_3_4,
                         Migrations.MIGRATION_4_5,
                         Migrations.MIGRATION_5_6,
+                        Migrations.MIGRATION_6_7,
                     ),
                 ).use { connection ->
                     assertEquals(

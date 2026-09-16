@@ -100,6 +100,7 @@ public class BackupControlsViewModel(
         viewModelScope.launch {
             settings.setBackupFolderUri(treeUri)
             folder.value = treeUri
+            if (autoEnabled.value) setScheduledBackup(enabled = true)
             files.value = vault.backupState().files
         }
     }
@@ -115,9 +116,10 @@ public class BackupControlsViewModel(
             vault.configureAutoBackupKey(passphrase)
             passphraseSet.value = true
             autoKey.value = true
-            autoEnabled.value = true
-            settings.setBackupAutoEnabled(true)
-            schedule()
+            if (folder.value != null) {
+                setScheduledBackup(enabled = true)
+                autoEnabled.value = true
+            }
         }
     }
 
@@ -145,17 +147,20 @@ public class BackupControlsViewModel(
 
     public fun setAuto(enabled: Boolean) {
         viewModelScope.launch {
-            settings.setBackupAutoEnabled(enabled)
+            setScheduledBackup(enabled)
             autoEnabled.value = enabled
-            if (enabled) schedule()
         }
     }
 
-    private fun schedule() {
-        val destination = folder.value ?: return
-        scheduler.schedule(
-            app.wlo.core.ports
-                .BackupRequest(destinationUri = destination, includeVault = false),
+    private suspend fun setScheduledBackup(enabled: Boolean) {
+        val request =
+            folder.value?.let { destination ->
+                app.wlo.core.ports
+                    .BackupRequest(destinationUri = destination, includeVault = false)
+            }
+        scheduler.setEnabled(
+            enabled = enabled,
+            request = request,
         )
     }
 

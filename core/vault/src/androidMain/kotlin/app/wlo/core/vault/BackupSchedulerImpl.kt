@@ -1,19 +1,26 @@
 package app.wlo.core.vault
 
+import android.Manifest
 import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.content.Context
+import android.content.pm.PackageManager
 import android.os.Build
 import androidx.core.app.NotificationCompat
+import androidx.core.content.ContextCompat
 import androidx.work.CoroutineWorker
 import androidx.work.ExistingPeriodicWorkPolicy
 import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
 import androidx.work.WorkerParameters
 import androidx.work.workDataOf
+import app.wlo.core.datastore.SettingsStore
 import app.wlo.core.ports.BackupRequest
 import app.wlo.core.ports.BackupScheduler
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.withContext
 import org.koin.core.context.GlobalContext
 import java.util.concurrent.TimeUnit
 
@@ -23,24 +30,43 @@ import java.util.concurrent.TimeUnit
  * folder is chosen; a failed run raises ONE respectful notification (R-U1
  * spirit: no toast spam).
  */
+@Suppress("InjectDispatcher") // Blocking WorkManager futures are confined at this Android-only boundary.
 public class WorkManagerBackupScheduler(
     private val context: Context,
+    private val settings: SettingsStore,
 ) : BackupScheduler {
-    override fun schedule(request: BackupRequest) {
-        val workManager = WorkManager.getInstance(context)
-        val work =
-            PeriodicWorkRequestBuilder<BackupWorker>(BACKUP_PERIOD_DAYS, TimeUnit.DAYS)
-                .setInputData(
-                    workDataOf(
-                        KEY_DESTINATION to request.destinationUri,
-                        KEY_INCLUDE_VAULT to request.includeVault,
-                    ),
-                ).build()
-        workManager.enqueueUniquePeriodicWork(
-            WORK_NAME,
-            ExistingPeriodicWorkPolicy.UPDATE,
-            work,
-        )
+    override suspend fun setEnabled(
+        enabled: Boolean,
+        request: BackupRequest?,
+    ) {
+        val workManager by lazy { WorkManager.getInstance(context) }
+        BackupScheduleReconciler(
+            persistEnabled = settings::setBackupAutoEnabled,
+            enqueue = { activeRequest ->
+                val work =
+                    PeriodicWorkRequestBuilder<BackupWorker>(BACKUP_PERIOD_DAYS, TimeUnit.DAYS)
+                        .setInputData(
+                            workDataOf(
+                                KEY_DESTINATION to activeRequest.destinationUri,
+                                KEY_INCLUDE_VAULT to activeRequest.includeVault,
+                            ),
+                        ).build()
+                withContext(Dispatchers.IO) {
+                    workManager
+                        .enqueueUniquePeriodicWork(
+                            WORK_NAME,
+                            ExistingPeriodicWorkPolicy.UPDATE,
+                            work,
+                        ).result
+                        .get()
+                }
+            },
+            cancel = {
+                withContext(Dispatchers.IO) {
+                    workManager.cancelUniqueWork(WORK_NAME).result.get()
+                }
+            },
+        ).setEnabled(enabled, request)
     }
 
     public companion object {
@@ -65,35 +91,44 @@ public class BackupWorker(
             inputData.getString(WorkManagerBackupScheduler.KEY_DESTINATION)
                 ?: return Result.failure()
         val includeVault = inputData.getBoolean(WorkManagerBackupScheduler.KEY_INCLUDE_VAULT, false)
-        val manager = GlobalContext.get().get<BackupManager>()
-        return try {
-            manager.backupNow(
-                destination = destination,
-                passphrase = null,
-                options = BackupOptions(includeVault = includeVault),
-            )
-            Result.success()
-        } catch (failure: Exception) {
-            if (runAttemptCount >= MAX_ATTEMPTS) {
+        val graph = GlobalContext.get()
+        val settings = graph.get<SettingsStore>()
+        return when (
+            ScheduledBackupRunner(
+                isEnabled = { settings.backupAutoEnabled.first() },
+                backup = {
+                    graph.get<BackupManager>().backupNow(
+                        destination = destination,
+                        passphrase = null,
+                        options = BackupOptions(includeVault = includeVault),
+                    )
+                },
+            ).run(runAttemptCount = runAttemptCount, maxAttempts = MAX_ATTEMPTS)
+        ) {
+            ScheduledBackupResult.SUCCESS -> Result.success()
+            ScheduledBackupResult.RETRY -> Result.retry()
+            ScheduledBackupResult.FAILURE -> {
                 notifyFailure()
                 Result.failure()
-            } else {
-                Result.retry()
             }
         }
     }
 
     /** F13 §4: "notification after a failed backup" — one, quiet, actionable. */
     private fun notifyFailure() {
+        if (
+            Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
+            ContextCompat.checkSelfPermission(applicationContext, Manifest.permission.POST_NOTIFICATIONS) !=
+            PackageManager.PERMISSION_GRANTED
+        ) {
+            return
+        }
         val manager = applicationContext.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             manager.createNotificationChannel(
                 NotificationChannel(CHANNEL_ID, "Backup", NotificationManager.IMPORTANCE_MIN),
             )
         }
-        // POST_NOTIFICATIONS (API 33+) is PART B's permission ask; until it is
-        // granted the system drops this notification and the F10 backup-health
-        // dot stays the in-app signal.
         val notification: Notification =
             NotificationCompat
                 .Builder(applicationContext, CHANNEL_ID)

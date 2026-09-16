@@ -10,14 +10,17 @@ import androidx.compose.ui.graphics.vector.path
 import androidx.compose.ui.unit.dp
 
 /**
- * The five-tab bottom navigation set (R-D2 / IA.md §1): Hub · Plan · Insights
- * · Archive · Digestion. Capture is a flow-over-context, never a tab; weight
- * and body numbers are reached from the Hub.
+ * The five top-level destinations (R-D2 / IA.md §1): Weight · Hub · Plan ·
+ * Insights · More. Capture is a flow-over-context, never a destination.
  */
 public object WloTabs {
+    public const val WEIGHT: String = "f06/weight"
     public const val HUB: String = "hub"
     public const val PLAN: String = "plan"
     public const val INSIGHTS: String = "insights"
+    public const val MORE: String = "more"
+
+    /** Nested destinations retained for existing deep links and More rows. */
     public const val ARCHIVE: String = "archive"
     public const val DIGESTION: String = "digestion"
 }
@@ -32,11 +35,11 @@ public data class WloTab(
 /** The tab list in navigation order (R-D2). */
 public val WLO_TABS: List<WloTab> =
     listOf(
+        WloTab(WloTabs.WEIGHT, "Weight", WloTabIcons.Weight),
         WloTab(WloTabs.HUB, "Hub", WloTabIcons.Hub),
         WloTab(WloTabs.PLAN, "Plan", WloTabIcons.Plan),
         WloTab(WloTabs.INSIGHTS, "Insights", WloTabIcons.Insights),
-        WloTab(WloTabs.ARCHIVE, "Archive", WloTabIcons.Archive),
-        WloTab(WloTabs.DIGESTION, "Digestion", WloTabIcons.Digestion),
+        WloTab(WloTabs.MORE, "More", WloTabIcons.More),
     )
 
 /**
@@ -66,6 +69,38 @@ public object WloTabIcons {
         ) {
             build()
         }
+
+    /** Weight — a neutral scale dial, matching the product's primary loop. */
+    public val Weight: ImageVector =
+        builder("WloTabWeight")
+            .stroke {
+                moveTo(6f, 5f)
+                horizontalLineTo(18f)
+                arcTo(2f, 2f, 0f, true, true, 20f, 7f)
+                verticalLineTo(18f)
+                arcTo(2f, 2f, 0f, true, true, 18f, 20f)
+                horizontalLineTo(6f)
+                arcTo(2f, 2f, 0f, true, true, 4f, 18f)
+                verticalLineTo(7f)
+                arcTo(2f, 2f, 0f, true, true, 6f, 5f)
+                close()
+                moveTo(9f, 10f)
+                arcTo(3f, 3f, 0f, true, true, 15f, 10f)
+                moveTo(12f, 10f)
+                lineTo(14f, 8f)
+            }.build()
+
+    /** More — three quiet dots; its rows carry the actual destination names. */
+    public val More: ImageVector =
+        builder("WloTabMore")
+            .stroke {
+                moveTo(5f, 12f)
+                horizontalLineTo(5.1f)
+                moveTo(11.95f, 12f)
+                horizontalLineTo(12.05f)
+                moveTo(18.9f, 12f)
+                horizontalLineTo(19f)
+            }.build()
 
     /** Hub — the home marker, open gable so density stays light. */
     public val Hub: ImageVector =

@@ -8,7 +8,7 @@
 | **Provides** | The foundation under every feature: the on-device schema of record, attachment storage policy, versioned export/import with converters, validated auto-backup, app lock, Health Connect sync, Bluetooth scales, and the provable-privacy network story. |
 | **User problems solved** | • "Mealime is shutting down (Oct 2026) and took my plans and history with it — never again." • "My smart scale's vendor app demands a cloud account to show me my own weight." • "I won't put body photos in an app I don't control." • "I'm switching from MFP/Lose It!/Paprika — how does my history come with me?" |
 | **AI consent category** | none — F13 executes no AI calls. It owns the network gate, consent ledger, and audit surface that make "only F12-consented traffic ever leaves the device" architecturally true. |
-| **Primary evidence** | `docs/research/waistline.md` (versioned JSON export with migration-on-import, secret-blanking, auto-backup, archive-don't-delete), `docs/research/openscale.md` (EAV measurement schema, staged-and-validated restore, ~68 scale drivers, "no internet permission"), `docs/research/happy-scale.md` (14-year local-first trust, Fresh Start, min-of-day import rule), `docs/research/hevy.md` (CSV export as trust), `docs/research/gyroscope.md` (one-tap full deletion), `docs/research/synthesis.md` §1.3, §3 (Mealime's cloud death as the portability wedge) |
+| **Primary evidence** | `docs/research/waistline.md` (versioned JSON export with migration-on-import, secret-blanking, auto-backup, archive-don't-delete), `docs/research/openscale.md` (EAV measurement schema, ~68 scale drivers, "no internet permission"), `docs/research/happy-scale.md` (local-first trust, Fresh Start, min-of-day as a scalar candidate—not WLO identity policy), `docs/research/hevy.md` (CSV export as trust), `docs/research/gyroscope.md` (one-tap deletion), `docs/research/synthesis.md` §1.3, §3 |
 
 ## 1. Purpose & Core Objectives
 
@@ -67,8 +67,10 @@ is reformulated; items are archived, never orphaned).
   consented network call, surfaced in the audit page.
 
 **Attachments policy.** Photos (meals, poop) live in app-private
-storage, excluded from the gallery/MediaStore and Android cloud backup by
-default; OS backup of attachments is an explicit opt-in. Discreet mode (with
+storage, excluded from the gallery/MediaStore. Android system cloud backup and
+implicit device-to-device transfer are disabled for the entire app; there is
+no per-category OS-backup opt-in. Data moves only through the explicit,
+user-selected SAF export/backup flow. Discreet mode (with
 F08/F09) hides sensitive entries from the app switcher; originals are never
 downscaled without retaining the original. **Retention follows R-U14:** food
 and stool photos default to discard-at-save. **Silhouette generates no photo
@@ -100,11 +102,18 @@ migrate forward. **Generic CSV/JSON import ships [v1]** — a column-mapping
 wizard that remembers mappings (R-S4); **competitor converters — MyFitnessPal
 CSV, Lose It! CSV, Paprika recipe export, Mealime — land [v1.x]** (R-S4). All
 imports land in a **staging area**, produce a validation report
-(rows parsed / skipped / warnings), and commit atomically or not at all — a
-corrupt file can never merge garbage into live data (openScale's
-staged-and-validated restore).
+(rows parsed / skipped / warnings), then require a separate explicit Apply.
+Corrupt input is rejected before mutation. CSV rows and the Room portion of a
+bundle restore commit in one Room transaction; bundle settings/documents then
+roll forward idempotently from a persisted journal, including after process
+death. A post-Apply failure reports recovery pending rather than claiming that
+nothing changed (WLO-0061).
 
-**Auto-backup & security.** Android SAF folder chosen once; scheduled
+**Auto-backup & security.** Android's system-managed Auto Backup and implicit
+device-to-device migration are disabled. This is enforced redundantly by
+`allowBackup=false`, legacy full-backup exclusions, Android 12+ cloud and
+device-transfer exclusions, and a debug/release merged-manifest build check
+(WLO-0058). Android SAF folder chosen once; scheduled
 WorkManager writes `wlo_backup_<date>.json` plus an integrity manifest;
 write-new-then-rotate keeps the last N (default 7); backup health surfaces on
 F10, and a week without a successful backup raises one respectful nudge.
@@ -113,11 +122,14 @@ per-bundle opt-in — R-U18, matching R-U14's posture).
 Security: biometric app lock (BiometricPrompt, PIN fallback) with a
 configurable timeout; optional attachment encryption [v1.x].
 
-**Health Connect.** Two-way sync with per-datatype consent (weight, body
-composition, steps, exercise, nutrition). HC is single-profile per device:
-in v1 the sole profile owns the connection (R-B9). WLO-authored records win on WLO
-surfaces; multi-source weight deduplicates with the min-of-day import rule
-(Happy Scale's semantics) so smoothing stays deterministic.
+**Health Connect.** Release 1 imports weight with explicit datatype consent;
+later releases may add two-way sync and body composition, steps, exercise, and
+nutrition. HC is single-profile per device: the sole Release 1 profile owns the
+connection (R-B9). Identity uses the Health Connect record ID, data origin,
+recording method, version/update metadata, timestamp, and zone offset so a
+re-delivered record updates rather than duplicates its local event. WLO never
+uses min/lowest-of-day as deduplication: all distinct source events remain in
+the log, while F06 computes a separate versioned daily scalar for trends.
 
 **Bluetooth scales.** A driver layer for BIA scales. *(Owner amendment
 2026-09-11, R-S1/R-S13: WLO is Apache-2.0, so openScale's GPLv3 driver code

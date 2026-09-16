@@ -198,6 +198,15 @@ private fun ArrivalRow(
     estimate: DerivedValue<Double>?,
     formatKcal: (Double) -> String,
 ) {
+    provisionalRangeCopy(bands)?.let { copy ->
+        Text(text = copy.range, style = wloType.statM)
+        Text(
+            text = copy.qualifier,
+            style = wloType.caption,
+            color = wloExtendedColors.textTertiary,
+        )
+        return
+    }
     val expected = bands.expectedFinishEpochDay?.let(::formatDay)
     if (expected != null) {
         val fast = bands.optimisticFinishEpochDay?.let(::formatDay)
@@ -237,6 +246,22 @@ private fun ArrivalRow(
         text = paceFact,
         style = wloType.caption,
         color = wloExtendedColors.textTertiary,
+    )
+}
+
+internal data class ProvisionalRangeCopy(
+    val range: String,
+    val qualifier: String,
+)
+
+/** WLO-0073: developing evidence may show outer bounds, never a point date. */
+internal fun provisionalRangeCopy(bands: WloForecastBands): ProvisionalRangeCopy? {
+    if (bands.pointDateEligible) return null
+    val optimistic = bands.optimisticFinishEpochDay?.let(::formatDay) ?: return null
+    val pessimistic = bands.pessimisticFinishEpochDay?.let(::formatDay) ?: return null
+    return ProvisionalRangeCopy(
+        range = "$optimistic – $pessimistic",
+        qualifier = "provisional range · sharpens as your measured pattern forms",
     )
 }
 
@@ -451,7 +476,7 @@ public fun WloForecastChart(
         }
         finishTick(bands.optimisticFinishEpochDay)
         finishTick(bands.pessimisticFinishEpochDay)
-        finishTick(bands.expectedFinishEpochDay)
+        if (bands.pointDateEligible) finishTick(bands.expectedFinishEpochDay)
 
         // Month ticks along the bottom (mock "Sep ’26 · Jan ’27 · May ’27"),
         // text-only chrome like the mock's fan-axis, revealed with the bloom.

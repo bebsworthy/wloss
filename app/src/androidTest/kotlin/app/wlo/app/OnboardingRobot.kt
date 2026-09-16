@@ -1,8 +1,10 @@
 package app.wlo.app
 
 import androidx.compose.ui.test.junit4.ComposeTestRule
+import androidx.compose.ui.test.onAllNodesWithContentDescription
 import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performTextInput
 import androidx.test.platform.app.InstrumentationRegistry
 import androidx.test.uiautomator.By
 import androidx.test.uiautomator.UiDevice
@@ -70,21 +72,18 @@ public object OnboardingRobot {
     public fun device(): UiDevice = UiDevice.getInstance(InstrumentationRegistry.getInstrumentation())
 
     /**
-     * Drives the wizard with UiAutomator (works from the test process without
-     * a compose rule): "Set up my plan", then every Continue, then Start.
-     * Accepts every default — zero fields are mandatory (F01 §4).
+     * Drives the weight-first flow with UiAutomator. Unit is the sole required
+     * choice; goal and first reading are skipped for deep-link setup tests.
      */
     public fun driveThroughWizardWithUiAutomator() {
         val ui = device()
         ui.waitForIdle()
-        clickText(ui, "Set up my plan", required = true)
-        var continues = 0
-        while (continues < CONTINUE_STEPS && clickText(ui, "Continue", required = false)) {
-            continues += 1
-        }
-        clickText(ui, "Start", required = true)
-        // Wait for the plan write + gate flip to put the Hub on screen.
-        ui.wait(Until.hasObject(By.textContains("WEIGHT TREND")), TIMEOUT_MS)
+        clickText(ui, "Continue", required = true)
+        clickText(ui, "Kilograms", required = true)
+        clickText(ui, "Continue", required = true)
+        clickText(ui, "Continue or skip", required = true)
+        clickText(ui, "Open Weight", required = true)
+        ui.wait(Until.hasObject(By.text("Weight")), TIMEOUT_MS)
     }
 
     private fun clickText(
@@ -105,32 +104,37 @@ public object OnboardingRobot {
         return false
     }
 
-    private const val CONTINUE_STEPS: Int = 7
     private const val TIMEOUT_MS: Long = 10_000
     private const val POLL_MS: Long = 200
     private const val SETTLE_MS: Long = 800
 }
 
 /**
- * Drives the wizard from wherever it stands to the Hub via the compose tree,
- * accepting every default. Taps whichever commit control the current step
- * shows — "next" until the review step, then "start".
+ * Completes the weight-first flow with the minimum profile-backed reading,
+ * then opens Hub for legacy feature tests. No Diet Plan is created.
  */
 public fun ComposeTestRule.driveToHub() {
-    repeat(MAX_STEPS) {
-        waitForIdle()
-        val start = onAllNodesWithTag("onboarding-start", useUnmergedTree = true)
-        if (start.fetchSemanticsNodes().isNotEmpty()) {
-            start[0].performClick()
-            awaitHub()
-            return
-        }
-        val next = onAllNodesWithTag("onboarding-next", useUnmergedTree = true)
-        if (next.fetchSemanticsNodes().isNotEmpty()) {
-            next[0].performClick()
-        }
-    }
+    waitForIdle()
+    onAllNodesWithTag("weight-first-next", useUnmergedTree = true)[0].performClick()
+    onAllNodesWithTag("weight-first-unit-kg", useUnmergedTree = true)[0].performClick()
+    onAllNodesWithTag("weight-first-next", useUnmergedTree = true)[0].performClick()
+    onAllNodesWithTag("weight-first-next", useUnmergedTree = true)[0].performClick()
+    onAllNodesWithTag("weight-first-source-manual", useUnmergedTree = true)[0].performClick()
+    onAllNodesWithTag("weight-first-weight", useUnmergedTree = true)[0].performTextInput("82")
+    onAllNodesWithTag("weight-first-finish", useUnmergedTree = true)[0].performClick()
+    awaitWeight()
+    onAllNodesWithContentDescription("Hub", useUnmergedTree = true)[0].performClick()
     awaitHub()
+}
+
+/** Polls until the primary Weight destination has replaced onboarding. */
+private fun ComposeTestRule.awaitWeight() {
+    repeat(HUB_POLLS) {
+        waitForIdle()
+        if (onAllNodesWithTag("f06-title", useUnmergedTree = true).fetchSemanticsNodes().isNotEmpty()) return
+        Thread.sleep(POLL_MS)
+    }
+    error("Weight never took over after Start")
 }
 
 /** Polls until the hub trend card exists (the plan write flips the gate). */
@@ -145,6 +149,5 @@ public fun ComposeTestRule.awaitHub() {
     error("the Hub never took over after Start")
 }
 
-private const val MAX_STEPS: Int = 10
 private const val HUB_POLLS: Int = 60
 private const val POLL_MS: Long = 100

@@ -24,6 +24,23 @@ public object WloIcons {
     /** Paint source for all glyph paths; `Icon(tint = ...)` recolors at render. */
     private val Black: SolidColor = SolidColor(Color.Black)
 
+    /** Standard back/up affordance for nested app-bar navigation. */
+    public val ArrowBack: ImageVector =
+        mark("WloArrowBack") {
+            path(
+                stroke = Black,
+                strokeLineWidth = 1.8f,
+                strokeLineCap = StrokeCap.Round,
+                strokeLineJoin = StrokeJoin.Round,
+            ) {
+                moveTo(19f, 12f)
+                horizontalLineTo(5f)
+                moveTo(11f, 6f)
+                lineTo(5f, 12f)
+                lineTo(11f, 18f)
+            }
+        }
+
     /** Forward affordance for navigable rows ([WloListRow] chevron). */
     public val ChevronRight: ImageVector =
         glyph("WloChevronRight") {

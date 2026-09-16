@@ -6,6 +6,8 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.material3.AssistChip
+import androidx.compose.material3.AssistChipDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -32,6 +34,11 @@ import app.wlo.core.model.Provenance
  * This is the only component family in the design system that accepts a
  * [DerivedValue]; there is deliberately no String-value overload — a number
  * without provenance cannot be rendered (D6).
+ *
+ * The actionable form is a Material 3 [AssistChip]. The read-only form uses
+ * a plain [Surface] because Material 3 has no non-interactive chip: disabling
+ * an action chip would announce an unavailable control instead of a status
+ * label (WLO-0063).
  *
  * @param value the derived value (domain type, never pre-flattened)
  * @param format display formatting for the value — used only for the
@@ -88,16 +95,36 @@ public fun <T : Any> ProvenanceChip(
             anatomy()
         }
     } else {
-        Surface(
+        AssistChip(
             onClick = onClick,
+            label = {
+                Text(
+                    text = word,
+                    style = wloType.label,
+                )
+            },
+            trailingIcon = {
+                Icon(
+                    imageVector = WloProvenanceGlyphs.Info,
+                    contentDescription = null,
+                    tint = state,
+                )
+            },
             modifier = outer,
             shape = WloShape.Pill,
-            color = Color.Transparent,
-            contentColor = Color.Unspecified,
-            border = border,
-        ) {
-            anatomy()
-        }
+            colors =
+                AssistChipDefaults.assistChipColors(
+                    containerColor = Color.Transparent,
+                    labelColor = state,
+                    trailingIconContentColor = state,
+                ),
+            border =
+                AssistChipDefaults.assistChipBorder(
+                    enabled = true,
+                    borderColor = state.copy(alpha = BORDER_ALPHA),
+                    borderWidth = 1.dp,
+                ),
+        )
     }
 }
 

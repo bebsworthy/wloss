@@ -14,7 +14,7 @@ Reading order for engineers: this doc → the ADRs → the feature spec you're t
 | Area | Decision | Source |
 |---|---|---|
 | Language | Kotlin 2.4.x (2.4.20), KSP2 | ADR-001 |
-| Posture | **KMP-ready core, Android-first UI** — engines + data in `commonMain`; Compose UI in `androidMain`; JVM "purity" target in CI | ADR-001 (owner q-000025) |
+| Posture | **JVM-family shared core, Android-first UI** — `commonMain` is compiled for Android/JVM and bans Android APIs, but non-JVM portability is claimed only for modules proven by a future target | ADR-001; WLO-0065 |
 | UI toolkit | Jetpack Compose (1.12.x line), Material 3 semantics per DESIGN-SYSTEM.md; Navigation-Compose 2.10.x in the Android source set | DESIGN-SYSTEM; ADR-001 |
 | DI | Koin 4.2.x + annotations, compile-safety checking on; Hilt stays out of `commonMain` | ADR-001 |
 | Modules | Gradle multi-module, `build-logic` convention plugins, version catalogs | §2 (proposed) |
@@ -148,12 +148,14 @@ features, growing per feature — the dependency rules don't change.
 |---|---|---|
 | D1 | Features never depend on `:core:network`, `:core:ai`, `:core:media`, `:core:vault` | Gradle classpath: those modules are **not on feature modules' compile classpath**; only `:app` sees them. CI `checkArchitecture` task asserts the resolved-graph edges. |
 | D2 | Feature → feature deps forbidden | Same CI graph check. |
-| D3 | `commonMain` never imports Android | JVM desktop purity target compiles in CI (ADR-001). |
+| D3 | `commonMain` never imports Android | JVM host target plus source scan compile in CI. This proves Android independence, not iOS/Native portability (ADR-001). |
 | D4 | INTERNET permission declared only in `:app` | CI checks the merged manifest + greps module manifests; features physically can't add it back because of D1. |
 | D5 | Core modules use Kotlin `explicitApi()` | Compiler-enforced public-surface discipline. |
 | D6 | Derived numbers render only via provenance components | `DerivedValue<T>` has no `toString`-to-UI path; custom lint fails on raw rendering; Compose overloads only accept `DerivedValue` for stat displays. |
 | D7 | Engines take `Instant`/values as parameters — no `Clock.now()`, no IO, no globals | detekt rules + purity of `:core:engines` deps. |
 | D8 | No exceptions across module boundaries | Domain errors are sealed `AppError` subtypes in `Result`-style returns; libs' exceptions are wrapped at repository edges. |
+| D9 | Networking stacks exist only in `:core:network` | `checkArchitecture` rejects Ktor/OkHttp/Retrofit declarations and resolved production-classpath transitives elsewhere; `:app` is the intentional composition-root recipient and localhost-only test servers are exempt. |
+| D10 | Android system backup and implicit device transfer are disabled | Debug and release merged manifests must set the fail-closed attributes; legacy and Android 12+ rule files must exclude every credential- and device-protected storage domain (WLO-0058). |
 
 This is **dependency inversion made structural**: features and core own the *ports*
 (`:core:ports`), the restricted modules *implement* them, and `:app` (composition root)

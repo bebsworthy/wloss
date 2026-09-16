@@ -16,7 +16,7 @@ import java.nio.file.Paths
  * `wlo.architecture-check`; inputs are captured after all projects evaluate as
  * plain strings, so the action never touches a live Project (config-cache safe).
  *
- * uiAtoms (WLO-0031) runs in the same action with a two-step severity
+ * uiAtoms (WLO-0031, corrected by WLO-0063) runs in the same action with a two-step severity
  * model: `-Pwlo.uiAtoms=enforce` (default since the P3 waves landed) fails
  * the build, making conformance mandatory; `-Pwlo.uiAtoms=warn` prints
  * counts + files per module and NEVER fails — the diagnostics baseline.
@@ -110,8 +110,9 @@ public open class CheckArchitectureTask : DefaultTask() {
                     throw GradleException(
                         "checkArchitecture FAILED — ${uiAtomHits.size} uiAtoms violation(s) " +
                             "(mode=enforce):\n${uiAtomsReport(uiAtomHits)}\n" +
-                            "Render UI only through :core:designsystem atoms (WLO-0031); " +
-                            "the rule list lives in ArchRules.UI_ATOMS_*.",
+                            "Use standard Material 3 components instead of lookalikes; " +
+                            "keep WLO tokens and justified custom visuals in :core:designsystem (WLO-0063). " +
+                            "The lookalike rule list lives in ArchRules.UI_ATOMS_*.",
                     )
                 }
 
@@ -119,7 +120,7 @@ public open class CheckArchitectureTask : DefaultTask() {
                 if (uiAtomHits.isNotEmpty()) {
                     logger.warn(
                         "uiAtoms: WARN mode — ${uiAtomHits.size} violation(s) across $moduleCount " +
-                            "module(s); WLO-0031 P2 migration gate (re-run with " +
+                            "module(s); WLO-0063 lookalike gate (re-run with " +
                             "-Pwlo.uiAtoms=enforce to fail the build)\n${uiAtomsReport(uiAtomHits)}",
                     )
                 }
@@ -135,7 +136,7 @@ public open class CheckArchitectureTask : DefaultTask() {
             "checkArchitecture: OK — ${projectPathList.size} projects, D1–D7 + D9 clean " +
                 "(${edges.size} dependency edges, ${externalDeps.size} external artifacts scanned). " +
                 "uiAtoms: mode=$uiAtomsMode, ${uiAtomHits.size} violation(s) across $moduleCount " +
-                "module(s) (-Pwlo.uiAtoms=warn|enforce; WLO-0031 P2).",
+                "module(s) (-Pwlo.uiAtoms=warn|enforce; WLO-0063).",
         )
     }
 
@@ -159,6 +160,24 @@ public open class CheckArchitectureTask : DefaultTask() {
         )
 }
 
+/** D9 resolved-graph check, registered on each classpath-owning project. */
+public open class CheckResolvedEgressDependenciesTask : DefaultTask() {
+    @get:InputFiles
+    @get:PathSensitive(PathSensitivity.NONE)
+    public val productionClasspaths: ConfigurableFileCollection = project.objects.fileCollection()
+
+    @TaskAction
+    public fun check() {
+        val violations = ArchRules.resolvedBannedArtifactViolations(productionClasspaths.files.map { it.toPath() })
+        if (violations.isNotEmpty()) {
+            throw GradleException(
+                "[D9] Resolved egress dependency check failed for ${project.path}:\n  " +
+                    violations.joinToString("\n  ") { it.message },
+            )
+        }
+    }
+}
+
 /**
  * D4 — the INTERNET gate, both directions. The module-manifest scan
  * ([ArchRules.manifestViolations]) bans INTERNET everywhere except :app; THIS
@@ -172,28 +191,68 @@ public open class CheckMergedManifestTask : DefaultTask() {
 
     @get:InputFiles
     @get:PathSensitive(PathSensitivity.NONE)
-    public val mergedManifests: ConfigurableFileCollection = project.objects.fileCollection()
+    public val debugMergedManifests: ConfigurableFileCollection = project.objects.fileCollection()
+
+    @get:InputFiles
+    @get:PathSensitive(PathSensitivity.NONE)
+    public val releaseMergedManifests: ConfigurableFileCollection = project.objects.fileCollection()
+
+    @get:InputFiles
+    @get:PathSensitive(PathSensitivity.RELATIVE)
+    public val backupRuleFiles: ConfigurableFileCollection = project.objects.fileCollection()
 
     @TaskAction
     public fun check() {
-        val scanned = mergedManifests.files.filter { it.isFile && it.name.endsWith(".xml") }
-        if (scanned.isEmpty()) {
-            throw GradleException(
-                "D4: no merged manifest found among ${mergedManifests.files.size} output(s) — " +
-                    "the manifest merge must run before this check.",
-            )
+        val violations = buildList {
+            addAll(validateVariant("debug", debugMergedManifests))
+            addAll(validateVariant("release", releaseMergedManifests))
+
+            val rules = backupRuleFiles.files.filter { it.isFile }.associateBy { it.name }
+            val legacy = rules["backup_rules.xml"]
+            val extraction = rules["data_extraction_rules.xml"]
+            if (legacy == null) {
+                add("D10: missing app/src/main/res/xml/backup_rules.xml")
+            } else {
+                addAll(BackupPolicyValidator.legacyRulesViolations(legacy.readText()).map { "D10: backup_rules.xml $it" })
+            }
+            if (extraction == null) {
+                add("D10: missing app/src/main/res/xml/data_extraction_rules.xml")
+            } else {
+                addAll(
+                    BackupPolicyValidator.extractionRulesViolations(extraction.readText())
+                        .map { "D10: data_extraction_rules.xml $it" },
+                )
+            }
         }
-        val withInternet = scanned.filter { it.readText().contains("android.permission.INTERNET") }
-        if (withInternet.isEmpty()) {
+
+        if (violations.isNotEmpty()) {
             throw GradleException(
-                "D4/R-S13: :app's merged manifest does not declare android.permission.INTERNET. " +
-                    "All egress flows through :core:network's NetworkDispatcher (receipted, consent-gated) " +
-                    "and needs the permission in :app — and ONLY :app (module manifests are banned).",
+                "Merged-manifest/privacy policy check failed:\n  ${violations.joinToString("\n  ")}",
             )
         }
         logger.lifecycle(
-            "checkMergedManifest: ${scanned.size} merged manifest(s) scanned; INTERNET present in :app " +
-                "(and only :app — the module-manifest scan bans it elsewhere).",
+            "checkMergedManifest: debug + release manifests enforce D4 INTERNET and D10 no implicit backup/transfer; " +
+                "legacy and Android 12+ extraction rules exclude all ${BackupPolicyValidator.STORAGE_DOMAINS.size} domains.",
         )
+    }
+
+    private fun validateVariant(
+        variant: String,
+        manifests: ConfigurableFileCollection,
+    ): List<String> {
+        val scanned = manifests.files.flatMap { input ->
+            when {
+                input.isDirectory -> input.walkTopDown().filter { it.isFile && it.name == "AndroidManifest.xml" }.toList()
+                input.isFile && input.name == "AndroidManifest.xml" -> listOf(input)
+                else -> emptyList()
+            }
+        }.distinctBy { it.absolutePath }
+        if (scanned.isEmpty()) {
+            return listOf("D4/D10: no $variant merged manifest found among ${manifests.files.size} output(s)")
+        }
+        return scanned.flatMap { manifest ->
+            BackupPolicyValidator.mergedManifestViolations(manifest.readText())
+                .map { violation -> "D4/D10: $variant ${manifest.absolutePath}: $violation" }
+        }
     }
 }

@@ -255,6 +255,8 @@ public object CsvMeasurementImporter {
     )
 
     public data class StagedMeasurement(
+        /** Stable content/location key: re-import and crash retry are idempotent. */
+        public val importKey: String,
         public val dayEpochDay: Long,
         public val kind: String,
         public val valueReal: Double,
@@ -297,6 +299,18 @@ public object CsvMeasurementImporter {
                 }
                 rows +=
                     StagedMeasurement(
+                        importKey =
+                            BackupCodec.sha256(
+                                listOf(
+                                    rowIndex,
+                                    m.sourceColumn,
+                                    day,
+                                    target.kind,
+                                    raw,
+                                    target.unit,
+                                    target.customName,
+                                ).joinToString("|").toByteArray(),
+                            ),
                         dayEpochDay = day,
                         kind = if (target.customName == null) target.kind else "custom",
                         valueReal = value,

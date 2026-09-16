@@ -2,6 +2,8 @@ package app.wlo.core.designsystem
 
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertNotNull
+import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 /**
@@ -28,6 +30,24 @@ class ForecastTimeWindowTest {
             expectedFinishEpochDay = expectedFinish,
             pessimisticFinishEpochDay = pessimisticFinish,
         )
+
+    @Test
+    fun developingForecast_exposesOnlyNeutralOuterRangeCopy() {
+        val start = day(2026, 9, 8)
+        val expected = start + 80
+        val developing =
+            bands(
+                startEpochDay = start,
+                optimisticFinish = start + 60,
+                expectedFinish = expected,
+                pessimisticFinish = start + 110,
+            ).copy(pointDateEligible = false)
+
+        val copy = assertNotNull(provisionalRangeCopy(developing))
+        assertTrue("provisional range" in copy.qualifier)
+        assertTrue(formatDay(expected) !in copy.range, "central date must not appear in developing copy")
+        assertNull(provisionalRangeCopy(developing.copy(pointDateEligible = true)))
+    }
 
     @Test
     fun reachedPath_closesAtTheLastArrival_notAtTheCap() {

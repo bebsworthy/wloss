@@ -8,6 +8,7 @@ import app.wlo.core.ports.VaultCsvMappingView
 import app.wlo.core.ports.VaultCsvPreview
 import app.wlo.core.ports.VaultCsvRender
 import app.wlo.core.ports.VaultCsvStagedReport
+import app.wlo.core.ports.VaultFailure
 import app.wlo.core.ports.VaultOperationException
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -106,6 +107,8 @@ public data class ImportUiState(
     public val staged: VaultCsvStagedReport? = null,
     public val committedRows: Int = 0,
     public val failure: String? = null,
+    /** Room may be committed and the durable restore journal still pending. */
+    public val recoveryPending: Boolean = false,
 ) {
     public enum class Step {
         Pick,
@@ -235,6 +238,7 @@ public class ImportViewModel(
                         stateFlow.value.copy(
                             staged = VaultCsvStagedReport(stagedRows = report.totalRows, warnings = report.warnings),
                             failure = null,
+                            recoveryPending = false,
                         )
                 } else {
                     val mapping =
@@ -261,7 +265,7 @@ public class ImportViewModel(
                         }
                     val staged = vault.stageCsvImport(bytes, mapping)
                     remember(mapping)
-                    stateFlow.value = stateFlow.value.copy(staged = staged, failure = null)
+                    stateFlow.value = stateFlow.value.copy(staged = staged, failure = null, recoveryPending = false)
                 }
                 onStaged(stateFlow.value)
             } catch (failure: VaultOperationException) {
@@ -284,9 +288,18 @@ public class ImportViewModel(
                         vault.commitCsvImport()
                     }
                 stateFlow.value =
-                    stateFlow.value.copy(step = ImportUiState.Step.Done, committedRows = result.stagedRows)
+                    stateFlow.value.copy(
+                        step = ImportUiState.Step.Done,
+                        committedRows = result.stagedRows,
+                        recoveryPending = false,
+                    )
             } catch (failure: VaultOperationException) {
-                stateFlow.value = stateFlow.value.copy(step = ImportUiState.Step.Failed, failure = failure.message)
+                stateFlow.value =
+                    stateFlow.value.copy(
+                        step = ImportUiState.Step.Failed,
+                        failure = failure.message,
+                        recoveryPending = failure.failure == VaultFailure.RECOVERY_PENDING,
+                    )
             }
         }
     }

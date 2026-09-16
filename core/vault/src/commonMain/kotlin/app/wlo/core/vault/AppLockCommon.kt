@@ -23,26 +23,53 @@ public enum class LockTimeout(
     }
 }
 
+/** The startup/runtime posture of the convenience app lock. */
+public enum class AppLockPosture {
+    /** The persisted setting has not been read yet. Sensitive UI must stay hidden. */
+    UNRESOLVED,
+
+    /** Authentication is required before the application shell can render. */
+    LOCKED,
+
+    /** The gate has been passed, or app lock is disabled. */
+    UNLOCKED,
+}
+
 /**
  * The app-lock state holder (data API; PART B renders the lock surface).
- * `onBackground` on ON_STOP, then `shouldLock(now)` decides — the timeout is
- * measured from the last background transition, not from unlock.
+ *
+ * A new process starts [AppLockPosture.UNRESOLVED], which is deliberately a
+ * fail-closed posture. [resolveStartup] must be called with the persisted
+ * preference before sensitive content is composed. If app lock is enabled, a
+ * new process always starts locked: the elapsed background time is unknowable
+ * after process death, so every configured timeout fails closed.
+ *
+ * Within the same process, `onBackground` on ON_STOP records the timestamp and
+ * `onForeground` applies the configured timeout as before.
  */
 public class AppLockController {
-    private val lockedState = MutableStateFlow(false)
+    private val postureState = MutableStateFlow(AppLockPosture.UNRESOLVED)
 
-    /** True = the lock surface should be showing (gate passed since last lock). */
-    public val locked: StateFlow<Boolean> = lockedState.asStateFlow()
+    public val posture: StateFlow<AppLockPosture> = postureState.asStateFlow()
 
     private var backgroundSinceEpochMs: Long? = null
 
+    /**
+     * Resolves the one startup decision for this process. Activity recreation
+     * does not revoke an authentication already completed in this process.
+     */
+    public fun resolveStartup(enabled: Boolean) {
+        if (postureState.value != AppLockPosture.UNRESOLVED) return
+        postureState.value = if (enabled) AppLockPosture.LOCKED else AppLockPosture.UNLOCKED
+    }
+
     public fun onUnlock() {
-        lockedState.value = false
+        postureState.value = AppLockPosture.UNLOCKED
         backgroundSinceEpochMs = null
     }
 
     public fun onBackground(atEpochMs: Long) {
-        if (!lockedState.value) backgroundSinceEpochMs = atEpochMs
+        if (postureState.value == AppLockPosture.UNLOCKED) backgroundSinceEpochMs = atEpochMs
     }
 
     public fun onForeground(
@@ -50,8 +77,8 @@ public class AppLockController {
         timeout: LockTimeout,
     ) {
         val since = backgroundSinceEpochMs
-        if (lockedState.value) return
-        if (since != null && atEpochMs - since >= timeout.millis) lockedState.value = true
+        if (postureState.value != AppLockPosture.UNLOCKED) return
+        if (since != null && atEpochMs - since >= timeout.millis) postureState.value = AppLockPosture.LOCKED
         backgroundSinceEpochMs = null
     }
 
@@ -60,7 +87,8 @@ public class AppLockController {
         nowEpochMs: Long,
         timeout: LockTimeout,
     ): Boolean {
-        val since = backgroundSinceEpochMs ?: return lockedState.value
+        if (postureState.value != AppLockPosture.UNLOCKED) return true
+        val since = backgroundSinceEpochMs ?: return false
         return nowEpochMs - since >= timeout.millis
     }
 }

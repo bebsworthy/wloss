@@ -7,16 +7,20 @@
 | | |
 |---|---|
 | **Feature ID** | F01 — Onboarding, Goals & Diet Plan Studio |
-| **Provides** | A zero-account, minutes-long path from "I want to change my weight" to a personal, fully editable Diet Plan — a versioned artifact that defines the calorie/macro targets, weekday/weekend schedule, food rules and milestones every other feature reads. |
+| **Provides** | A zero-account weight-first entry plus an optional, fully editable Diet Plan Studio. The plan is a versioned artifact defining calorie/macro targets, schedule, food rules, and milestones for users who choose broader planning. |
 | **User problems solved** | • Competitors force a signup before showing anything useful (Yazio made "no sign-up" a marketing headline; WLO makes it architecture). • Diet "plans" in the category are marketing funnels that produce a paywall, not an object the user owns, edits, versions or exports. • A goal 12 kg away is demotivating; nobody auto-breaks it into winnable steps except Happy Scale, which tracks no food. • Migrating from MFP/Lose It! means losing history; WLO imports it instead — and Mealime's shutdown proves planners die and take plans with them. |
 | **AI consent category** | Consumes the F12 `meal-planning` toggle (optional cloud refinement of a user template); everything in F01 works with zero AI, zero network. |
 | **Primary evidence** | `yazio.md` (no-signup onboarding, programs, fasting-plan integration pattern); `loseit.md` (Calorie Schedule / weekday-weekend cycling, plan-as-forecast spine); `mealime.md` (preference quiz: 8 diets, allergy filters, 119 dislikable ingredients; preferences as a first-class object; arbitrary servings demanded); `happy-scale.md` (milestone goal breakdown, Fresh Start hide-not-delete, "how we got here"); `zolt.md` (target cadence daily/weekly, calorie floor, "an estimate, not a promise"); `synthesis.md` §1.1, §2 items 3/15/17, §6 checklist. |
 
 ## 1. Purpose & Core Objectives
 
-- F01 is the **door and the control room**. It owns the first five minutes of the product (zero-account onboarding), the definition of the user's goal, and the **Diet Plan Studio** where the diet template — the app's central configuration object — is authored, versioned, and revised. Its output is not a funnel result: it is a structured artifact (`Plan vN`) that F02 reads for targets, F03 reads for generation rules, F07 adapts, and F13 exports.
+- F01 owns the small weight-first entry, goal definition, and the optional
+  **Diet Plan Studio**. The weight loop works without a plan. When authored,
+  `Plan vN` is the structured artifact F02/F03/F07 consume and F13 exports.
 - Core objectives (verifiable):
-  - First launch → active plan with targets in **under 3 minutes**, with **no account, no email, no network** at any step. (Verification metric: an "active plan" counts when written **and** followed by a first log within 24 h — the loop, not the wizard.)
+  - First launch → Weight after unit plus an optional goal and optional
+    import/manual reading, with **no account, no email, no network** required.
+    Creating a Diet Plan is a separate optional success metric.
   - A **3-band forecast preview** (optimistic / expected / pessimistic) is on screen **within 30 s** of entering a goal, rendered via the F07 forecast engine.
   - Every value the wizard produces is editable afterwards in the Studio; nothing is write-once; every edit is a new plan version with a human-readable diff.
   - Any goal requiring calories below the safety floor is **refused with a counter-proposal** (slower pace), never silently accepted — in code, not copy.
@@ -31,23 +35,35 @@
 - **Restart after a lapse** (emotional low point): Fresh Start. The tone is a clean page, never a reckoning.
 - **Migration** (one-time, 5–10 minutes): importing from a dying or resented app; "your data outlives the app" is the wedge.
 - **Preference re-run** (occasional): tastes and households change; the quiz is an instrument, not intake paperwork.
-- **Most common flow, end-to-end:** open app → welcome card states "no account, everything stays on this device" → goal dials (current weight auto-filled from F06/Health Connect if present) → drag target + pace → forecast bands bloom → pick a diet template card → 8-card preference swipe quiz → milestone ladder drops in → "Start" → F10 Daily Hub takes over.
+- **Most common flow, end-to-end:** open app → welcome/privacy → choose kg or
+  lb → optionally choose lose/maintain/gain → import or enter a reading (or do
+  it later) → Weight. Plan Studio is an explicit optional continuation.
 
 ## 3. How It Works — functional mechanics
 
 - **Inputs:** body basics (weight, height, age, sex, activity level — all optional, each pre-filled from F06/F13 when available); goal (target weight + either pace in % body-weight/week or a target date); diet template choice; preference quiz answers; imported archives (via F13).
-- **Onboarding step map (the wizard):**
+- **Weight-first first run (Release 1):** unit (`kg`/`lb`) → optional
+  loss/maintenance/gain goal → Health Connect/file import or manual first
+  weigh-in → Weight. This small flow owns onboarding completion; it does not
+  require a Diet Plan.
+- **Optional Plan Studio setup (after first run):**
   1. *Welcome & privacy statement* — one card, one sentence of value, one sentence of architecture ("no account, no server, no ads").
   2. *Goal* — current weight (prefilled or optional), target weight, pace slider. Date-anchored goals ("by June") are converted to an implied pace and shown as such.
-  3. *Live forecast preview* — 3 bands from the F07 engine (see below).
+  3. *Forecast preview* — 3 bands only after the shared WLO-0080 eligibility
+     result allows math; otherwise an explicit held state (gain dates remain
+     held while the shipped numerical integrator is loss-only).
   4. *Template gallery* — diet templates as cards; each card names its rules in plain language.
   5. *Preference quiz* — swipe deck (see below).
   6. *Schedule* — weekday/weekend calorie bars (skippable; defaults to flat).
   7. *Milestones* — auto-generated ladder, editable names.
-  8. *Start* — writes `Plan v1`; F10 activates.
+  8. *Start* — writes `Plan v1`; the Hub planning surfaces activate.
 - **Processing:**
   - Initial targets from **Mifflin-St Jeor + activity multiplier**, explicitly labeled a *formula estimate*; F07 replaces it with a measured TDEE after ~2–3 weeks of data, and the Studio shows that provenance transition on every affected number.
-  - **3-band forecast preview:** F01 calls the F07 forecast engine with zero real data → wide bands labeled "formula-based, will sharpen as you log". No single false-precision date is ever shown (Zolt's "an estimate, not a promise").
+  - **3-band forecast preview:** F01 passes the shared safety eligibility result
+    to F07 before any numerical call. Eligible loss goals with the required
+    profile facts may receive wide bands labeled "formula-based, will sharpen
+    as you log". Missing facts, unanswered screening, unsupported inputs, and
+    gain goals produce a held state rather than a date.
   - **Target cadence:** daily vs weekly calorie budget (Zolt's cadence choice). Weekly cadence unlocks the weekday/weekend **Calorie Schedule** (Lose It!): e.g. 5 × 1,800 + 2 × 2,400 = the same weekly deficit, rendered as a 7-bar chart with the weekly total pinned while bars are dragged.
   - **Macro-split presets:** balanced, high-protein, mediterranean, keto (carb-limit ring + tracker-surface changes, per the Yazio fasting-module integration pattern), low-carb, IF (16:8/5:2/6:1, with timer surfaces in F10), custom sliders. Each preset is a template with different fields — one schema, no special cases.
   - **Shipped template library (v1 seed), all plain JSON in the same schema:**
@@ -70,8 +86,8 @@
 
 ## 4. User Interaction Model
 
-- **Entry points:** first launch (automatic); Settings → Plan Studio; F10 nudge "your targets haven't been reviewed in 30 days"; F07 check-in deep link "adjust plan" (opens the Studio pre-filled with the proposal as a pending diff); post-import CTA.
-- **Happy path:** welcome → goal dials → forecast bands → template gallery → swipe quiz → schedule bars → milestones → Start.
+- **Entry points:** optional continuation after weight-first setup; Settings → Plan Studio; F10 nudge "your targets haven't been reviewed in 30 days"; F07 check-in deep link "adjust plan" (opens the Studio pre-filled with the proposal as a pending diff); post-import CTA.
+- **Happy path:** Weight first run completes → optionally open Plan Studio → goal details → forecast bands → template gallery → swipe quiz → schedule bars → milestones → Start.
 - **Primary flows, step by step:**
   - *Goal revision:* Studio → Goal card → dials → bands re-bloom → "Save as vN+1" → diff summary card → F07/F10 informed.
   - *Template editing:* Studio → any card (macros, rules, schedule, surfaces) → edit inline → version badge ticks up → diff ribbon at top shows the delta since last commit.
@@ -79,7 +95,14 @@
   - *Import:* first-launch branch "I'm coming from another app" → pick source → pick file (system picker) → parse → report → "Bring it in" → goal suggestions derived from imported history.
   - *Template authoring (Studio):* "New template" (blank or duplicate-an-existing) → edit inline (macro sliders, rules chips, schedule bars, surface toggles, timing windows) → name it (chips or text) → saved as v1 → optional "share as file" (signed JSON). Authoring is a first-class flow, not a settings detour — the same editor the user met in onboarding, no separate power-user mode.
   - *Cloud refinement [v1.x — R-S10]:* Studio → "Refine with AI" → typed or spoken constraints → F12 point-of-use consent sheet (`meal-planning`) with payload preview → proposal rendered as a pending diff → Apply (new version) or Discard.
-- **Fallback paths:** (a) *Skip everything* — one tap creates a Balanced default plan from whatever is known; every skipped field is flagged `estimated`; the Studio nags gently once, never again. (b) *Unsafe goal* — pace demanding sub-floor calories is blocked: the slider physically stops at the floor with a haptic wall and a counter-offer card ("at your stats, 1.0 %/week is the fastest we'll suggest — June 12 isn't a promise we'll make; here's June 28 at a sustainable pace"). (c) *Cloud refinement declined/offline* — the deterministic applier runs or the offer simply doesn't appear; nothing stalls.
+- **Fallback paths:** (a) *Skip Plan Studio* — exit without creating a plan;
+  the weight loop remains complete and no values are invented. (b) *Unsafe goal*
+  — the shared [weight-goal safety contract](../research/weight-goal-safety-contract.md)
+  holds unsupported targets/dates and a pace demanding sub-floor calories is
+  blocked with a counter-proposal; raw tracking remains available. This is
+  product policy, not medical advice. (c)
+  *Cloud refinement declined/offline* — the deterministic applier runs or the
+  offer simply does not appear; nothing stalls.
 - **Input minimization — never typed:** weight/height via steppers and sliders with round-number snap; dislikes via card swipes from the gallery (free text only as last resort); household size as chips; cooking frequency as 4 chips; activity as one picture-card; dates via wheels. Zero fields are mandatory; every field shows its provenance chip (`measured` / `estimated`). Explicitly typed-once-and-reused items: none in the happy path — the only keyboard moments in all of F01 are optional free-text dislikes and the optional AI-refinement prompt.
 - **Micro-interactions:**
   - Goal dials: rotary haptic ticks per kg; magnetic snap + soft "thock" at 5 kg multiples; the delta ("−12 kg") counts up beside the dial.
@@ -135,6 +158,9 @@
 - **No account is ever created, requested, or useful.** Onboarding completes fully offline; if the device has never had network, nothing degrades except the optional cloud refinement (F12 `meal-planning` toggle + BYOK key, with a pre-send payload preview).
 - Goal weight, body stats and the plan are sensitive health data: protected by the app lock (biometric/PIN, F13), stored in encrypted local storage, exported only through F13's explicit export action.
 - The **calorie floor is non-negotiable in code**: no plan version, import, AI proposal, or blue-sky feature may produce targets below it; imported plans with unsafe historical targets are imported as *history*, never as the active plan.
+- Goal UI consumes the shared WLO-0080 eligibility result. It never assumes an
+  unanswered safety question means “no,” and it never produces a confident
+  target, milestone, or date for a held/unsupported result.
 - Fresh Start hides; it never deletes. Deletion of history exists only as a separate, explicit, per-category destructive action with confirmation.
 - AI proposals (template refinement) are drafts: apply/discard, never auto-commit; nothing is logged about the exchange — only the consented request itself leaves the device.
 - Tone audit rule: any string scoring the user against the plan must pass the "no verdict" test — deltas are described, never judged.
@@ -147,4 +173,6 @@
 - **Import scope for v1:** MFP + Lose It! CSV are documented formats; do we also accept Paprika/Mealime recipe exports at launch (higher effort, bigger "your data outlives the app" wedge) or defer to v1.x? *(Resolved: R-S4 — generic CSV/JSON at v1; MFP/Lose It!/Paprika/Mealime converters at v1.x.)*
 - **IF plans in v1:** the Yazio pattern suggests fasting windows bundle naturally with templates; confirm F10's timer surface ships early enough to make the IF template honest.
 - **Weekly vs daily cadence default:** weekly pairs with F07's check-in ritual (recommended); confirm with the F07 spec that daily cadence remains supported rather than dropped. *(Resolved: R-S6 — weekly default, daily supported.)*
-- **Onboarding completion metric:** define "active plan" for verification — plan written, or plan written + first log within 24 h? *(Resolved — plan written + first log ≤ 24 h; recorded in §1.)*
+- **Plan Studio activation metric:** plan written + first applicable food log
+  within 24 h. This is not the first-run completion metric; first run completes
+  on arrival at Weight.

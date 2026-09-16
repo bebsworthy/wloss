@@ -26,7 +26,7 @@ import androidx.compose.ui.unit.dp
 @Composable
 public fun WloIconAction(
     imageVector: ImageVector,
-    contentDescription: String?,
+    contentDescription: String,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     filled: Boolean = false,

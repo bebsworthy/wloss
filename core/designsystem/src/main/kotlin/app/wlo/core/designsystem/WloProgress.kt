@@ -8,6 +8,9 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.LiveRegionMode
+import androidx.compose.ui.semantics.liveRegion
+import androidx.compose.ui.semantics.semantics
 
 /**
  * Determinate-or-indeterminate progress with its caption (WLO-0031): the
@@ -24,7 +27,7 @@ public fun WloProgress(
     modifier: Modifier = Modifier,
 ): Unit =
     Column(
-        modifier = modifier.fillMaxWidth(),
+        modifier = modifier.fillMaxWidth().semantics { liveRegion = LiveRegionMode.Polite },
         verticalArrangement = Arrangement.spacedBy(WloSpacing.TIGHT),
         horizontalAlignment = Alignment.Start,
     ) {

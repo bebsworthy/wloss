@@ -26,8 +26,7 @@ android {
     }
 
     lint {
-        // Lint stays informational for M1; architecture rules live in checkArchitecture.
-        abortOnError = false
+        abortOnError = true
     }
 }
 

@@ -16,11 +16,15 @@ import app.wlo.core.documents.Cadence
 import app.wlo.core.documents.ConstraintApplier
 import app.wlo.core.documents.DietTemplate
 import app.wlo.core.documents.DietTemplateApplier
+import app.wlo.core.documents.DocumentCodec
 import app.wlo.core.documents.MacroSplit
 import app.wlo.core.documents.TargetsDocument
 import app.wlo.core.model.ConstantsRegistry
 import app.wlo.core.model.MeasurementKind
 import app.wlo.core.model.Sex
+import app.wlo.core.model.WeightGoalEligibility
+import app.wlo.core.model.WeightGoalSafety
+import app.wlo.core.model.WeightGoalSafetyInput
 import kotlinx.datetime.Instant
 import kotlinx.datetime.TimeZone
 
@@ -51,15 +55,28 @@ public class FinishOnboarding(
         template: DietTemplate,
         draftTargets: TargetsDocument,
         draftWeightKg: Double?,
+        safetyInput: WeightGoalSafetyInput,
         timeZone: TimeZone,
     ): WloResult<Unit> {
+        val boundaryInput =
+            safetyInput.copy(
+                targetWeightKg = draftTargets.goal.targetWeightKg,
+                requestedPacePctPerWeek = draftTargets.goal.pacePctPerWeek,
+                plannedDailyEnergyKcal = draftTargets.energy.budgetKcal,
+                minimumDailyEnergyKcal = draftTargets.energy.floorKcal,
+            )
+        if (WeightGoalSafety.evaluate(boundaryInput) !is WeightGoalEligibility.Eligible) {
+            return WloResult.err(AppError.InvalidInput(detail = "weight goal held by product safety policy"))
+        }
         val now: Instant = clock.now()
 
+        val active = profiles.active().getOrNull()
         val created =
-            profiles.create(profile, now).getOrNull()
+            active
+                ?: profiles.create(profile, now).getOrNull()
                 ?: return WloResult.err(AppError.Storage(cause = null, detail = "profile.create"))
 
-        if (draftWeightKg != null) {
+        if (active == null && draftWeightKg != null) {
             measurements
                 .append(
                     NewMeasurement(
@@ -84,6 +101,10 @@ public class FinishOnboarding(
             }
         if (writeError != null) return WloResult.err(writeError)
 
+        documents.writeText(
+            "weight/goal-safety-v1/${created.id}",
+            DocumentCodec.json.encodeToString(WeightGoalSafetyInput.serializer(), boundaryInput),
+        )
         documents.writeFlag(FLAG_COMPLETE, true)
         documents.remove(DRAFT_KEY)
         return WloResult.ok(Unit)

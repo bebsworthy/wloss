@@ -1,5 +1,6 @@
 package app.wlo.feature.f06.weight.di
 
+import app.wlo.core.datastore.SettingsStore
 import app.wlo.feature.f06.weight.state.BodyFatViewModel
 import app.wlo.feature.f06.weight.state.BodySectionUi
 import app.wlo.feature.f06.weight.state.LogbookViewModel
@@ -21,10 +22,19 @@ public val f06WeightModule: Module =
                 profiles = get(),
                 weighIns = get(),
                 measurements = get(),
+                massUnits = get<SettingsStore>().massUnit,
                 initialSheetOpen = initialSheetOpen,
                 initialSection = initialSection,
             )
         }
         viewModel { BodyFatViewModel(clock = get(), profiles = get(), measurements = get(), settings = get()) }
-        viewModel { LogbookViewModel(clock = get(), profiles = get(), weighIns = get(), measurements = get()) }
+        viewModel {
+            LogbookViewModel(
+                clock = get(),
+                profiles = get(),
+                weighIns = get(),
+                measurements = get(),
+                settings = get(),
+            )
+        }
     }

@@ -2,12 +2,12 @@
 id: WLO-0037
 title: 'F06 scale-display OCR input: photo -> on-device OCR -> prefilled weigh-in (v1 blue-sky)'
 status: backlog
-theme:
-release:
+theme: weight-experience
+release: 2
 created: 2026-09-14T13:37:55Z
-modified: 2026-09-14T14:00:19Z
+modified: 2026-09-15T21:28:45Z
 closed:
-revision: f6b1126f649b5adc
+revision: b7dd7b48932868bc
 blocks: []
 related: []
 ---

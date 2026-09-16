@@ -4,10 +4,17 @@ import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -15,10 +22,14 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.semantics.paneTitle
+import androidx.compose.ui.semantics.semantics
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NamedNavArgument
 import androidx.navigation.NavController
 import androidx.navigation.NavDestination
+import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
@@ -32,6 +43,7 @@ import app.wlo.app.ui.PlaceholderScreen
 import app.wlo.app.ui.STUB_TITLES
 import app.wlo.app.ui.StubScreen
 import app.wlo.app.ui.debug.EgressMonitorScreen
+import app.wlo.app.ui.more.MoreScreen
 import app.wlo.app.ui.settings.ProfileFactsScreen
 import app.wlo.app.ui.settings.SettingsScreen
 import app.wlo.app.ui.shell.ShellState
@@ -39,14 +51,18 @@ import app.wlo.app.ui.shell.ShellViewModel
 import app.wlo.app.ui.zoo.ZooScreen
 import app.wlo.core.designsystem.WloBottomBar
 import app.wlo.core.designsystem.WloHaptic
+import app.wlo.core.designsystem.WloIcons
+import app.wlo.core.designsystem.WloNavigationRail
 import app.wlo.core.designsystem.WloTabItem
 import app.wlo.core.designsystem.rememberWloHaptics
 import app.wlo.core.media.WloCaptureMode
 import app.wlo.core.media.WloShutterBridge
 import app.wlo.core.media.WloViewfinder
 import app.wlo.feature.f01.onboarding.F01Routes
+import app.wlo.feature.f01.onboarding.domain.FirstWeightSource
 import app.wlo.feature.f01.onboarding.ui.GoalsEditorScreen
 import app.wlo.feature.f01.onboarding.ui.OnboardingScreen
+import app.wlo.feature.f01.onboarding.ui.WeightFirstOnboardingScreen
 import app.wlo.feature.f02.food.state.CaptureLensMode
 import app.wlo.feature.f02.food.ui.CaptureScreen
 import app.wlo.feature.f02.food.ui.DiaryDayScreen
@@ -80,14 +96,16 @@ import org.koin.androidx.compose.koinViewModel
 import org.koin.core.parameter.parametersOf
 
 /**
- * The WLO shell: five-tab bottom navigation (R-D2) + NavHost, with every
+ * The WLO shell: adaptive five-destination navigation (R-D2) + NavHost, with every
  * `wlo://` deep link in the IA.md §3 registry registered against its route —
  * each resolving to a real screen or a documented stub (WloDeepLinks). Dark is
  * the base scheme (R-D1); the activity forces `darkTheme = true`. While the
- * shell gate is FRESH the Hub route hosts the F01 wizard (first-run is a flow,
- * not a modal gauntlet — IA §5) and the bottom bar stays hidden until a plan
- * exists.
+ * shell gate is FRESH the Weight route hosts the weight-first setup and
+ * top-level navigation stays hidden until onboarding is complete. Nested
+ * destinations replace the top-level bar or rail with a standard Material 3
+ * app bar and Up action.
  */
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 public fun WloApp(
     newIntent: Intent?,
@@ -101,6 +119,21 @@ public fun WloApp(
     val shellState: ShellState by shell.state.collectAsStateWithLifecycle()
     val backStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = backStackEntry?.destination?.route
+    val isTopLevel = isTopLevelRoute(currentRoute)
+    val navigationItems =
+        remember {
+            WLO_TABS.map { tab ->
+                WloTabItem(route = tab.route, icon = tab.icon, label = tab.label)
+            }
+        }
+    val selectTopLevel: (String) -> Unit = { route ->
+        haptics.perform(WloHaptic.SegmentTick)
+        navController.navigate(route) {
+            popUpTo(navController.graph.findStartDestination().id) { saveState = true }
+            launchSingleTop = true
+            restoreState = true
+        }
+    }
 
     DisposableEffect(navController) {
         val listener =
@@ -122,123 +155,167 @@ public fun WloApp(
         newIntent?.let(navController::handleDeepLink)
     }
 
-    Scaffold(
-        modifier = modifier,
-        containerColor = MaterialTheme.colorScheme.background,
-        contentColor = MaterialTheme.colorScheme.onBackground,
-        bottomBar = {
-            if (shellState == ShellState.Onboarded) {
-                WloBottomBar(
-                    selected = currentRoute.orEmpty(),
-                    onSelect = { route ->
-                        haptics.perform(WloHaptic.SegmentTick)
-                        // Tab switches rebuild the tab root fresh: pop the whole
-                        // stack — deep-link-landed destinations included — so a
-                        // tab tap ALWAYS lands on the tab, whatever surface the
-                        // user was on.
-                        navController.navigate(route) {
-                            popUpTo(0) { saveState = false }
-                            launchSingleTop = true
-                            restoreState = false
-                        }
-                    },
-                    items =
-                        WLO_TABS.map { tab ->
-                            WloTabItem(route = tab.route, icon = tab.icon, label = tab.label)
+    BoxWithConstraints(modifier = modifier) {
+        val showTopLevelNavigation = shellState == ShellState.Onboarded && isTopLevel
+        val useNavigationRail = useNavigationRail(maxWidth, showTopLevelNavigation)
+        val nestedTitle = if (shellState == ShellState.Onboarded && !isTopLevel) routeTitle(currentRoute) else null
+
+        Scaffold(
+            modifier = Modifier.fillMaxSize(),
+            containerColor = MaterialTheme.colorScheme.background,
+            contentColor = MaterialTheme.colorScheme.onBackground,
+            topBar = {
+                if (nestedTitle != null) {
+                    TopAppBar(
+                        title = { Text(text = nestedTitle) },
+                        navigationIcon = {
+                            IconButton(
+                                onClick = {
+                                    if (!navController.navigateUp()) {
+                                        navController.navigate(WloTabs.WEIGHT) {
+                                            popUpTo(navController.graph.findStartDestination().id) { inclusive = true }
+                                        }
+                                    }
+                                },
+                            ) {
+                                Icon(imageVector = WloIcons.ArrowBack, contentDescription = "Navigate up")
+                            }
                         },
-                )
-            }
-        },
-    ) { innerPadding ->
-        NavHost(
-            navController = navController,
-            startDestination = WloTabs.HUB,
-            modifier = Modifier.padding(innerPadding),
-        ) {
-            for ((route, patterns) in WloDeepLinks.patternsByRoute) {
-                composable(
-                    route = route,
-                    deepLinks = patterns.map { pattern -> navDeepLink { uriPattern = pattern } },
-                    arguments = routeArguments(route),
-                ) { entry ->
-                    RouteSurface(
-                        route = route,
-                        arguments = entry.arguments,
-                        shellState = shellState,
-                        onSurfaceChanged = onSurfaceChanged,
-                        navController = navController,
                     )
                 }
-            }
-            // Internal surfaces without registry URIs (reached from their owners).
-            composable(route = F06Routes.MATH) { MathDocsScreen() }
-            composable(route = F06Routes.BODY_FAT) { BodyFatScreen(viewModel = koinViewModel()) }
-            composable(route = F06Routes.LOGBOOK) { LogbookScreen(viewModel = koinViewModel()) }
-            // M6 internal surfaces: Settings' children (the F12 consent demo)
-            // and the F13 vault wizards have no wlo:// URIs of their own — they
-            // are visited deliberately from their parent surfaces (IA §6). The
-            // studio/receipts/settings/vault routes themselves are NOT listed
-            // here: they carry registry deep links (wlo://ai/studio,
-            // wlo://ai/receipts, wlo://settings, wlo://vault) via the loop
-            // above, and a duplicate composable would overwrite those
-            // pattern-carrying destinations.
-            composable(route = F12Routes.CONSENT_SHEET_DEMO) {
-                RouteSurface(
-                    route = F12Routes.CONSENT_SHEET_DEMO,
-                    arguments = null,
-                    shellState = shellState,
-                    onSurfaceChanged = onSurfaceChanged,
+            },
+            bottomBar = {
+                if (showTopLevelNavigation && !useNavigationRail) {
+                    WloBottomBar(
+                        selected = currentRoute.orEmpty(),
+                        onSelect = selectTopLevel,
+                        items = navigationItems,
+                        modifier = Modifier.testTag("top-level-navigation-bar"),
+                    )
+                }
+            },
+        ) { innerPadding ->
+            Row(modifier = Modifier.fillMaxSize().padding(innerPadding)) {
+                if (useNavigationRail) {
+                    WloNavigationRail(
+                        selected = currentRoute.orEmpty(),
+                        onSelect = selectTopLevel,
+                        items = navigationItems,
+                        modifier = Modifier.testTag("top-level-navigation-rail"),
+                    )
+                }
+                NavHost(
                     navController = navController,
-                )
-            }
-            composable(route = F13Routes.BACKUP) {
-                RouteSurface(
-                    route = F13Routes.BACKUP,
-                    arguments = null,
-                    shellState = shellState,
-                    onSurfaceChanged = onSurfaceChanged,
-                    navController = navController,
-                )
-            }
-            composable(route = F13Routes.RESTORE) {
-                RouteSurface(
-                    route = F13Routes.RESTORE,
-                    arguments = null,
-                    shellState = shellState,
-                    onSurfaceChanged = onSurfaceChanged,
-                    navController = navController,
-                )
-            }
-            composable(route = F13Routes.EXPORT) {
-                RouteSurface(
-                    route = F13Routes.EXPORT,
-                    arguments = null,
-                    shellState = shellState,
-                    onSurfaceChanged = onSurfaceChanged,
-                    navController = navController,
-                )
-            }
-            composable(route = F13Routes.IMPORT) {
-                RouteSurface(
-                    route = F13Routes.IMPORT,
-                    arguments = null,
-                    shellState = shellState,
-                    onSurfaceChanged = onSurfaceChanged,
-                    navController = navController,
-                )
-            }
-            composable(
-                route = F03Routes.RECIPE_EDIT,
-                arguments = routeArguments(F03Routes.RECIPE_EDIT),
-            ) { entry ->
-                RecipeEditScreen(
-                    viewModel = koinViewModel(parameters = { parametersOf(null, null) }),
-                    recipeId =
-                        entry.arguments
-                            ?.getString(F03Routes.ARG_RECIPE_ID)
-                            ?.takeIf { it.isNotEmpty() && it != "new" },
-                    onDone = { navController.popBackStack() },
-                )
+                    startDestination = WloTabs.WEIGHT,
+                    modifier =
+                        Modifier
+                            .weight(1f)
+                            .semantics { nestedTitle?.let { paneTitle = it } },
+                ) {
+                    for ((route, patterns) in WloDeepLinks.patternsByRoute) {
+                        composable(
+                            route = route,
+                            deepLinks = patterns.map { pattern -> navDeepLink { uriPattern = pattern } },
+                            arguments = routeArguments(route),
+                        ) { entry ->
+                            RouteSurface(
+                                route = route,
+                                arguments = entry.arguments,
+                                shellState = shellState,
+                                onSurfaceChanged = onSurfaceChanged,
+                                navController = navController,
+                            )
+                        }
+                    }
+                    // Internal surfaces without registry URIs (reached from their owners).
+                    composable(route = F06Routes.MATH) { MathDocsScreen() }
+                    composable(route = F06Routes.BODY_FAT) { BodyFatScreen(viewModel = koinViewModel()) }
+                    composable(route = F06Routes.LOGBOOK) { LogbookScreen(viewModel = koinViewModel()) }
+                    // M6 internal surfaces: Settings' children (the F12 consent demo)
+                    // and the F13 vault wizards have no wlo:// URIs of their own — they
+                    // are visited deliberately from their parent surfaces (IA §6). The
+                    // studio/receipts/settings/vault routes themselves are NOT listed
+                    // here: they carry registry deep links (wlo://ai/studio,
+                    // wlo://ai/receipts, wlo://settings, wlo://vault) via the loop
+                    // above, and a duplicate composable would overwrite those
+                    // pattern-carrying destinations.
+                    composable(route = F12Routes.CONSENT_SHEET_DEMO) {
+                        RouteSurface(
+                            route = F12Routes.CONSENT_SHEET_DEMO,
+                            arguments = null,
+                            shellState = shellState,
+                            onSurfaceChanged = onSurfaceChanged,
+                            navController = navController,
+                        )
+                    }
+                    composable(route = F13Routes.BACKUP) {
+                        RouteSurface(
+                            route = F13Routes.BACKUP,
+                            arguments = null,
+                            shellState = shellState,
+                            onSurfaceChanged = onSurfaceChanged,
+                            navController = navController,
+                        )
+                    }
+                    composable(route = F13Routes.RESTORE) {
+                        RouteSurface(
+                            route = F13Routes.RESTORE,
+                            arguments = null,
+                            shellState = shellState,
+                            onSurfaceChanged = onSurfaceChanged,
+                            navController = navController,
+                        )
+                    }
+                    composable(route = F13Routes.EXPORT) {
+                        RouteSurface(
+                            route = F13Routes.EXPORT,
+                            arguments = null,
+                            shellState = shellState,
+                            onSurfaceChanged = onSurfaceChanged,
+                            navController = navController,
+                        )
+                    }
+                    composable(route = F13Routes.IMPORT) {
+                        RouteSurface(
+                            route = F13Routes.IMPORT,
+                            arguments = null,
+                            shellState = shellState,
+                            onSurfaceChanged = onSurfaceChanged,
+                            navController = navController,
+                        )
+                    }
+                    composable(route = F01Routes.PLAN_STUDIO) {
+                        RouteSurface(
+                            route = F01Routes.PLAN_STUDIO,
+                            arguments = null,
+                            shellState = shellState,
+                            onSurfaceChanged = onSurfaceChanged,
+                            navController = navController,
+                        )
+                    }
+                    composable(route = F01Routes.STUDIO) {
+                        RouteSurface(
+                            route = F01Routes.STUDIO,
+                            arguments = null,
+                            shellState = shellState,
+                            onSurfaceChanged = onSurfaceChanged,
+                            navController = navController,
+                        )
+                    }
+                    composable(
+                        route = F03Routes.RECIPE_EDIT,
+                        arguments = routeArguments(F03Routes.RECIPE_EDIT),
+                    ) { entry ->
+                        RecipeEditScreen(
+                            viewModel = koinViewModel(parameters = { parametersOf(null, null) }),
+                            recipeId =
+                                entry.arguments
+                                    ?.getString(F03Routes.ARG_RECIPE_ID)
+                                    ?.takeIf { it.isNotEmpty() && it != "new" },
+                            onDone = { navController.popBackStack() },
+                        )
+                    }
+                }
             }
         }
     }
@@ -301,51 +378,19 @@ private fun RouteSurface(
     onSurfaceChanged: (String) -> Unit,
     navController: NavHostController,
 ) {
+    if (route in WloDeepLinks.TAB_ROUTES) {
+        TopLevelRouteSurface(
+            route = route,
+            shellState = shellState,
+            onSurfaceChanged = onSurfaceChanged,
+            navController = navController,
+        )
+        return
+    }
+
     val entryArg: String? = arguments?.getString(ENTRY_ARG)
     val entryArgSecond: String? = arguments?.getString(SLOT_ARG)
     when (route) {
-        WloTabs.HUB ->
-            when (shellState) {
-                ShellState.Loading -> Box(Modifier.fillMaxSize())
-                // Fresh install: the wizard owns the surface — wlo://hub
-                // resolves to onboarding until a plan exists.
-                ShellState.Fresh -> {
-                    onSurfaceChanged("onboarding")
-                    OnboardingScreen(viewModel = koinViewModel())
-                }
-
-                ShellState.Onboarded -> {
-                    onSurfaceChanged("hub")
-                    HubScreen(
-                        viewModel = koinViewModel(),
-                        actions =
-                            HubActions(
-                                // The diary route carries the optional ?entry=
-                                // scaffold; navigate as a URI so the pattern
-                                // matcher applies its default.
-                                onOpenDiary = { navController.navigate(Uri.parse("wlo://diary")) },
-                                onOpenCapture = { navController.navigate("f02/capture") },
-                                onQuickAddKcal = { navController.navigate("f02/quick-kcal") },
-                                onLogWeight = { navController.navigate("f06/log") },
-                                onOpenWeight = { navController.navigate("f06/weight") },
-                                onGutLog = { navController.navigate("stub/gut") },
-                                onWorkout = { navController.navigate("stub/exercise") },
-                                onOpenPlan = { navController.navigate(WloTabs.PLAN) },
-                                onPlanTomorrow = { navController.navigate(F03Routes.TOMORROW) },
-                                // The meals row's plan focus: the registry maps
-                                // wlo://log/planned?slot= onto f03/plan/focus
-                                // (day defaults to today).
-                                onOpenMealSlot = { slotId ->
-                                    navController.navigate(Uri.parse("wlo://log/planned?slot=$slotId"))
-                                },
-                                onOpenSettings = { navController.navigate("app/settings") },
-                            ),
-                    )
-                }
-            }
-
-        WloTabs.PLAN -> PlanTabRoute(focusDay = null, focusSlot = null, navController = navController)
-        WloTabs.INSIGHTS -> PlaceholderScreen(title = "Insights", body = PlaceholderCopy.INSIGHTS)
         WloTabs.ARCHIVE -> PlaceholderScreen(title = "Archive", body = PlaceholderCopy.ARCHIVE)
         WloTabs.DIGESTION -> PlaceholderScreen(title = "Digestion", body = PlaceholderCopy.DIGESTION)
 
@@ -418,12 +463,15 @@ private fun RouteSurface(
                 onOpenAiStudio = { navController.navigate(F12Routes.STUDIO) },
                 onOpenVault = { navController.navigate(Uri.parse("wlo://vault")) },
                 onOpenGoals = { navController.navigate(F01Routes.STUDIO) },
+                onOpenPlanStudio = { navController.navigate(F01Routes.PLAN_STUDIO) },
                 onOpenProfile = { navController.navigate("app/profile") },
             )
 
         // The goals editor (WLO-0035 W4): the wizard's first run is v1 of this
         // same editor — R-B2's STUDIO_F01 door, now surfaced.
         F01Routes.STUDIO -> GoalsEditorScreen(viewModel = koinViewModel())
+
+        F01Routes.PLAN_STUDIO -> OnboardingScreen(viewModel = koinViewModel())
 
         // The profile-facts editor (WLO-0035 W4): onboarding answers, correctable.
         "app/profile" -> ProfileFactsScreen()
@@ -473,14 +521,6 @@ private fun RouteSurface(
 
         "f02/quick-kcal" -> FoodLogScreen(viewModel = koinViewModel(parameters = { parametersOf(true) }))
 
-        "f06/weight" ->
-            WeightScreen(
-                viewModel = koinViewModel(parameters = { parametersOf(false, BodySectionUi.WEIGHT) }),
-                bodyFatViewModel = koinViewModel(),
-                onOpenMath = { navController.navigate(F06Routes.MATH) },
-                onOpenLogbook = { navController.navigate(F06Routes.LOGBOOK) },
-            )
-
         "f06/log" ->
             WeightScreen(
                 viewModel = koinViewModel(parameters = { parametersOf(true, BodySectionUi.WEIGHT) }),
@@ -500,6 +540,94 @@ private fun RouteSurface(
         else -> StubScreen(title = STUB_TITLES[route] ?: "Coming later")
     }
 }
+
+/** The five adaptive-navigation roots, kept separate from nested feature dispatch. */
+@Composable
+private fun TopLevelRouteSurface(
+    route: String,
+    shellState: ShellState,
+    onSurfaceChanged: (String) -> Unit,
+    navController: NavHostController,
+) {
+    when (route) {
+        WloTabs.WEIGHT ->
+            OnboardingGatedSurface(
+                shellState = shellState,
+                onSurfaceChanged = onSurfaceChanged,
+                navController = navController,
+            ) {
+                onSurfaceChanged("weight")
+                WeightScreen(
+                    viewModel = koinViewModel(parameters = { parametersOf(false, BodySectionUi.WEIGHT) }),
+                    bodyFatViewModel = koinViewModel(),
+                    onOpenMath = { navController.navigate(F06Routes.MATH) },
+                    onOpenLogbook = { navController.navigate(F06Routes.LOGBOOK) },
+                )
+            }
+
+        WloTabs.HUB ->
+            OnboardingGatedSurface(
+                shellState = shellState,
+                onSurfaceChanged = onSurfaceChanged,
+                navController = navController,
+            ) {
+                onSurfaceChanged("hub")
+                HubScreen(
+                    viewModel = koinViewModel(),
+                    actions = hubActions(navController),
+                )
+            }
+
+        WloTabs.PLAN -> PlanTabRoute(focusDay = null, focusSlot = null, navController = navController)
+        WloTabs.INSIGHTS -> PlaceholderScreen(title = "Insights", body = PlaceholderCopy.INSIGHTS)
+        WloTabs.MORE ->
+            MoreScreen(
+                onOpenArchive = { navController.navigate(WloTabs.ARCHIVE) },
+                onOpenDigestion = { navController.navigate(WloTabs.DIGESTION) },
+                onOpenExercise = { navController.navigate("stub/exercise") },
+                onOpenVault = { navController.navigate(F13Routes.VAULT) },
+                onOpenAi = { navController.navigate(F12Routes.STUDIO) },
+                onOpenSettings = { navController.navigate("app/settings") },
+            )
+    }
+}
+
+@Composable
+private fun OnboardingGatedSurface(
+    shellState: ShellState,
+    onSurfaceChanged: (String) -> Unit,
+    navController: NavHostController,
+    onboarded: @Composable () -> Unit,
+) {
+    when (shellState) {
+        ShellState.Loading -> Box(Modifier.fillMaxSize())
+        ShellState.Fresh -> {
+            onSurfaceChanged("onboarding")
+            WeightFirstOnboardingScreen(
+                viewModel = koinViewModel(),
+                onComplete = { source ->
+                    if (source == FirstWeightSource.FILE_IMPORT) navController.navigate(F13Routes.IMPORT)
+                },
+            )
+        }
+        ShellState.Onboarded -> onboarded()
+    }
+}
+
+private fun hubActions(navController: NavHostController): HubActions =
+    HubActions(
+        onOpenDiary = { navController.navigate(Uri.parse("wlo://diary")) },
+        onOpenCapture = { navController.navigate("f02/capture") },
+        onQuickAddKcal = { navController.navigate("f02/quick-kcal") },
+        onLogWeight = { navController.navigate("f06/log") },
+        onOpenWeight = { navController.navigate(WloTabs.WEIGHT) },
+        onGutLog = { navController.navigate("stub/gut") },
+        onWorkout = { navController.navigate("stub/exercise") },
+        onOpenPlan = { navController.navigate(WloTabs.PLAN) },
+        onPlanTomorrow = { navController.navigate(F03Routes.TOMORROW) },
+        onOpenMealSlot = { slotId -> navController.navigate(Uri.parse("wlo://log/planned?slot=$slotId")) },
+        onOpenSettings = { navController.navigate("app/settings") },
+    )
 
 /**
  * The Plan tab host (M5): owns the IA §1 segmented pipeline state (Plan ·

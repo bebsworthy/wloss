@@ -6,7 +6,6 @@ import app.wlo.core.common.ClockPort
 import app.wlo.core.common.DayBoundary
 import app.wlo.core.common.MassUnit
 import app.wlo.core.common.WloResult
-import app.wlo.core.common.getOrNull
 import app.wlo.core.data.DayProjectionRepository
 import app.wlo.core.data.DayProjector
 import app.wlo.core.data.DayView
@@ -27,9 +26,9 @@ import app.wlo.core.engines.DayPhase
 import app.wlo.core.engines.EnergyDay
 import app.wlo.core.engines.EnergyEngine
 import app.wlo.core.engines.EngineState
-import app.wlo.core.engines.ForecastBands
 import app.wlo.core.engines.ForecastEngine
 import app.wlo.core.engines.ForecastMode
+import app.wlo.core.engines.GoalForecastResult
 import app.wlo.core.engines.MeasuredInput
 import app.wlo.core.engines.StreakMetrics
 import app.wlo.core.model.ConstantsRegistry
@@ -39,22 +38,30 @@ import app.wlo.core.model.PlannedSlot
 import app.wlo.core.model.PlannedSlotState
 import app.wlo.core.model.Profile
 import app.wlo.core.model.Provenance
-import app.wlo.core.model.UnitSystem
+import app.wlo.core.model.WeightGoalSafetyInput
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.mapLatest
+import kotlinx.coroutines.flow.mapNotNull
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import kotlinx.datetime.DateTimeUnit
 import kotlinx.datetime.Instant
 import kotlinx.datetime.LocalDate
+import kotlinx.datetime.LocalDateTime
+import kotlinx.datetime.LocalTime
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.isoDayNumber
+import kotlinx.datetime.plus
+import kotlinx.datetime.toInstant
 import kotlinx.datetime.toLocalDateTime
 
 /**
@@ -70,6 +77,11 @@ public sealed interface HubUiState {
 
     /** No active profile — the shell gate shows the wizard instead of this. */
     public data object Fresh : HubUiState
+
+    /** A read failed. Absence is never substituted for repository failure. */
+    public data class RecoverableError(
+        public val message: String = HubViewModel.LOAD_FAILED_NOTICE,
+    ) : HubUiState
 
     public data class Ready(
         public val todayLabel: String,
@@ -116,8 +128,18 @@ public sealed interface HubUiState {
         public val explainer: ExplainerUi? = null,
         /** User-worded action failure ("that didn't save — nothing changed"). */
         public val notice: String? = null,
+        /** Refresh identity used by the UI's boundary timer. */
+        public val refreshGeneration: Long = 0,
     ) : HubUiState
 }
+
+/** One coherent local-time reading used by every read in a Hub refresh. */
+public data class HubMoment(
+    public val instant: Instant,
+    public val zone: TimeZone,
+    public val epochDay: Long,
+    public val minutesOfDay: Int,
+)
 
 /** The diary's today slice (F10 renders it; F02 owns the diary, R-B1). */
 public data class DiarySliceUi(
@@ -193,6 +215,7 @@ public data class HubForecastBandsUi(
     public val optimisticFinishEpochDay: Long?,
     public val expectedFinishEpochDay: Long?,
     public val pessimisticFinishEpochDay: Long?,
+    public val pointDateEligible: Boolean,
     /** The expected band's starting pace (kg/week, loss-positive). */
     public val expectedPaceKgPerWeek: Double?,
 )
@@ -211,6 +234,8 @@ public sealed interface HubEvent {
     ) : HubEvent
 
     public data object DismissExplainer : HubEvent
+
+    public data object Refresh : HubEvent
 }
 
 /** One spine snapshot: profile + today's projection + the current targets. */
@@ -218,7 +243,22 @@ private data class HubInputs(
     val profile: Profile,
     val day: DayView?,
     val targets: TargetsRecord?,
+    val massUnit: MassUnit,
 )
+
+private data class RefreshRequest(
+    val generation: Long,
+    val moment: HubMoment,
+)
+
+private data class VersionedHubState(
+    val generation: Long,
+    val state: HubUiState,
+)
+
+private class HubReadFailure(
+    source: String,
+) : IllegalStateException("Hub read failed: $source")
 
 /** Meals header count: the terminals that count as kept (logged or eaten-instead). */
 private val KEPT_SLOT_STATES: Set<PlannedSlotState> =
@@ -241,23 +281,32 @@ public class HubViewModel(
     private val dayProjection: DayProjectionRepository,
     private val targets: TargetsRepository,
     private val weighIns: WeighInRepository,
+    private val readGoalSafetyInput: suspend (String) -> WeightGoalSafetyInput?,
     private val diary: DiaryRepository,
     private val planner: PlannerRepository,
+    private val massUnit: Flow<MassUnit>,
+    private val currentTimeZone: () -> TimeZone = { TimeZone.currentSystemDefault() },
 ) : ViewModel() {
-    private val zone: TimeZone = TimeZone.currentSystemDefault()
-    private val today: Long = DayBoundary.epochDay(clock.now(), zone)
-    private val now: Instant = clock.now()
-
     private val explainer: MutableStateFlow<ExplainerUi?> = MutableStateFlow(null)
     private val notice: MutableStateFlow<String?> = MutableStateFlow(null)
+    private val refreshRequest: MutableStateFlow<RefreshRequest> = MutableStateFlow(newRefreshRequest(0))
 
     /** MVI-lite intent entry point. */
     public fun onEvent(event: HubEvent) {
         when (event) {
             is HubEvent.ShowExplainer -> explainer.value = event.explainer
             HubEvent.DismissExplainer -> explainer.value = null
+            HubEvent.Refresh -> refresh()
         }
     }
+
+    /** Resume, retry, clock/date broadcasts, and phase timers share one path. */
+    public fun refresh() {
+        refreshRequest.value = newRefreshRequest(refreshRequest.value.generation + 1)
+    }
+
+    /** Milliseconds until the next 10:30/19:00/22:00 phase edge or local midnight. */
+    public fun millisUntilNextBoundary(): Long = millisUntilNextBoundary(moment())
 
     /**
      * One-tap meal replay (R-B1, WLO-0033 wave 2): logs the planned recipe as
@@ -288,19 +337,49 @@ public class HubViewModel(
 
     @OptIn(ExperimentalCoroutinesApi::class)
     private fun inputs(): Flow<HubUiState> =
-        profiles
-            .observeActive()
-            .flatMapLatest { profileResult -> spineInputs(profileResult.getOrNull()) }
-            .map { inputs -> render(inputs) }
+        combine(profiles.observeActive(), massUnit, refreshRequest) { profileResult, unit, request ->
+            Triple(profileResult, unit, request)
+        }.flatMapLatest { (profileResult, unit, request) ->
+            when (profileResult) {
+                is WloResult.Err -> flowOf(VersionedHubState(request.generation, recoverableError()))
+                is WloResult.Ok -> spineInputs(profileResult.value, unit, request)
+            }
+        }.mapNotNull { versioned ->
+            versioned.state.takeIf { versioned.generation == refreshRequest.value.generation }
+        }.catch { emit(recoverableError()) }
 
-    private fun spineInputs(profile: Profile?): Flow<HubInputs?> =
+    @OptIn(ExperimentalCoroutinesApi::class)
+    private fun spineInputs(
+        profile: Profile?,
+        massUnit: MassUnit,
+        request: RefreshRequest,
+    ): Flow<VersionedHubState> =
         if (profile == null || profile.archivedAt != null) {
-            flowOf(null)
+            flowOf(VersionedHubState(request.generation, HubUiState.Fresh))
         } else {
             combine(
-                dayProjection.observeDay(profile.id, today),
+                dayProjection.observeDay(profile.id, request.moment.epochDay),
                 targets.observeCurrent(profile.id),
-            ) { dayResult, targetsResult -> HubInputs(profile, dayResult.getOrNull(), targetsResult.getOrNull()) }
+            ) { dayResult, targetsResult ->
+                dayResult to targetsResult
+            }.mapLatest { (dayResult, targetsResult) ->
+                val state =
+                    runCatching {
+                        render(
+                            HubInputs(
+                                profile = profile,
+                                day = dayResult.valueOrThrow("day projection"),
+                                targets = targetsResult.valueOrThrow("targets"),
+                                massUnit = massUnit,
+                            ),
+                            request,
+                        )
+                    }.getOrElse { failure ->
+                        if (failure is kotlinx.coroutines.CancellationException) throw failure
+                        recoverableError()
+                    }
+                VersionedHubState(request.generation, state)
+            }
         }
 
     private fun withVolatile(
@@ -309,39 +388,47 @@ public class HubViewModel(
         notice: String?,
     ): HubUiState = if (ready is HubUiState.Ready) ready.copy(explainer = explainerUi, notice = notice) else ready
 
-    private suspend fun render(inputs: HubInputs?): HubUiState {
-        if (inputs == null) return HubUiState.Fresh
-        val (profile, day, current) = inputs
-        val unit = massUnitFor(profile.unitPreference)
+    private suspend fun render(
+        inputs: HubInputs,
+        request: RefreshRequest,
+    ): HubUiState {
+        val profile = inputs.profile
+        val day = inputs.day
+        val unit = inputs.massUnit
+        val moment = request.moment
+        val today = moment.epochDay
 
         // THE single trend source (WLO-0030 defect 9): the same repository
         // door F06's default view reads — never the persisted projection
         // snapshot, never a differently-windowed recompute.
-        val trend = weighIns.currentTrend(profile.id, today).getOrNull()
+        val trend = weighIns.currentTrend(profile.id, today).valueOrThrow("current trend")
         val heroTrend =
-            trend?.current
-                ?: DerivedValue(
-                    profile.startWeightKg,
-                    Provenance.Measured(at = profile.createdAt, instrument = "start-weight entry"),
-                )
+            trend.current
+                ?: profile.startWeightKg?.let { startWeight ->
+                    DerivedValue(
+                        startWeight,
+                        Provenance.Measured(at = profile.createdAt, instrument = "start-weight entry"),
+                    )
+                }
+                ?: return HubUiState.Fresh
 
         // The F10 §4 gate (≥3 weigh-ins in the trailing 7 days) opens the
         // delta chip + the sparkline's trend line.
         val gateOpen =
             trend
-                ?.samples
+                .samples
                 .orEmpty()
                 .count { it.epochDay > today - TREND_GATE_WINDOW_DAYS } >= TREND_GATE_MIN_POINTS
-        val delta = if (gateOpen) trend?.delta7 else null
+        val delta = if (gateOpen) trend.delta7 else null
         val trendSamples =
             trend
-                ?.samples
+                .samples
                 .orEmpty()
                 .map { ChartPoint(it.epochDay, it.weightKg) }
         val trendLine =
             if (gateOpen) {
                 trend
-                    ?.series
+                    .series
                     ?.points
                     .orEmpty()
                     .map { ChartPoint(it.epochDay, it.trendKg.value) }
@@ -354,27 +441,32 @@ public class HubViewModel(
         val budget = day?.budgetKcal
         val burn =
             day?.burnKcal?.takeIf { it.value > 0.0 }?.let { DerivedValue(formatKcal(it.value), it.provenance) }
-        val forecast = current?.let { forecast(profile, it, heroTrend.value, day?.budgetKcal?.value, unit) }
+        val forecast =
+            inputs.targets?.let { targets ->
+                forecast(profile, targets, heroTrend.value, day?.budgetKcal?.value, unit, moment)
+            }
 
-        val diarySlice = renderDiarySlice(profile.id)
+        val diarySlice = renderDiarySlice(profile.id, today)
 
         // One range read feeds BOTH the week dots and the streak (the same
         // door week dots always used — the day projection range, A.3).
-        val dayViews = dayProjection.range(profile.id, today - STREAK_WINDOW_DAYS, today).getOrNull().orEmpty()
-        val weekDots = renderWeekDots(dayViews)
-        val streakCount = renderStreak(dayViews)
+        val dayViews =
+            dayProjection
+                .range(profile.id, today - STREAK_WINDOW_DAYS, today)
+                .valueOrThrow("day projection range")
+        val weekDots = renderWeekDots(dayViews, today)
+        val streakCount = renderStreak(dayViews, today)
         val macroPills = renderMacroPills(day, diarySlice)
 
         // The Day Model rules (F10 §3). Completeness inputs the features own:
         // the weigh-in flag, the F10 §4 trend gate, and (since M5) the F03
         // plan flags — content-rendered, absence is silent (R-D14).
-        val localTime = now.toLocalDateTime(zone).time
-        val planFlags = planFlags(profile.id)
+        val planFlags = planFlags(profile.id, today)
         val dayModel =
             DayModelEngine.resolve(
                 DayModelInput(
-                    minutesOfDay = localTime.hour * 60 + localTime.minute,
-                    weighInLogged = dayWeighInCount(profile.id) > 0,
+                    minutesOfDay = moment.minutesOfDay,
+                    weighInLogged = dayWeighInCount(profile.id, today) > 0,
                     trendAvailable = delta != null,
                     hasOpenPlannedMeal = (planFlags.openToday ?: 0) > 0,
                     workoutDueToday = false,
@@ -395,7 +487,7 @@ public class HubViewModel(
             trendSamples = trendSamples,
             trendLine = trendLine,
             trendExplainer =
-                if (trend?.current != null) {
+                if (trend.current != null) {
                     trendExplainer()
                 } else {
                     null
@@ -411,6 +503,7 @@ public class HubViewModel(
             streakCount = streakCount,
             mealToday = planFlags.mealToday,
             macroPills = macroPills,
+            refreshGeneration = request.generation,
         )
     }
 
@@ -432,13 +525,16 @@ public class HubViewModel(
      * order), ties broken by creation time then id — stable and deterministic
      * regardless of insert order.
      */
-    private suspend fun planFlags(profileId: String): PlanFlags {
-        val plan = planner.currentPlan(profileId).getOrNull()
+    private suspend fun planFlags(
+        profileId: String,
+        today: Long,
+    ): PlanFlags {
+        val plan = planner.currentPlan(profileId).valueOrThrow("current meal plan")
         if (plan == null) {
             return PlanFlags(isPlanner = false, openToday = null, tomorrowPending = false, mealToday = null)
         }
-        val todaySlots = planner.slots(profileId, today, today).getOrNull().orEmpty()
-        val tomorrowSlots = planner.slots(profileId, today + 1, today + 1).getOrNull().orEmpty()
+        val todaySlots = planner.slots(profileId, today, today).valueOrThrow("today's planned meals")
+        val tomorrowSlots = planner.slots(profileId, today + 1, today + 1).valueOrThrow("tomorrow's planned meals")
         val openSlots = todaySlots.filter { it.state == PlannedSlotState.PLANNED && it.recipeId != null }
         val openToday = openSlots.size
         val total = todaySlots.count(::inPlay)
@@ -487,8 +583,11 @@ public class HubViewModel(
 
     // --- diary slice + week dots (F10 renders today; F02 owns the diary, R-B1) ---
 
-    private suspend fun renderDiarySlice(profileId: String): DiarySliceUi? {
-        val day = diary.day(profileId, today).getOrNull() ?: return null
+    private suspend fun renderDiarySlice(
+        profileId: String,
+        today: Long,
+    ): DiarySliceUi? {
+        val day = diary.day(profileId, today).valueOrThrow("food diary")
         if (day.entries.isEmpty()) return null
         val summary =
             day.slots.entries.joinToString(" · ") { (slot, entries) ->
@@ -510,7 +609,10 @@ public class HubViewModel(
      * a weigh-in (trend scalar) OR logged food (intake scalar) OR a workout
      * (burn > 0), F11's counting rule. Null (chip hidden) when 0.
      */
-    private fun renderStreak(views: List<DayView>): Int? {
+    private fun renderStreak(
+        views: List<DayView>,
+        today: Long,
+    ): Int? {
         val countedDays =
             views.mapNotNullTo(mutableSetOf()) { view ->
                 val counted =
@@ -559,7 +661,10 @@ public class HubViewModel(
      * projection range (A.3), a day counts as logged when its intake scalar
      * exists.
      */
-    private fun renderWeekDots(views: List<DayView>): List<WeekDotUi> {
+    private fun renderWeekDots(
+        views: List<DayView>,
+        today: Long,
+    ): List<WeekDotUi> {
         val weekStart = today - (toLocalDate(today).dayOfWeek.isoDayNumber - 1)
         val loggedDays = views.mapNotNullTo(mutableSetOf()) { view -> view.intakeKcal?.let { view.dayEpochDay } }
         return (0 until 7).map { offset ->
@@ -634,72 +739,90 @@ public class HubViewModel(
 
     // --- F06 flags ---
 
-    private suspend fun dayWeighInCount(profileId: String): Int =
+    private suspend fun dayWeighInCount(
+        profileId: String,
+        today: Long,
+    ): Int =
         weighIns
             .dayWeighIns(profileId, today)
-            .getOrNull()
-            .orEmpty()
+            .valueOrThrow("today's weigh-ins")
             .size
 
     // --- forecast (R-A5 cold start; measured once the adaptive engine is live) ---
 
-    /**
-     * The Hub's forecast: measured mode ([ForecastEngine.measured]) once the
-     * adaptive engine is live, the mandatory cold-start (R-A5) otherwise.
-     * "Live" is the F07 §4 frozen quality table: the forecast runs only while
-     * UPDATING — DEVELOPING means the estimate is still forming, HELD means
-     * it is frozen — and the measured TDEE is the closed-form solve
-     * ([EnergyEngine.measuredTdee]) over the trailing window of the SAME day
-     * projections the Hub already renders (A.3). TargetsRecord carries no
-     * persisted adaptive term (it flows through the F07 Apply ledger only),
-     * so the solve runs here, purely, on read.
-     */
     private suspend fun forecast(
         profile: Profile,
         record: TargetsRecord,
         startTrendKg: Double,
         plannedIntakeKcal: Double?,
         unit: MassUnit,
+        moment: HubMoment,
     ): HubForecast? {
         val goal = record.document.goal
-        val startTrend = startTrendKg
-        if (goal.targetWeightKg >= startTrend) return null
+        if (goal.targetWeightKg >= startTrendKg) return null
+        val ageYears = profile.ageAtYear(moment.instant.toLocalDateTime(moment.zone).year) ?: return null
+        val heightCm = profile.heightCm ?: return null
         val intake = plannedIntakeKcal ?: DietTemplateApplier.DEFAULT_BUDGET_KCAL
-        val bands: ForecastBands =
-            measuredForecast(profile, startTrend, goal.targetWeightKg, intake)
-                ?: ForecastEngine.coldStart(
-                    input =
-                        ColdStartInput(
-                            sex = profile.sex,
-                            ageYears = profile.ageAtYear(now.toLocalDateTime(zone).year),
-                            heightCm = profile.heightCm,
-                            startTrendKg = startTrend,
-                            goalWeightKg = goal.targetWeightKg,
-                            activityLevel = profile.activityLevel,
-                            intakeKcal = intake,
-                            startEpochDay = today,
-                            startInstant = now,
-                        ),
-                )
+        val attestation = readGoalSafetyInput(profile.id)
+        val eligibility =
+            HubForecastSafety.evaluate(
+                profile = profile,
+                currentWeightKg = startTrendKg,
+                targetWeightKg = goal.targetWeightKg,
+                pacePctPerWeek = goal.pacePctPerWeek,
+                plannedDailyEnergyKcal = intake,
+                currentYear = moment.instant.toLocalDateTime(moment.zone).year,
+                attestation = attestation,
+            )
+        val coldStartInput =
+            ColdStartInput(
+                sex = profile.sex,
+                ageYears = ageYears,
+                heightCm = heightCm,
+                startTrendKg = startTrendKg,
+                goalWeightKg = goal.targetWeightKg,
+                activityLevel = profile.activityLevel,
+                intakeKcal = intake,
+                startEpochDay = moment.epochDay,
+                startInstant = moment.instant,
+            )
+        val evidence = forecastEvidence(profile, coldStartInput, moment)
+        val result =
+            ForecastEngine.evaluate(
+                coldStartInput = coldStartInput,
+                eligibility = eligibility,
+                engineState = evidence.state,
+                measuredInput = evidence.measuredInput,
+            )
+        val bands =
+            when (result) {
+                is GoalForecastResult.Available -> result.bands
+                is GoalForecastResult.Developing -> result.bands
+                is GoalForecastResult.Held,
+                is GoalForecastResult.Withheld,
+                -> return null
+            }
+        val pointDateEligible = result is GoalForecastResult.Available
         val measuredMode = bands.mode == ForecastMode.MEASURED
         return HubForecast(
             goalWeight =
                 DerivedValue(
                     goal.targetWeightKg,
-                    Provenance.Measured(at = now, instrument = "goal entry"),
+                    Provenance.Measured(at = moment.instant, instrument = "goal entry"),
                 ),
             plannedIntakeKcal = intake,
             bands =
                 HubForecastBandsUi(
-                    startWeightKg = startTrend,
+                    startWeightKg = startTrendKg,
                     goalWeightKg = goal.targetWeightKg,
-                    startEpochDay = today,
+                    startEpochDay = moment.epochDay,
                     optimisticKg = bands.optimistic.trajectoryKg,
                     expectedKg = bands.expected.trajectoryKg,
                     pessimisticKg = bands.pessimistic.trajectoryKg,
                     optimisticFinishEpochDay = bands.optimistic.finishEpochDay,
-                    expectedFinishEpochDay = bands.expected.finishEpochDay,
+                    expectedFinishEpochDay = bands.expected.finishEpochDay.takeIf { pointDateEligible },
                     pessimisticFinishEpochDay = bands.pessimistic.finishEpochDay,
+                    pointDateEligible = pointDateEligible,
                     expectedPaceKgPerWeek = bands.expected.weeklyRatesKg.firstOrNull(),
                 ),
             estimate = DerivedValue(bands.tdeeEstimateKcal, bands.provenance),
@@ -720,7 +843,7 @@ public class HubViewModel(
                             add("burn" to formatKcal(bands.tdeeEstimateKcal))
                             if (!measuredMode) add("burn formula" to bands.bmrVersion)
                             add("energy rule" to "${ConstantsRegistry.KCAL_PER_KG_FAT.toInt()} kcal per kg")
-                            add("start" to unit.format(startTrend))
+                            add("start" to unit.format(startTrendKg))
                             add("goal" to unit.format(goal.targetWeightKg))
                             add("planned intake" to formatKcal(intake))
                             if (!measuredMode) add("a normal day" to profile.activityLevel.wireName)
@@ -730,24 +853,17 @@ public class HubViewModel(
         )
     }
 
-    /**
-     * The measured-mode bands, or null while the data doesn't support them:
-     * quality not UPDATING (F07 §4) or no solvable TDEE window yet. Trailing
-     * pace percentiles and a steps baseline have no spine door in v1 — null,
-     * so the engine falls back to the cold-start band factors.
-     */
-    private suspend fun measuredForecast(
+    private suspend fun forecastEvidence(
         profile: Profile,
-        startTrendKg: Double,
-        goalWeightKg: Double,
-        intakeKcal: Double,
-    ): ForecastBands? {
+        coldStartInput: ColdStartInput,
+        moment: HubMoment,
+    ): HubForecastEvidence {
+        val today = moment.epochDay
         val window =
             dayProjection
                 .range(profile.id, today - ConstantsRegistry.QUALITY_WINDOW_DAYS + 1, today)
-                .getOrNull()
-                .orEmpty()
-        if (window.isEmpty()) return null
+                .valueOrThrow("forecast day projection range")
+        if (window.isEmpty()) return HubForecastEvidence(EngineState.Developing(usableDays = 0))
         val energyDays =
             window.map { view ->
                 EnergyDay(
@@ -756,29 +872,67 @@ public class HubViewModel(
                     trendWeightKg = view.trendWeightKg?.value,
                 )
             }
-        if (EnergyEngine.quality(energyDays, today) !is EngineState.Updating) return null
-        val solveWindow =
-            energyDays.filter { it.epochDay >= today - ConstantsRegistry.TDEE_WINDOW_DAYS + 1 }
-        val solved = EnergyEngine.measuredTdee(solveWindow) ?: return null
-        return ForecastEngine.measured(
-            input =
+        val state = EnergyEngine.quality(energyDays, today)
+        if (state !is EngineState.Updating) return HubForecastEvidence(state)
+        val solveWindow = energyDays.filter { it.epochDay >= today - ConstantsRegistry.TDEE_WINDOW_DAYS + 1 }
+        val solved =
+            EnergyEngine.measuredTdee(solveWindow)
+                ?: return HubForecastEvidence(EngineState.Developing(usableDays = state.usableDays))
+        return HubForecastEvidence(
+            state = state,
+            measuredInput =
                 MeasuredInput(
                     sex = profile.sex,
-                    ageYears = profile.ageAtYear(now.toLocalDateTime(zone).year),
-                    heightCm = profile.heightCm,
-                    startTrendKg = startTrendKg,
-                    goalWeightKg = goalWeightKg,
-                    intakeKcal = intakeKcal,
+                    ageYears = coldStartInput.ageYears,
+                    heightCm = coldStartInput.heightCm,
+                    startTrendKg = coldStartInput.startTrendKg,
+                    goalWeightKg = coldStartInput.goalWeightKg,
+                    intakeKcal = coldStartInput.intakeKcal,
                     measuredTdeeKcal = solved.tdeeKcal,
                     startEpochDay = today,
-                    startInstant = now,
+                    startInstant = moment.instant,
                 ),
         )
     }
 
+    private data class HubForecastEvidence(
+        val state: EngineState,
+        val measuredInput: MeasuredInput? = null,
+    )
+
     // --- rendering helpers ---
 
     private fun toLocalDate(epochDay: Long): LocalDate = LocalDate.fromEpochDays(epochDay.toInt())
+
+    private fun moment(): HubMoment {
+        val instant = clock.now()
+        val zone = currentTimeZone()
+        val local = instant.toLocalDateTime(zone)
+        return HubMoment(
+            instant = instant,
+            zone = zone,
+            epochDay = DayBoundary.epochDay(instant, zone),
+            minutesOfDay = local.hour * 60 + local.minute,
+        )
+    }
+
+    private fun newRefreshRequest(generation: Long): RefreshRequest = RefreshRequest(generation, moment())
+
+    private fun millisUntilNextBoundary(moment: HubMoment): Long {
+        val local = moment.instant.toLocalDateTime(moment.zone)
+        val today = local.date
+        val candidates =
+            listOf(
+                LocalDateTime(today, LocalTime(10, 30)),
+                LocalDateTime(today, LocalTime(19, 0)),
+                LocalDateTime(today, LocalTime(22, 0)),
+                LocalDateTime(today.plus(1, DateTimeUnit.DAY), LocalTime(0, 0)),
+            ).map { it.toInstant(moment.zone) }
+        val next = candidates.first { it > moment.instant }
+        return (next.toEpochMilliseconds() - moment.instant.toEpochMilliseconds()).coerceAtLeast(1L)
+    }
+
+    private fun recoverableError(): HubUiState.RecoverableError = HubUiState.RecoverableError()
 
     private fun weekdayLabel(epochDay: Long): String {
         val date = toLocalDate(epochDay)
@@ -824,18 +978,20 @@ public class HubViewModel(
         /** The action-failure notice — the house user-worded pattern (F03). */
         public const val ACTION_FAILED_NOTICE: String = "that didn't save — nothing changed"
 
+        /** A read failed; no absence or old number is presented as current. */
+        public const val LOAD_FAILED_NOTICE: String = "We couldn't load today's data. Nothing changed."
+
         /** Macro pill data-viz series slots — the mock's P/C/F mapping. */
         public const val MACRO_SERIES_P: Int = 3
         public const val MACRO_SERIES_C: Int = 0
         public const val MACRO_SERIES_F: Int = 1
 
-        /** Metric default, imperial a profile setting (R-D10). */
-        public fun massUnitFor(unit: UnitSystem): MassUnit =
-            when (unit) {
-                UnitSystem.METRIC -> MassUnit.KILOGRAM
-                UnitSystem.IMPERIAL -> MassUnit.POUND
-            }
-
         public fun formatKcal(value: Double): String = "%,d kcal".format(value.toInt())
     }
 }
+
+private fun <T> WloResult<T>.valueOrThrow(source: String): T =
+    when (this) {
+        is WloResult.Ok -> value
+        is WloResult.Err -> throw HubReadFailure(source)
+    }

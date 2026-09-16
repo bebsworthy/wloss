@@ -206,7 +206,13 @@ public class BodyFatViewModel(
             // R2 (WLO-0035): tape and estimate both persist — the tape as
             // MEASURED girth events, the estimate as an ESTIMATED series event.
             var tapeSaved = 0
-            for ((metric, text) in listOf("waist" to current.waistText, "neck" to current.neckText, "hip" to current.hipText)) {
+            val tapeMeasurements =
+                listOf(
+                    "waist" to current.waistText,
+                    "neck" to current.neckText,
+                    "hip" to current.hipText,
+                )
+            for ((metric, text) in tapeMeasurements) {
                 val cm = text.toDoubleOrNull() ?: continue
                 val appended =
                     measurements.append(
@@ -225,7 +231,13 @@ public class BodyFatViewModel(
                         tapeSaved++
                         measurements.attachAttrs(
                             appended.value.id,
-                            listOf(MeasurementAttr(eventId = appended.value.id, attr = TAPE_METRIC_ATTR, valueText = metric)),
+                            listOf(
+                                MeasurementAttr(
+                                    eventId = appended.value.id,
+                                    attr = TAPE_METRIC_ATTR,
+                                    valueText = metric,
+                                ),
+                            ),
                         )
                     }
 

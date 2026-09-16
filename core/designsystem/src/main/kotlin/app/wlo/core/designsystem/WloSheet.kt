@@ -10,6 +10,8 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.paneTitle
+import androidx.compose.ui.semantics.semantics
 
 /**
  * The WLO modal bottom sheet (WLO-0031): Material 3 [ModalBottomSheet] with
@@ -38,7 +40,12 @@ public fun WloSheet(
 ): Unit =
     ModalBottomSheet(
         onDismissRequest = onDismissRequest,
-        modifier = modifier,
+        modifier =
+            if (title == null) {
+                modifier
+            } else {
+                modifier.semantics { paneTitle = title }
+            },
         containerColor = MaterialTheme.colorScheme.surface,
         contentColor = MaterialTheme.colorScheme.onSurface,
         shape = WloShape.SheetTop,

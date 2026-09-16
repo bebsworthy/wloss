@@ -1,6 +1,7 @@
 package app.wlo.app.notification
 
 import android.Manifest
+import android.annotation.SuppressLint
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
@@ -31,6 +32,9 @@ public class WeighInReminderWorker(
     context: Context,
     params: WorkerParameters,
 ) : CoroutineWorker(context, params) {
+    // The immediately preceding notificationsPermitted guard checks the API
+    // 33 runtime permission; lint cannot follow that helper across the call.
+    @SuppressLint("MissingPermission")
     override suspend fun doWork(): Result {
         val context = applicationContext
         if (!notificationsPermitted(context)) return Result.success()

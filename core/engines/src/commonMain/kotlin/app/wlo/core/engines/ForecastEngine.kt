@@ -3,6 +3,9 @@ package app.wlo.core.engines
 import app.wlo.core.model.ConstantsRegistry
 import app.wlo.core.model.Provenance
 import app.wlo.core.model.Sex
+import app.wlo.core.model.WeightGoalEligibility
+import app.wlo.core.model.WeightGoalHoldReason
+import app.wlo.core.model.WeightGoalMode
 import kotlinx.serialization.Serializable
 import kotlin.math.max
 
@@ -79,6 +82,109 @@ public object ForecastEngine {
                 ),
         )
     }
+
+    /**
+     * Safety-gated entry point for UI and feature callers (WLO-0080). A held
+     * or unsupported eligibility result can never leak a confident band/date.
+     * The one-argument overload remains the internal numerical primitive.
+     */
+    public fun coldStart(
+        input: ColdStartInput,
+        eligibility: WeightGoalEligibility,
+    ): GoalForecastResult {
+        val forecastEligibility = eligibilityForForecast(eligibility)
+        return if (forecastEligibility.allowsGoalMath) {
+            GoalForecastResult.Developing(
+                bands = coldStart(input),
+                usableDays = 0,
+                requiredUsableDays = ConstantsRegistry.QUALITY_MIN_USABLE_DAYS,
+            )
+        } else {
+            GoalForecastResult.Withheld(forecastEligibility)
+        }
+    }
+
+    /**
+     * The single release forecast boundary (WLO-0073). Goal safety is checked
+     * first and can never be bypassed by good logging data. Developing data may
+     * show only the wide cold-start estimate; held data produces no newly
+     * calculated dates; measured bands become available only in [EngineState.Updating].
+     */
+    public fun evaluate(
+        coldStartInput: ColdStartInput,
+        eligibility: WeightGoalEligibility,
+        engineState: EngineState,
+        measuredInput: MeasuredInput? = null,
+        lastGoodBands: ForecastBands? = null,
+    ): GoalForecastResult {
+        val forecastEligibility = eligibilityForForecast(eligibility)
+        if (!forecastEligibility.allowsGoalMath) {
+            return GoalForecastResult.Withheld(forecastEligibility)
+        }
+        return when (engineState) {
+            is EngineState.Developing ->
+                GoalForecastResult.Developing(
+                    bands = coldStart(coldStartInput),
+                    usableDays = engineState.usableDays,
+                    requiredUsableDays = ConstantsRegistry.QUALITY_MIN_USABLE_DAYS,
+                )
+            is EngineState.Held ->
+                GoalForecastResult.Held(
+                    reason = engineState.reason,
+                    detailDays = engineState.magnitude,
+                    lastGoodBands = lastGoodBands,
+                )
+            is EngineState.Updating -> {
+                val measuredBands = measuredInput?.let(::measured)
+                if (measuredBands == null) {
+                    GoalForecastResult.Developing(
+                        bands = coldStart(coldStartInput),
+                        usableDays = engineState.usableDays,
+                        requiredUsableDays = ConstantsRegistry.QUALITY_MIN_USABLE_DAYS,
+                    )
+                } else {
+                    GoalForecastResult.Available(measuredBands)
+                }
+            }
+        }
+    }
+
+    /**
+     * Honest plateau interpretation: flat trend implies approximate energy
+     * balance. A rise/fall claim is emitted only when two quality-passing TDEE
+     * intervals do not overlap; otherwise uncertainty wins.
+     */
+    public fun interpretPlateau(
+        flatTrend: Boolean,
+        previous: TdeeEstimateInterval?,
+        current: TdeeEstimateInterval?,
+        previousState: EngineState,
+        currentState: EngineState,
+    ): PlateauInterpretation {
+        if (!flatTrend) return PlateauInterpretation.NotPlateau
+        if (previousState !is EngineState.Updating || currentState !is EngineState.Updating) {
+            return PlateauInterpretation.InsufficientEvidence
+        }
+        if (previous == null || current == null) return PlateauInterpretation.InsufficientEvidence
+        val delta = current.estimateKcal - previous.estimateKcal
+        return when {
+            current.lowerKcal > previous.upperKcal -> PlateauInterpretation.SupportedIncrease(delta)
+            current.upperKcal < previous.lowerKcal -> PlateauInterpretation.SupportedDecrease(delta)
+            else -> PlateauInterpretation.ApproximateBalance
+        }
+    }
+
+    /** The shared result consumers use before exposing any forecast-derived date. */
+    public fun eligibilityForForecast(eligibility: WeightGoalEligibility): WeightGoalEligibility =
+        if (eligibility is WeightGoalEligibility.Eligible && eligibility.mode == WeightGoalMode.GAIN) {
+            WeightGoalEligibility.Held(
+                mode = WeightGoalMode.GAIN,
+                reasons = setOf(WeightGoalHoldReason.GAIN_FORECAST_UNAVAILABLE),
+                maximumPacePctPerWeek = eligibility.maximumPacePctPerWeek,
+            )
+        } else {
+            eligibility
+        }
 
     /**
      * Measured-mode forecast: expected band integrates the decaying rate from
@@ -241,6 +347,67 @@ public object ForecastEngine {
         val expected: ForecastBand,
         val slow: ForecastBand,
     )
+}
+
+/** Safety-aware forecast boundary; UI renders [Withheld] via the shared copy policy. */
+public sealed interface GoalForecastResult {
+    public data class Available(
+        public val bands: ForecastBands,
+    ) : GoalForecastResult
+
+    public data class Withheld(
+        public val eligibility: WeightGoalEligibility,
+    ) : GoalForecastResult
+
+    /** Formula estimate only; measured dates are still forming. */
+    public data class Developing(
+        public val bands: ForecastBands,
+        public val usableDays: Int,
+        public val requiredUsableDays: Int,
+        /** Cold-start point dates failed WLO-0073's revision gate; range only. */
+        public val pointDateEligible: Boolean = false,
+    ) : GoalForecastResult
+
+    /** No new forecast is calculated; callers may render a clearly frozen last good value. */
+    public data class Held(
+        public val reason: EngineHoldReason,
+        public val detailDays: Int?,
+        public val lastGoodBands: ForecastBands?,
+    ) : GoalForecastResult
+}
+
+/** Point estimate with an explicit symmetric uncertainty half-width. */
+@Serializable
+public data class TdeeEstimateInterval(
+    public val estimateKcal: Double,
+    public val uncertaintyKcal: Double,
+) {
+    init {
+        require(estimateKcal.isFinite()) { "estimateKcal must be finite" }
+        require(uncertaintyKcal.isFinite() && uncertaintyKcal >= 0.0) {
+            "uncertaintyKcal must be finite and non-negative"
+        }
+    }
+
+    public val lowerKcal: Double get() = estimateKcal - uncertaintyKcal
+    public val upperKcal: Double get() = estimateKcal + uncertaintyKcal
+}
+
+/** Copy-driving plateau result; only supported changes carry a directional claim. */
+public sealed interface PlateauInterpretation {
+    public data object NotPlateau : PlateauInterpretation
+
+    public data object InsufficientEvidence : PlateauInterpretation
+
+    public data object ApproximateBalance : PlateauInterpretation
+
+    public data class SupportedIncrease(
+        public val deltaKcal: Double,
+    ) : PlateauInterpretation
+
+    public data class SupportedDecrease(
+        public val deltaKcal: Double,
+    ) : PlateauInterpretation
 }
 
 /** Cold-start inputs (R-A5); everything a formula estimate can see. */

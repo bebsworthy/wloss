@@ -22,19 +22,17 @@ public sealed interface ShellState {
     /** First emissions in flight — render a calm blank frame, never a flash. */
     public data object Loading : ShellState
 
-    /** No active profile and no completion flag: the wizard owns the Hub route. */
+    /** No completion flag or legacy completed plan: first-run setup owns top-level routes. */
     public data object Fresh : ShellState
 
-    /** Plan exists: the Hub itself. */
+    /** Onboarding is complete; a diet plan is optional. */
     public data object Onboarded : ShellState
 }
 
 /**
- * Cold-start decision (F10/F01 boundary, M2): ONBOARDED means a plan exists —
- * a profile WITH a Targets version, or the explicit completion flag (a future
- * import path writes the flag). This ordering matters: the F01 write creates
- * the profile a beat before Targets v1 commits, and the Hub must never render
- * against a missing plan.
+ * Cold-start decision: the explicit completion flag is authoritative for the
+ * weight-first flow. A profile with legacy Targets remains accepted so an
+ * existing installation is not sent back through onboarding after upgrade.
  */
 public class ShellViewModel(
     profiles: ProfileRepository,

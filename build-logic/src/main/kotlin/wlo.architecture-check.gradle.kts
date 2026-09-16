@@ -1,5 +1,7 @@
 import app.wlo.buildlogic.arch.ArchScopes
+import app.wlo.buildlogic.arch.ArchRules
 import app.wlo.buildlogic.arch.CheckArchitectureTask
+import app.wlo.buildlogic.arch.CheckResolvedEgressDependenciesTask
 import java.io.File
 
 /**
@@ -40,6 +42,13 @@ gradle.projectsEvaluated {
 
     root.allprojects.forEach { project ->
         paths += project.path
+        val resolvedEgressCheck =
+            if (project.path != ":app" && project.path != ArchRules.D9_EGRESS_MODULE) {
+                project.tasks.register("checkResolvedEgressDependencies", CheckResolvedEgressDependenciesTask::class)
+                    .also { checkArchitecture.configure { dependsOn(it) } }
+            } else {
+                null
+            }
 
         // D1/D2 — declared project-dependency edges on any configuration.
         project.configurations.forEach { configuration ->
@@ -54,6 +63,45 @@ gradle.projectsEvaluated {
                 .forEach { dependency ->
                     externalDeps += "${project.path}|${dependency.group}|${dependency.name}"
                 }
+
+            // D9 resolved-graph backstop. Only production compile/runtime
+            // classpaths are relevant; test fixtures may legitimately bring
+            // localhost servers. :app receives the restricted implementation
+            // by design and :core:network owns the networking stack.
+            val productionClasspath =
+                configuration.isCanBeResolved &&
+                    configuration.name.endsWith("compileClasspath", ignoreCase = true) &&
+                    !configuration.name.contains("test", ignoreCase = true) &&
+                    // AGP 9's standalone runtime/release consumers cannot disambiguate every
+                    // artifact view published by a KMP Android library when
+                    // resolved outside its normal build task. Debug carries
+                    // main compile classpaths carry the production dependency graph and resolve with
+                    // the attributes AGP supplies to its shipping compile.
+                    !configuration.name.contains("release", ignoreCase = true)
+            if (
+                productionClasspath &&
+                resolvedEgressCheck != null
+            ) {
+                resolvedEgressCheck.configure {
+                    productionClasspaths.from(
+                        configuration.incoming.artifactView {
+                            // We inspect external modules only. Excluding project artifacts avoids
+                            // introducing task cycles for AGP's synthetic self-dependencies while
+                            // still traversing project edges to their external transitive modules.
+                            componentFilter {
+                                it is org.gradle.api.artifacts.component.ModuleComponentIdentifier
+                            }
+                            // The declared-edge D1/D2 gate owns broken or forbidden project edges;
+                            // an unresolved project variant must not hide its clearer diagnostic.
+                            lenient(true)
+                            attributes.attribute(
+                                org.gradle.api.attributes.Attribute.of("artifactType", String::class.java),
+                                "jar",
+                            )
+                        }.files,
+                    )
+                }
+            }
         }
 
         val srcRoot = File(project.projectDir, "src")
@@ -70,7 +118,7 @@ gradle.projectsEvaluated {
                 .forEach { manifests += "${project.path}|${it.absolutePath}" }
         }
 
-        // D6 heuristic — UI-scoped projects only.
+        // D6 plus WLO-0063 lookalike checks — UI-scoped projects only.
         if (ArchScopes.isUiScoped(project.path) && srcRoot.isDirectory) {
             srcRoot.walkTopDown()
                 .filter { it.isFile && it.extension == "kt" }

@@ -17,6 +17,8 @@ public data class WloForecastBands(
     public val optimisticFinishEpochDay: Long?,
     public val expectedFinishEpochDay: Long?,
     public val pessimisticFinishEpochDay: Long?,
+    /** False while evidence is developing: render the outer range, never a central date. */
+    public val pointDateEligible: Boolean = true,
     /**
      * The expected band's starting weekly rate (kg/week), engine sign
      * (positive = losing) — powers the arrival row's pace fact when the goal

@@ -8,7 +8,7 @@
 |---|---|
 | **Feature ID** | F07 — Energy & Metabolism Engine |
 | **Provides** | An on-device adaptive-TDEE engine: it *measures* the user's real energy expenditure from intake vs. weight-trend, closes the energy-balance triangle, forecasts goal dates in three honest bands with deceleration, and runs the weekly check-in ritual where — and only where — targets change. |
-| **User problems solved** | • "Why am I stalling at 1,800 kcal?" → because 1,800 was a formula's guess; the engine measures *your* burn (2,410) and adapts the plan to it • Plateaus stop being failures: a flat trend *raises* measured TDEE, and the plan follows upward • Goal dates stop lying: every competitor extrapolates a straight line; WLO models deceleration near goal • Targets never change behind the user's back: the engine proposes, the human applies |
+| **User problems solved** | • "Why am I stalling at 1,800 kcal?" → replace a formula guess with a measured estimate and uncertainty • Plateaus stop being moral failures: flat trend means burn is approximately intake over a valid window, not that burn necessarily rose • Goal dates stop lying: WLO models deceleration and ranges • Targets never change behind the user's back: the engine proposes, the human applies |
 | **AI consent category** | Owns none — **the engine is 100% deterministic local math over local data**. No ML model, no cloud call, no consent needed; it works identically in airplane mode. This is deliberate: the flagship feature of a privacy-first app must be provably local. The optional **Discuss** path in check-ins hands off to F11's `insights-chat` (consent owned there/F12). |
 | **Primary evidence** | `docs/research/macrofactor.md` (deep: V3 spline expenditure, adaptive per-user time constant, published accuracy gains, weekly check-in, Optimistic ETA), `docs/research/zolt.md` (deep: published closed-form TDEE, developing/updating/held states, Apply/Keep/Discuss, breakdown terms, calorie floor, no-eat-back), `docs/research/happy-scale.md` (forecast gap — no deceleration model), `docs/research/synthesis.md` §1.5, §2 Tier A #1/#3/#7, §4 (eat-back rejection) |
 
@@ -46,7 +46,9 @@ Core objectives:
 **Inputs**
 
 - From **F02/F03:** daily intake energy + macros (every day carries a status: **Logged / Skipped / Fasted** — one tap in the day header; the cleanest fix for missing-data corruption, Zolt pattern).
-- From **F06:** daily scalar weight series, trend weight series, residual σ, coverage % — under F06's frozen import semantics (lowest-of-day, noon-normalized).
+- From **F06:** versioned daily-scalar weight series, trend weight series,
+  residual σ, coverage %, and provenance. Source identity is independent of
+  scalar policy; WLO-0072 freezes that policy after benchmarks.
 - From **F05/F13:** session expenditure estimates and steps — *context only* (see below).
 - From **F01:** initial targets, goal, pace, calorie floor; from profile: sex/age/height/weight.
 
@@ -65,11 +67,22 @@ Core objectives:
   - **Exercise context** — F05 session estimates averaged over the window, deliberately small weight.
   - **Hard rule — context, never credit:** steps and exercise *refine interpretation* of the solve, but the target is never increased by "calories earned" — no eat-back, ever. The intake-vs-trend solve already contains activity; crediting it again double-counts (Zolt and MacroFactor both reject it; synthesis §4).
 - **Data-quality states (frozen):** see §4 gating table — developing / updating / held, with exact entry criteria. A **held** estimate is frozen at its last good value with the reason shown; holds auto-release when the trigger clears.
+- **Forecast release boundary (WLO-0073):** `ForecastEngine.evaluate` is the
+  sole mapping from WLO-0080 eligibility + the data-quality state to forecast
+  UI. Developing may show only a neutral provisional outer range: its central
+  “on trend” point date is release-ineligible and suppressed. Held calculates
+  no new date; updating becomes measured/available only with a valid solve. The
+  versioned holdout corpus, exact quality gates, results, and failure modes are
+  published in [`forecast-calibration-v1.md`](../research/forecast-calibration-v1.md).
 - **3-band goal-date forecast with deceleration (the open win):** every competitor extrapolates the historic rate linearly and turns optimistic near goal (Happy Scale's community-observed flaw). WLO's model:
   - **Deceleration core:** future TDEE is re-estimated at future bodyweight — BMR falls with weight, the Adjustment term is held, Activity follows the steps baseline — so the deficit shrinks as the user approaches goal, and the projected weekly rate *decays* along the path instead of staying constant. The v1 model is **partition-free** (R-A6): one published constant (R-A1) with a caveat line near goal; composition-aware fat-fraction rates ship [v1.x] with their own assumptions.
   - **Expected band** integrates the decaying rate from the current trend + TDEE point estimate. **Optimistic / pessimistic** bands come from the trailing-28-day pace distribution (80th / 20th percentile) crossed with the TDEE estimate's uncertainty. Bands widen with horizon; the widening is itself displayed.
   - Rendered as a forecast cone on the weight chart plus three dates ("on trend for **Oct 14** · range **Sep 28 – Nov 2**"). Never a single promised date; Zolt's hedge is part of the copy: *an estimate, not a promise*.
-- **Plateau, reframed structurally:** 14+ days of flat trend at steady intake mathematically *raises* measured TDEE. The engine surfaces this as the win it is — "Your burn measured 2,410 (+120 vs. last month). You adapted; so does the plan." — and proposes the upward target change. No shame language exists in the state machine.
+- **Plateau, described honestly:** 14+ days of flat trend implies measured
+  TDEE approximately equals average intake over the valid solve window; it
+  does not by itself prove that TDEE rose. The engine compares with a prior
+  window only when both pass quality gates and proposes a change only from a
+  supported difference. No shame language exists in the state machine.
 - **Forecast, worked example (this is the copy shape):** trend 84.2 kg falling 0.5 kg/wk; measured TDEE 2,410; intake 1,900 → deficit 510. At +6 kg lost, BMR drops ~60 kcal → deficit ~450 → rate decays to ~0.44 kg/wk. The expected date integrates the shrinking weekly rate instead of dividing remaining weight by 0.5; optimistic/pessimistic integrate the 80th/20th-percentile pace with the TDEE uncertainty bound. Result: "Goal 78.0 kg — on trend **Mar 14** · range **Feb 24 – Apr 6**," with the cone on the chart showing why.
 - **Target proposal logic:** pace error vs. F01's plan (faster/slower than intended) → proposed calorie delta, clamped by (a) the **calorie floor** (default 1,200 F / 1,500 M; user-overridable with a persistent acknowledgment — the engine proposes slower pace rather than breaching it) and (b) the **pace cap** (±1.0% bodyweight/week). Macro splits derive from the calorie delta by F01's diet-template rules. All proposals are advisory until Applied.
 - **Algorithm versioning:** every estimate carries its engine version (`transparent-v1`, `adaptive-v1.x`); changing a constant ships as a new version with a changelog entry on the Algorithms page and a one-line notice on the next check-in card — MacroFactor's methodology-transparency contract, enforced in data.
@@ -88,7 +101,7 @@ Core objectives:
 
 | State | Entry criteria | Behavior |
 |---|---|---|
-| **DEVELOPING** | < 10 usable paired days in the trailing 21 (usable = intake Logged + weigh-in present, or the day explicitly Skipped/Fasted — and, per F02's provenance metadata, the day is not dominated by uncorrected low-confidence estimates; >50% uncorrected-estimate days are excluded from the solve and named in the explainer: "2 rough days excluded") | Estimate shown grayed with a wide range and "forming — about 2 weeks of normal logging"; no proposals; forecast disabled; check-in card still shows trend/pace |
+| **DEVELOPING** | < 10 usable paired days in the trailing 21 (usable = intake Logged + weigh-in present, or the day explicitly Skipped/Fasted — and, per F02's provenance metadata, the day is not dominated by uncorrected low-confidence estimates; >50% uncorrected-estimate days are excluded from the solve and named in the explainer: "2 rough days excluded") | Measured estimate shown grayed with a wide range and "forming — about 2 weeks of normal logging"; no proposals. The cold-start formula forecast may render as `ESTIMATED` with wide ranges; a measured/adaptive forecast is unavailable until quality gates pass. Check-in still shows trend/pace. |
 | **UPDATING** | ≥ 10 usable paired days, no hold triggers | Normal operation: estimate updates, proposals flow, forecast live |
 | **HELD** | Any trigger: ≥ 3 trailing days with no intake record *and no status mark*; weigh-in gap > 4 days; user-flagged atypical week (travel/illness marker); outlier screen fails (intake residual > 3σ) | Estimate frozen at last good value; reason chip on every surface ("3 unlogged days — can't compare like with like"); no proposals; auto-releases when the trigger clears |
 
@@ -153,7 +166,9 @@ Core objectives:
 - **[v1.x] Scenario simulator** — "what if +3,000 steps/day?" or "what if I take a diet break week?" — the model recomputes forecast bands live under edited assumptions, fully local.
 - **[v1.x] Diet-break choreography** — plan a 7–14 day maintenance break; the engine walks the calorie path, predicts the water-weight bounce before it happens, and shows the post-break TDEE re-measurement as the break's payoff.
 - **[v1.x] Adjustment-term storytelling** — a timeline of the personal correction term with the user's own event annotations, rendering metabolic adaptation as a visible, explainable curve over months.
-- **[v1.x] Reverse check-in (bulking/maintenance parity)** — the same engine, states, and ritual for weight-gain and maintenance goals, so the tool outlives the cut; the forecast's deceleration model runs symmetrically.
+- **[Release 1] Goal-mode parity** — the same engine states and ritual support
+  loss, maintenance, and gain. Safety bounds and forecasts are goal-mode-specific
+  and must pass WLO-0080/WLO-0073 before release.
 - **[future] Maintenance graduation** — at goal, the engine pivots seamlessly to a maintenance program with a tight tolerance band and "stability streak" hooks for F11 — the phase every other app abandons.
 - **[future] Engine telemetry page** — live internals for geeks: window contents, excluded days, uncertainty, time-constant estimate — a "flight recorder" for the algorithm.
 - **[moonshot] Bayesian engine** — a particle-filter posterior over TDEE (not a point estimate): every chart shows the distribution; proposals cite probability ("90% chance your burn is 2,380–2,520"). Still 100% on-device.
@@ -163,7 +178,13 @@ Core objectives:
 
 - **The privacy flagship:** zero network, zero models, zero consent surface — provable by architecture. The check-in works in a bunker. This is stated on the card itself, once: "Computed on your device."
 - **Write authority is sacred:** targets change **only** through explicit Apply; Apply is always user-tapped, never scheduled, never batched; every write is ledgered and reversible. F07 proposals are advice even when the engine is certain.
-- **Safety rails:** calorie floor enforced at proposal time (with medical-disclaimer-grade care if overridden); pace cap ±1% bodyweight/week; sustained under-floor or over-cap patterns surface a gentle professional-guidance card, once, dismissable — no nagging, no lockout.
+- **Safety rails:** every proposal and forecast consumes the shared
+  [WLO-0080 eligibility result](../research/weight-goal-safety-contract.md).
+  Held/unsupported results produce no target or date. The configured calorie
+  floor is enforced at proposal time; pace outside the mode-specific product
+  envelope is rejected rather than clamped. Neutral professional-guidance copy
+  appears once and remains dismissable—no diagnosis, nagging, or lockout from
+  raw tracking.
 - **No medical claims:** TDEE is "measured expenditure estimate," never diagnosis; metabolic language stays descriptive ("your burn," "your adaptation"), never clinical.
 - **Free forever, local forever:** the engine is the feature most competitors charge monthly for; WLO gives it away with the math attached — that contrast belongs in the store listing, not behind one.
 

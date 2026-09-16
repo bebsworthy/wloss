@@ -176,6 +176,36 @@ class StagedRestoreJvmTest {
         )
     }
 
+    private fun ledgerChain(vararg capabilities: String): List<ConsentLedgerRow> {
+        var previous = app.wlo.core.consent.ConsentEntry.GENESIS_PREV_HASH
+        return capabilities.mapIndexed { index, capability ->
+            val cap =
+                app.wlo.core.model.ConsentCapability.entries
+                    .first { it.wireName == capability }
+            val entry =
+                app.wlo.core.consent.ConsentEntry(
+                    seq = index.toLong(),
+                    atEpochMs = 3_000L + index * 1_000L,
+                    capability = cap,
+                    decision = app.wlo.core.consent.ConsentDecision.GRANT,
+                    prevHashHex = previous,
+                    hashHex = "",
+                )
+            val hash =
+                app.wlo.core.consent.ConsentChain
+                    .hashOf(entry)
+            ConsentLedgerRow(
+                seq = entry.seq,
+                profileId = "prof-1",
+                atEpochMs = entry.atEpochMs,
+                capability = capability,
+                decision = "grant",
+                prevHashHex = previous,
+                hashHex = hash,
+            ).also { previous = hash }
+        }
+    }
+
     private fun containerFor(
         payload: BackupPayload,
         passphrase: CharArray = this.passphrase,
@@ -244,6 +274,53 @@ class StagedRestoreJvmTest {
             val result = committer.commit(restorer.stage(containerFor(forked), passphrase))
             assertTrue(result.warnings.single().contains("fork"))
             assertEquals(1, db.consentLedger().all().size, "local ledger untouched")
+        }
+
+    @Test
+    fun consentLedger_matchingLocalPrefix_appendsOnlyStrictSuffix() =
+        runTest {
+            val chain = ledgerChain("food-photo", "insights-chat")
+            committer.commit(restorer.stage(containerFor(payload().copy(consentLedger = chain.take(1))), passphrase))
+
+            val staged = restorer.stage(containerFor(payload().copy(consentLedger = chain)), passphrase)
+            val result = committer.commit(staged)
+
+            assertTrue(result.warnings.isEmpty())
+            assertEquals(chain.map { it.hashHex }, db.consentLedger().all().map { it.hashHex })
+        }
+
+    @Test
+    fun crashAfterRoomCommit_newCommitterRollsJournalForwardIdempotently() =
+        runTest {
+            var failAfterRoom = true
+            val crashing =
+                RestoreCommitter(
+                    db = db,
+                    settings = settings,
+                    documents = documents,
+                    projector = DayProjector(db, clock),
+                    phaseHook = { phase ->
+                        if (phase == "room" && failAfterRoom) {
+                            failAfterRoom = false
+                            error("simulated process death")
+                        }
+                    },
+                )
+            assertFailsWith<IllegalStateException> {
+                crashing.commit(restorer.stage(containerFor(payload()), passphrase))
+            }
+            assertNotNull(db.profiles().byId("prof-1"), "Room transaction committed before the simulated death")
+            assertEquals("1min", settings.lockTimeout.first(), "later stores have not run yet")
+
+            val recovered = committer.recoverPending()
+
+            assertNotNull(recovered)
+            assertEquals(5, recovered.inserted)
+            assertEquals("5min", settings.lockTimeout.first())
+            assertEquals(true, documents.readFlag("onboarding/complete"))
+            assertNotNull(db.dayRecords().day("prof-1", 20_000))
+            assertEquals(null, committer.recoverPending(), "completed journal is removed")
+            assertEquals(2, db.measurementEvents().all().size, "Room replay inserted no duplicates")
         }
 
     // --- hostile inputs: rejected, data untouched ---------------------------

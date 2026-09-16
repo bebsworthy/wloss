@@ -36,7 +36,7 @@ class CurrentTrendTest {
     private val profiles = RoomProfileRepository(db, settings)
     private val projector = DayProjector(db, clock)
     private val measurements = RoomMeasurementRepository(db, projector)
-    private val weighIns = RoomWeighInRepository(measurements)
+    private val weighIns = RoomWeighInRepository(db, measurements, projector)
     private val targets = RoomTargetsRepository(db)
     private val projection = RoomDayProjectionRepository(db, projector, targets)
 

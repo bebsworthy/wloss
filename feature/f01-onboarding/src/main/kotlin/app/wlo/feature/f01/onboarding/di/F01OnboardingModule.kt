@@ -2,8 +2,11 @@ package app.wlo.feature.f01.onboarding.di
 
 import app.wlo.core.datastore.JsonDocumentStore
 import app.wlo.feature.f01.onboarding.domain.FinishOnboarding
+import app.wlo.feature.f01.onboarding.domain.FinishWeightFirstOnboarding
+import app.wlo.feature.f01.onboarding.domain.WeightFirstOnboardingStore
 import app.wlo.feature.f01.onboarding.state.GoalsEditorViewModel
 import app.wlo.feature.f01.onboarding.state.OnboardingViewModel
+import app.wlo.feature.f01.onboarding.state.WeightFirstOnboardingViewModel
 import org.koin.androidx.viewmodel.dsl.viewModel
 import org.koin.core.module.Module
 import org.koin.dsl.module
@@ -18,6 +21,17 @@ import org.koin.dsl.module
  */
 public val f01OnboardingModule: Module =
     module {
+        single { WeightFirstOnboardingStore(documents = get()) }
+        single {
+            FinishWeightFirstOnboarding(
+                profiles = get(),
+                measurements = get(),
+                settings = get(),
+                store = get(),
+                clock = get(),
+            )
+        }
+        viewModel { WeightFirstOnboardingViewModel(store = get(), finisher = get()) }
         single {
             FinishOnboarding(
                 profiles = get(),
@@ -27,12 +41,24 @@ public val f01OnboardingModule: Module =
                 clock = get(),
             )
         }
-        viewModel { OnboardingViewModel(library = get(), finisher = get(), documents = get(), clock = get()) }
+        viewModel {
+            OnboardingViewModel(
+                library = get(),
+                finisher = get(),
+                documents = get(),
+                settings = get(),
+                clock = get(),
+            )
+        }
         viewModel {
             GoalsEditorViewModel(
                 profiles = get(),
                 targets = get(),
                 writers = get(),
+                weighIns = get(),
+                dayProjection = get(),
+                settings = get(),
+                documents = get(),
                 clock = get(),
             )
         }

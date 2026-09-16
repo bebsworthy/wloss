@@ -1,0 +1,101 @@
+{
+  "corpusVersion": "weight-policy-benchmark-v1",
+  "description": "Synthetic deterministic benchmark. Truth is a standardized morning weight, not a claim about an individual user's unknowable true weight.",
+  "consistentWindowStartMinute": 330,
+  "consistentWindowEndMinuteExclusive": 570,
+  "consistentTargetMinute": 420,
+  "scenarios": [
+    {
+      "name": "noisy-decline-with-mutations",
+      "truth": [
+        {"day": 21000, "kg": 82.00}, {"day": 21001, "kg": 81.92},
+        {"day": 21002, "kg": 81.84}, {"day": 21003, "kg": 81.76},
+        {"day": 21004, "kg": 81.68}, {"day": 21005, "kg": 81.60},
+        {"day": 21006, "kg": 81.52}, {"day": 21007, "kg": 81.44},
+        {"day": 21008, "kg": 81.36}, {"day": 21009, "kg": 81.28},
+        {"day": 21010, "kg": 81.20}, {"day": 21011, "kg": 81.12},
+        {"day": 21012, "kg": 81.04}, {"day": 21013, "kg": 80.96},
+        {"day": 21014, "kg": 80.88}, {"day": 21015, "kg": 80.80},
+        {"day": 21016, "kg": 80.72}, {"day": 21017, "kg": 80.64},
+        {"day": 21018, "kg": 80.56}, {"day": 21019, "kg": 80.48},
+        {"day": 21020, "kg": 80.40}, {"day": 21021, "kg": 80.32}
+      ],
+      "events": [
+        {"id":"d00-a","effectiveDay":21000,"recordedOnDay":21000,"localMinute":421,"zoneOffsetMinutes":60,"kg":82.10},
+        {"id":"d01-a","effectiveDay":21001,"recordedOnDay":21001,"localMinute":414,"zoneOffsetMinutes":60,"kg":81.87},
+        {"id":"d02-a","effectiveDay":21002,"recordedOnDay":21002,"localMinute":445,"zoneOffsetMinutes":60,"kg":81.96},
+        {"id":"d03-a","effectiveDay":21003,"recordedOnDay":21003,"localMinute":405,"zoneOffsetMinutes":60,"kg":81.71},
+        {"id":"d04-a","effectiveDay":21004,"recordedOnDay":21004,"localMinute":432,"zoneOffsetMinutes":60,"kg":81.72},
+
+        {"id":"d05-first","effectiveDay":21005,"recordedOnDay":21005,"localMinute":410,"zoneOffsetMinutes":60,"kg":81.72,"note":"first same-day attempt"},
+        {"id":"d05-low","effectiveDay":21005,"recordedOnDay":21005,"localMinute":610,"zoneOffsetMinutes":60,"kg":81.02,"note":"post-bathroom low"},
+        {"id":"d05-evening","effectiveDay":21005,"recordedOnDay":21005,"localMinute":1210,"zoneOffsetMinutes":60,"kg":82.48,"note":"evening hydration"},
+
+        {"id":"d07-evening","effectiveDay":21007,"recordedOnDay":21007,"localMinute":1190,"zoneOffsetMinutes":60,"kg":82.31,"note":"mixed-time evening-only day"},
+        {"id":"d08-low","effectiveDay":21008,"recordedOnDay":21008,"localMinute":332,"zoneOffsetMinutes":60,"kg":79.93,"note":"implausible low outlier"},
+        {"id":"d08-normal","effectiveDay":21008,"recordedOnDay":21008,"localMinute":438,"zoneOffsetMinutes":60,"kg":81.41},
+        {"id":"d09-backfill","effectiveDay":21009,"recordedOnDay":21012,"localMinute":425,"zoneOffsetMinutes":60,"kg":81.33,"validFromRevision":1,"note":"backfilled three days later"},
+        {"id":"d10-travel","effectiveDay":21010,"recordedOnDay":21010,"localMinute":452,"zoneOffsetMinutes":600,"kg":81.29,"note":"travel; local day remains explicit"},
+        {"id":"d11-a","effectiveDay":21011,"recordedOnDay":21011,"localMinute":419,"zoneOffsetMinutes":600,"kg":81.04},
+
+        {"id":"d12-typo","effectiveDay":21012,"recordedOnDay":21012,"localMinute":423,"zoneOffsetMinutes":60,"kg":91.00,"validUntilRevisionExclusive":1,"note":"superseded typo"},
+        {"id":"d12-edit","effectiveDay":21012,"recordedOnDay":21013,"localMinute":423,"zoneOffsetMinutes":60,"kg":81.08,"validFromRevision":1,"note":"replacement for typo"},
+        {"id":"d13-delete","effectiveDay":21013,"recordedOnDay":21013,"localMinute":350,"zoneOffsetMinutes":60,"kg":77.00,"validUntilRevisionExclusive":1,"note":"explicitly deleted bad entry"},
+        {"id":"d13-valid","effectiveDay":21013,"recordedOnDay":21013,"localMinute":427,"zoneOffsetMinutes":60,"kg":81.01},
+
+        {"id":"d14-a","effectiveDay":21014,"recordedOnDay":21014,"localMinute":416,"zoneOffsetMinutes":60,"kg":80.84},
+        {"id":"d15-a","effectiveDay":21015,"recordedOnDay":21015,"localMinute":429,"zoneOffsetMinutes":60,"kg":80.90},
+        {"id":"d16-a","effectiveDay":21016,"recordedOnDay":21016,"localMinute":411,"zoneOffsetMinutes":60,"kg":80.66},
+        {"id":"d17-a","effectiveDay":21017,"recordedOnDay":21017,"localMinute":441,"zoneOffsetMinutes":60,"kg":80.69},
+        {"id":"d18-a","effectiveDay":21018,"recordedOnDay":21018,"localMinute":417,"zoneOffsetMinutes":60,"kg":80.50},
+        {"id":"d19-a","effectiveDay":21019,"recordedOnDay":21019,"localMinute":434,"zoneOffsetMinutes":60,"kg":80.54},
+        {"id":"d20-a","effectiveDay":21020,"recordedOnDay":21020,"localMinute":409,"zoneOffsetMinutes":60,"kg":80.36},
+        {"id":"d21-a","effectiveDay":21021,"recordedOnDay":21021,"localMinute":426,"zoneOffsetMinutes":60,"kg":80.35}
+      ]
+    },
+    {
+      "name": "maintenance-to-step-loss",
+      "stepDay": 22014,
+      "truth": [
+        {"day":22000,"kg":80.0},{"day":22001,"kg":80.0},{"day":22002,"kg":80.0},{"day":22003,"kg":80.0},
+        {"day":22004,"kg":80.0},{"day":22005,"kg":80.0},{"day":22006,"kg":80.0},{"day":22007,"kg":80.0},
+        {"day":22008,"kg":80.0},{"day":22009,"kg":80.0},{"day":22010,"kg":80.0},{"day":22011,"kg":80.0},
+        {"day":22012,"kg":80.0},{"day":22013,"kg":80.0},
+        {"day":22014,"kg":79.0},{"day":22015,"kg":79.0},{"day":22016,"kg":79.0},{"day":22017,"kg":79.0},
+        {"day":22018,"kg":79.0},{"day":22019,"kg":79.0},{"day":22020,"kg":79.0},{"day":22021,"kg":79.0},
+        {"day":22022,"kg":79.0},{"day":22023,"kg":79.0},{"day":22024,"kg":79.0},{"day":22025,"kg":79.0},
+        {"day":22026,"kg":79.0},{"day":22027,"kg":79.0}
+      ],
+      "events": [
+        {"id":"s00","effectiveDay":22000,"recordedOnDay":22000,"localMinute":420,"zoneOffsetMinutes":60,"kg":80.05},
+        {"id":"s01","effectiveDay":22001,"recordedOnDay":22001,"localMinute":425,"zoneOffsetMinutes":60,"kg":79.96},
+        {"id":"s02","effectiveDay":22002,"recordedOnDay":22002,"localMinute":415,"zoneOffsetMinutes":60,"kg":80.08},
+        {"id":"s03","effectiveDay":22003,"recordedOnDay":22003,"localMinute":432,"zoneOffsetMinutes":60,"kg":79.94},
+        {"id":"s04","effectiveDay":22004,"recordedOnDay":22004,"localMinute":410,"zoneOffsetMinutes":60,"kg":80.02},
+        {"id":"s05","effectiveDay":22005,"recordedOnDay":22005,"localMinute":421,"zoneOffsetMinutes":60,"kg":79.98},
+        {"id":"s06","effectiveDay":22006,"recordedOnDay":22006,"localMinute":417,"zoneOffsetMinutes":60,"kg":80.04},
+        {"id":"s07","effectiveDay":22007,"recordedOnDay":22007,"localMinute":428,"zoneOffsetMinutes":60,"kg":79.97},
+        {"id":"s08","effectiveDay":22008,"recordedOnDay":22008,"localMinute":413,"zoneOffsetMinutes":60,"kg":80.06},
+        {"id":"s09","effectiveDay":22009,"recordedOnDay":22009,"localMinute":424,"zoneOffsetMinutes":60,"kg":79.95},
+        {"id":"s10","effectiveDay":22010,"recordedOnDay":22010,"localMinute":419,"zoneOffsetMinutes":60,"kg":80.03},
+        {"id":"s11","effectiveDay":22011,"recordedOnDay":22011,"localMinute":430,"zoneOffsetMinutes":60,"kg":79.99},
+        {"id":"s12","effectiveDay":22012,"recordedOnDay":22012,"localMinute":416,"zoneOffsetMinutes":60,"kg":80.01},
+        {"id":"s13","effectiveDay":22013,"recordedOnDay":22013,"localMinute":422,"zoneOffsetMinutes":60,"kg":79.97},
+        {"id":"s14","effectiveDay":22014,"recordedOnDay":22014,"localMinute":418,"zoneOffsetMinutes":60,"kg":79.06},
+        {"id":"s15","effectiveDay":22015,"recordedOnDay":22015,"localMinute":426,"zoneOffsetMinutes":60,"kg":78.95},
+        {"id":"s16","effectiveDay":22016,"recordedOnDay":22016,"localMinute":414,"zoneOffsetMinutes":60,"kg":79.04},
+        {"id":"s17","effectiveDay":22017,"recordedOnDay":22017,"localMinute":429,"zoneOffsetMinutes":60,"kg":78.97},
+        {"id":"s18","effectiveDay":22018,"recordedOnDay":22018,"localMinute":412,"zoneOffsetMinutes":60,"kg":79.02},
+        {"id":"s19","effectiveDay":22019,"recordedOnDay":22019,"localMinute":423,"zoneOffsetMinutes":60,"kg":78.96},
+        {"id":"s20","effectiveDay":22020,"recordedOnDay":22020,"localMinute":417,"zoneOffsetMinutes":60,"kg":79.05},
+        {"id":"s21","effectiveDay":22021,"recordedOnDay":22021,"localMinute":431,"zoneOffsetMinutes":60,"kg":78.98},
+        {"id":"s22","effectiveDay":22022,"recordedOnDay":22022,"localMinute":415,"zoneOffsetMinutes":60,"kg":79.01},
+        {"id":"s23","effectiveDay":22023,"recordedOnDay":22023,"localMinute":427,"zoneOffsetMinutes":60,"kg":78.99},
+        {"id":"s24","effectiveDay":22024,"recordedOnDay":22024,"localMinute":411,"zoneOffsetMinutes":60,"kg":79.03},
+        {"id":"s25","effectiveDay":22025,"recordedOnDay":22025,"localMinute":425,"zoneOffsetMinutes":60,"kg":78.97},
+        {"id":"s26","effectiveDay":22026,"recordedOnDay":22026,"localMinute":419,"zoneOffsetMinutes":60,"kg":79.02},
+        {"id":"s27","effectiveDay":22027,"recordedOnDay":22027,"localMinute":424,"zoneOffsetMinutes":60,"kg":78.98}
+      ]
+    }
+  ]
+}

@@ -210,7 +210,12 @@ public fun ImportScreen(
                         provenance = { WloBadge(text = "Failed", tone = WloBadgeTone.Held) },
                     )
                     Text(
-                        text = "Nothing was changed. Your data on this device is exactly as it was.",
+                        text =
+                            if (state.recoveryPending) {
+                                "Room data may already be committed. Recovery is queued and will safely continue."
+                            } else {
+                                "Nothing was changed. Your data on this device is exactly as it was."
+                            },
                         style = wloType.body,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.testTag("f13-import-untouched"),

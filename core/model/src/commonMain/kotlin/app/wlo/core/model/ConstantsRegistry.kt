@@ -19,10 +19,14 @@ package app.wlo.core.model
  * (R-S7), cook/leftover defaults (F03 §3), the adherence data gate (F03 §4,
  * R-B4), and the slot-budget shares the planner scores against. DEFAULTED
  * values are spec-sane choices, published here, cheap to amend in one place.
+ *
+ * v5 (WLO-0080): adds the weight-goal product-safety envelope. These are
+ * product support boundaries, not medical thresholds; the evidence and
+ * rationale live in `docs/research/weight-goal-safety-contract.md`.
  */
 public object ConstantsRegistry {
     /** Registry schema/content version (R-A1). */
-    public const val VERSION: Int = 4
+    public const val VERSION: Int = 5
 
     // --- Energy equivalence (R-A1) ---
 
@@ -56,6 +60,18 @@ public object ConstantsRegistry {
 
     /** Pace hard cap (F07 §3, A.2 invariant 4): ±1.0 % bodyweight per week. */
     public const val PACE_CAP_PCT_PER_WEEK: Double = 1.0
+
+    /** WLO's goal/forecast contract is adult-only; raw tracking remains available. */
+    public const val WEIGHT_GOAL_MIN_AGE_YEARS: Int = 18
+
+    /** Upper edge of CDC's gradual-loss range, expressed in canonical kg/week. */
+    public const val WEIGHT_GOAL_MAX_LOSS_KG_PER_WEEK: Double = 0.9
+
+    /** Conservative WLO product cap for gradual gain; not a medical threshold. */
+    public const val WEIGHT_GOAL_MAX_GAIN_PCT_PER_WEEK: Double = 0.5
+
+    /** Optional maintenance targets must remain within this band around the current weight. */
+    public const val WEIGHT_GOAL_MAINTENANCE_BAND_PCT: Double = 1.0
 
     /** Calorie floor defaults (F07 §3 / A.1: 1,200 F / 1,500 M). */
     public const val FLOOR_KCAL_FEMALE: Int = 1_200

@@ -1,10 +1,12 @@
 package app.wlo.app
 
 import androidx.compose.ui.graphics.toPixelMap
+import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.captureToImage
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onAllNodesWithContentDescription
+import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onFirst
 import androidx.compose.ui.test.onNodeWithContentDescription
@@ -20,10 +22,9 @@ import kotlin.math.roundToInt
 
 /**
  * Shell acceptance on the API 29 emulator: dark-first rendering (R-D1), the
- * five-tab navigation bar (R-D2), tab switching, and the provenance-chip path
- * end-to-end on the REAL hub (F01 finishes into it: measured/derived trend +
- * budget chips, the R-A5 ESTIMATED forecast). Each test starts from a cleared,
- * cold install — the wizard owns the first frame until a plan exists.
+ * five-destination navigation bar (R-D2), switching, and the provenance-chip path
+ * end-to-end on the real weight-first shell. Each test starts from a cleared,
+ * cold install — setup owns the first frame until onboarding completes.
  */
 @RunWith(AndroidJUnit4::class)
 public class WloShellTest {
@@ -31,24 +32,24 @@ public class WloShellTest {
     public val composeTestRule = createAndroidComposeRule<MainActivity>()
 
     @Test
-    public fun freshLaunch_rendersDarkWizard_beforeAnyPlanExists() {
+    public fun freshLaunch_rendersDarkWeightFirstSetup_beforeOnboardingCompletes() {
         composeTestRule.waitForIdle()
         assertMostlyDark()
-        composeTestRule.onNodeWithTag("onboarding-step-WELCOME").assertIsDisplayed()
-        composeTestRule.onNodeWithTag("onboarding-skip").assertIsDisplayed()
+        composeTestRule.onNodeWithTag("weight-first-onboarding").assertIsDisplayed()
+        composeTestRule.onNodeWithTag("weight-first-next").assertIsDisplayed()
     }
 
     @Test
-    public fun afterOnboarding_showsFiveTabs_andTabSwitching() {
+    public fun afterOnboarding_showsWeightFirstDestinations_andSwitching() {
         composeTestRule.driveToHub()
         // The bar is the WloBottomBar atom (M3 NavigationBar) — tabs carry no
         // per-tab test tags; each item's icon is labelled with the tab name.
         // The icon's description lives on the unmerged node (the NavigationBar
         // item's merged semantics swallow it), so query that tree.
-        for (tab in listOf("Hub", "Plan", "Insights", "Archive", "Digestion")) {
+        for (tab in listOf("Weight", "Hub", "Plan", "Insights", "More")) {
             composeTestRule.onNodeWithContentDescription(tab, useUnmergedTree = true).assertIsDisplayed()
         }
-        for (tab in listOf("Plan", "Insights", "Archive", "Digestion")) {
+        for (tab in listOf("Plan", "Insights", "More")) {
             composeTestRule.onNodeWithContentDescription(tab, useUnmergedTree = true).performClick()
             composeTestRule.waitForIdle()
             composeTestRule.onNodeWithTag("title-${tab.lowercase()}").assertIsDisplayed()
@@ -59,7 +60,43 @@ public class WloShellTest {
     }
 
     @Test
-    public fun hub_afterOnboarding_rendersDerivedAndEstimatedChips() {
+    public fun nestedDestination_replacesTabsWithAppBar_andNavigateUpReturnsToOwner() {
+        composeTestRule.driveToHub()
+
+        composeTestRule.onNodeWithTag("hub-settings").performClick()
+        TestNav.awaitRoutePumpingClock(composeTestRule, "app/settings")
+
+        composeTestRule.onNodeWithContentDescription("Navigate up").assertIsDisplayed()
+        for (tab in listOf("Weight", "Hub", "Plan", "Insights", "More")) {
+            composeTestRule
+                .onAllNodesWithContentDescription(tab, useUnmergedTree = true)
+                .assertCountEquals(0)
+        }
+
+        composeTestRule.onNodeWithContentDescription("Navigate up").performClick()
+        TestNav.awaitRoutePumpingClock(composeTestRule, "hub")
+        composeTestRule.onNodeWithTag("hub-trend-card").assertIsDisplayed()
+    }
+
+    @Test
+    public fun switchingTopLevelDestinations_restoresPlanTabUiState() {
+        composeTestRule.driveToHub()
+
+        composeTestRule.onNodeWithContentDescription("Plan", useUnmergedTree = true).performClick()
+        TestNav.awaitRoutePumpingClock(composeTestRule, "plan")
+        composeTestRule.onAllNodesWithText("Recipes").onFirst().performClick()
+        composeTestRule.onNodeWithTag("f03-recipe-search").assertIsDisplayed()
+
+        composeTestRule.onNodeWithContentDescription("Hub", useUnmergedTree = true).performClick()
+        TestNav.awaitRoutePumpingClock(composeTestRule, "hub")
+        composeTestRule.onNodeWithContentDescription("Plan", useUnmergedTree = true).performClick()
+        TestNav.awaitRoutePumpingClock(composeTestRule, "plan")
+
+        composeTestRule.onNodeWithTag("f03-recipe-search").assertIsDisplayed()
+    }
+
+    @Test
+    public fun hub_afterOnboarding_rendersWeightWithoutAnUngatedForecast() {
         composeTestRule.driveToHub()
 
         // Trend + budget arrive provenance-chipped from the day projection
@@ -70,13 +107,9 @@ public class WloShellTest {
         // mock's ⓘ on the "of N kcal" target line — its merged description
         // carries the provenance word (the header never does, R-D12 round 8).
         composeTestRule.onNodeWithTag("hub-trend-card").assertIsDisplayed()
-        composeTestRule
-            .onAllNodesWithContentDescription("derived", substring = true, useUnmergedTree = true)
-            .onFirst()
-            .assertExists()
-        composeTestRule.onAllNodesWithText("estimated").onFirst().assertExists()
-        // WloCardHeader uppercases the source string; the hero numeral renders
-        // WITHOUT the unit (defect 14) — the start weight stands in alone.
+        composeTestRule.onAllNodesWithTag("hub-forecast-card", useUnmergedTree = true).assertCountEquals(0)
+        // The raw first measurement is enough for a useful trend surface;
+        // Diet Plan setup and forecast dates are independent and optional.
         composeTestRule.onAllNodesWithText("WEIGHT TREND").onFirst().assertExists()
         composeTestRule.onAllNodesWithText("82.0").onFirst().assertExists()
     }

@@ -5,10 +5,13 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.NavigationBarItemDefaults
+import androidx.compose.material3.NavigationRail
+import androidx.compose.material3.NavigationRailItem
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 
 /** One destination of [WloBottomBar]. */
@@ -62,7 +65,15 @@ public fun WloBottomBar(
                         contentDescription = item.label,
                     )
                 },
-                label = { Text(text = item.label, style = wloType.label) },
+                label = {
+                    Text(
+                        text = item.label,
+                        style = wloType.label,
+                        maxLines = 1,
+                        softWrap = false,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                },
                 colors =
                     NavigationBarItemDefaults.colors(
                         selectedIconColor = MaterialTheme.colorScheme.primary,
@@ -71,6 +82,42 @@ public fun WloBottomBar(
                         unselectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant,
                         indicatorColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.12f),
                     ),
+            )
+        }
+    }
+
+/** Expanded-window counterpart to [WloBottomBar], using Material 3 navigation rail anatomy. */
+@Composable
+public fun WloNavigationRail(
+    selected: String,
+    onSelect: (String) -> Unit,
+    items: List<WloTabItem>,
+    modifier: Modifier = Modifier,
+): Unit =
+    NavigationRail(
+        modifier = modifier,
+        containerColor = MaterialTheme.colorScheme.surface,
+    ) {
+        items.forEach { item ->
+            val isSelected = item.route == selected
+            NavigationRailItem(
+                selected = isSelected,
+                onClick = { onSelect(item.route) },
+                icon = {
+                    Icon(
+                        imageVector = if (isSelected) item.selectedIcon ?: item.icon else item.icon,
+                        contentDescription = item.label,
+                    )
+                },
+                label = {
+                    Text(
+                        text = item.label,
+                        style = wloType.label,
+                        maxLines = 1,
+                        softWrap = false,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                },
             )
         }
     }

@@ -56,6 +56,20 @@ public class JsonDocumentStore private constructor(
         dataStore.edit { it[flagKey(key)] = value }
     }
 
+    /**
+     * Applies a validated restore batch in one DataStore edit. Unknown-key
+     * filtering remains the caller's document-schema responsibility.
+     */
+    public suspend fun importBatch(
+        textValues: Map<String, String>,
+        flagValues: Map<String, Boolean>,
+    ) {
+        dataStore.edit { preferences ->
+            textValues.forEach { (key, value) -> preferences[textKey(key)] = value }
+            flagValues.forEach { (key, value) -> preferences[flagKey(key)] = value }
+        }
+    }
+
     private fun textKey(key: String): Preferences.Key<String> = stringPreferencesKey("doc/$key")
 
     private fun flagKey(key: String): Preferences.Key<Boolean> = booleanPreferencesKey("flag/$key")

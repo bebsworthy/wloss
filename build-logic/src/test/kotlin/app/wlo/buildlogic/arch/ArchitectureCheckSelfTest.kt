@@ -5,6 +5,7 @@ import org.gradle.testkit.runner.GradleRunner
 import org.gradle.testkit.runner.TaskOutcome
 import java.io.File
 import java.nio.file.Files
+import java.util.jar.JarOutputStream
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
@@ -220,6 +221,37 @@ class ArchitectureCheckSelfTest {
     }
 
     @Test
+    fun d9_transitiveNetworkingArtifactOnResolvedClasspathFails() {
+        val root =
+            fixture(
+                mapOf(
+                    "settings.gradle.kts" to settings(":core:leaky"),
+                    rootBuild.first to rootBuild.second,
+                    "core/leaky/build.gradle.kts" to """
+                        plugins { `java` }
+                        repositories { maven { url = uri(rootProject.file("repo")) } }
+                        dependencies { implementation("fixture:carrier:1") }
+                    """.trimIndent(),
+                ),
+            )
+        installMavenModule(root, "io.ktor", "ktor-client-core", "1")
+        installMavenModule(
+            root,
+            "fixture",
+            "carrier",
+            "1",
+            dependency = Triple("io.ktor", "ktor-client-core", "1"),
+        )
+
+        val result = runFailing(root)
+
+        assertTrue(
+            "resolved production classpath contains banned networking artifact" in result.output,
+            "D9 must inspect transitives, not only declarations:\n${result.output}",
+        )
+    }
+
+    @Test
     fun d9_ktorAndOkhttpInsideCoreNetwork_areTheAllowedChokePoint() {
         val result = run(
             fixture(
@@ -357,7 +389,7 @@ class ArchitectureCheckSelfTest {
     // uiAtoms (WLO-0031) — design-system enforcement, enforce-by-default
     // since the P3 migration landed; `-Pwlo.uiAtoms=warn` is the opt-out.
 
-    /** A feature screen committing every banned uiAtoms pattern at once. */
+    /** A feature screen mixing legal Material 3 imports with banned lookalike patterns. */
     private val uiAtomsBadSource: String =
         """
         package feature.bad
@@ -394,10 +426,7 @@ class ArchitectureCheckSelfTest {
             ),
         )
         assertTrue("mode=enforce" in result.output, "must name the mode:\n${result.output}")
-        assertTrue(
-            "uiAtoms [banned-import material3.Button]:" in result.output,
-            "must print the violation line format:\n${result.output}",
-        )
+        assertTrue("uiAtoms [surface-onclick]:" in result.output, "must print the violation line format:\n${result.output}")
     }
 
     @Test
@@ -419,10 +448,7 @@ class ArchitectureCheckSelfTest {
             "warn mode must NEVER fail (diagnostics baseline):\n${result.output}",
         )
         assertTrue("uiAtoms: WARN mode" in result.output, "must announce warn mode:\n${result.output}")
-        assertTrue(
-            "uiAtoms [banned-import material3.Button]:" in result.output,
-            "must print the violation line format:\n${result.output}",
-        )
+        assertTrue("uiAtoms [surface-onclick]:" in result.output, "must print the violation line format:\n${result.output}")
     }
 
     @Test
@@ -439,12 +465,7 @@ class ArchitectureCheckSelfTest {
             extraArguments = listOf("-Pwlo.uiAtoms=enforce"),
         )
         assertTrue("mode=enforce" in result.output, "must name the mode:\n${result.output}")
-        assertTrue(
-            "uiAtoms [banned-import material3.Card]:" in result.output,
-            "aliased banned imports must be caught:\n${result.output}",
-        )
         assertTrue("uiAtoms [surface-onclick]:" in result.output, "Surface(onClick must be caught:\n${result.output}")
-        assertTrue("uiAtoms [border-stroke]:" in result.output, "BorderStroke must be caught:\n${result.output}")
         assertTrue(
             "uiAtoms [fontfamily-monospace]:" in result.output,
             "FontFamily.Monospace must be caught:\n${result.output}",
@@ -525,6 +546,36 @@ class ArchitectureCheckSelfTest {
         )
     }
 
+    @Test
+    fun uiAtoms_standardMaterial3ComponentsAreLegal() {
+        val dir = Files.createTempDirectory("wlo-uiatoms-m3").toFile()
+        val main = File(dir, "feature/f99-ui/src/main/kotlin").apply { mkdirs() }
+        val fine = File(main, "Fine.kt")
+        fine.writeText(
+            """
+            package feature.fine
+
+            import androidx.compose.material3.Button
+            import androidx.compose.material3.Card as M3Card
+            import androidx.compose.material3.ListItem
+            import androidx.compose.material3.TextButton
+            import androidx.compose.material3.*
+
+            fun standardComponents() {
+                Button(onClick = {}) {}
+                M3Card(onClick = {}) {}
+                ListItem(headlineContent = {})
+                TextButton(onClick = {}) {}
+            }
+            """.trimIndent(),
+        )
+        val hits =
+            app.wlo.buildlogic.arch.ArchRules.uiAtomViolations(
+                mapOf(":feature:f99-ui" to listOf(fine.toPath())),
+            )
+        assertTrue(hits.isEmpty(), "standard Material 3 components must stay legal, got: $hits")
+    }
+
     private fun run(
         dir: File,
         extraArguments: List<String> = emptyList(),
@@ -542,4 +593,32 @@ class ArchitectureCheckSelfTest {
             .withProjectDir(dir)
             .withArguments(listOf("checkArchitecture", "--stacktrace") + extraArguments)
             .buildAndFail()
+
+    private fun installMavenModule(
+        root: File,
+        group: String,
+        artifact: String,
+        version: String,
+        dependency: Triple<String, String, String>? = null,
+    ) {
+        val directory = File(root, "repo/${group.replace('.', '/')}/$artifact/$version").apply { mkdirs() }
+        JarOutputStream(File(directory, "$artifact-$version.jar").outputStream()).use { }
+        val dependencies =
+            dependency?.let { (depGroup, depArtifact, depVersion) ->
+                """
+                <dependencies><dependency>
+                  <groupId>$depGroup</groupId><artifactId>$depArtifact</artifactId><version>$depVersion</version>
+                </dependency></dependencies>
+                """.trimIndent()
+            }.orEmpty()
+        File(directory, "$artifact-$version.pom").writeText(
+            """
+            <project xmlns="http://maven.apache.org/POM/4.0.0">
+              <modelVersion>4.0.0</modelVersion>
+              <groupId>$group</groupId><artifactId>$artifact</artifactId><version>$version</version>
+              $dependencies
+            </project>
+            """.trimIndent(),
+        )
+    }
 }

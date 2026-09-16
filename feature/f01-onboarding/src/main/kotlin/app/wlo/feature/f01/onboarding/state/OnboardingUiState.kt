@@ -1,12 +1,20 @@
 package app.wlo.feature.f01.onboarding.state
 
+import app.wlo.core.common.MassUnit
 import app.wlo.core.documents.ConstraintApplier
 import app.wlo.core.documents.DietTemplate
 import app.wlo.core.documents.PreferenceProfile
 import app.wlo.core.documents.TargetsDocument
 import app.wlo.core.engines.ForecastBands
+import app.wlo.core.engines.GoalForecastResult
 import app.wlo.core.model.ActivityLevel
+import app.wlo.core.model.SafetyAnswer
 import app.wlo.core.model.Sex
+import app.wlo.core.model.WeightGoalEligibility
+import app.wlo.core.model.WeightGoalHoldReason
+import app.wlo.core.model.WeightGoalMode
+import app.wlo.core.model.WeightGoalSafetyCopy
+import app.wlo.core.model.WeightGoalSafetyCopyPolicy
 import app.wlo.feature.f01.onboarding.domain.Milestones
 
 /**
@@ -15,6 +23,7 @@ import app.wlo.feature.f01.onboarding.domain.Milestones
  */
 public enum class OnboardingStep {
     WELCOME,
+    UNIT,
     GOAL,
     FORECAST,
     TEMPLATE,
@@ -46,6 +55,8 @@ public data class OnboardingUiState(
     /** Steps the user skipped with "Later" (their fields ship chip-estimated). */
     public val skippedSteps: Set<OnboardingStep> = emptySet(),
     public val restoreAttempted: Boolean = false,
+    /** Global display/input unit. Domain values below remain canonical kg. */
+    public val massUnit: MassUnit = MassUnit.KILOGRAM,
     // --- template gallery ---
     public val templates: List<DietTemplate> = emptyList(),
     public val selectedTemplateId: String? = null,
@@ -56,6 +67,13 @@ public data class OnboardingUiState(
     public val currentWeightKg: Double = DEFAULT_WEIGHT_KG,
     public val goalWeightKg: Double = DEFAULT_GOAL_KG,
     public val pacePctPerWeek: Double = DEFAULT_PACE_PCT,
+    public val pregnant: SafetyAnswer = SafetyAnswer.NOT_ANSWERED,
+    public val breastfeeding: SafetyAnswer = SafetyAnswer.NOT_ANSWERED,
+    public val eatingDisorderConcern: SafetyAnswer = SafetyAnswer.NOT_ANSWERED,
+    public val medicallyInfluencedWeight: SafetyAnswer = SafetyAnswer.NOT_ANSWERED,
+    public val goalEligibility: WeightGoalEligibility =
+        WeightGoalEligibility.Held(WeightGoalMode.LOSS, setOf(WeightGoalHoldReason.SCREENING_INCOMPLETE)),
+    public val goalSafetyCopy: WeightGoalSafetyCopy = WeightGoalSafetyCopyPolicy.forResult(goalEligibility),
     public val activityLevel: ActivityLevel = ActivityLevel.SEDENTARY,
     /** The state holder's clock anchor (VM-owned time; provenance "at" stamps). */
     public val now: kotlinx.datetime.Instant = kotlinx.datetime.Instant.fromEpochMilliseconds(0),
@@ -64,6 +82,8 @@ public data class OnboardingUiState(
     public val budgetKcal: Double? = null,
     public val paceWallPctPerWeek: Double = MAX_PACE_PCT,
     public val forecast: ForecastBands? = null,
+    /** Shared WLO-0074 quality/safety result; [forecast] is a render compatibility view. */
+    public val forecastResult: GoalForecastResult? = null,
     public val draftTargets: TargetsDocument? = null,
     public val milestones: List<Milestones.Rung> = emptyList(),
     // --- adapt (deterministic constraint applier) ---

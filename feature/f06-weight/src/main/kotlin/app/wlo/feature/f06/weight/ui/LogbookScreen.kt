@@ -19,10 +19,14 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
@@ -38,13 +42,19 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.scale
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.CustomAccessibilityAction
+import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.customActions
+import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import app.wlo.core.designsystem.WloBanner
+import app.wlo.core.designsystem.WloBannerTone
 import app.wlo.core.designsystem.WloButton
 import app.wlo.core.designsystem.WloHaptic
 import app.wlo.core.designsystem.WloIcons
@@ -193,11 +203,11 @@ public fun LogbookScreen(viewModel: LogbookViewModel) {
         WloSheet(
             onDismissRequest = { viewModel.onEvent(LogbookEvent.CancelEdit) },
             modifier = Modifier.testTag("f06-edit-sheet"),
+            title = "Edit weigh-in",
         ) {
             EditSheetContent(
-                weightText = current.weightText,
-                dayText = current.dayText,
-                timeText = current.timeText,
+                sheet = current,
+                unitSymbol = state.massUnit.symbol,
                 onChange = { viewModel.onEvent(LogbookEvent.EditWeightChange(it)) },
                 onDayChange = { viewModel.onEvent(LogbookEvent.EditDayChange(it)) },
                 onTimeChange = { viewModel.onEvent(LogbookEvent.EditTimeChange(it)) },
@@ -214,52 +224,89 @@ public fun LogbookScreen(viewModel: LogbookViewModel) {
  */
 @Composable
 private fun EditSheetContent(
-    weightText: String,
-    dayText: String,
-    timeText: String,
+    sheet: EditSheetUi,
+    unitSymbol: String,
     onChange: (String) -> Unit,
     onDayChange: (String) -> Unit,
     onTimeChange: (String) -> Unit,
     onSave: () -> Unit,
 ) {
-    Text(text = "Edit weigh-in", style = wloType.title)
-    Text(
-        text = "Saving replaces this reading with the corrected one — the row keeps an edited mark.",
-        style = wloType.caption,
-        color = wloExtendedColors.textTertiary,
-    )
-    OutlinedTextField(
-        value = weightText,
-        onValueChange = onChange,
-        modifier = Modifier.fillMaxWidth().testTag("f06-edit-weight"),
-        singleLine = true,
-        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
-        textStyle = wloType.statL,
-        placeholder = { Text("kg", style = wloType.body, color = wloExtendedColors.textTertiary) },
-    )
-    Row(horizontalArrangement = Arrangement.spacedBy(WloSpacing.TIGHT)) {
-        OutlinedTextField(
-            value = dayText,
-            onValueChange = onDayChange,
-            modifier = Modifier.weight(1f).testTag("f06-edit-day"),
-            singleLine = true,
-            textStyle = wloType.body,
-            placeholder = { Text("YYYY-MM-DD", style = wloType.caption, color = wloExtendedColors.textTertiary) },
+    val focusManager = LocalFocusManager.current
+    Column(
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .verticalScroll(rememberScrollState())
+                .imePadding(),
+        verticalArrangement = Arrangement.spacedBy(WloSpacing.CARD),
+    ) {
+        Text(
+            text = "Update the reading or when it was captured.",
+            style = wloType.caption,
+            color = wloExtendedColors.textTertiary,
         )
         OutlinedTextField(
-            value = timeText,
-            onValueChange = onTimeChange,
-            modifier = Modifier.weight(1f).testTag("f06-edit-time"),
+            value = sheet.weightText,
+            onValueChange = onChange,
+            modifier = Modifier.fillMaxWidth().testTag("f06-edit-weight"),
             singleLine = true,
-            textStyle = wloType.body,
-            placeholder = { Text("HH:MM", style = wloType.caption, color = wloExtendedColors.textTertiary) },
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal, imeAction = ImeAction.Done),
+            keyboardActions = KeyboardActions(onDone = { focusManager.clearFocus() }),
+            textStyle = wloType.statL,
+            label = { Text("Weight ($unitSymbol)") },
+            isError = sheet.weightError != null,
+            supportingText =
+                sheet.weightError?.let { message ->
+                    {
+                        Text(
+                            text = message,
+                            modifier =
+                                Modifier
+                                    .semantics { liveRegion = LiveRegionMode.Polite }
+                                    .testTag("f06-edit-weight-error"),
+                        )
+                    }
+                },
+        )
+        WeightDatePickerButton(
+            value = sheet.dayText,
+            onValueChange = onDayChange,
+            modifier = Modifier.fillMaxWidth(),
+            testTag = "f06-edit-day",
+        )
+        WeightTimePickerButton(
+            value = sheet.timeText,
+            onValueChange = onTimeChange,
+            modifier = Modifier.fillMaxWidth(),
+            testTag = "f06-edit-time",
+        )
+        sheet.whenError?.let { message ->
+            Text(
+                text = message,
+                color = MaterialTheme.colorScheme.error,
+                style = wloType.caption,
+                modifier =
+                    Modifier
+                        .semantics { liveRegion = LiveRegionMode.Polite }
+                        .testTag("f06-edit-when-error"),
+            )
+        }
+        sheet.saveError?.let { message ->
+            WloBanner(
+                text = message,
+                tone = WloBannerTone.Warning,
+                modifier =
+                    Modifier
+                        .semantics { liveRegion = LiveRegionMode.Polite }
+                        .testTag("f06-edit-save-error"),
+            )
+        }
+        WloButton(
+            label = "Save changes",
+            onClick = onSave,
+            modifier = Modifier.fillMaxWidth().testTag("f06-edit-save"),
         )
     }
-    WloButton(
-        label = "Save changes",
-        onClick = onSave,
-        modifier = Modifier.fillMaxWidth().testTag("f06-edit-save"),
-    )
 }
 
 /** The sticky month header — it carries the month so the rows can omit it. */
@@ -383,7 +430,9 @@ private fun LogbookRow(
                         .semantics {
                             customActions =
                                 listOf(
-                                    CustomAccessibilityAction("Delete ${row.weightLabel} at ${row.dateLabel} ${row.timeLabel}") {
+                                    CustomAccessibilityAction(
+                                        "Delete ${row.weightLabel} at ${row.dateLabel} ${row.timeLabel}",
+                                    ) {
                                         onDelete()
                                         true
                                     },

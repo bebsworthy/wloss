@@ -18,13 +18,13 @@ import kotlinx.serialization.Serializable
 // with sealed [AppError]s; Flows emit [WloResult] values so a storage failure
 // upstream is a VALUE, never a thrown exception across a boundary (D8).
 
-/** Onboarding input for the (single, R-B9) profile — everything optional except defaults. */
+/** Onboarding input for the single profile. Unknown health facts stay null; they are never guessed. */
 @Serializable
 public data class NewProfile(
     public val sex: Sex? = null,
-    public val birthYear: Int,
-    public val heightCm: Double,
-    public val startWeightKg: Double,
+    public val birthYear: Int? = null,
+    public val heightCm: Double? = null,
+    public val startWeightKg: Double? = null,
     public val activityLevel: ActivityLevel = ActivityLevel.SEDENTARY,
     /** Metric default (R-D10). */
     public val unitPreference: UnitSystem = UnitSystem.METRIC,

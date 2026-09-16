@@ -8,6 +8,7 @@ import app.wlo.core.ports.EgressDownload
 import app.wlo.core.ports.EgressPurpose
 import app.wlo.core.ports.EgressRequest
 import app.wlo.core.ports.OffLookupPolicy
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.test.runTest
 import mockwebserver3.MockResponse
 import mockwebserver3.MockWebServer
@@ -18,6 +19,7 @@ import org.junit.Test
 import java.io.IOException
 import java.net.URL
 import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
 import kotlin.test.assertTrue
 
 /**
@@ -136,6 +138,24 @@ class NetworkDispatcherTest {
                 )
             assertTrue(result.exceptionOrNull() is EgressDeniedException)
             assertEquals(0, server.requestCount, "cross-capability leakage must fail closed")
+        }
+
+    @Test
+    public fun dispatch_cancellationIsReceiptedAndRethrown() =
+        runTest {
+            grants += ConsentCapability.INSIGHTS_CHAT
+
+            assertFailsWith<CancellationException> {
+                dispatcher.dispatch(
+                    EgressRequest<Unit>(
+                        purpose = EgressPurpose.FUTURE_CLOUD_CHAT,
+                        host = server.hostName,
+                        operation = "chat/cancelled",
+                    ) { throw CancellationException("caller stopped") },
+                )
+            }
+
+            assertSingleReceipt(EgressOutcome.FAILED, bytes = 0)
         }
 
     // --- R-C4: default on, cached, per-lookup audit trail -----------------------

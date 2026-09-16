@@ -74,9 +74,9 @@ public object BackupSchema {
 public data class ProfileRow(
     val id: String,
     val sex: String? = null,
-    val birthYear: Int,
-    val heightCm: Double,
-    val startWeightKg: Double,
+    val birthYear: Int?,
+    val heightCm: Double?,
+    val startWeightKg: Double?,
     val activityLevel: String,
     val unitPreference: String,
     val createdAtEpochMs: Long,

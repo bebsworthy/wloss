@@ -39,6 +39,7 @@ import app.wlo.core.designsystem.WloSecondaryButton
 import app.wlo.core.designsystem.WloSpacing
 import app.wlo.core.designsystem.rememberWloHaptics
 import app.wlo.core.designsystem.wloExtendedColors
+import app.wlo.core.model.WeightGoalEligibility
 import app.wlo.feature.f01.onboarding.state.OnboardingEvent
 import app.wlo.feature.f01.onboarding.state.OnboardingStep
 import app.wlo.feature.f01.onboarding.state.OnboardingUiState
@@ -91,6 +92,7 @@ public fun OnboardingScreen(
                 Spacer(Modifier.height(WloSpacing.TIGHT))
                 when (step) {
                     OnboardingStep.WELCOME -> WelcomeStep(state)
+                    OnboardingStep.UNIT -> UnitStep(state, viewModel, haptics)
                     OnboardingStep.GOAL -> GoalStep(state, viewModel, haptics)
                     OnboardingStep.FORECAST ->
                         ForecastStep(
@@ -195,9 +197,19 @@ private fun FooterActions(
             WloBanner(text = message, tone = WloBannerTone.Warning)
         }
         if (atEnd) {
+            WloBanner(
+                text = "${state.goalSafetyCopy.title}. ${state.goalSafetyCopy.body}",
+                tone =
+                    if (state.goalEligibility is WeightGoalEligibility.Eligible) {
+                        WloBannerTone.Info
+                    } else {
+                        WloBannerTone.Warning
+                    },
+                modifier = Modifier.testTag("onboarding-review-goal-safety"),
+            )
             WloButton(
                 label = if (state.finishing) "Writing the plan" else "Start",
-                enabled = !state.finishing,
+                enabled = !state.finishing && state.goalEligibility is WeightGoalEligibility.Eligible,
                 modifier = Modifier.fillMaxWidth().testTag("onboarding-start"),
                 onClick = onStart,
             )
@@ -206,6 +218,7 @@ private fun FooterActions(
                 label =
                     when (state.step) {
                         OnboardingStep.WELCOME -> "Set up my plan"
+                        OnboardingStep.UNIT -> "Continue — set your goal"
                         OnboardingStep.GOAL -> "Continue — see the forecast"
                         OnboardingStep.FORECAST -> "Continue — pick a diet"
                         OnboardingStep.TEMPLATE -> "Continue"

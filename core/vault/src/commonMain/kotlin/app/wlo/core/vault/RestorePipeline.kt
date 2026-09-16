@@ -24,19 +24,22 @@ import app.wlo.core.database.TargetsVersionEntity
 import app.wlo.core.database.WloDatabase
 import app.wlo.core.datastore.JsonDocumentStore
 import app.wlo.core.datastore.SettingsStore
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.serialization.KSerializer
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
 
 /**
- * Staged-and-validated restore (F13 §3 "commit atomically or not at all",
- * F13 §4 flows 1/3): parse → verify → [StagedRestorer.stage] a REPORT →
- * the user reads it → [RestoreCommitter.commit] applies it in ONE Room
- * transaction. A hostile or corrupt file can never merge garbage into live
- * data — every failure happens before the first write, and the commit is
- * all-or-nothing (Room's write transaction rolls back as a unit, so a
- * mid-commit constraint failure or crash leaves the previous state intact).
+ * Staged-and-validated restore (F13 §4 flows 1/3): parse → verify →
+ * [StagedRestorer.stage] a REPORT → explicit user confirmation →
+ * [RestoreCommitter.commit]. Hostile or corrupt input is rejected before any
+ * write. Once Apply begins, Room changes are atomic and a persisted journal
+ * makes the remaining DataStore and projection phases resumable and
+ * idempotent across cancellation, failure, or process death.
  *
  * ## Reconcile semantics (R-B7 interplay, as implemented)
  *
@@ -235,6 +238,7 @@ internal fun decodePayloadSections(sections: JsonObject): BackupPayload {
 }
 
 /** One section's line of the staged report (F13 §4 "per-stage ticks"). */
+@Serializable
 public data class SectionReport(
     public val name: String,
     public val rows: Int,
@@ -247,6 +251,7 @@ public data class SectionReport(
  * The staged report shown before commit: counts per section, schema versions
  * (migrated-from → migrated-to) and warnings — the "preview diff" PART B renders.
  */
+@Serializable
 public data class StagedRestore(
     public val schemaVersionWritten: Int,
     public val schemaVersionRead: Int,
@@ -268,20 +273,82 @@ public class RestoreCommitter(
     private val settings: SettingsStore,
     private val documents: JsonDocumentStore,
     private val projector: DayProjector,
+    private val phaseHook: suspend (String) -> Unit = {},
 ) {
+    private val commitMutex = Mutex()
+
     public data class CommitResult(
         public val inserted: Int,
         public val skipped: Int,
         public val warnings: List<String>,
     )
 
-    public suspend fun commit(staged: StagedRestore): CommitResult {
-        val payload = staged.payload
+    /**
+     * Persists the complete staged operation before the first mutation, then
+     * rolls each idempotent phase forward. A crash after Room commits can
+     * safely replay Room and continue the DataStore/projection phases.
+     */
+    public suspend fun commit(staged: StagedRestore): CommitResult =
+        commitMutex.withLock {
+            // Never replace an older durable operation. Finish it first, then
+            // journal and apply the operation the caller explicitly confirmed.
+            recoverPendingUnlocked()
+            val journal =
+                RestoreJournal(
+                    staged = staged,
+                    existingBefore = countBackingKeys(staged.payload),
+                )
+            writeJournal(journal)
+            requireNotNull(recoverPendingUnlocked())
+        }
+
+    /** Resumes a persisted restore, or returns null when no recovery is due. */
+    public suspend fun recoverPending(): CommitResult? = commitMutex.withLock { recoverPendingUnlocked() }
+
+    private suspend fun recoverPendingUnlocked(): CommitResult? {
+        var journal = readJournal() ?: return null
+        val payload = journal.staged.payload
+        if (journal.phase == RestorePhase.ROOM) {
+            val roomWarnings = commitRoom(payload)
+            phaseHook("room")
+            journal = journal.copy(phase = RestorePhase.SETTINGS, warnings = roomWarnings)
+            writeJournal(journal)
+        }
+        if (journal.phase == RestorePhase.SETTINGS) {
+            if (payload.settings.values.isNotEmpty()) settings.importSettings(payload.settings.values)
+            phaseHook("settings")
+            journal = journal.copy(phase = RestorePhase.DOCUMENTS)
+            writeJournal(journal)
+        }
+        if (journal.phase == RestorePhase.DOCUMENTS) {
+            if (payload.documents.values.isNotEmpty()) documents.importDocuments(payload.documents.values)
+            phaseHook("documents")
+            journal = journal.copy(phase = RestorePhase.PROJECTIONS)
+            writeJournal(journal)
+        }
+        if (journal.phase == RestorePhase.PROJECTIONS) {
+            for ((profileId, range) in restoredDays(payload)) {
+                projector.refresh(profileId, range.first, range.second)
+            }
+            phaseHook("projections")
+            journal = journal.copy(phase = RestorePhase.COMPLETE)
+            writeJournal(journal)
+        }
+
+        val existingAfter = countBackingKeys(payload)
+        val inserted = existingAfter - journal.existingBefore
+        val result =
+            CommitResult(
+                inserted = inserted,
+                skipped = countStagedKeys(payload) - inserted,
+                warnings = journal.warnings,
+            )
+        documents.remove(RESTORE_JOURNAL_KEY)
+        return result
+    }
+
+    private suspend fun commitRoom(payload: BackupPayload): List<String> {
         val warnings = mutableListOf<String>()
-
-        // Pre-commit PK presence → exact inserted/skipped accounting.
-        val existingBefore = countBackingKeys(payload)
-
         db.withWriteTransaction {
             // FK-safe order: profiles first, then events, then dependents.
             db.profiles().insertAllIgnoring(payload.profiles.map { it.toEntity() })
@@ -308,40 +375,60 @@ public class RestoreCommitter(
             db.pantryItems().insertAllIgnoring(payload.pantryItems.map { it.toEntity() })
             db.aisleCorrections().insertAllIgnoring(payload.aisleCorrections.map { it.toEntity() })
 
-            // Consent ledger: append ONLY when the chains link (see class KDoc).
-            val localHead = db.consentLedger().last()
-            val backupChain = payload.consentLedger
-            when {
-                backupChain.isEmpty() -> Unit
-                !chainVerifies(backupChain) ->
-                    warnings += "consent ledger in backup fails its hash chain — nothing appended"
+            warnings += reconcileConsentLedger(payload.consentLedger)
+        }
+        return warnings
+    }
 
-                localHead == null && !backupChain.first().isGenesis() ->
-                    warnings += "consent ledger does not start from genesis — nothing appended"
-
-                localHead != null && backupChain.first().prevHashHex != localHead.hashHex ->
-                    warnings += "consent ledger forked (backup chain does not continue local history) — local ledger kept"
-
-                else -> db.consentLedger().appendAllIgnoring(backupChain.map { it.toEntity() })
+    /** Backup and local ledgers must share an exact genesis-rooted prefix. */
+    private suspend fun reconcileConsentLedger(backup: List<ConsentLedgerRow>): List<String> {
+        if (backup.isEmpty()) return emptyList()
+        if (!chainVerifies(backup)) return listOf("consent ledger in backup fails its hash chain — nothing appended")
+        if (!backup.first().isGenesis()) return listOf("consent ledger does not start from genesis — nothing appended")
+        val local = db.consentLedger().all()
+        val shared = minOf(local.size, backup.size)
+        val prefixMatches = (0 until shared).all { index -> local[index].hashHex == backup[index].hashHex }
+        if (!prefixMatches) {
+            return listOf("consent ledger forked from local history — local ledger kept")
+        }
+        if (backup.size > local.size) {
+            for (row in backup.drop(local.size)) {
+                db.consentLedger().appendRestoredIgnoring(
+                    seq = row.seq,
+                    profileId = row.profileId.ifBlank { CONSENT_PROFILE_WIRE },
+                    capability = row.capability,
+                    decision = row.decision,
+                    atEpochMs = row.atEpochMs,
+                    prevHashHex = row.prevHashHex,
+                    hashHex = row.hashHex,
+                )
             }
         }
+        return emptyList()
+    }
 
-        // Settings + documents ride the app-level stores (DataStore writes
-        // are atomic per file; their failure cannot corrupt restored
-        // relational data, and neither store is part of the Room tx scope).
-        if (payload.settings.values.isNotEmpty()) settings.importSettings(payload.settings.values)
-        if (payload.documents.values.isNotEmpty()) documents.importDocuments(payload.documents.values)
-
-        // Derived views: recompute the union range per profile (A.3 — the
-        // projection pipeline is the only writer of day_records).
-        for ((profileId, range) in restoredDays(payload)) {
-            projector.refresh(profileId, range.first, range.second)
+    private suspend fun readJournal(): RestoreJournal? =
+        documents.readText(RESTORE_JOURNAL_KEY)?.let { encoded ->
+            BackupCodec.json.decodeFromString(RestoreJournal.serializer(), encoded)
         }
 
-        val existingAfter = countBackingKeys(payload)
-        val inserted = existingAfter - existingBefore
-        val stagedKeys = countStagedKeys(payload)
-        return CommitResult(inserted = inserted, skipped = stagedKeys - inserted, warnings = warnings)
+    private suspend fun writeJournal(journal: RestoreJournal) {
+        documents.writeText(RESTORE_JOURNAL_KEY, BackupCodec.json.encodeToString(journal))
+    }
+
+    @Serializable
+    private data class RestoreJournal(
+        val staged: StagedRestore,
+        val existingBefore: Int,
+        val phase: RestorePhase = RestorePhase.ROOM,
+        val warnings: List<String> = emptyList(),
+    )
+
+    @Serializable
+    private enum class RestorePhase { ROOM, SETTINGS, DOCUMENTS, PROJECTIONS, COMPLETE }
+
+    private companion object {
+        const val RESTORE_JOURNAL_KEY: String = "__internal/restore-journal-v1"
     }
 
     /** Rows whose (consent-ledger chain linked and) PKs are now in the store. */
@@ -687,13 +774,13 @@ internal fun AisleCorrectionRow.toEntity(): AisleCorrectionEntity =
  * DataStore. Unknown keys are ignored — the key lists are the contract.
  */
 public suspend fun JsonDocumentStore.importDocuments(values: Map<String, String>) {
-    for ((key, value) in values) {
-        if (key in TEXT_DOCUMENT_KEYS) {
-            writeText(key, value)
-        } else if (key in FLAG_DOCUMENT_KEYS) {
-            value.toBooleanStrictOrNull()?.let { writeFlag(key, it) }
-        }
-    }
+    val textValues = values.filterKeys { it in TEXT_DOCUMENT_KEYS }
+    val flagValues =
+        values
+            .filterKeys { it in FLAG_DOCUMENT_KEYS }
+            .mapNotNull { (key, value) -> value.toBooleanStrictOrNull()?.let { key to it } }
+            .toMap()
+    importBatch(textValues, flagValues)
 }
 
 /**

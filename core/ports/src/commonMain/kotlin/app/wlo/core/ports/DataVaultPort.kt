@@ -139,19 +139,24 @@ public enum class VaultFailure {
 
     /** The destination/storage layer refused the operation. */
     IO,
+
+    /** Room may be committed; a persisted journal will roll later stores forward. */
+    RECOVERY_PENDING,
 }
 
 public class VaultOperationException(
     public val failure: VaultFailure,
     detail: String,
-) : Exception(detail)
+    cause: Throwable? = null,
+) : Exception(detail, cause)
 
 /**
  * The F13 data mechanics as one door (F13 §3 export formats + §4 flows 1/2/3;
  * Fresh Start R-B7). Staging discipline: [stageRestore] and [stageCsvImport]
- * only REPORT; [commitStaged] applies the last staged payload atomically —
- * a commit without a staging in this session fails, so a hostile file can
- * never reach the stores through a stale or missing stage.
+ * only REPORT; [commitStaged] requires a separate explicit confirmation. Room
+ * changes are atomic and later stores roll forward from a durable journal. A
+ * commit without a staging in this session fails, so a hostile file can never
+ * reach the stores through a stale or missing stage.
  */
 public interface DataVaultPort {
     // --- storage dashboard (F13 §3) ---------------------------------------
@@ -204,7 +209,7 @@ public interface DataVaultPort {
      */
     public suspend fun stageBundleImport(bytes: ByteArray): VaultStagedRestoreReport
 
-    /** Applies the last staged restore in one transaction. */
+    /** Applies Room atomically, then rolls other stores forward from a persisted journal. */
     public suspend fun commitStaged(): VaultRestoreCommitReport
 
     /** True while a staged restore waits for its explicit confirm. */

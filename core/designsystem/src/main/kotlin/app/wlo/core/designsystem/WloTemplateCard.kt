@@ -16,6 +16,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -27,6 +29,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -60,10 +63,9 @@ public fun WloTemplateCard(
         } else {
             BorderStroke(1.dp, MaterialTheme.colorScheme.outline)
         }
-    val description =
-        "$name. $summary" + if (selected) " Selected." else ""
+    val description = "$name. $summary"
 
-    Surface(
+    Card(
         onClick = onClick,
         interactionSource = interaction,
         modifier =
@@ -72,10 +74,17 @@ public fun WloTemplateCard(
                 .graphicsLayer {
                     scaleX = scale
                     scaleY = scale
-                }.semantics { contentDescription = description },
+                }.semantics {
+                    contentDescription = description
+                    this.selected = selected
+                },
         shape = WloShape.Card,
-        color = if (selected) MaterialTheme.colorScheme.surfaceVariant else MaterialTheme.colorScheme.surface,
-        contentColor = MaterialTheme.colorScheme.onSurface,
+        colors =
+            CardDefaults.cardColors(
+                containerColor =
+                    if (selected) MaterialTheme.colorScheme.surfaceVariant else MaterialTheme.colorScheme.surface,
+                contentColor = MaterialTheme.colorScheme.onSurface,
+            ),
         border = selectionBorder,
     ) {
         Column(Modifier.padding(horizontal = WloSpacing.PAD_CARD, vertical = WloSpacing.CARD)) {

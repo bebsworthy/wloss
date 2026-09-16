@@ -77,15 +77,27 @@
   <h1>Flow 07 — Onboarding wizard</h1>
   <div class="meta">
     Spec: <a href="../../features/F01-onboarding-diet-plans.md">F01 Onboarding, Goals &amp; Diet Plan Studio</a> · IA: <a href="../IA.md">IA.md §5</a> ·
-    Signature moment: the 600 ms forecast bloom — the first-win design (F01 §6) · 2026-09-11 · prototype, not implementation<br>
-    Persona: a <b>fresh onboarding user, metric</b> (92.4 → 78.0 kg) — deliberately distinct from the lb persona of flows 01–06; a second locale check, not an inconsistency.<br>
-    Companion flows: <a href="01-day-loop-f10.html">01 Day loop (Hub landing after Start)</a> · <a href="03-checkin-f07.html">03 check-in (mature cone)</a> · <a href="04-weigh-in-trend-f06-f08.html">04 weigh-in &amp; trend</a> · <a href="index.html">index</a>
+    Release contract: unit → optional goal → import/manual weight → Weight · 2026-09-16 amendment<br>
+    The eight-step diet-plan sequence below is an <b>optional Plan Studio journey</b>, not first-run.<br>
+    Companion flows: <a href="04-weigh-in-trend-f06-f08.html">04 primary Weight destination</a> · <a href="01-day-loop-f10.html">01 optional Day loop</a> · <a href="03-checkin-f07.html">03 check-in</a> · <a href="index.html">index</a>
   </div>
 </header>
 
 <!-- ============================= WIREFRAMES ============================= -->
-<div class="stage-title">Wireframes <small>· structure before skin — 8 steps in &lt; 3 minutes, zero account, zero network; every step skippable (“later”, never “incomplete”)</small></div>
+<div class="stage-title">Wireframes <small>· weight-first entry, followed by the optional Plan Studio sequence</small></div>
 <div class="stage">
+
+  <div class="flowunit">
+    <div class="phone wf"><div class="screen">
+      <div class="wf-box solid row">status bar</div>
+      <div class="wf-box tall">Welcome · no account, no server, no ads</div>
+      <div class="wf-box row">required display unit: kg · lb</div>
+      <div class="wf-box row">optional goal: Lose · Maintain · Gain · Later</div>
+      <div class="wf-box row">Import weight · Enter first weight · Later</div>
+      <div class="wf-box hero">land on Weight: raw event → trend → goal state</div>
+    </div></div>
+    <div class="caption annotation"><b>Release 1 first run.</b> Only unit is required. Goal and first measurement may be skipped; absent data is never fabricated. Import/manual success lands on the primary Weight destination.</div>
+  </div>
 
   <div class="flowunit">
     <div class="phone wf"><div class="screen">
@@ -99,7 +111,7 @@
       <div class="wf-box row">“takes about 3 minutes” line</div>
       <div class="wf-box row">no permission dialogs anywhere — notifications come later (F10)</div>
     </div></div>
-    <div class="caption annotation"><b>Step 1 — Welcome &amp; privacy.</b> One card proves “different” before asking anything: value sentence, architecture sentence, two equal buttons. Skip-all exits to a Balanced default plan from whatever is known.</div>
+    <div class="caption annotation"><b>Optional Plan Studio — Welcome &amp; privacy.</b> Entered after weight-first setup; skipping exits without creating an invented default plan.</div>
   </div>
 
   <div class="flowunit">
@@ -209,29 +221,27 @@
 
         <div class="welcome">
           <div class="wm">WLO<span>.</span></div>
-          <div class="value">Set a goal and watch an honest forecast bloom around it — a plan you own, versioned like a document.</div>
+          <div class="value">Track your weight with an honest trend. Add a goal or a food plan when you want one.</div>
           <div class="arch">No account, no server, no ads — every number is computed and kept on this device.</div>
           <div class="chips">
             <span class="chip">no email</span>
             <span class="chip">no sign-up</span>
             <span class="chip">airplane-mode safe</span>
-            <span class="chip">free forever · GPLv3</span>
+            <span class="chip">free forever · Apache-2.0</span>
           </div>
         </div>
 
-        <a class="btn primary block" href="07-onboarding-f01.html" style="text-decoration:none;">Set up my plan</a>
+        <a class="btn primary block" href="04-weigh-in-trend-f06-f08.html" style="text-decoration:none;">Choose unit and add weight</a>
         <div style="height:8px;"></div>
-        <a class="btn secondary block" href="07-onboarding-f01.html" style="text-decoration:none;">I’m coming from another app</a>
+        <a class="btn secondary block" href="07-onboarding-f01.html" style="text-decoration:none;">Import my weight history</a>
 
-        <div class="receipt faint" style="margin:12px 4px 0;">takes about 3 minutes · every step skippable — “later”, never “incomplete”</div>
+        <div class="receipt faint" style="margin:12px 4px 0;">unit is required · goal and first weight can wait</div>
 
         <div class="card" style="margin-top:16px;">
-          <div class="card-title">The next 7 steps <span class="right receipt">back is always free</span></div>
-          <div class="stat-row"><span class="label">Goal &amp; pace</span><span class="value receipt">2 dials · 1 slider</span></div>
-          <div class="stat-row"><span class="label">Forecast</span><span class="value receipt">3 bands · <span class="prov estimated">ESTIMATED</span></span></div>
-          <div class="stat-row"><span class="label">Diet template</span><span class="value receipt">7 cards · one pick</span></div>
-          <div class="stat-row"><span class="label">8 swipes</span><span class="value receipt">foods, household, cooking</span></div>
-          <div class="stat-row"><span class="label">Schedule · milestones</span><span class="value receipt">both optional</span></div>
+          <div class="card-title">Start with Weight <span class="right receipt">everything else is later</span></div>
+          <div class="stat-row"><span class="label">Display unit</span><span class="value receipt">kg · lb</span></div>
+          <div class="stat-row"><span class="label">Goal mode</span><span class="value receipt">lose · maintain · gain · later</span></div>
+          <div class="stat-row"><span class="label">First reading</span><span class="value receipt">import · enter · later</span></div>
         </div>
       </div>
       <span class="pin" style="top:56px; right:56px;">1</span>
@@ -242,10 +252,10 @@
     <div class="caption annotation">
       <b>Welcome &amp; privacy — the proof-before-ask screen.</b>
       <ol>
-        <li><span class="pin-ref">1</span>Slim segmented progress + “skip for now” on <i>every</i> step: skips are framed as “later”, never “incomplete” (F01 §6). The meta-skip is real: skipping everything one-taps a Balanced default plan from whatever is known (F01 §4 fallback a).</li>
+        <li><span class="pin-ref">1</span>This is the optional Plan Studio progress indicator. “Skip for now” exits without creating a plan; the already-complete Weight loop remains unchanged.</li>
         <li><span class="pin-ref">2</span>Exactly one sentence of value, one of architecture — “no account, no server, no ads”. Privacy statements are made once, on the surface itself, never repeated as nagging (DESIGN-SYSTEM §8). The ✈ chip states the offline posture; no spinner exists anywhere in the wizard.</li>
         <li><span class="pin-ref">3</span>Import branch is an equal first-class path, not a detour: F13’s wizard parses generic CSV/JSON fully offline at v1 (R-S4); MFP/Lose It!/Paprika/Mealime converters are v1.x. “Your data outlives the app” is the wedge — Mealime’s shutdown is the case study.</li>
-        <li><span class="pin-ref">4</span>Zero permissions asked in the wizard: notification permission arrives once, in context, <i>after the first successful log</i> (F10 §4 / IA §5). The “about 3 minutes” line is the budget contract — active plan in &lt; 3 min, where “active” = plan written + first log ≤ 24 h (F01 §1).</li>
+        <li><span class="pin-ref">4</span>Zero permissions are asked here. Plan Studio activation is measured separately from weight-first completion; it never gates arrival at Weight.</li>
       </ol>
     </div>
   </div>
@@ -646,7 +656,7 @@
       <ol>
         <li><span class="pin-ref">22</span>Date projections are <b>ranges only</b> while F07 sits in <span class="devc">DEVELOPING</span> (cold-start band math, same engine as step 3); a single promised date is never rendered. With no weight trend at all the projections are hidden entirely — not grayed — and they re-project as data arrives (F01 §4 gating).</li>
         <li><span class="pin-ref">23</span>Ladder mechanics: ~3 kg steps → 5 rungs (inside the 4–8 rule); each drops in with 80 ms stagger and the rising three-note pentatonic motif (&lt; 0.5 s total); completed rungs earn a stitched underline later. Renameable rungs convert abstractions into winnable games (“Size 34 jeans”).</li>
-        <li><span class="pin-ref">24</span>Start is the plan’s first write: <code>Plan v1</code>, <code>createdBy: studio@F01</code> (Appendix A.2 — one of exactly two writers, ever). F10’s Hub takes over (flow 01); the verification metric is the loop — plan written + first log ≤ 24 h. Everything skipped ships chip <span class="prov estimated">estimated</span> and is editable in the Studio; every future edit is vN+1 with a diff.</li>
+        <li><span class="pin-ref">24</span>Start is the optional plan’s first write: <code>Plan v1</code>, <code>createdBy: studio@F01</code>. It may hand off to Hub because the user explicitly chose planning; Weight remains the app’s default primary destination. Every future plan edit is vN+1 with a diff.</li>
         <li><span class="pin-ref">25</span>No celebration theater: rungs land with geometry + haptics — confetti does not exist in WLO, and F11 owns what little celebration later earns. And still no notification permission: that ask belongs to the moment after the first successful log (F10 §4), never to onboarding.</li>
       </ol>
     </div>

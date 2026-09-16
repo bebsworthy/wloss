@@ -1,5 +1,10 @@
 package app.wlo.feature.f10.hub.ui
 
+import android.content.BroadcastReceiver
+import android.content.Context
+import android.content.Intent
+import android.content.IntentFilter
+import android.os.Build
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -16,18 +21,26 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.Button
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import app.wlo.core.common.MassUnit
 import app.wlo.core.designsystem.ProvenanceChip
@@ -69,6 +82,7 @@ import app.wlo.feature.f10.hub.state.HubViewModel
 import app.wlo.feature.f10.hub.state.MacroPillUi
 import app.wlo.feature.f10.hub.state.MealTodayUi
 import app.wlo.feature.f10.hub.state.WeekDotUi
+import kotlinx.coroutines.delay
 import kotlinx.datetime.LocalDate
 
 /**
@@ -93,9 +107,26 @@ public fun HubScreen(
     modifier: Modifier = Modifier,
 ) {
     val state: HubUiState by viewModel.uiState.collectAsStateWithLifecycle()
+    HubRefreshEffects(viewModel, state)
 
     when (val current = state) {
-        HubUiState.Loading, HubUiState.Fresh -> Column(modifier = modifier.fillMaxSize()) {}
+        HubUiState.Loading ->
+            HubStatus(
+                modifier = modifier,
+                progress = true,
+                message = "Loading today's data",
+            )
+        HubUiState.Fresh ->
+            HubStatus(
+                modifier = modifier,
+                message = "Nothing to show yet.",
+            )
+        is HubUiState.RecoverableError ->
+            HubStatus(
+                modifier = modifier,
+                message = current.message,
+                action = viewModel::refresh,
+            )
         is HubUiState.Ready -> {
             Column(
                 modifier =
@@ -172,6 +203,7 @@ public fun HubScreen(
                                 optimisticFinishEpochDay = forecast.bands.optimisticFinishEpochDay,
                                 expectedFinishEpochDay = forecast.bands.expectedFinishEpochDay,
                                 pessimisticFinishEpochDay = forecast.bands.pessimisticFinishEpochDay,
+                                pointDateEligible = forecast.bands.pointDateEligible,
                                 expectedPaceKgPerWeek = forecast.bands.expectedPaceKgPerWeek,
                             ),
                         goalWeight = forecast.goalWeight,
@@ -214,6 +246,87 @@ public fun HubScreen(
                     )
                     Spacer(Modifier.height(WloSpacing.ROW_MIN))
                 }
+            }
+        }
+    }
+}
+
+@Composable
+private fun HubRefreshEffects(
+    viewModel: HubViewModel,
+    state: HubUiState,
+) {
+    val lifecycleOwner = LocalLifecycleOwner.current
+    val context = LocalContext.current
+
+    DisposableEffect(lifecycleOwner, viewModel) {
+        val observer =
+            LifecycleEventObserver { _, event ->
+                if (event == Lifecycle.Event.ON_RESUME) viewModel.refresh()
+            }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
+    }
+
+    DisposableEffect(context, viewModel) {
+        val receiver =
+            object : BroadcastReceiver() {
+                override fun onReceive(
+                    ignoredContext: Context?,
+                    ignoredIntent: Intent?,
+                ) {
+                    viewModel.refresh()
+                }
+            }
+        val filter =
+            IntentFilter().apply {
+                addAction(Intent.ACTION_TIME_CHANGED)
+                addAction(Intent.ACTION_TIMEZONE_CHANGED)
+                addAction(Intent.ACTION_DATE_CHANGED)
+            }
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            context.registerReceiver(receiver, filter, Context.RECEIVER_NOT_EXPORTED)
+        } else {
+            @Suppress("DEPRECATION")
+            context.registerReceiver(receiver, filter)
+        }
+        onDispose { context.unregisterReceiver(receiver) }
+    }
+
+    val ready = state as? HubUiState.Ready
+    LaunchedEffect(ready?.refreshGeneration) {
+        if (ready != null) {
+            delay(viewModel.millisUntilNextBoundary())
+            viewModel.refresh()
+        }
+    }
+}
+
+@Composable
+private fun HubStatus(
+    modifier: Modifier,
+    message: String,
+    progress: Boolean = false,
+    action: (() -> Unit)? = null,
+) {
+    Column(
+        modifier = modifier.fillMaxSize().padding(WloSpacing.SCREEN),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center,
+    ) {
+        if (progress) CircularProgressIndicator(Modifier.testTag("hub-loading"))
+        Text(
+            text = message,
+            style = wloType.body,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(top = WloSpacing.CARD),
+        )
+        if (action != null) {
+            Button(
+                onClick = action,
+                modifier = Modifier.padding(top = WloSpacing.CARD).testTag("hub-retry"),
+            ) {
+                Text("Try again")
             }
         }
     }
@@ -313,21 +426,21 @@ private fun QuickActionRail(
                         label = "Log food",
                         onClick = actions.onOpenCapture,
                         onLongClick = actions.onQuickAddKcal,
-                        modifier = Modifier.weight(1f),
+                        modifier = Modifier.weight(1f).testTag("hub-log-food"),
                     )
                 HubQuickAction.WEIGH_IN ->
                     WloRailButton(
                         icon = HubIcons.Weigh,
                         label = "Weigh in",
                         onClick = actions.onLogWeight,
-                        modifier = Modifier.weight(1f),
+                        modifier = Modifier.weight(1f).testTag("hub-weigh-in"),
                     )
                 HubQuickAction.POOP_LOG ->
                     WloRailButton(
                         icon = HubIcons.Gut,
                         label = "Digestion",
                         onClick = actions.onGutLog,
-                        modifier = Modifier.weight(1f),
+                        modifier = Modifier.weight(1f).testTag("hub-digestion"),
                     )
                 HubQuickAction.WORKOUT_START ->
                     WloRailButton(
@@ -522,7 +635,7 @@ private fun TrendCard(
                     {
                         ProvenanceChip(
                             value = state.heroTrend,
-                            format = ::formatNumeral,
+                            format = state.massUnit::formatNumber,
                             onClick = { onExplain(trendExplainer) },
                         )
                     }
@@ -533,7 +646,7 @@ private fun TrendCard(
 
         WloHeroStat(
             value = state.heroTrend,
-            format = ::formatNumeral,
+            format = state.massUnit::formatNumber,
             unit = state.massUnit.symbol,
             valueStyle = if (isHero) wloType.hero else wloType.statL,
             delta =
@@ -550,7 +663,7 @@ private fun TrendCard(
             samples = state.trendSamples,
             trend = state.trendLine,
             currentTrend = null,
-            formatWeight = { kg -> "${formatNumeral(kg)} ${state.massUnit.symbol}" },
+            formatWeight = state.massUnit::format,
             describe = "Weight trend chart: 30 days of scale dots with the trend line.",
             modifier = Modifier.fillMaxWidth(),
         )
@@ -569,17 +682,9 @@ private fun DeltaChipFor(
 ): Unit =
     WloDeltaChip(
         value = delta,
-        format = { magnitude -> "${formatNumeral(magnitude)} ${unit.symbol} / 7 d" },
+        format = { magnitude -> "${unit.formatNumber(magnitude)} ${unit.symbol} / 7 d" },
         context = "trend delta",
     )
-
-/** Numeral-only formatting (no unit) — the hero's numeral, the chart axis, the chip a11y text. */
-private fun formatNumeral(kg: Double): String {
-    val tenths = (kg * 10).toLong()
-    val whole = tenths / 10
-    val tenth = tenths % 10
-    return "$whole.$tenth"
-}
 
 /**
  * The calories card (mock, WLO-0033 wave 2): the big ring (fill =

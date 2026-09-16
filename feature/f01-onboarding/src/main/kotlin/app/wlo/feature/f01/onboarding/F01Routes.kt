@@ -19,4 +19,7 @@ public object F01Routes {
 
     /** Studio entry — F01 §4 (plan revision / template editing); M3+ implements the surface. */
     public const val STUDIO: String = "f01/studio"
+
+    /** The former first-run diet wizard, now an optional post-onboarding studio. */
+    public const val PLAN_STUDIO: String = "f01/plan-studio"
 }

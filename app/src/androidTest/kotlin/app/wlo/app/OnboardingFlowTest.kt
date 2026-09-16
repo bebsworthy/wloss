@@ -1,15 +1,18 @@
 package app.wlo.app
 
 import android.os.SystemClock
+import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.assertIsSelected
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onAllNodesWithText
-import androidx.compose.ui.test.onFirst
+import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
+import androidx.compose.ui.test.performTextInput
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import org.junit.Assert.assertTrue
 import org.junit.Rule
@@ -17,10 +20,8 @@ import org.junit.Test
 import org.junit.runner.RunWith
 
 /**
- * F01 acceptance on the emulator (F01 §1): the full wizard completes offline
- * in under 3 minutes and lands on the Hub with the R-A5 ESTIMATED forecast;
- * the pace wall refuses in code, with the counter-offer card. Draft resume
- * lives in OnboardingResumeTest (it needs a rule-free activity lifecycle).
+ * Weight-first acceptance: onboarding completes offline without creating a
+ * Diet Plan, and optional goals never leak an ungated forecast date.
  */
 @RunWith(AndroidJUnit4::class)
 public class OnboardingFlowTest {
@@ -28,11 +29,11 @@ public class OnboardingFlowTest {
     public val composeTestRule = createAndroidComposeRule<MainActivity>()
 
     @Test
-    public fun happyPath_completesUnderThreeMinutes_andLandsOnHubWithEstimatedForecast() {
+    public fun happyPath_completesUnderThreeMinutes_andLandsOnUsefulWeight() {
         val startedAt = SystemClock.elapsedRealtime()
         val rule = composeTestRule
 
-        rule.onNodeWithTag("onboarding-step-WELCOME").assertIsDisplayed()
+        rule.onNodeWithTag("weight-first-onboarding").assertIsDisplayed()
         rule.driveToHub()
 
         val elapsedMs = SystemClock.elapsedRealtime() - startedAt
@@ -41,46 +42,43 @@ public class OnboardingFlowTest {
             elapsedMs < THREE_MINUTES_MS,
         )
 
-        // Hub after onboarding: trend, budget, forecast + the provenance pill
-        // (R-A5; WLO-0034 — one chip, the header's, lowercase per the chip
-        // vocabulary; the hand-built ESTIMATED stamp is gone).
+        // A raw first weight is useful without a Diet Plan. Forecast and
+        // calorie-plan cards stay absent until the shared safety contract and
+        // required facts support them.
         rule.onNodeWithTag("hub-trend-card").assertIsDisplayed()
-        val forecastRendered =
-            rule
-                .onAllNodesWithTag("hub-forecast-card", useUnmergedTree = true)
-                .fetchSemanticsNodes()
-                .isNotEmpty()
-        assertTrue("the cold-start forecast card must render on the fresh Hub", forecastRendered)
-        rule.onAllNodesWithText("estimated").onFirst().assertExists()
+        rule.onAllNodesWithTag("hub-forecast-card", useUnmergedTree = true).assertCountEquals(0)
     }
 
     @Test
-    public fun goalStep_paceAtTheCap_showsTheWallCounterOffer() {
+    public fun gainGoal_isSupportedButDoesNotShowAConfidentDate() {
         val rule = composeTestRule
-        rule.onNodeWithTag("onboarding-step-WELCOME").assertIsDisplayed()
-        rule.onNodeWithTag("onboarding-next").performClick()
-        rule.waitForIdle()
-        rule.onNodeWithTag("onboarding-step-GOAL").assertIsDisplayed()
+        rule.onNodeWithTag("weight-first-next").performClick()
+        rule.onNodeWithTag("weight-first-unit-kg").performClick()
+        rule.onNodeWithTag("weight-first-next").performClick()
+        rule.onNodeWithText("Gain").performClick()
+        rule.onNodeWithText("Gain goals are supported", substring = true).assertIsDisplayed()
+        rule.onAllNodesWithText("forecast date", substring = true).assertCountEquals(0)
+    }
 
-        // Drive the stats so the code-level wall lands UNDER the chosen pace:
-        // a lighter body burns less, and the calorie floor then forbids the
-        // default pace — the plan must counter-offer, never silently accept
-        // (F01 §4 fallback b: the refusal is in code, not copy).
-        repeat(STAT_TAPS) {
-            rule.onNodeWithTag("onboarding-current-weight-minus").performClick()
-        }
-        rule.waitForIdle()
-
-        rule
-            .onNodeWithText("The wall", substring = true)
-            .performScrollTo()
-            .assertIsDisplayed()
+    @Test
+    public fun poundChoice_drivesOnboarding_andRemainsTheOnlySettingsSwitch() {
+        val rule = composeTestRule
+        rule.onNodeWithTag("weight-first-next").performClick()
+        rule.onNodeWithTag("weight-first-unit-lb").performClick().assertIsSelected()
+        rule.onNodeWithTag("weight-first-next").performClick()
+        rule.onNodeWithTag("weight-first-next").performClick()
+        rule.onNodeWithTag("weight-first-source-manual").performClick()
+        rule.onNodeWithTag("weight-first-weight").performTextInput("180.8")
+        rule.onNodeWithTag("weight-first-finish").performClick()
+        TestNav.awaitRoutePumpingClock(rule, "f06/weight")
+        rule.onNodeWithContentDescription("Hub", useUnmergedTree = true).performClick()
+        rule.onNodeWithTag("hub-settings").performClick()
+        TestNav.awaitRoutePumpingClock(rule, "app/settings")
+        rule.onNodeWithTag("settings-unit-lb").performScrollTo().assertIsSelected()
+        rule.onNodeWithTag("settings-unit-kg").performClick().assertIsSelected()
     }
 
     private companion object {
         const val THREE_MINUTES_MS: Long = 180_000
-
-        /** 82 → 74 kg: at 74 kg the floor forbids 0.5 %/wk — the wall is live. */
-        const val STAT_TAPS: Int = 16
     }
 }

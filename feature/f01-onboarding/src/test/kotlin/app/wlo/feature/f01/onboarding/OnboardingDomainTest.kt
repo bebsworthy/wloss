@@ -1,5 +1,6 @@
 package app.wlo.feature.f01.onboarding
 
+import app.wlo.core.common.MassUnit
 import app.wlo.core.documents.Cadence
 import app.wlo.core.documents.ConstraintApplier
 import app.wlo.core.documents.Energy
@@ -60,12 +61,14 @@ class OnboardingDomainTest {
         val draft =
             OnboardingDraft(
                 step = "FORECAST",
+                massUnit = MassUnit.POUND.name,
                 sex = "female",
                 goalWeightKg = 74.0,
                 constraints = listOf("hate olives"),
             )
         val decoded = OnboardingDraftIO.decode(OnboardingDraftIO.encode(draft))
         assertEquals(draft, decoded)
+        assertEquals(MassUnit.POUND.name, decoded?.massUnit)
         assertNull(OnboardingDraftIO.decode("not json at all"))
         assertNull(OnboardingDraftIO.decode("{\"schemaVersion\":99,\"payload\":{}}"))
     }

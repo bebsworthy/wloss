@@ -1,30 +1,32 @@
-# ADR-001: KMP-ready core, Android-first UI
+# ADR-001: JVM-family shared core, Android-first UI
 
 **Status:** Accepted (owner decision q-000025, 2026-09-11; stack validated by research same day)
 **Decides:** T-A2, T-B3
 
 ## Context
 
-Owner wants the optionality of non-Android targets without paying for a second UI today.
-All WLO engines (F05/F07/F11 math) must already be pure, offline, deterministic Kotlin.
+WLO benefits from sharing deterministic core code between Android and JVM tests/tools,
+but has no funded or scheduled non-JVM product target. Calling every `commonMain` source
+portable obscures real JVM APIs used by storage, crypto, locale, and time code.
 
 ## Decision
 
-- **Structure:** Gradle Kotlin Multiplatform project. `commonMain` holds domain engines,
-  data layer, document/serialization logic, and the consent/egress contract. `androidMain`
+- **Structure:** Gradle Kotlin Multiplatform remains the source-set/build mechanism.
+  `commonMain` means shared by the current Android and JVM targets; it is not, by itself,
+  a promise that code compiles for iOS/JS/Native. `androidMain`
   holds UI (Jetpack Compose), Navigation, widgets (Glance), camera/ARCore, background
   work, and all platform integrations.
-- **Purity check:** CI keeps a JVM (desktop) target compiling `commonMain` as cheap
-  insurance that the core stays platform-free.
+- **Purity check:** CI keeps a JVM target compiling shared sources as protection against
+  accidental Android coupling. This proves JVM-family reuse, not platform neutrality.
 - **DI:** **Koin 4.2.x** (core + annotations) in `commonMain`, with the Koin
   compiler-plugin compile-safety checking enabled to catch missing definitions at build
   time (it is RC — if it proves immature, fall back to enabling Koin's
   verify-at-startup in debug builds, or move to kotlin-inject 0.9/kotlin-inject-anvil
   0.1.7). **Hilt stays out of `commonMain`** (Android-only per Google's docs); the
   Android-only UI layer may use Hilt or manual wiring later if it earns its keep.
-- **iOS path (future, no work now):** Compose Multiplatform for iOS has been
-  production-ready since CMP 1.8.0 (May 2025); Navigation Compose is mirrored for
-  non-Android targets, so a future iOS shell can reuse both core and navigation API.
+- **Non-JVM path:** deferred until there is a concrete consumer. A future target starts by
+  selecting genuinely portable modules (`model`, pure engines, documents, consent) and
+  introducing platform boundaries only where compilation proves they are required.
 
 ## Evidence (Sept 2026)
 
@@ -36,8 +38,8 @@ All WLO engines (F05/F07/F11 math) must already be pure, offline, deterministic 
 
 ## Consequences
 
-- Android-only staples (Hilt, niche AndroidX/Play libs) may not enter `commonMain` —
-  lint/enforce via the desktop purity target.
+- Android-only APIs may not enter `commonMain`; the JVM target and source scan enforce
+  that useful boundary. JVM APIs are allowed until a real non-JVM target is ratified.
 - Slight, permanent build complexity. Accepted as the price of the owner's optionality call.
 - Kotlin/language version pinned to what the KMP library matrix tolerates, verified
   2026-09-11: **Kotlin 2.4.x** (2.4.20 stable, Sept 2026), serialization 1.11.x,

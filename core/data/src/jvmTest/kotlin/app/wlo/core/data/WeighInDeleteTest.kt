@@ -36,7 +36,7 @@ class WeighInDeleteTest {
     private val measurements = RoomMeasurementRepository(db, projector)
     private val targets = RoomTargetsRepository(db)
     private val projection = RoomDayProjectionRepository(db, projector, targets)
-    private val weighIns = RoomWeighInRepository(measurements)
+    private val weighIns = RoomWeighInRepository(db, measurements, projector)
 
     @AfterTest
     fun tearDown() {
@@ -105,21 +105,21 @@ class WeighInDeleteTest {
 
             // Footing for the trend, then the typo + the real reading.
             for (back in 7L downTo 1L) weighIn(profileId, day - back, 95.0 + (7 - back) * 0.1)
-            val typo = weighIn(profileId, day, 5.9)
+            val typo = weighIn(profileId, day, 59.0)
             val real = weighIn(profileId, day, 95.2)
 
             // Before: the typo poisons the day — lowest-of-day picks it.
-            assertEquals(5.9, weighIns.lowestOfDay(profileId, day).okOrDie()?.valueReal)
+            assertEquals(59.0, weighIns.lowestOfDay(profileId, day).okOrDie()?.valueReal)
 
             val deleted = weighIns.deleteWeighIn(typo.event.id, clock.now()).okOrDie()
-            assertEquals(5.9, deleted.event.valueReal)
+            assertEquals(59.0, deleted.event.valueReal)
             assertEquals(1, deleted.attrs.size, "the outlier flag rides the snapshot for undo")
 
             // After: gone from the day view, the scalar view, and the trend input.
             assertTrue(weighIns.dayWeighIns(profileId, day).okOrDie().none { it.id == typo.event.id })
             assertEquals(95.2, weighIns.lowestOfDay(profileId, day).okOrDie()?.valueReal)
             assertTrue(
-                weighIns.dailyScalars(profileId, day - 14, day).okOrDie().none { it.epochDay == day && it.weightKg == 5.9 },
+                weighIns.dailyScalars(profileId, day - 14, day).okOrDie().none { it.epochDay == day && it.weightKg == 59.0 },
             )
 
             // The persisted TREND scalar recomputed: the day projection now reads
@@ -127,7 +127,7 @@ class WeighInDeleteTest {
             // stale one computed while the typo still stood.
             val canonical = weighIns.currentTrend(profileId, day).okOrDie()
             assertEquals(canonical.current?.value, dayViewTrendKg(profileId, day))
-            assertNull(weighIns.dayWeighIns(profileId, day).okOrDie().firstOrNull { it.valueReal == 5.9 })
+            assertNull(weighIns.dayWeighIns(profileId, day).okOrDie().firstOrNull { it.valueReal == 59.0 })
         }
 
     @Test
@@ -153,7 +153,7 @@ class WeighInDeleteTest {
             val profileId = aProfile()
             val day = today()
             for (back in 3L downTo 1L) weighIn(profileId, day - back, 95.0)
-            val flagged = weighIn(profileId, day, 5.9) // ±3σ off → flagged
+            val flagged = weighIn(profileId, day, 59.0) // ±3σ off → flagged
             weighIns.deleteWeighIn(flagged.event.id, clock.now()).okOrDie()
             assertTrue(measurements.attrsOf(flagged.event.id).okOrDie().isEmpty())
         }

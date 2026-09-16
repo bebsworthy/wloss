@@ -45,10 +45,15 @@ import app.wlo.feature.f13.vault.state.RestoreWizardViewModel
  * The staged-restore wizard (F13 §4 flow 1/3). Steps render one at a time:
  * pick → passphrase → STAGED REPORT (per-section counts, schema migrated-from
  * → to, warnings — nothing applied) → explicit confirm → applying → done.
- * The failure states are the feature: a hostile file gets a clean verdict and
- * the standing copy that NOTHING was changed — data loss by import is
- * structurally impossible (F13 §1, openScale's staged-and-validated restore).
+ * Hostile input is rejected without mutation. Once Apply begins, Room commits
+ * atomically and a durable journal rolls the remaining stores forward after a
+ * cancellation, failure, or process restart.
+ *
+ * The exhaustive wizard states intentionally stay together: each branch is a
+ * small declarative rendering of the same state machine, and splitting them
+ * into one-use wrappers would add indirection without reducing state coupling.
  */
+@Suppress("LongMethod")
 @Composable
 public fun RestoreWizardScreen(
     viewModel: RestoreWizardViewModel,
@@ -215,7 +220,7 @@ public fun RestoreWizardScreen(
                         )
                         WloButton(
                             label = "Continue",
-                            onClick = viewModel::confirmCommit,
+                            onClick = viewModel::continueToConfirm,
                             modifier = Modifier.testTag("f13-restore-continue"),
                         )
                     }
@@ -227,7 +232,8 @@ public fun RestoreWizardScreen(
                     Text(
                         text =
                             "Apply this restore? Your current data stays — restore adds and reconciles, " +
-                                "it never deletes. The apply is one all-or-nothing transaction.",
+                                "it never deletes. Room rows commit atomically; settings, documents, and " +
+                                "derived views then roll forward from a crash-recovery journal.",
                         style = wloType.body,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.testTag("f13-restore-confirm-copy"),
@@ -253,7 +259,7 @@ public fun RestoreWizardScreen(
                     modifier = Modifier.testTag("f13-restore-applying"),
                 )
                 Text(
-                    text = "One transaction, all-or-nothing — nothing is half-applied.",
+                    text = "Room commits atomically, then the remaining stores roll forward safely.",
                     style = wloType.caption,
                     color = wloExtendedColors.textTertiary,
                 )
@@ -301,8 +307,13 @@ public fun RestoreWizardScreen(
                     )
                     Text(
                         text =
-                            "Nothing was changed. Your data on this device is exactly as it was — " +
-                                "the file never reached it.",
+                            if (state.failure == VaultFailure.RECOVERY_PENDING) {
+                                "Room data may already be committed. WLO saved a recovery journal and " +
+                                    "will resume the remaining stores safely."
+                            } else {
+                                "Nothing was changed. Your data on this device is exactly as it was — " +
+                                    "the file never reached it."
+                            },
                         style = wloType.body,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.testTag("f13-restore-untouched"),
@@ -361,5 +372,6 @@ private fun failureTitle(failure: VaultFailure?): String =
         VaultFailure.FUTURE_VERSION -> "This file was made by a newer version of WLO"
         VaultFailure.SCHEMA_INVALID -> "The file's contents fail validation"
         VaultFailure.REFERENCE_BROKEN -> "The file references data that doesn't exist"
+        VaultFailure.RECOVERY_PENDING -> "Restore paused — recovery is queued"
         else -> "This file could not be restored"
     }

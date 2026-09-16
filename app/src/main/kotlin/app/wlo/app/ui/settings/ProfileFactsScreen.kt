@@ -92,12 +92,13 @@ public class ProfileFactsViewModel(
                     mutableState.value.copy(
                         loading = false,
                         sex = profile.sex,
-                        birthYearText = profile.birthYear.toString(),
+                        birthYearText = profile.birthYear?.toString().orEmpty(),
                         heightText =
-                            profile.heightCm.let { cm ->
-                                val tenths = (cm * 10).toLong()
-                                "${tenths / 10}.${tenths % 10}"
-                            },
+                            profile.heightCm
+                                ?.let { cm ->
+                                    val tenths = (cm * 10).toLong()
+                                    "${tenths / 10}.${tenths % 10}"
+                                }.orEmpty(),
                         activityLevel = profile.activityLevel,
                     )
             } ?: run { mutableState.value = mutableState.value.copy(loading = false) }
@@ -107,10 +108,14 @@ public class ProfileFactsViewModel(
     /** MVI-lite intent entry point. */
     public fun onEvent(event: ProfileFactsEvent) {
         when (event) {
-            is ProfileFactsEvent.SexChange -> mutableState.value = mutableState.value.copy(sex = event.sex, saved = false)
-            is ProfileFactsEvent.BirthYearChange -> mutableState.value = mutableState.value.copy(birthYearText = event.text, saved = false)
-            is ProfileFactsEvent.HeightChange -> mutableState.value = mutableState.value.copy(heightText = event.text, saved = false)
-            is ProfileFactsEvent.ActivityChange -> mutableState.value = mutableState.value.copy(activityLevel = event.level, saved = false)
+            is ProfileFactsEvent.SexChange ->
+                mutableState.value = mutableState.value.copy(sex = event.sex, saved = false)
+            is ProfileFactsEvent.BirthYearChange ->
+                mutableState.value = mutableState.value.copy(birthYearText = event.text, saved = false)
+            is ProfileFactsEvent.HeightChange ->
+                mutableState.value = mutableState.value.copy(heightText = event.text, saved = false)
+            is ProfileFactsEvent.ActivityChange ->
+                mutableState.value = mutableState.value.copy(activityLevel = event.level, saved = false)
             ProfileFactsEvent.Save -> save()
         }
     }
@@ -131,7 +136,8 @@ public class ProfileFactsViewModel(
             val profile = profiles.active().getOrNull() ?: return@launch
             when (profiles.updateFacts(profile.id, current.sex, birthYear, height, current.activityLevel)) {
                 is WloResult.Ok -> mutableState.value = mutableState.value.copy(saved = true, notice = null)
-                is WloResult.Err -> mutableState.value = mutableState.value.copy(notice = "that didn't save — nothing changed")
+                is WloResult.Err ->
+                    mutableState.value = mutableState.value.copy(notice = "that didn't save — nothing changed")
             }
         }
     }
@@ -196,7 +202,9 @@ public fun ProfileFactsScreen(
                     singleLine = true,
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                     textStyle = wloType.body,
-                    placeholder = { Text("birth year", style = wloType.caption, color = wloExtendedColors.textTertiary) },
+                    placeholder = {
+                        Text("birth year", style = wloType.caption, color = wloExtendedColors.textTertiary)
+                    },
                 )
                 OutlinedTextField(
                     value = state.heightText,
@@ -205,7 +213,9 @@ public fun ProfileFactsScreen(
                     singleLine = true,
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
                     textStyle = wloType.body,
-                    placeholder = { Text("height cm", style = wloType.caption, color = wloExtendedColors.textTertiary) },
+                    placeholder = {
+                        Text("height cm", style = wloType.caption, color = wloExtendedColors.textTertiary)
+                    },
                 )
             }
             Text(text = "Activity level (the formula multiplier).", style = wloType.caption)

@@ -27,7 +27,9 @@ public object WloColors {
     public val Outline: Color = Color(0xFF2A323D)
     public val TextPrimary: Color = Color(0xFFE8ECF1)
     public val TextSecondary: Color = Color(0xFF9AA6B5)
-    public val TextTertiary: Color = Color(0xFF5C6875)
+
+    // 4.68:1 against SurfaceRaised, the lowest dark-scheme contrast this token sees.
+    public val TextTertiary: Color = Color(0xFF808C9A)
 
     // Semantic states (§1.2) — no moral valence.
     public val Accent: Color = Color(0xFF3DD6A5)
@@ -42,6 +44,7 @@ public object WloColors {
     public val SurfaceLight: Color = Color(0xFFFFFFFF)
     public val SurfaceSunkenLight: Color = Color(0xFFEEF1F4)
     public val TextPrimaryLight: Color = Color(0xFF171C23)
+    public val TextTertiaryLight: Color = Color(0xFF5C6875)
 
     // Data-viz series (§1.3, Okabe-Ito).
     public val Series1: Color = Color(0xFF56B4E9)
@@ -65,9 +68,9 @@ public data class WloExtendedColors(
 )
 
 public val LocalWloExtendedColors: ProvidableCompositionLocal<WloExtendedColors> =
-    staticCompositionLocalOf { defaultExtendedColors }
+    staticCompositionLocalOf { darkExtendedColors }
 
-private val defaultExtendedColors =
+private val darkExtendedColors =
     WloExtendedColors(
         accentDim = WloColors.AccentDim,
         neutralDelta = WloColors.NeutralDelta,
@@ -78,6 +81,13 @@ private val defaultExtendedColors =
         surfaceRaised = WloColors.SurfaceRaised,
         surfaceSunken = WloColors.SurfaceSunken,
         series = listOf(WloColors.Series1, WloColors.Series2, WloColors.Series3, WloColors.Series4, WloColors.Series5),
+    )
+
+private val lightExtendedColors =
+    darkExtendedColors.copy(
+        textTertiary = WloColors.TextTertiaryLight,
+        surfaceRaised = WloColors.SurfaceLight,
+        surfaceSunken = WloColors.SurfaceSunkenLight,
     )
 
 private val darkScheme: ColorScheme =
@@ -141,7 +151,7 @@ public fun WloTheme(
     content: @Composable () -> Unit,
 ) {
     CompositionLocalProvider(
-        LocalWloExtendedColors provides defaultExtendedColors,
+        LocalWloExtendedColors provides if (darkTheme) darkExtendedColors else lightExtendedColors,
         LocalWloTypography provides typography,
     ) {
         MaterialTheme(

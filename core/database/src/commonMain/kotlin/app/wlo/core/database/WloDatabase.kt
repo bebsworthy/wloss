@@ -4,7 +4,9 @@ import androidx.room3.Database
 import androidx.room3.RoomDatabase
 
 /**
- * WLO relational core, schema v6 (M5 — the F03/F04 planning surface on the
+ * WLO relational core, schema v7 (weight-first onboarding makes optional
+ * health facts nullable rather than inventing placeholder values; M5 added the
+ * F03/F04 planning surface on the
  * M4 spine: recipes, grocery catalog, plan versions/slots, list items,
  * pantry, aisle corrections). Every schema change lands with a migration +
  * exported-schema test in the same PR (ADR-003 house rule); see [Migrations]
@@ -32,7 +34,7 @@ import androidx.room3.RoomDatabase
         PantryItemEntity::class,
         AisleCorrectionEntity::class,
     ],
-    version = 6,
+    version = 7,
     exportSchema = true,
 )
 public abstract class WloDatabase : RoomDatabase() {

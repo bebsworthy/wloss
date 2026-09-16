@@ -1,9 +1,12 @@
 package app.wlo.core.data
 
+import androidx.room3.withWriteTransaction
 import app.wlo.core.common.AppError
 import app.wlo.core.common.WloResult
-import app.wlo.core.common.getOrNull
 import app.wlo.core.common.map
+import app.wlo.core.database.MeasurementEventAttrEntity
+import app.wlo.core.database.MeasurementEventEntity
+import app.wlo.core.database.WloDatabase
 import app.wlo.core.engines.OutlierVerdict
 import app.wlo.core.engines.SmoothingEngine
 import app.wlo.core.engines.TrendSeries
@@ -17,6 +20,7 @@ import app.wlo.core.model.MeasurementSource
 import app.wlo.core.model.Provenance
 import app.wlo.core.model.TrendMethod
 import kotlinx.datetime.Instant
+import kotlin.uuid.Uuid
 
 /**
  * The weigh-in door (F06 §3 semantics over the R-B8 event store):
@@ -101,12 +105,37 @@ public interface WeighInRepository {
         eventId: String,
         at: Instant,
     ): WloResult<DeletedWeighIn>
+
+    /** Atomically replaces one user-owned weigh-in and repairs both affected suffixes. */
+    public suspend fun replaceWeighIn(
+        eventId: String,
+        dayEpochDay: Long,
+        weightKg: Double,
+        capturedAt: Instant,
+        editedDescription: String,
+    ): WloResult<ReplacedWeighIn>
+
+    /** Atomically restores a delete snapshot for the logbook's in-memory undo. */
+    public suspend fun restoreWeighIn(snapshot: DeletedWeighIn): WloResult<MeasurementEvent>
+}
+
+/** Stable domain-owned sidecar keys; features do not depend on Room implementation constants. */
+public enum class WeighInAttribute(
+    public val wireName: String,
+) {
+    OUTLIER("outlier"),
+    EDITED("edited"),
 }
 
 /** The undo snapshot: what was deleted, sidecar included. */
 public data class DeletedWeighIn(
     public val event: MeasurementEvent,
     public val attrs: List<MeasurementAttr>,
+)
+
+public data class ReplacedWeighIn(
+    public val original: DeletedWeighIn,
+    public val replacement: WeighInOutcome,
 )
 
 /**
@@ -133,9 +162,26 @@ public data class WeighInOutcome(
 /** Trailing window the outlier guard and default trend recompute look back over. */
 internal const val WEIGH_IN_TRAILING_DAYS: Long = 14
 
-public class RoomWeighInRepository public constructor(
+internal enum class WeighInMutationStage {
+    RAW_EVENT_WRITTEN,
+    ATTRIBUTES_WRITTEN,
+    ORIGINAL_DELETED,
+    TRENDS_REBUILT,
+    PROJECTIONS_REBUILT,
+}
+
+public class RoomWeighInRepository internal constructor(
+    private val db: WloDatabase,
     private val measurements: MeasurementRepository,
+    private val projector: DayProjector,
+    private val mutationProbe: suspend (WeighInMutationStage) -> Unit,
 ) : WeighInRepository {
+    public constructor(
+        db: WloDatabase,
+        measurements: MeasurementRepository,
+        projector: DayProjector,
+    ) : this(db, measurements, projector, {})
+
     override suspend fun appendWeighIn(
         profileId: String,
         dayEpochDay: Long,
@@ -144,133 +190,105 @@ public class RoomWeighInRepository public constructor(
         source: String,
         note: String?,
     ): WloResult<WeighInOutcome> {
-        // Guard window: the trailing days BEFORE the new event (the candidate
-        // is never part of its own σ).
-        val recent =
-            measurements
-                .range(profileId, dayEpochDay - WEIGH_IN_TRAILING_DAYS, dayEpochDay - 1)
-                .getOrNull()
-                ?.filter { it.kind == MeasurementKind.WEIGHT }
-                ?.groupBy { it.dayEpochDay }
-                ?.map { (_, events) -> events.minOf { it.valueReal } }
-                ?: emptyList()
-        val verdict = SmoothingEngine.outlierVerdict(weightKg, recent)
-
-        val appended =
-            measurements.append(
-                NewMeasurement(
-                    profileId = profileId,
-                    dayEpochDay = dayEpochDay,
-                    kind = MeasurementKind.WEIGHT,
-                    valueReal = weightKg,
-                    source = source,
-                    capturedAt = capturedAt,
-                    note = note,
-                ),
-            )
-        val event =
-            when (appended) {
-                is WloResult.Ok -> appended.value
-                is WloResult.Err -> return WloResult.err(appended.error)
+        invalidWeight(weightKg)?.let { return WloResult.err(it) }
+        return weighInMutationGuard("weighIn.append") {
+            db.withWriteTransaction {
+                val verdict = outlierVerdict(profileId, dayEpochDay, weightKg)
+                val entity = weightEntity(profileId, dayEpochDay, weightKg, capturedAt, source, note)
+                db.measurementEvents().insert(entity)
+                mutationProbe(WeighInMutationStage.RAW_EVENT_WRITTEN)
+                writeOutlierAttribute(entity.id, verdict)
+                mutationProbe(WeighInMutationStage.ATTRIBUTES_WRITTEN)
+                repairTrendSuffix(profileId, dayEpochDay, capturedAt)
+                WeighInOutcome(entity.toDomain(), verdict)
             }
-
-        if (verdict is OutlierVerdict.Flagged) {
-            // R-B8: the flag is metadata on the kept event, not a verdict on
-            // the person — the logbook shows it, projections still count it.
-            measurements.attachAttrs(
-                event.id,
-                listOf(
-                    MeasurementAttr(
-                        eventId = event.id,
-                        attr = OUTLIER_ATTR,
-                        valueText = "flagged",
-                        valueReal = verdict.residualKg,
-                    ),
-                ),
-            )
         }
-
-        // Persist today's trend scalar (the canonical current-trend answer —
-        // the same computation [currentTrend] serves) so the day view and F07's
-        // contract (R-B5) read one consistent series. The last TREND event of a
-        // day wins in the projection — recompute-safe, append-only.
-        currentTrend(profileId, dayEpochDay)
-            .getOrNull()
-            ?.current
-            ?.let { current ->
-                measurements.append(
-                    NewMeasurement(
-                        profileId = profileId,
-                        dayEpochDay = dayEpochDay,
-                        kind = MeasurementKind.TREND,
-                        valueReal = current.value,
-                        source = MeasurementSource.ENGINE,
-                        capturedAt = capturedAt,
-                        note = current.provenance.toString(),
-                    ),
-                )
-            }
-
-        return WloResult.ok(WeighInOutcome(event, verdict))
     }
 
     override suspend fun deleteWeighIn(
         eventId: String,
         at: Instant,
-    ): WloResult<DeletedWeighIn> {
-        val event =
-            when (val fetched = measurements.byId(eventId)) {
-                is WloResult.Ok -> fetched.value
-                is WloResult.Err -> return WloResult.err(fetched.error)
-            } ?: return WloResult.err(AppError.InvalidInput("no measurement event $eventId"))
-        if (event.kind != MeasurementKind.WEIGHT) {
-            return WloResult.err(AppError.InvalidInput("event $eventId is a ${event.kind.wireName}, not a weigh-in"))
-        }
-        val attrs =
-            when (val sidecar = measurements.attrsOf(eventId)) {
-                is WloResult.Ok -> sidecar.value
-                is WloResult.Err -> return WloResult.err(sidecar.error)
+    ): WloResult<DeletedWeighIn> =
+        weighInMutationGuard("weighIn.delete") {
+            db.withWriteTransaction {
+                val entity = requireWeightEntity(eventId)
+                val attrs = db.measurementEventAttrs().forEvent(eventId).map { it.toDomain() }
+                db.measurementEventAttrs().deleteForEvent(eventId)
+                db.measurementEvents().deleteById(eventId)
+                mutationProbe(WeighInMutationStage.ORIGINAL_DELETED)
+                repairTrendSuffix(entity.profileId, entity.dayEpochDay, at)
+                DeletedWeighIn(entity.toDomain(), attrs)
             }
-
-        when (val deleted = measurements.delete(eventId)) {
-            is WloResult.Ok -> deleted
-            is WloResult.Err -> return WloResult.err(deleted.error)
         }
 
-        // The day's persisted TREND scalar must not outlive its inputs: if
-        // weigh-ins remain, recompute through the one canonical door (the
-        // append persists a fresh scalar — last-in-wins, recompute-safe); if
-        // the day emptied, drop its trend scalars entirely.
-        val remaining =
-            measurements
-                .range(event.profileId, event.dayEpochDay, event.dayEpochDay)
-                .getOrNull()
-                .orEmpty()
-                .filter { it.kind == MeasurementKind.WEIGHT }
-        if (remaining.isEmpty()) {
-            when (val dropped = measurements.deleteTrendScalars(event.profileId, event.dayEpochDay)) {
-                is WloResult.Ok -> dropped
-                is WloResult.Err -> return WloResult.err(dropped.error)
-            }
-        } else {
-            currentTrend(event.profileId, event.dayEpochDay)
-                .getOrNull()
-                ?.current
-                ?.let { current ->
-                    measurements.append(
-                        NewMeasurement(
-                            profileId = event.profileId,
-                            dayEpochDay = event.dayEpochDay,
-                            kind = MeasurementKind.TREND,
-                            valueReal = current.value,
-                            source = MeasurementSource.ENGINE,
-                            capturedAt = at,
-                            note = current.provenance.toString(),
-                        ),
+    override suspend fun replaceWeighIn(
+        eventId: String,
+        dayEpochDay: Long,
+        weightKg: Double,
+        capturedAt: Instant,
+        editedDescription: String,
+    ): WloResult<ReplacedWeighIn> {
+        invalidWeight(weightKg)?.let { return WloResult.err(it) }
+        return weighInMutationGuard("weighIn.replace") {
+            db.withWriteTransaction {
+                val original = requireWeightEntity(eventId)
+                val originalAttrs = db.measurementEventAttrs().forEvent(eventId).map { it.toDomain() }
+                val verdict = outlierVerdict(original.profileId, dayEpochDay, weightKg, excludingEventId = eventId)
+                val replacement =
+                    weightEntity(
+                        profileId = original.profileId,
+                        dayEpochDay = dayEpochDay,
+                        weightKg = weightKg,
+                        capturedAt = capturedAt,
+                        source = original.source,
+                        note = original.note,
                     )
-                }
+                db.measurementEvents().insert(replacement)
+                mutationProbe(WeighInMutationStage.RAW_EVENT_WRITTEN)
+                val carried =
+                    originalAttrs
+                        .filterNot {
+                            it.attr == WeighInAttribute.OUTLIER.wireName ||
+                                it.attr == WeighInAttribute.EDITED.wireName
+                        }.map { it.copy(eventId = replacement.id) }
+                writeAttributes(
+                    carried +
+                        MeasurementAttr(
+                            eventId = replacement.id,
+                            attr = WeighInAttribute.EDITED.wireName,
+                            valueText = editedDescription,
+                        ),
+                )
+                writeOutlierAttribute(replacement.id, verdict)
+                mutationProbe(WeighInMutationStage.ATTRIBUTES_WRITTEN)
+                db.measurementEventAttrs().deleteForEvent(eventId)
+                db.measurementEvents().deleteById(eventId)
+                mutationProbe(WeighInMutationStage.ORIGINAL_DELETED)
+                repairTrendSuffix(original.profileId, minOf(original.dayEpochDay, dayEpochDay), capturedAt)
+                ReplacedWeighIn(
+                    original = DeletedWeighIn(original.toDomain(), originalAttrs),
+                    replacement = WeighInOutcome(replacement.toDomain(), verdict),
+                )
+            }
         }
-        return WloResult.ok(DeletedWeighIn(event, attrs))
+    }
+
+    override suspend fun restoreWeighIn(snapshot: DeletedWeighIn): WloResult<MeasurementEvent> {
+        invalidWeight(snapshot.event.valueReal)?.let { return WloResult.err(it) }
+        if (snapshot.event.kind != MeasurementKind.WEIGHT) {
+            return WloResult.err(AppError.InvalidInput("only a weigh-in snapshot can be restored"))
+        }
+        return weighInMutationGuard("weighIn.restore") {
+            db.withWriteTransaction {
+                val entity = snapshot.event.toEntity()
+                db.measurementEvents().insert(entity)
+                mutationProbe(WeighInMutationStage.RAW_EVENT_WRITTEN)
+                writeAttributes(snapshot.attrs.map { it.copy(eventId = entity.id) })
+                mutationProbe(WeighInMutationStage.ATTRIBUTES_WRITTEN)
+                repairTrendSuffix(entity.profileId, entity.dayEpochDay, snapshot.event.capturedAt)
+                entity.toDomain()
+            }
+        }
     }
 
     override suspend fun dayWeighIns(
@@ -347,6 +365,154 @@ public class RoomWeighInRepository public constructor(
             }
         }
 
+    private suspend fun outlierVerdict(
+        profileId: String,
+        dayEpochDay: Long,
+        weightKg: Double,
+        excludingEventId: String? = null,
+    ): OutlierVerdict {
+        val recent =
+            db
+                .measurementEvents()
+                .rangeOfKind(
+                    profileId,
+                    MeasurementKind.WEIGHT.wireName,
+                    dayEpochDay - WEIGH_IN_TRAILING_DAYS,
+                    dayEpochDay - 1,
+                ).filterNot { it.id == excludingEventId }
+                .groupBy { it.dayEpochDay }
+                .map { (_, events) -> events.minOf { it.valueReal } }
+        return SmoothingEngine.outlierVerdict(weightKg, recent)
+    }
+
+    private fun weightEntity(
+        profileId: String,
+        dayEpochDay: Long,
+        weightKg: Double,
+        capturedAt: Instant,
+        source: String,
+        note: String?,
+    ): MeasurementEventEntity =
+        MeasurementEventEntity(
+            id = Uuid.random().toString(),
+            profileId = profileId,
+            dayEpochDay = dayEpochDay,
+            kind = MeasurementKind.WEIGHT.wireName,
+            valueReal = weightKg,
+            unit = MeasurementKind.WEIGHT.unit,
+            source = source,
+            capturedAtEpochMs = capturedAt.toEpochMilliseconds(),
+            note = note,
+        )
+
+    private suspend fun writeOutlierAttribute(
+        eventId: String,
+        verdict: OutlierVerdict,
+    ) {
+        if (verdict is OutlierVerdict.Flagged) {
+            writeAttributes(
+                listOf(
+                    MeasurementAttr(
+                        eventId = eventId,
+                        attr = WeighInAttribute.OUTLIER.wireName,
+                        valueText = "flagged",
+                        valueReal = verdict.residualKg,
+                    ),
+                ),
+            )
+        }
+    }
+
+    private suspend fun writeAttributes(attrs: List<MeasurementAttr>) {
+        if (attrs.isEmpty()) return
+        db.measurementEventAttrs().upsertAll(
+            attrs.map { MeasurementEventAttrEntity(it.eventId, it.attr, it.valueText, it.valueReal) },
+        )
+    }
+
+    private suspend fun requireWeightEntity(eventId: String): MeasurementEventEntity {
+        val event =
+            db.measurementEvents().byId(eventId)
+                ?: throw InvalidWeighInMutation("no measurement event $eventId")
+        if (event.kind != MeasurementKind.WEIGHT.wireName) {
+            throw InvalidWeighInMutation("event $eventId is a ${event.kind}, not a weigh-in")
+        }
+        return event
+    }
+
+    /**
+     * Rebuilds every persisted EWMA point whose input window can have changed,
+     * then refreshes the same projection suffix inside the caller's transaction.
+     */
+    private suspend fun repairTrendSuffix(
+        profileId: String,
+        fromDay: Long,
+        at: Instant,
+    ) {
+        val dao = db.measurementEvents()
+        val weights =
+            dao.rangeOfKind(
+                profileId,
+                MeasurementKind.WEIGHT.wireName,
+                fromDay - TREND_WINDOW_DAYS + 1,
+                Long.MAX_VALUE,
+            )
+        // Include previously persisted trend days as well as surviving weight
+        // days: moving/deleting a day's final raw event must clear that now-
+        // empty day's scalar and projection.
+        val existingTrendDays =
+            dao.rangeOfKind(profileId, MeasurementKind.TREND.wireName, fromDay, Long.MAX_VALUE).map { it.dayEpochDay }
+        val affectedDays =
+            (listOf(fromDay) + existingTrendDays + weights.map { it.dayEpochDay }.filter { it >= fromDay })
+                .distinct()
+                .sorted()
+        affectedDays.forEach { day ->
+            val oldTrendIds =
+                dao.rangeOfKind(profileId, MeasurementKind.TREND.wireName, day, day).map { it.id }
+            oldTrendIds.forEach { db.measurementEventAttrs().deleteForEvent(it) }
+            dao.deleteKindForDay(profileId, day, MeasurementKind.TREND.wireName)
+
+            val samples =
+                weights
+                    .asSequence()
+                    .filter { it.dayEpochDay in (day - TREND_WINDOW_DAYS + 1)..day }
+                    .groupBy { it.dayEpochDay }
+                    .map { (sampleDay, events) -> WeightSample(sampleDay, events.minOf { it.valueReal }) }
+                    .sortedBy { it.epochDay }
+            if (samples.isNotEmpty() && weights.any { it.dayEpochDay == day }) {
+                val current =
+                    SmoothingEngine
+                        .trend(samples)
+                        .points
+                        .last()
+                        .trendKg
+                dao.insert(
+                    MeasurementEventEntity(
+                        id = Uuid.random().toString(),
+                        profileId = profileId,
+                        dayEpochDay = day,
+                        kind = MeasurementKind.TREND.wireName,
+                        valueReal = current.value,
+                        unit = MeasurementKind.TREND.unit,
+                        source = MeasurementSource.ENGINE,
+                        capturedAtEpochMs = at.toEpochMilliseconds(),
+                        note = current.provenance.toString(),
+                    ),
+                )
+            }
+        }
+        mutationProbe(WeighInMutationStage.TRENDS_REBUILT)
+        projector.refresh(profileId, fromDay, affectedDays.last())
+        mutationProbe(WeighInMutationStage.PROJECTIONS_REBUILT)
+    }
+
+    private fun invalidWeight(weightKg: Double): AppError.InvalidInput? =
+        if (!weightKg.isFinite() || weightKg !in MIN_WEIGHT_KG..MAX_WEIGHT_KG) {
+            AppError.InvalidInput("weightKg must be finite and between $MIN_WEIGHT_KG and $MAX_WEIGHT_KG kg")
+        } else {
+            null
+        }
+
     /** The series' formula version from its points' provenance (EWMA default). */
     private fun seriesFormulaVersion(series: app.wlo.core.engines.TrendSeries): String =
         (
@@ -358,9 +524,6 @@ public class RoomWeighInRepository public constructor(
             ?: ConstantsRegistry.EWMA_FORMULA_VERSION
 
     public companion object {
-        /** EAV attr key carrying the outlier flag (F06 §4, kept-verbatim rule). */
-        public const val OUTLIER_ATTR: String = "outlier"
-
         /**
          * THE canonical trend window (days of daily scalars): [currentTrend]
          * computes over it and the append path persists its answer — one
@@ -370,5 +533,42 @@ public class RoomWeighInRepository public constructor(
 
         /** The weekly delta lookback (days) behind the last trend point. */
         public const val DELTA_WINDOW_DAYS: Long = 7
+
+        /** Broad adult plausibility rail; display-unit conversion happens before this canonical-kg door. */
+        public const val MIN_WEIGHT_KG: Double = 30.0
+        public const val MAX_WEIGHT_KG: Double = 300.0
     }
 }
+
+private class InvalidWeighInMutation(
+    message: String,
+) : IllegalArgumentException(message)
+
+private suspend inline fun <T> weighInMutationGuard(
+    detail: String,
+    block: () -> T,
+): WloResult<T> =
+    try {
+        WloResult.ok(block())
+    } catch (invalid: InvalidWeighInMutation) {
+        WloResult.err(AppError.InvalidInput(invalid.message ?: detail))
+    } catch (cancellation: kotlinx.coroutines.CancellationException) {
+        throw cancellation
+    } catch (t: Throwable) {
+        WloResult.err(AppError.Storage(cause = t, detail = detail))
+    }
+
+private fun MeasurementEventAttrEntity.toDomain(): MeasurementAttr = MeasurementAttr(eventId, attr, valueText, valueReal)
+
+private fun MeasurementEvent.toEntity(): MeasurementEventEntity =
+    MeasurementEventEntity(
+        id = id,
+        profileId = profileId,
+        dayEpochDay = dayEpochDay,
+        kind = kind.wireName,
+        valueReal = valueReal,
+        unit = unit,
+        source = source,
+        capturedAtEpochMs = capturedAt.toEpochMilliseconds(),
+        note = note,
+    )

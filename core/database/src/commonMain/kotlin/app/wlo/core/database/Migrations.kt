@@ -359,8 +359,29 @@ public object Migrations {
             }
         }
 
+    /** Weight-first onboarding no longer fabricates demographics just to create a usable profile. */
+    public val MIGRATION_6_7: Migration =
+        object : Migration(6, 7) {
+            override suspend fun migrate(connection: SQLiteConnection) {
+                connection.exec(
+                    "CREATE TABLE IF NOT EXISTS `profiles_new` (" +
+                        "`id` TEXT NOT NULL, `sex` TEXT, `birthYear` INTEGER, `heightCm` REAL, " +
+                        "`startWeightKg` REAL, `activityLevel` TEXT NOT NULL, " +
+                        "`unitPreference` TEXT NOT NULL, `createdAtEpochMs` INTEGER NOT NULL, " +
+                        "`archivedAtEpochMs` INTEGER, PRIMARY KEY(`id`))",
+                )
+                connection.exec(
+                    "INSERT INTO `profiles_new` SELECT `id`, `sex`, `birthYear`, `heightCm`, " +
+                        "`startWeightKg`, `activityLevel`, `unitPreference`, `createdAtEpochMs`, " +
+                        "`archivedAtEpochMs` FROM `profiles`",
+                )
+                connection.exec("DROP TABLE `profiles`")
+                connection.exec("ALTER TABLE `profiles_new` RENAME TO `profiles`")
+            }
+        }
+
     public val ALL: Array<Migration> =
-        arrayOf(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6)
+        arrayOf(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7)
 }
 
 /** Small extension mirroring the statement-prepare/step pattern used above. */

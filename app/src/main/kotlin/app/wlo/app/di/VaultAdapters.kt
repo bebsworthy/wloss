@@ -3,14 +3,10 @@ package app.wlo.app.di
 import app.wlo.core.common.WloResult
 import app.wlo.core.common.getOrNull
 import app.wlo.core.data.DiaryRepository
-import app.wlo.core.data.MeasurementRepository
-import app.wlo.core.data.NewMeasurement
 import app.wlo.core.data.ProfileRepository
 import app.wlo.core.database.WloDatabase
 import app.wlo.core.datastore.JsonDocumentStore
 import app.wlo.core.datastore.SettingsStore
-import app.wlo.core.model.MeasurementAttr
-import app.wlo.core.model.MeasurementKind
 import app.wlo.core.network.EgressLedger
 import app.wlo.core.network.EgressReceipt
 import app.wlo.core.network.ReceiptChain
@@ -43,6 +39,7 @@ import app.wlo.core.vault.BackupOptions
 import app.wlo.core.vault.BackupSchema
 import app.wlo.core.vault.BackupStoreFactory
 import app.wlo.core.vault.CsvColumnMapping
+import app.wlo.core.vault.CsvImportCommitter
 import app.wlo.core.vault.CsvMappingSniffer
 import app.wlo.core.vault.CsvMeasurementImporter
 import app.wlo.core.vault.CsvTable
@@ -56,6 +53,7 @@ import app.wlo.core.vault.StagedRestorer
 import app.wlo.core.vault.VaultFileStore
 import app.wlo.core.vault.VaultKeys
 import app.wlo.feature.f01.onboarding.domain.FinishOnboarding
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -138,7 +136,7 @@ public class VaultPortAdapter(
     private val settings: SettingsStore,
     private val documents: JsonDocumentStore,
     private val db: WloDatabase,
-    private val measurements: MeasurementRepository,
+    private val csvCommitter: CsvImportCommitter,
     private val diaries: DiaryRepository,
     private val profiles: ProfileRepository,
     private val clock: app.wlo.core.common.ClockPort,
@@ -187,9 +185,15 @@ public class VaultPortAdapter(
         return try {
             val outcome = manager.backupNow(destination = folder, passphrase = passphrase)
             VaultBackupOutcome(fileName = outcome.fileName, sizeBytes = outcome.sizeBytes, retired = outcome.retired)
+        } catch (cancellation: CancellationException) {
+            throw cancellation
         } catch (noKey: IllegalStateException) {
             // BackupManager: "no auto-backup key stored — set up … first".
-            throw VaultOperationException(VaultFailure.NO_AUTO_KEY, noKey.message ?: "no stored auto-backup key")
+            throw VaultOperationException(
+                VaultFailure.NO_AUTO_KEY,
+                noKey.message ?: "no stored auto-backup key",
+                noKey,
+            )
         }
     }
 
@@ -210,9 +214,17 @@ public class VaultPortAdapter(
             try {
                 restorer.stage(bytes, passphrase)
             } catch (container: BackupContainerException) {
-                throw VaultOperationException(container.reason.toPort(), container.message ?: "unreadable container")
+                throw VaultOperationException(
+                    container.reason.toPort(),
+                    container.message ?: "unreadable container",
+                    container,
+                )
             } catch (document: BackupDocumentException) {
-                throw VaultOperationException(document.reason.toPort(), document.message ?: "unreadable document")
+                throw VaultOperationException(
+                    document.reason.toPort(),
+                    document.message ?: "unreadable document",
+                    document,
+                )
             }
         pendingRestore = staged
         restorePending.value = true
@@ -233,7 +245,11 @@ public class VaultPortAdapter(
             try {
                 ExportBundle.decodeBundle(bytes)
             } catch (document: BackupDocumentException) {
-                throw VaultOperationException(document.reason.toPort(), document.message ?: "unreadable export bundle")
+                throw VaultOperationException(
+                    document.reason.toPort(),
+                    document.message ?: "unreadable export bundle",
+                    document,
+                )
             }
         // Bundles ride the SAME commit door as restores: wrap the decoded
         // payload as a staged restore. decodeBundle already ran the typed
@@ -278,11 +294,29 @@ public class VaultPortAdapter(
             else -> 0
         }
 
+    /**
+     * Restore phases cross Room, DataStore, and projection APIs, so there is no
+     * narrower shared exception type. Preserve cancellation and retain the
+     * original cause while translating other failures into the recovery-aware
+     * port contract.
+     */
+    @Suppress("TooGenericExceptionCaught")
     override suspend fun commitStaged(): VaultRestoreCommitReport {
         val staged =
             pendingRestore
                 ?: throw VaultOperationException(VaultFailure.BAD_HEADER, "nothing staged — validate a file first")
-        val result = committer.commit(staged)
+        val result =
+            try {
+                committer.commit(staged)
+            } catch (cancellation: CancellationException) {
+                throw cancellation
+            } catch (failure: Exception) {
+                throw VaultOperationException(
+                    VaultFailure.RECOVERY_PENDING,
+                    "restore paused after a durable journal was saved; WLO will safely resume: ${failure.message}",
+                    failure,
+                )
+            }
         pendingRestore = null
         restorePending.value = false
         return VaultRestoreCommitReport(
@@ -356,49 +390,29 @@ public class VaultPortAdapter(
         val profileId =
             activeProfile?.id
                 ?: throw VaultOperationException(VaultFailure.BAD_HEADER, "no profile to import against")
-        val now = clock.now()
-        var inserted = 0
-        for (row in rows) {
-            val kind =
-                MeasurementKind.entries.firstOrNull { it.wireName == row.kind }
-                    ?: continue
-            val appended = measurements.append(toNewMeasurement(profileId, row, kind, now))
-            if (appended is WloResult.Ok) {
-                inserted++
-                row.customName?.let { name ->
-                    measurements.attachAttrs(
-                        appended.value.id,
-                        listOf(MeasurementAttr(eventId = appended.value.id, attr = METRIC_ATTR, valueText = name)),
-                    )
-                }
-            }
-        }
+        val result = csvCommitter.commit(profileId, rows)
         pendingCsv = emptyList()
-        return VaultCsvStagedReport(stagedRows = inserted, warnings = emptyList())
+        return VaultCsvStagedReport(
+            stagedRows = result.inserted,
+            warnings =
+                if (result.skipped == 0) {
+                    emptyList()
+                } else {
+                    listOf("${result.skipped} row(s) already present or unsupported")
+                },
+        )
     }
 
     private suspend fun parseTable(bytes: ByteArray): CsvTable =
         try {
             CsvTable.parse(bytes.toString(Charsets.UTF_8))
         } catch (failure: IllegalArgumentException) {
-            throw VaultOperationException(VaultFailure.WRONG_FORMAT, failure.message ?: "not a CSV table")
+            throw VaultOperationException(
+                VaultFailure.WRONG_FORMAT,
+                failure.message ?: "not a CSV table",
+                failure,
+            )
         }
-
-    private fun toNewMeasurement(
-        profileId: String,
-        row: CsvMeasurementImporter.StagedMeasurement,
-        kind: MeasurementKind,
-        now: kotlin.time.Instant,
-    ): NewMeasurement =
-        NewMeasurement(
-            profileId = profileId,
-            dayEpochDay = row.dayEpochDay,
-            kind = kind,
-            valueReal = row.valueReal,
-            source = row.source,
-            capturedAt = now,
-            unitOverride = row.unit.ifBlank { null },
-        )
 
     // --- Fresh Start (R-B7) -------------------------------------------------------------
 

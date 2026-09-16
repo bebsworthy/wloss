@@ -25,9 +25,9 @@ public data class ProfileEntity(
     public val id: String,
     /** Wire name of [app.wlo.core.model.Sex]; null = undisclosed. */
     public val sex: String?,
-    public val birthYear: Int,
-    public val heightCm: Double,
-    public val startWeightKg: Double,
+    public val birthYear: Int?,
+    public val heightCm: Double?,
+    public val startWeightKg: Double?,
     /** Wire name of [app.wlo.core.model.ActivityLevel]. */
     public val activityLevel: String,
     /** "metric" default, "imperial" a user setting (R-D10). */

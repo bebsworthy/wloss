@@ -25,6 +25,9 @@ kotlin {
         compilerOptions {
             jvmTarget = JvmTarget.JVM_17
         }
+        // Compile and run common tests against the Android host as well as the
+        // JVM target; otherwise commonTest silently exists without coverage.
+        withHostTest {}
     }
     jvm {
         compilerOptions {

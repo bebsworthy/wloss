@@ -94,14 +94,23 @@ android {
     }
 
     lint {
-        abortOnError = false
+        // Reviewed legacy warnings may be baselined, but correctness/security
+        // errors must stop shipping builds (WLO-0065).
+        abortOnError = true
     }
 }
 
-// D4 backstop: the merged debug manifest is inspected as part of
-// `checkArchitecture` (root wires the dependency; AGP produces the output).
+// D4/D10 backstop: both shipping manifest shapes are inspected as part of
+// `checkArchitecture` (root wires the dependency; AGP produces the outputs).
+// The rule XML is an input too, so weakening an exclusion fails the same gate.
 tasks.register("checkMergedManifest", app.wlo.buildlogic.arch.CheckMergedManifestTask::class) {
-    val manifestTask = tasks.named("processDebugMainManifest")
-    dependsOn(manifestTask)
-    mergedManifests.from(manifestTask.map { it.outputs.files })
+    val debugManifestTask = tasks.named("processDebugManifest")
+    val releaseManifestTask = tasks.named("processReleaseManifest")
+    dependsOn(debugManifestTask, releaseManifestTask)
+    debugMergedManifests.from(debugManifestTask.map { it.outputs.files })
+    releaseMergedManifests.from(releaseManifestTask.map { it.outputs.files })
+    backupRuleFiles.from(
+        layout.projectDirectory.file("src/main/res/xml/backup_rules.xml"),
+        layout.projectDirectory.file("src/main/res/xml/data_extraction_rules.xml"),
+    )
 }

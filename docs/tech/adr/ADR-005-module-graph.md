@@ -39,11 +39,12 @@ clock-free engines (D7), no exceptions across module boundaries (D8).
 
 ### 2. KMP targets posture
 
-Core modules compile `commonMain` against a **JVM target (the purity target)** plus an
+Core modules compile `commonMain` against a **JVM host target** plus an
 **Android (library) target** where the module touches the platform (`:core:database`
 for Room's Android driver wiring, `:core:designsystem` for Compose). Pure modules
 (`:core:model`, `:core:engines`, `:core:ports`, `:core:documents`) may be JVM-only
-until a second platform needs them. No iOS target is declared now (ADR-001).
+until a second platform needs them. This enforces Android independence, not general
+platform portability; no iOS/Native/JS target is declared now (ADR-001).
 
 ### 3. Application id / package namespace
 
@@ -61,7 +62,8 @@ standing as the confirmed default meanwhile.
 - Every later milestone inherits enforcement: a violation fails the build, not a review.
 - The lean set means `:core:data` (repository layer) arrives in M2 together with the
   first real schema — repositories are not stubbed in M1.
-- `checkArchitecture` is a Gradle task (resolved-configuration graph + source scans)
+- `checkArchitecture` is a Gradle task (declared project graph, resolved production
+  classpaths for transitive egress stacks, and source scans)
   with a **self-test**: the build can demonstrate each rule failing on a synthetic
   violation, and CI runs that demonstration so the checks themselves can't rot.
 - If the owner later renames the application id before first release, it is a

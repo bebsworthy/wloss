@@ -2,30 +2,44 @@ package app.wlo.app
 
 import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.semantics.SemanticsProperties
+import androidx.compose.ui.test.centerLeft
+import androidx.compose.ui.test.centerRight
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
-import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onAllNodesWithContentDescription
+import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onFirst
 import androidx.compose.ui.test.onNodeWithTag
+import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performSemanticsAction
 import androidx.compose.ui.test.performTextClearance
 import androidx.compose.ui.test.performTextInput
 import androidx.compose.ui.test.performTouchInput
-import androidx.compose.ui.test.centerLeft
-import androidx.compose.ui.test.centerRight
 import androidx.compose.ui.test.swipe
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import androidx.test.uiautomator.UiDevice
+import app.wlo.core.common.ClockPort
+import app.wlo.core.common.DayBoundary
+import app.wlo.core.common.MassUnit
+import app.wlo.core.common.getOrNull
+import app.wlo.core.data.MeasurementRepository
+import app.wlo.core.data.ProfileRepository
+import app.wlo.core.data.WeighInRepository
+import app.wlo.core.datastore.SettingsStore
+import app.wlo.core.model.MeasurementKind
+import kotlinx.coroutines.runBlocking
+import kotlinx.datetime.TimeZone
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
+import org.koin.core.context.GlobalContext
 import kotlin.math.abs
 
 /**
@@ -46,6 +60,76 @@ public class M3WeighInTest {
     @Before
     public fun seed() {
         SeedingRobot.onboardAndSeedWeek()
+    }
+
+    @Test
+    public fun weightSurface_activityRecreationRefreshesWithoutAnErrorState() {
+        TestNav.awaitTag(rule, "f06-title")
+
+        rule.activityRule.scenario.recreate()
+
+        TestNav.awaitTag(rule, "f06-title")
+        assertTrue(rule.onAllNodesWithTag("f06-load-error").fetchSemanticsNodes().isEmpty())
+    }
+
+    @Test
+    public fun prefilledEntry_usesMaterialPickers_andSavesWithoutTypingWeight() {
+        val koin = GlobalContext.get()
+        awaitWeightSurface()
+        val before = todayEvents(koin).size
+
+        val weightText =
+            rule
+                .onNodeWithTag("f06-weight-field", useUnmergedTree = true)
+                .fetchSemanticsNode()
+                .config[SemanticsProperties.EditableText]
+                .text
+        assertTrue("seeded history prefills the first daily entry", weightText.isNotBlank())
+        assertTrue(
+            rule
+                .onNodeWithTag("f06-step-up", useUnmergedTree = true)
+                .fetchSemanticsNode()
+                .config[SemanticsProperties.ContentDescription]
+                .single()
+                .startsWith("Increase weight by 0.1"),
+        )
+
+        rule.onNodeWithTag("f06-day-field", useUnmergedTree = true).performClick()
+        TestNav.awaitTag(rule, "f06-day-field-picker")
+        rule.onNodeWithTag("f06-day-field-confirm", useUnmergedTree = true).performClick()
+
+        rule.onNodeWithTag("f06-time-field", useUnmergedTree = true).performClick()
+        TestNav.awaitTag(rule, "f06-time-field-picker")
+        rule.onNodeWithTag("f06-time-field-confirm", useUnmergedTree = true).performClick()
+
+        rule.onNodeWithTag("f06-save-weighin", useUnmergedTree = true).performScrollTo().performClick()
+        pollTodayEventCount(koin, before + 1)
+    }
+
+    @Test
+    public fun compactLargeFontSheet_keepsSaveReachableWithIme_andCapturesEvidence() {
+        val ui = UiDevice.getInstance(InstrumentationRegistry.getInstrumentation())
+        try {
+            OnboardingRobot.shell("settings put system font_scale 2.0")
+            ui.setOrientationLeft()
+            rule.activityRule.scenario.recreate()
+            awaitWeightSurface()
+
+            rule.onNodeWithTag("f06-weight-field", useUnmergedTree = true).performTextClearance()
+            rule.onNodeWithTag("f06-weight-field", useUnmergedTree = true).performTextInput("78.4")
+            rule.onNodeWithTag("f06-save-weighin", useUnmergedTree = true).performScrollTo()
+            OnboardingRobot.shell("screencap -p /sdcard/wlo0069-weighin-large-font-landscape-ime.png")
+            assertTrue(
+                rule
+                    .onAllNodesWithTag("f06-save-weighin", useUnmergedTree = true)
+                    .fetchSemanticsNodes()
+                    .isNotEmpty(),
+            )
+        } finally {
+            OnboardingRobot.shell("settings put system font_scale 1.0")
+            ui.setOrientationNatural()
+            ui.unfreezeRotation()
+        }
     }
 
     @Test
@@ -88,6 +172,68 @@ public class M3WeighInTest {
     }
 
     @Test
+    public fun poundInput_isStoredAsCanonicalKilograms_andRenderedAsPounds() {
+        val koin = GlobalContext.get()
+        runBlocking { koin.get<SettingsStore>().setMassUnit(MassUnit.POUND) }
+        awaitWeightSurface()
+
+        rule.onNodeWithTag("f06-weight-field").performTextClearance()
+        rule.onNodeWithTag("f06-weight-field").performTextInput("170.0")
+        rule.onNodeWithTag("f06-save-weighin").performClick()
+        pollText("170.0 lb")
+
+        val expectedKg = MassUnit.POUND.toKilograms(170.0)
+        val storedKg =
+            runBlocking {
+                val profile = checkNotNull(koin.get<ProfileRepository>().active().getOrNull())
+                val clock = koin.get<ClockPort>()
+                val today = DayBoundary.epochDay(clock.now(), TimeZone.currentSystemDefault())
+                koin
+                    .get<WeighInRepository>()
+                    .dayWeighIns(profile.id, today)
+                    .getOrNull()
+                    .orEmpty()
+                    .map { it.valueReal }
+                    .single { abs(it - expectedKg) < 1e-9 }
+            }
+        assertEquals(expectedKg, storedKg, 1e-9)
+    }
+
+    @Test
+    public fun invalidInput_staysInTheSheet_withFieldSpecificError() {
+        awaitWeightSurface()
+
+        rule.onNodeWithTag("f06-weight-field").performTextClearance()
+        rule.onNodeWithTag("f06-save-weighin").performClick()
+        pollText("Enter a weight.")
+        TestNav.awaitTag(rule, "f06-weighin-sheet")
+
+        rule.onNodeWithTag("f06-weight-field").performTextInput("not-a-number")
+        rule.onNodeWithTag("f06-save-weighin").performClick()
+        pollText("Enter one number", substring = true)
+        TestNav.awaitTag(rule, "f06-weighin-sheet")
+    }
+
+    @Test
+    public fun rapidDoubleSave_createsOneEvent() {
+        val koin = GlobalContext.get()
+        awaitWeightSurface()
+        val before = todayEvents(koin).size
+        rule.onNodeWithTag("f06-weight-field").performTextClearance()
+        rule.onNodeWithTag("f06-weight-field").performTextInput("76,8")
+
+        // Invoke the semantics action twice before Compose can recompose the
+        // disabled button. The ViewModel's synchronous SAVING transition is
+        // the actual duplicate-write guard.
+        rule.onNodeWithTag("f06-save-weighin").performSemanticsAction(SemanticsActions.OnClick) { click ->
+            checkNotNull(click)()
+            checkNotNull(click)()
+        }
+        pollText("76.8 kg")
+        assertEquals(before + 1, todayEvents(koin).size)
+    }
+
+    @Test
     public fun smoothingControls_moveTheLine_asLabeledPreview() {
         awaitWeightSurface()
 
@@ -120,6 +266,53 @@ public class M3WeighInTest {
     }
 
     @Test
+    public fun emptyThirtyDayWindow_offersSmallestWiderWindow_andHidesTuner() {
+        val koin = GlobalContext.get()
+        awaitWeightSurface()
+        UiDevice.getInstance(InstrumentationRegistry.getInstrumentation()).pressBack()
+
+        runBlocking {
+            val profile = checkNotNull(koin.get<ProfileRepository>().active().getOrNull())
+            val clock = koin.get<ClockPort>()
+            val today = DayBoundary.epochDay(clock.now(), TimeZone.currentSystemDefault())
+            val repository = koin.get<WeighInRepository>()
+            koin
+                .get<MeasurementRepository>()
+                .rangeOfKind(profile.id, MeasurementKind.WEIGHT, today - 365, today)
+                .getOrNull()
+                .orEmpty()
+                .forEach { repository.deleteWeighIn(it.id, clock.now()) }
+            repository.appendWeighIn(
+                profileId = profile.id,
+                dayEpochDay = today - 40,
+                weightKg = 81.0,
+                capturedAt = clock.now(),
+                source = "test",
+                note = null,
+            )
+        }
+
+        rule.onNodeWithTag("f06-window-d30", useUnmergedTree = true).performScrollTo().performClick()
+        pollText("No weigh-ins in the last 30 days", substring = true)
+        pollText("Show 90 d")
+        assertTrue(rule.onAllNodesWithTag("f06-alpha-slider", useUnmergedTree = true).fetchSemanticsNodes().isEmpty())
+        OnboardingRobot.shell("screencap -p /sdcard/wlo0053-empty-window.png")
+
+        rule.onNodeWithText("Show 90 d", useUnmergedTree = true).performClick()
+        rule.waitUntil(TIMEOUT_MS) {
+            rule.onAllNodesWithTag("f06-alpha-slider", useUnmergedTree = true).fetchSemanticsNodes().isNotEmpty()
+        }
+        pollText("the trend resumes when you do", substring = true)
+        assertTrue(
+            rule
+                .onAllNodesWithContentDescription("90 d window, 1 daily weigh-ins", substring = true)
+                .fetchSemanticsNodes()
+                .isNotEmpty(),
+        )
+        OnboardingRobot.shell("screencap -p /sdcard/wlo0053-lapsed-window.png")
+    }
+
+    @Test
     public fun outlierFlagged_showsKeepOrCorrect_andKeepKeepsTheEvent() {
         awaitWeightSurface()
 
@@ -131,8 +324,33 @@ public class M3WeighInTest {
         pollText("keep or correct?", substring = true)
 
         rule.onNodeWithTag("f06-outlier-keep").performClick()
-        // "Keep" clears the question; the event itself stays in the day list.
+        // "Keep" clears the question; prove the raw event survives by reading
+        // it from the verbatim logbook (the weight hero intentionally shows
+        // the lower daily scalar rather than every reading).
+        rule.onNodeWithTag("f06-open-logbook").performScrollTo().performClick()
+        TestNav.awaitTag(rule, "f06-logbook-title")
         pollText("95.0 kg")
+    }
+
+    @Test
+    public fun outlierCorrect_deletesFlaggedEvent_andReopensWithSafePriorValue() {
+        val koin = GlobalContext.get()
+        awaitWeightSurface()
+        rule.onNodeWithTag("f06-weight-field").performTextClearance()
+        rule.onNodeWithTag("f06-weight-field").performTextInput("95.0")
+        rule.onNodeWithTag("f06-save-weighin").performClick()
+        pollText("keep or correct?", substring = true)
+
+        rule.onNodeWithTag("f06-outlier-correct").performClick()
+        TestNav.awaitTag(rule, "f06-weighin-sheet")
+        val correctedPrefill =
+            rule
+                .onNodeWithTag("f06-weight-field")
+                .fetchSemanticsNode()
+                .config[SemanticsProperties.EditableText]
+                .text
+        assertEquals("77.0", correctedPrefill)
+        assertTrue(todayEvents(koin).none { abs(it.valueReal - 95.0) < 1e-9 })
     }
 
     @Test
@@ -200,20 +418,36 @@ public class M3WeighInTest {
         pollText("edited", substring = true)
     }
 
-    private fun firstRowWeight(): String =
-        rule
-            .onAllNodesWithTag("f06-row-weight")
-            .onFirst()
-            .fetchSemanticsNode()
-            .config[SemanticsProperties.Text]
-            .first()
-            .toString()
+    private fun firstRowWeight(): String {
+        val deadline = System.currentTimeMillis() + TIMEOUT_MS
+        while (System.currentTimeMillis() < deadline) {
+            val actual =
+                rule
+                    .onAllNodesWithTag("f06-row-weight", useUnmergedTree = true)
+                    .fetchSemanticsNodes()
+                    .firstOrNull()
+                    ?.config
+                    ?.get(SemanticsProperties.Text)
+                    ?.first()
+                    ?.toString()
+            if (actual != null) return actual
+            Thread.sleep(POLL_MS)
+        }
+        error("logbook never rendered its first weigh-in row")
+    }
 
     private fun pollFirstRow(expected: String) {
         val deadline = System.currentTimeMillis() + TIMEOUT_MS
         while (System.currentTimeMillis() < deadline) {
-            val nodes = rule.onAllNodesWithTag("f06-row-weight").fetchSemanticsNodes()
-            if (nodes.isNotEmpty() && nodes.first().config[SemanticsProperties.Text].first().toString() == expected) {
+            val nodes = rule.onAllNodesWithTag("f06-row-weight", useUnmergedTree = true).fetchSemanticsNodes()
+            val actual =
+                nodes
+                    .firstOrNull()
+                    ?.config
+                    ?.get(SemanticsProperties.Text)
+                    ?.first()
+                    ?.toString()
+            if (actual == expected) {
                 return
             }
             Thread.sleep(POLL_MS)
@@ -232,8 +466,15 @@ public class M3WeighInTest {
     private fun pollFirstRowChanged(unexpected: String) {
         val deadline = System.currentTimeMillis() + TIMEOUT_MS
         while (System.currentTimeMillis() < deadline) {
-            val nodes = rule.onAllNodesWithTag("f06-row-weight").fetchSemanticsNodes()
-            if (nodes.isNotEmpty() && nodes.first().config[SemanticsProperties.Text].first().toString() != unexpected) {
+            val nodes = rule.onAllNodesWithTag("f06-row-weight", useUnmergedTree = true).fetchSemanticsNodes()
+            val actual =
+                nodes
+                    .firstOrNull()
+                    ?.config
+                    ?.get(SemanticsProperties.Text)
+                    ?.first()
+                    ?.toString()
+            if (actual != null && actual != unexpected) {
                 return
             }
             Thread.sleep(POLL_MS)
@@ -244,11 +485,35 @@ public class M3WeighInTest {
     // --- helpers ---
 
     private fun awaitWeightSurface() {
-        TestNav.awaitTag(rule, "hub-trend-card")
-        // The rail's weigh-in quick action (no intent re-delivery — the compose
-        // rule's teardown hangs on in-flight deep links, the M1 note's trap).
-        rule.onAllNodesWithText("Weigh in").onFirst().performClick()
+        // Weight is the primary post-onboarding destination. This also makes
+        // the suite independent of Hub's day-phase quick-action rail.
         TestNav.awaitTag(rule, "f06-title")
+        rule.onNodeWithTag("f06-open-sheet", useUnmergedTree = true).performClick()
+        TestNav.awaitTag(rule, "f06-weighin-sheet")
+    }
+
+    private fun todayEvents(koin: org.koin.core.Koin) =
+        runBlocking {
+            val profile = checkNotNull(koin.get<ProfileRepository>().active().getOrNull())
+            val clock = koin.get<ClockPort>()
+            val today = DayBoundary.epochDay(clock.now(), TimeZone.currentSystemDefault())
+            koin
+                .get<WeighInRepository>()
+                .dayWeighIns(profile.id, today)
+                .getOrNull()
+                .orEmpty()
+        }
+
+    private fun pollTodayEventCount(
+        koin: org.koin.core.Koin,
+        expected: Int,
+    ) {
+        val deadline = System.currentTimeMillis() + TIMEOUT_MS
+        while (System.currentTimeMillis() < deadline) {
+            if (todayEvents(koin).size == expected) return
+            Thread.sleep(POLL_MS)
+        }
+        error("today's weigh-in count never became $expected; actual=${todayEvents(koin).size}")
     }
 
     private fun pollTrend(kg: Double) {
@@ -314,18 +579,11 @@ public class M3WeighInTest {
         return backward.asReversed()
     }
 
-    private fun formatTrend(kg: Double): String = decimals1(kg)
+    private fun formatTrend(kg: Double): String = MassUnit.KILOGRAM.formatNumber(kg)
 
     private fun formatDelta(kg: Double): String {
         val sign = if (kg < 0) "− " else "+ "
-        return "$sign${decimals1(abs(kg))} kg / 7 d"
-    }
-
-    private fun decimals1(value: Double): String {
-        val tenths = (value * 10).toLong()
-        val whole = tenths / 10
-        val tenth = tenths % 10
-        return "$whole.$tenth"
+        return "$sign${MassUnit.KILOGRAM.formatNumber(abs(kg))} kg / 7 d"
     }
 
     private companion object {

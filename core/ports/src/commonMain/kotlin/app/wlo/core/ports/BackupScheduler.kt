@@ -6,7 +6,15 @@ package app.wlo.core.ports
  * ARCHITECTURE.md §2.4 "Background work".
  */
 public interface BackupScheduler {
-    public fun schedule(request: BackupRequest)
+    /**
+     * Changes the persisted automatic-backup policy and reconciles scheduled
+     * work with it. Enabling requires a destination; disabling cancels any
+     * already-enqueued unique work before returning.
+     */
+    public suspend fun setEnabled(
+        enabled: Boolean,
+        request: BackupRequest? = null,
+    )
 }
 
 /** A requested backup run; destination is a SAF tree uri string. */

@@ -28,4 +28,5 @@ dependencies {
     implementation(project(":core:documents"))
 
     testImplementation(libs.kotlin.test.junit)
+    testImplementation(project(":core:testing"))
 }

@@ -72,8 +72,8 @@ public class M6RestoreAssertTest {
         // Spot values.
         val profile = runBlocking { db.profiles().all().single() }
         assertEquals(M6E2eSpec.BIRTH_YEAR, profile.birthYear)
-        assertEquals(M6E2eSpec.HEIGHT_CM, profile.heightCm, 0.0001)
-        assertEquals(M6E2eSpec.START_WEIGHT_KG, profile.startWeightKg, 0.0001)
+        assertEquals(M6E2eSpec.HEIGHT_CM, checkNotNull(profile.heightCm), 0.0001)
+        assertEquals(M6E2eSpec.START_WEIGHT_KG, checkNotNull(profile.startWeightKg), 0.0001)
 
         val weighIns = runBlocking { db.measurementEvents().range(profile.id, 0, Long.MAX_VALUE) }
         assertTrue(weighIns.any { it.valueReal == M6E2eSpec.SPOT_WEIGH_IN_KG }, "the 76.9 weigh-in survives")

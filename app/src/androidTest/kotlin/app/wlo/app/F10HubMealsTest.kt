@@ -8,6 +8,7 @@ import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import app.wlo.app.di.FixedClock
 import app.wlo.core.common.ClockPort
 import app.wlo.core.common.DayBoundary
 import app.wlo.core.common.getOrNull
@@ -18,13 +19,19 @@ import app.wlo.core.model.MealSlot
 import app.wlo.core.model.PlannedSlot
 import app.wlo.core.model.PlannedSlotState
 import kotlinx.coroutines.runBlocking
+import kotlinx.datetime.LocalDateTime
+import kotlinx.datetime.LocalTime
 import kotlinx.datetime.TimeZone
+import kotlinx.datetime.toInstant
+import kotlinx.datetime.toLocalDateTime
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.koin.core.context.GlobalContext
+import org.koin.core.context.loadKoinModules
+import org.koin.dsl.module
 
 /**
  * WLO-0033 wave 2 acceptance: the rebuilt Hub loop — the streak chip visible
@@ -43,6 +50,22 @@ public class F10HubMealsTest {
 
     @Before
     public fun seed() {
+        // WLO-0066: this test exercises a daytime-only Hub action. Preserve
+        // the device's real local date so DemoSeed and every repository agree
+        // on "today", but pin the phase to midday before seeding makes the
+        // Hub compose. The test is then identical at 02:00 and 14:00.
+        val zone = TimeZone.currentSystemDefault()
+        val localToday =
+            kotlin.time.Clock.System
+                .now()
+                .toLocalDateTime(zone)
+                .date
+        val midday = LocalDateTime(localToday, LocalTime.fromSecondOfDay(12 * 60 * 60)).toInstant(zone)
+        loadKoinModules(
+            module {
+                single<ClockPort> { FixedClock(midday) }
+            },
+        )
         seeded = SeedingRobot.onboardAndSeedWeek()
     }
 

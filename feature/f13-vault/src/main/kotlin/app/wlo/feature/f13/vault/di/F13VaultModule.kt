@@ -18,7 +18,7 @@ import org.koin.dsl.module
  */
 public val f13VaultModule: Module =
     module {
-        viewModel { VaultDashboardViewModel(vault = get(), settings = get()) }
+        viewModel { VaultDashboardViewModel(vault = get(), scheduler = get()) }
         viewModel { BackupControlsViewModel(vault = get(), settings = get(), scheduler = get()) }
         viewModel { RestoreWizardViewModel(vault = get()) }
         viewModel { ExportViewModel(vault = get()) }

@@ -1,15 +1,15 @@
 ---
 id: WLO-0050
 title: 'logbook delete UX — swipe-to-reveal action, inline two-tap confirm, inline undo'
-status: doing
+status: done
 theme:
 release:
 created: 2026-09-14T16:37:54Z
-modified: 2026-09-14T17:54:56Z
-closed:
-revision: 1aeff9978a147688
+modified: 2026-09-15T21:28:00Z
+closed: 2026-09-15T21:28:00Z
+revision: b9cded7afd310dfb
 blocks: []
-related: []
+related: [WLO-0051, WLO-0055]
 ---
 
 # Description

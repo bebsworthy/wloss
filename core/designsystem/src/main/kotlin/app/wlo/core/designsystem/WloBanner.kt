@@ -1,15 +1,14 @@
 package app.wlo.core.designsystem
 
 import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -42,11 +41,15 @@ public enum class WloBannerTone {
  * Copy is the caller's job (§8: no guilt, no rationale leaks, sentence case).
  * Numbers rendered inside a banner body must go through a provenance atom —
  * this component takes prose only (D6).
+ * Material 3 Compose has no persistent inline banner component; `Snackbar`
+ * has transient host semantics and therefore cannot represent this content.
+ * The container stays custom while its optional action is a standard
+ * [TextButton] (WLO-0063).
  *
  * @param text the callout copy
  * @param tone [WloBannerTone.Info] or [WloBannerTone.Warning]
  * @param actionLabel label of the optional trailing action — copy, sentence case
- * @param action optional tap handler rendered next to [actionLabel]
+ * @param action optional tap handler rendered as a Material 3 text button
  */
 @Composable
 public fun WloBanner(
@@ -75,15 +78,9 @@ public fun WloBanner(
                 modifier = Modifier.weight(1f),
             )
             if (action != null && actionLabel != null) {
-                Text(
-                    text = actionLabel,
-                    style = wloType.label,
-                    modifier =
-                        Modifier
-                            .heightIn(min = WloSpacing.ROW_INTERACTIVE)
-                            .clickable(onClickLabel = actionLabel, onClick = action)
-                            .padding(vertical = WloSpacing.CARD),
-                )
+                TextButton(onClick = action) {
+                    Text(text = actionLabel)
+                }
             }
         }
     }

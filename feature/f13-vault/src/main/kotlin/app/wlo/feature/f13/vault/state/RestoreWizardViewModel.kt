@@ -43,13 +43,13 @@ public data class RestoreWizardUiState(
         /** Explicit confirm — restore appends/reconciles, never deletes. */
         Confirm,
 
-        /** Applying (one transaction). */
+        /** Applying Room atomically, then rolling later stores forward. */
         Applying,
 
         /** Success with the inserted/skipped accounting. */
         Done,
 
-        /** Clean failure: hostile/corrupt/wrong-passphrase; data untouched. */
+        /** Rejected input is untouched; apply failures may require journal recovery. */
         Failed,
     }
 }
@@ -131,6 +131,13 @@ public class RestoreWizardViewModel(
                         failureDetail = failure.message,
                     )
             }
+        }
+    }
+
+    /** Acknowledges the report without touching any store. */
+    public fun continueToConfirm() {
+        if (stateFlow.value.step == RestoreWizardUiState.Step.Report) {
+            stateFlow.value = stateFlow.value.copy(step = RestoreWizardUiState.Step.Confirm)
         }
     }
 
