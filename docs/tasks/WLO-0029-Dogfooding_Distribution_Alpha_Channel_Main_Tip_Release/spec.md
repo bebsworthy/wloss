@@ -124,3 +124,17 @@ remains intact in `instrumented-full.yml`, runs nightly or by manual dispatch,
 has a 90-minute bound, and uploads reports even on failure. Publication still
 requires Android device evidence; exhaustive coverage is retained without
 letting one hung test block every dogfood build indefinitely.
+
+## First live alpha — 2026-09-16
+
+GitHub Actions run `35055401426` is green end to end at commit `ec6df02`: build plus architecture checks, build-logic rule self-tests, the six-scenario API-29 release smoke gate, and signed publication all passed. Hosted-emulator reliability is restored by explicitly enabling KVM; smoke reports are retained for 14 days on every outcome.
+
+The rolling prerelease is live at `https://github.com/bebsworthy/wloss/releases/tag/alpha` as `wlo-0.1.0-alpha.15+ec6df02.apk`. A clean post-publication download verified:
+
+- package `app.wlo`, version code `76`, version name `0.1.0-alpha.15+ec6df02`;
+- signer SHA-256 `191A90BC4AC61C36647316ED748FE1C70940FDC06A0D8AD32C632A8288EA8EC5`;
+- asset SHA-256 `9803bd87e101f312ab67248279cff494925bb26f0687e5952bd53cdcc708e6db`, equal to the GitHub release digest.
+
+Remote validation exposed two useful release-only defects before dogfooding: runner `apksigner` labels v2 certificates differently from the local tool, and the version environment variables were previously mapped without camel-case separators. The verifier now accepts signer-scheme labels while comparing the full pinned digest, the build reads the documented `WLO_VERSION_CODE` / `WLO_VERSION_NAME` variables, and CI inspects the final APK to require the exact resolved channel version before upload.
+
+All automatable acceptance evidence is complete. The remaining WLO-0029 step is owner-device validation: add the public repository to Obtainium, install the alpha, then confirm a later alpha updates in place without losing local data.
