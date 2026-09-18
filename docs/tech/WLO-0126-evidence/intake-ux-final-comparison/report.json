@@ -1,0 +1,79 @@
+{
+  "schemaVersion": 1,
+  "warnings": [
+    "Screen widths are normalized uniformly; desktop chrome must be excluded.",
+    "Glyph anchors align visible ink, not font size. Data/state equality is not inferred.",
+    "Background mask is contrast-based, not OCR. Difference includes rasterization changes.",
+    "Candidate overflow is clipped to the reference. Difference excludes uncovered pixels."
+  ],
+  "android": {
+    "serial": "emulator-5554",
+    "anchorText": "2000"
+  },
+  "browser": {
+    "url": "file:///Users/boyd/wip/wloss/docs/design/flows/10-intake-target-f01.html",
+    "bounds": {
+      "x": 18,
+      "y": 150.828125,
+      "width": 390,
+      "height": 900
+    },
+    "anchor": {
+      "x": 38,
+      "y": 396.203125,
+      "width": 238.21875,
+      "height": 55.296875
+    },
+    "anchorSelector": "#calories"
+  },
+  "anchorRegions": {
+    "reference": {
+      "x": 38,
+      "y": 396.203125,
+      "width": 238.21875,
+      "height": 55.296875
+    },
+    "candidate": {
+      "x": 64,
+      "y": 1037,
+      "width": 952,
+      "height": 252
+    }
+  },
+  "referenceSize": [
+    390,
+    901
+  ],
+  "candidateSize": [
+    1080,
+    2590
+  ],
+  "scale": 0.3611111111111111,
+  "offset": {
+    "x": 17.88888888888889,
+    "y": 36.52777777777777
+  },
+  "backgroundMode": "dark",
+  "referenceAnchor": {
+    "x": 41,
+    "y": 411,
+    "width": 16,
+    "height": 26
+  },
+  "candidateAnchor": {
+    "x": 64,
+    "y": 1037,
+    "width": 952,
+    "height": 252
+  },
+  "alignment": "first visible glyph top-left",
+  "outputs": {
+    "reference.png": "/Users/boyd/wip/wloss/docs/tech/WLO-0126-evidence/intake-ux-final-comparison/reference.png",
+    "candidate.png": "/Users/boyd/wip/wloss/docs/tech/WLO-0126-evidence/intake-ux-final-comparison/candidate.png",
+    "aligned.png": "/Users/boyd/wip/wloss/docs/tech/WLO-0126-evidence/intake-ux-final-comparison/aligned.png",
+    "overlay.png": "/Users/boyd/wip/wloss/docs/tech/WLO-0126-evidence/intake-ux-final-comparison/overlay.png",
+    "blend.png": "/Users/boyd/wip/wloss/docs/tech/WLO-0126-evidence/intake-ux-final-comparison/blend.png",
+    "difference.png": "/Users/boyd/wip/wloss/docs/tech/WLO-0126-evidence/intake-ux-final-comparison/difference.png",
+    "side-by-side.png": "/Users/boyd/wip/wloss/docs/tech/WLO-0126-evidence/intake-ux-final-comparison/side-by-side.png"
+  }
+}

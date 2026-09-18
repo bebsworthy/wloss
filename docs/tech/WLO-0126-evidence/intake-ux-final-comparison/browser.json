@@ -1,0 +1,16 @@
+{
+  "url": "file:///Users/boyd/wip/wloss/docs/design/flows/10-intake-target-f01.html",
+  "bounds": {
+    "x": 18,
+    "y": 150.828125,
+    "width": 390,
+    "height": 900
+  },
+  "anchor": {
+    "x": 38,
+    "y": 396.203125,
+    "width": 238.21875,
+    "height": 55.296875
+  },
+  "anchorSelector": "#calories"
+}

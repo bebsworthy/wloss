@@ -174,6 +174,69 @@ class TargetsWriterTest {
 
     private suspend fun targetsHistoryCount(profileId: String): Int = db.targetsVersions().history(profileId).size
 
+    @Test
+    fun manualIntakePreservesTargetsAndVersionsButCannotWeakenAdaptiveFloor() =
+        runTest {
+            val id = aProfile()
+            val studio = writers.studio()
+            val original = document()
+            studio.writeFirst(id, original)
+            val manual =
+                assertIs<TargetsWriteOutcome.Written>(
+                    studio.writeManualIntake(id, 1, original.energy.copy(budgetKcal = 500.0, floorKcal = 0.0)),
+                )
+            assertEquals(2, manual.record.version)
+            assertEquals(original.copy(energy = original.energy.copy(budgetKcal = 500.0, manuallyEntered = true)), manual.record.document)
+            assertEquals(manual.record.document, RoomTargetsRepository(db).current(id).getOrNull()?.document)
+            val stale = assertIs<TargetsWriteOutcome.Rejected>(studio.writeManualIntake(id, 1, original.energy))
+            assertIs<TargetsWriteError.VersionConflict>(stale.error)
+            val automatic = writers.apply().apply(id, AdaptiveProposal("below-floor", 2300.0, newBudgetKcal = 600.0))
+            assertIs<TargetsWriteOutcome.Rejected>(automatic)
+            val safe =
+                assertIs<TargetsWriteOutcome.Written>(
+                    writers.apply().apply(id, AdaptiveProposal("supported", 2300.0, newBudgetKcal = 1800.0)),
+                )
+            assertEquals(false, safe.record.document.energy.manuallyEntered)
+        }
+
+    @Test
+    fun manualIntakeAllowsZeroAndSurplusButRejectsInvalidNumbers() =
+        runTest {
+            val id = aProfile()
+            val studio = writers.studio()
+            val energy = document().energy
+            studio.writeFirst(id, document())
+            assertIs<TargetsWriteOutcome.Written>(studio.writeManualIntake(id, 1, energy.copy(budgetKcal = 0.0)))
+            assertIs<TargetsWriteOutcome.Written>(studio.writeManualIntake(id, 2, energy.copy(budgetKcal = 4000.0)))
+            for (invalid in listOf(-1.0, Double.NaN, Double.POSITIVE_INFINITY)) {
+                assertIs<TargetsWriteOutcome.Rejected>(studio.writeManualIntake(id, 3, energy.copy(budgetKcal = invalid)))
+            }
+        }
+
+    @Test
+    fun manualIntakeSavesNutrientsAtomicallyAndRejectsInvalidSplits() =
+        runTest {
+            val id = aProfile()
+            val original = document()
+            writers.studio().writeFirst(id, original)
+            val macros = original.macros.copy(split = MacroSplit.Custom(proteinPct = 35.0, carbPct = 40.0, fatPct = 25.0))
+            val fiber =
+                app.wlo.core.documents
+                    .FiberTarget(30.0)
+            val result =
+                assertIs<TargetsWriteOutcome.Written>(
+                    writers.studio().writeManualIntake(id, 1, original.energy, macros, fiber),
+                )
+            assertEquals(macros, result.record.document.macros)
+            assertEquals(fiber, result.record.document.fiber)
+            assertEquals(original.water, result.record.document.water)
+            val invalid = macros.copy(split = MacroSplit.Custom(proteinPct = 35.0, carbPct = 40.0, fatPct = 40.0))
+            assertIs<TargetsWriteOutcome.Rejected>(
+                writers.studio().writeManualIntake(id, 2, original.energy, invalid, fiber),
+            )
+            assertEquals(2, RoomTargetsRepository(db).current(id).getOrNull()?.version)
+        }
+
     // --- F07 Apply ---
 
     @Test

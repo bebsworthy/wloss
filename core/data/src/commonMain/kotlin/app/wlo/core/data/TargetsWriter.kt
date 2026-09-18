@@ -2,6 +2,7 @@ package app.wlo.core.data
 
 import app.wlo.core.common.ClockPort
 import app.wlo.core.documents.Cadence
+import app.wlo.core.documents.Energy
 import app.wlo.core.documents.TargetsDocument
 import app.wlo.core.documents.TargetsInvariants
 import app.wlo.core.documents.TargetsRecord
@@ -65,6 +66,42 @@ public class F01StudioWriter internal constructor(
         document: TargetsDocument,
     ): TargetsWriteOutcome = write(profileId, baseVersion = baseVersion, document = document)
 
+    /**
+     * Explicit intake edit: preserves every other target field and the floor,
+     * records manual provenance, and retains optimistic version checks.
+     * This does not qualify the intake for a forecast or adaptive proposal.
+     */
+    public suspend fun writeManualIntake(
+        profileId: String,
+        baseVersion: Int,
+        energy: Energy,
+        macros: app.wlo.core.documents.Macros? = null,
+        fiber: app.wlo.core.documents.FiberTarget? = null,
+    ): TargetsWriteOutcome {
+        val current =
+            store.current(profileId)
+                ?: return TargetsWriteOutcome.Rejected(TargetsWriteError.NoActiveTargets(profileId))
+        if (current.version != baseVersion) {
+            return TargetsWriteOutcome.Rejected(TargetsWriteError.VersionConflict(baseVersion, current.version))
+        }
+        val manual =
+            energy.copy(
+                floorKcal = current.document.energy.floorKcal,
+                floorOverrideAcknowledged = current.document.energy.floorOverrideAcknowledged,
+                manuallyEntered = true,
+            )
+        return write(
+            profileId,
+            baseVersion,
+            current.document.copy(
+                energy = manual,
+                macros = macros ?: current.document.macros,
+                fiber =
+                    fiber ?: current.document.fiber,
+            ),
+        )
+    }
+
     /** Revert = a new version copying [toVersion]; never a history rewrite (A.1). */
     public suspend fun revert(
         profileId: String,
@@ -107,7 +144,7 @@ public class F01StudioWriter internal constructor(
         // sex requires a persistent acknowledgment — and validation against
         // the (lowered) floor still ran above, never weakened.
         val default = store.defaultFloorKcal(profileId)
-        if (document.energy.floorKcal < default && !document.energy.floorOverrideAcknowledged) {
+        if (!document.energy.manuallyEntered && document.energy.floorKcal < default && !document.energy.floorOverrideAcknowledged) {
             return listOf(TargetsViolation.FloorViolated(default, document.energy.floorKcal)) + violations
         }
         return violations
@@ -148,6 +185,7 @@ public class F07ApplyWriter internal constructor(
         val energy = old.energy
         val newEnergy =
             energy.copy(
+                manuallyEntered = false,
                 budgetKcal = proposal.newBudgetKcal ?: energy.budgetKcal,
                 weeklyBudgetKcal = proposal.newWeeklyBudgetKcal ?: energy.weeklyBudgetKcal,
                 schedule =

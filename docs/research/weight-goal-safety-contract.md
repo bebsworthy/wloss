@@ -27,7 +27,7 @@ unanswered question as “no.”
 | Medication/condition may influence weight | Generic model lacks the necessary clinical context | Hold targets and dates; keep tracking |
 | Screening unanswered | Unknown is not “no” | Hold goals and dates until answered |
 | Requested pace outside WLO range | Hard refusal, never a silent clamp | Return the supported maximum and require an explicit new choice |
-| Plan below its configured energy floor | Hard refusal | Do not save it or forecast from it |
+| Automatic plan below its configured energy floor | Hard refusal | Do not recommend it or forecast from it; explicit manual intake may be saved (WLO-0126 owner amendment, 2026-09-18) |
 
 ## Modes and WLO support envelope
 
@@ -47,7 +47,9 @@ unanswered question as “no.”
   product policy**, not a clinical threshold.
 - Pace is a non-negative magnitude. Goal mode owns direction, avoiding the
   existing ambiguous mixture of signed and unsigned pace values.
-- WLO enforces the configured plan floor supplied to the contract. The
+- WLO enforces the configured plan floor for recommendations and forecasts.
+  Explicit manual intake saves are exempt (WLO-0126); this never supplies
+  clinical eligibility or changes the forecast checks. The
   existing sex-based 1,200/1,500 kcal defaults are legacy product defaults,
   not universal medical cutoffs. NICE reserves 800–1,200 kcal diets for
   supported specialist strategies and diets below 800 kcal for limited,

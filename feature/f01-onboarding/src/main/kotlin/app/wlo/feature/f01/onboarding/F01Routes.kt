@@ -18,6 +18,7 @@ public object F01Routes {
     public const val ARG_STEP: String = "step"
 
     /** Studio entry — F01 §4 (plan revision / template editing); M3+ implements the surface. */
+    public const val INTAKE: String = "f01/intake"
     public const val STUDIO: String = "f01/studio"
 
     /** The former first-run diet wizard, now an optional post-onboarding studio. */

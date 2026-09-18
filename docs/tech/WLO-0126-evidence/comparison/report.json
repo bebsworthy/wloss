@@ -1,0 +1,79 @@
+{
+  "schemaVersion": 1,
+  "warnings": [
+    "Screen widths are normalized uniformly; desktop chrome must be excluded.",
+    "Glyph anchors align visible ink, not font size. Data/state equality is not inferred.",
+    "Background mask is contrast-based, not OCR. Difference includes rasterization changes.",
+    "Candidate overflow is clipped to the reference. Difference excludes uncovered pixels."
+  ],
+  "android": {
+    "serial": "emulator-5554",
+    "anchorText": "1,776"
+  },
+  "browser": {
+    "url": "file:///Users/boyd/wip/wloss/docs/design/flows/10-intake-target-f01.html",
+    "bounds": {
+      "x": 18,
+      "y": 150.828125,
+      "width": 390,
+      "height": 900
+    },
+    "anchor": {
+      "x": 23,
+      "y": 169.234375,
+      "width": 164,
+      "height": 44.1875
+    },
+    "anchorSelector": ".maintenance .amount"
+  },
+  "anchorRegions": {
+    "reference": {
+      "x": 23,
+      "y": 169.234375,
+      "width": 164,
+      "height": 44.1875
+    },
+    "candidate": {
+      "x": 53,
+      "y": 417,
+      "width": 204,
+      "height": 89
+    }
+  },
+  "referenceSize": [
+    390,
+    901
+  ],
+  "candidateSize": [
+    1080,
+    2400
+  ],
+  "scale": 0.3611111111111111,
+  "offset": {
+    "x": 5.694444444444446,
+    "y": 23.27777777777777
+  },
+  "backgroundMode": "dark",
+  "referenceAnchor": {
+    "x": 27,
+    "y": 180,
+    "width": 11,
+    "height": 25
+  },
+  "candidateAnchor": {
+    "x": 59,
+    "y": 434,
+    "width": 35,
+    "height": 54
+  },
+  "alignment": "first visible glyph top-left",
+  "outputs": {
+    "reference.png": "/Users/boyd/wip/wloss/docs/tech/WLO-0126-evidence/comparison/reference.png",
+    "candidate.png": "/Users/boyd/wip/wloss/docs/tech/WLO-0126-evidence/comparison/candidate.png",
+    "aligned.png": "/Users/boyd/wip/wloss/docs/tech/WLO-0126-evidence/comparison/aligned.png",
+    "overlay.png": "/Users/boyd/wip/wloss/docs/tech/WLO-0126-evidence/comparison/overlay.png",
+    "blend.png": "/Users/boyd/wip/wloss/docs/tech/WLO-0126-evidence/comparison/blend.png",
+    "difference.png": "/Users/boyd/wip/wloss/docs/tech/WLO-0126-evidence/comparison/difference.png",
+    "side-by-side.png": "/Users/boyd/wip/wloss/docs/tech/WLO-0126-evidence/comparison/side-by-side.png"
+  }
+}

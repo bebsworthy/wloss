@@ -113,6 +113,7 @@ public val appModule: Module =
                     profiles = get(),
                     settings = get(),
                     clock = get(),
+                    documents = get(),
                 )
         }
         // Debug egress monitor (F12 §3.8): reads the persisted receipt ledger.

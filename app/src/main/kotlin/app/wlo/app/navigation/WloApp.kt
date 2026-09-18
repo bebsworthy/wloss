@@ -15,6 +15,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -26,6 +27,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.paneTitle
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NamedNavArgument
 import androidx.navigation.NavController
@@ -184,29 +187,16 @@ public fun WloApp(
             topBar = {
                 val customAppBar = currentRoute == WloTabs.WEIGHT || currentRoute == F06Routes.MEASUREMENTS
                 if (appBarMetadata != null && !customAppBar) {
-                    TopAppBar(
-                        title = { Text(text = appBarMetadata.appBarTitle) },
-                        navigationIcon = {
-                            if (appBarMetadata.showsUp) {
-                                IconButton(
-                                    onClick = {
-                                        val guarded = guardedUpHandler
-                                        if (guarded != null) {
-                                            guarded()
-                                        } else if (!navController.navigateUp()) {
-                                            navController.navigate(appBarMetadata.topLevelOwner) {
-                                                popUpTo(navController.graph.findStartDestination().id) {
-                                                    inclusive = true
-                                                }
-                                            }
-                                        }
-                                    },
-                                ) {
-                                    Icon(imageVector = WloIcons.ArrowBack, contentDescription = "Navigate up")
-                                }
+                    DestinationAppBar(appBarMetadata, currentRoute == F01Routes.INTAKE) {
+                        val guarded = guardedUpHandler
+                        if (guarded != null) {
+                            guarded()
+                        } else if (!navController.navigateUp()) {
+                            navController.navigate(appBarMetadata.topLevelOwner) {
+                                popUpTo(navController.graph.findStartDestination().id) { inclusive = true }
                             }
-                        },
-                    )
+                        }
+                    }
                 }
             },
             bottomBar = {
@@ -343,6 +333,15 @@ public fun WloApp(
                             onSurfaceChanged = onSurfaceChanged,
                             navController = navController,
                             registerUpHandler = { guardedUpHandler = it },
+                        )
+                    }
+                    composable(route = F01Routes.INTAKE) {
+                        app.wlo.feature.f01.onboarding.ui.IntakeTargetScreen(
+                            viewModel = koinViewModel(),
+                            onDone = { navController.popBackStack() },
+                            onProfile = { navController.navigate("app/profile") },
+                            onHealth = { navController.navigate("app/profile/health") },
+                            registerUp = { guardedUpHandler = it },
                         )
                     }
                     composable(route = F01Routes.STUDIO) {
@@ -537,6 +536,7 @@ private fun RouteSurface(
                 onOpenLogbook = { range -> navController.navigate(F06Routes.logbook(range)) },
                 onOpenMeasurements = { navController.navigate(F06Routes.MEASUREMENTS) },
                 onEditGoal = {},
+                onEditIntake = { navController.navigate(F01Routes.INTAKE) },
                 initialGoalOpen = true,
                 onGoalClosed = { navController.popBackStack() },
             )
@@ -545,6 +545,7 @@ private fun RouteSurface(
 
         // The profile-facts editor (WLO-0035 W4): onboarding answers, correctable.
         "app/profile" -> ProfileFactsScreen()
+        "app/profile/health" -> ProfileFactsScreen(healthOnly = true, onHealthSaved = { navController.popBackStack() })
         F06Routes.MEASUREMENTS ->
             app.wlo.feature.f06.weight.ui.MeasurementsScreen(
                 viewModel = koinViewModel(),
@@ -617,6 +618,7 @@ private fun RouteSurface(
                 onOpenLogbook = { range -> navController.navigate(F06Routes.logbook(range)) },
                 onOpenMeasurements = { navController.navigate(F06Routes.MEASUREMENTS) },
                 onEditGoal = { navController.navigate(F01Routes.STUDIO) },
+                onEditIntake = { navController.navigate(F01Routes.INTAKE) },
             )
 
         F06Routes.MATH -> MathDocsScreen()
@@ -654,6 +656,7 @@ private fun TopLevelRouteSurface(
                     onOpenLogbook = { range -> navController.navigate(F06Routes.logbook(range)) },
                     onOpenMeasurements = { navController.navigate(F06Routes.MEASUREMENTS) },
                     onEditGoal = { navController.navigate(F01Routes.STUDIO) },
+                    onEditIntake = { navController.navigate(F01Routes.INTAKE) },
                 )
             }
 
@@ -761,6 +764,7 @@ private fun tomorrowEpochDay(): Long {
 private val APP_DETAIL_ROUTES =
     listOf(
         "app/profile",
+        "app/profile/health",
         F06Routes.MEASUREMENTS,
         "app/settings/reminder",
         "app/settings/lock",
@@ -768,3 +772,43 @@ private val APP_DETAIL_ROUTES =
         "app/health-connect",
         "f13/storage",
     )
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun DestinationAppBar(
+    metadata: RouteMetadata,
+    intake: Boolean,
+    onUp: () -> Unit,
+) {
+    TopAppBar(
+        expandedHeight = if (intake) 58.dp else TopAppBarDefaults.TopAppBarExpandedHeight,
+        colors =
+            TopAppBarDefaults.topAppBarColors(
+                containerColor =
+                    if (intake) {
+                        MaterialTheme.colorScheme.background
+                    } else {
+                        MaterialTheme.colorScheme.surface
+                    },
+            ),
+        title = {
+            Text(
+                metadata.appBarTitle,
+                modifier = if (intake) Modifier.padding(start = 8.dp) else Modifier,
+                style =
+                    if (intake) {
+                        MaterialTheme.typography.titleMedium.copy(fontSize = 17.sp)
+                    } else {
+                        MaterialTheme.typography.titleLarge
+                    },
+            )
+        },
+        navigationIcon = {
+            if (metadata.showsUp) {
+                IconButton(onClick = onUp, modifier = if (intake) Modifier.padding(start = 9.dp) else Modifier) {
+                    Icon(WloIcons.ArrowBack, contentDescription = "Navigate up")
+                }
+            }
+        },
+    )
+}

@@ -1,0 +1,79 @@
+{
+  "schemaVersion": 1,
+  "warnings": [
+    "Screen widths are normalized uniformly; desktop chrome must be excluded.",
+    "Glyph anchors align visible ink, not font size. Data/state equality is not inferred.",
+    "Background mask is contrast-based, not OCR. Difference includes rasterization changes.",
+    "Candidate overflow is clipped to the reference. Difference excludes uncovered pixels."
+  ],
+  "android": {
+    "serial": "emulator-5554",
+    "anchorText": "Daily calorie target"
+  },
+  "browser": {
+    "url": "file:///Users/boyd/wip/wloss/docs/design/flows/10-intake-target-f01.html",
+    "bounds": {
+      "x": 18,
+      "y": 150.828125,
+      "width": 390,
+      "height": 900
+    },
+    "anchor": {
+      "x": 38,
+      "y": 378.8125,
+      "width": 314,
+      "height": 17.390625
+    },
+    "anchorSelector": "#amount-label"
+  },
+  "anchorRegions": {
+    "reference": {
+      "x": 38,
+      "y": 378.8125,
+      "width": 314,
+      "height": 17.390625
+    },
+    "candidate": {
+      "x": 108,
+      "y": 1059,
+      "width": 292,
+      "height": 49
+    }
+  },
+  "referenceSize": [
+    390,
+    901
+  ],
+  "candidateSize": [
+    1080,
+    2590
+  ],
+  "scale": 0.3611111111111111,
+  "offset": {
+    "x": -1.0833333333333357,
+    "y": -2.75
+  },
+  "backgroundMode": "dark",
+  "referenceAnchor": {
+    "x": 39,
+    "y": 384,
+    "width": 7,
+    "height": 9
+  },
+  "candidateAnchor": {
+    "x": 111,
+    "y": 1071,
+    "width": 19,
+    "height": 24
+  },
+  "alignment": "first visible glyph top-left",
+  "outputs": {
+    "reference.png": "/Users/boyd/wip/wloss/docs/tech/WLO-0126-evidence/intake-alignment-final/reference.png",
+    "candidate.png": "/Users/boyd/wip/wloss/docs/tech/WLO-0126-evidence/intake-alignment-final/candidate.png",
+    "aligned.png": "/Users/boyd/wip/wloss/docs/tech/WLO-0126-evidence/intake-alignment-final/aligned.png",
+    "overlay.png": "/Users/boyd/wip/wloss/docs/tech/WLO-0126-evidence/intake-alignment-final/overlay.png",
+    "blend.png": "/Users/boyd/wip/wloss/docs/tech/WLO-0126-evidence/intake-alignment-final/blend.png",
+    "difference.png": "/Users/boyd/wip/wloss/docs/tech/WLO-0126-evidence/intake-alignment-final/difference.png",
+    "side-by-side.png": "/Users/boyd/wip/wloss/docs/tech/WLO-0126-evidence/intake-alignment-final/side-by-side.png"
+  }
+}

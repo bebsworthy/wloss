@@ -43,13 +43,27 @@ public data class TargetsRecord(
  * transforming serializers. Schema history:
  *
  * - **v1** — the ratified Appendix A shape (initial release).
+ * - **v2** — explicit manual-intake provenance (WLO-0126).
  */
 public object TargetsDocumentIO {
-    public const val SCHEMA_VERSION: Int = 1
+    public const val SCHEMA_VERSION: Int = 2
 
-    /** v1 → v2 placeholder (proves the funnel before any real v2 exists). */
+    /** Old documents retain their original floor enforcement. */
     public object TargetsV1ToV2 : JsonTransformingSerializer<TargetsRecord>(TargetsRecord.serializer()) {
-        override fun transformDeserialize(element: JsonElement): JsonElement = element
+        override fun transformDeserialize(element: JsonElement): JsonElement {
+            val record = element as JsonObject
+            val document = record["document"] as JsonObject
+            val energy = document["energy"] as JsonObject
+            return JsonObject(
+                record + (
+                    "document" to
+                        JsonObject(
+                            document +
+                                ("energy" to JsonObject(energy - "manuallyEntered")),
+                        )
+                ),
+            )
+        }
     }
 
     public fun encode(record: TargetsRecord): String =
@@ -67,6 +81,7 @@ public object TargetsDocumentIO {
         val payloadSerializer =
             when (val version = envelope.schemaVersion) {
                 SCHEMA_VERSION -> TargetsRecord.serializer()
+                1 -> TargetsV1ToV2
                 else -> error("unknown targets schemaVersion: $version (migration funnel owns this, not callers)")
             }
         val record = DocumentCodec.json.decodeFromJsonElement(payloadSerializer, envelope.payload)
@@ -92,6 +107,7 @@ public object TargetsInvariants {
         val violations = mutableListOf<TargetsViolation>()
         validateGoal(document, violations)
         validatePaceCap(document, violations)
+        validateEnergyNumbers(document, violations)
         validateFloor(document, violations)
         validateSchedule(document, violations)
         validateMacros(document, violations)
@@ -121,12 +137,24 @@ public object TargetsInvariants {
         }
     }
 
-    /** A.2 #1: floor — no version may budget below floorKcal. */
+    private fun validateEnergyNumbers(
+        document: TargetsDocument,
+        out: MutableList<TargetsViolation>,
+    ) {
+        val energy = document.energy
+        val values = listOfNotNull(energy.budgetKcal, energy.weeklyBudgetKcal, energy.floorKcal) + energy.schedule
+        if (values.any { !it.isFinite() || it < 0.0 }) {
+            out += TargetsViolation.InvalidEnergy("energy values must be finite and non-negative")
+        }
+    }
+
+    /** A.2 #1: automatic targets enforce the floor; explicit manual choices do not. */
     private fun validateFloor(
         document: TargetsDocument,
         out: MutableList<TargetsViolation>,
     ) {
         val energy = document.energy
+        if (energy.manuallyEntered) return
         val floor = energy.floorKcal
         when (energy.cadence) {
             Cadence.DAILY ->
@@ -219,6 +247,10 @@ public sealed interface TargetsViolation {
         override val detail: String
             get() = "weekly cadence needs exactly 7 schedule entries, got $size"
     }
+
+    public data class InvalidEnergy(
+        override val detail: String,
+    ) : TargetsViolation
 
     public data class InvalidGoal(
         override val detail: String,

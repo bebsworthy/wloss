@@ -21,6 +21,10 @@ import org.koin.dsl.module
  */
 public val f01OnboardingModule: Module =
     module {
+        viewModel {
+            app.wlo.feature.f01.onboarding.state
+                .IntakeTargetViewModel(get(), get(), get(), get(), get(), get(), get())
+        }
         single { WeightFirstOnboardingStore(documents = get()) }
         single {
             FinishWeightFirstOnboarding(
@@ -43,6 +47,7 @@ public val f01OnboardingModule: Module =
         }
         viewModel {
             OnboardingViewModel(
+                profiles = get(),
                 library = get(),
                 finisher = get(),
                 documents = get(),

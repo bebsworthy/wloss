@@ -507,6 +507,11 @@ public class GoalsEditorViewModel(
                     ?.let(GoalsEditorDraftIO::decode)
                     ?.takeIf { it.profileId == id }
             }
+        val health =
+            app.wlo.feature.f01.onboarding.domain
+                .ProfileHealthContextStore(documents)
+                .read(id)
+        val healthAnswers = if (health.unreadable) List(4) { SafetyAnswer.NOT_ANSWERED } else health.answers
         val draftConflict = draft != null && draft.baseVersion != current?.version
         if (current == null) {
             val intent =
@@ -527,10 +532,10 @@ public class GoalsEditorViewModel(
                     targetDateText = draft?.targetDate.orEmpty(),
                     budgetText = draft?.budgetText.orEmpty(),
                     mode = draft?.mode ?: intent?.goalMode ?: WeightGoalMode.LOSS,
-                    pregnant = draft?.pregnant ?: SafetyAnswer.NOT_ANSWERED,
-                    breastfeeding = draft?.breastfeeding ?: SafetyAnswer.NOT_ANSWERED,
-                    eatingDisorderConcern = draft?.eatingDisorderConcern ?: SafetyAnswer.NOT_ANSWERED,
-                    medicallyInfluencedWeight = draft?.medicallyInfluencedWeight ?: SafetyAnswer.NOT_ANSWERED,
+                    pregnant = healthAnswers[0],
+                    breastfeeding = healthAnswers[1],
+                    eatingDisorderConcern = healthAnswers[2],
+                    medicallyInfluencedWeight = healthAnswers[3],
                     currentWeightIsStarting = trendWeight == null && activeProfile.startWeightKg != null,
                     dirty = draft != null,
                     notice = draftConflictNotice(draftConflict),
@@ -583,13 +588,10 @@ public class GoalsEditorViewModel(
                             ?.let(::trimNumber)
                             .orEmpty(),
                 mode = draft?.mode ?: mode,
-                pregnant = draft?.pregnant ?: attestation?.pregnant ?: SafetyAnswer.NOT_ANSWERED,
-                breastfeeding = draft?.breastfeeding ?: attestation?.breastfeeding ?: SafetyAnswer.NOT_ANSWERED,
-                eatingDisorderConcern =
-                    draft?.eatingDisorderConcern ?: attestation?.eatingDisorderConcern ?: SafetyAnswer.NOT_ANSWERED,
-                medicallyInfluencedWeight =
-                    draft?.medicallyInfluencedWeight ?: attestation?.medicallyInfluencedWeight
-                        ?: SafetyAnswer.NOT_ANSWERED,
+                pregnant = healthAnswers[0],
+                breastfeeding = healthAnswers[1],
+                eatingDisorderConcern = healthAnswers[2],
+                medicallyInfluencedWeight = healthAnswers[3],
                 currentWeightIsStarting = trendWeight == null && activeProfile.startWeightKg != null,
                 dirty = draft != null,
                 notice = draftConflictNotice(draftConflict),

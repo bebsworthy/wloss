@@ -8,10 +8,12 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
@@ -27,6 +29,7 @@ import app.wlo.core.common.MassUnit
 import app.wlo.core.common.WloResult
 import app.wlo.core.common.getOrNull
 import app.wlo.core.data.ProfileRepository
+import app.wlo.core.datastore.JsonDocumentStore
 import app.wlo.core.datastore.SettingsStore
 import app.wlo.core.designsystem.SelectChip
 import app.wlo.core.designsystem.WloBanner
@@ -36,7 +39,11 @@ import app.wlo.core.designsystem.WloSpacing
 import app.wlo.core.designsystem.wloExtendedColors
 import app.wlo.core.designsystem.wloType
 import app.wlo.core.model.ActivityLevel
+import app.wlo.core.model.SafetyAnswer
 import app.wlo.core.model.Sex
+import app.wlo.feature.f01.onboarding.domain.ProfileHealthContext
+import app.wlo.feature.f01.onboarding.domain.ProfileHealthContextStore
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.first
@@ -64,12 +71,22 @@ public sealed interface ProfileFactsEvent {
         public val level: ActivityLevel,
     ) : ProfileFactsEvent
 
+    public data class HealthChange(
+        val index: Int,
+        val answer: SafetyAnswer,
+    ) : ProfileFactsEvent
+
+    public data object SaveHealth : ProfileFactsEvent
+
     public data object Save : ProfileFactsEvent
 }
 
 /** The editable facts (WLO-0035 W4): what onboarding collected, now correctable. */
 public data class ProfileFactsUi(
     public val loading: Boolean = true,
+    public val health: ProfileHealthContext = ProfileHealthContext(),
+    public val healthNotice: String? = null,
+    public val healthSaved: Boolean = false,
     public val sex: Sex? = null,
     public val birthYearText: String = "",
     public val heightText: String = "",
@@ -92,8 +109,10 @@ public class ProfileFactsViewModel(
     private val profiles: ProfileRepository,
     private val settings: SettingsStore,
     private val clock: ClockPort,
+    private val documents: JsonDocumentStore,
     @Provided private val savedStateHandle: SavedStateHandle = SavedStateHandle(),
 ) : ViewModel() {
+    private var loadedProfileId: String? = null
     private val mutableState = MutableStateFlow(ProfileFactsUi())
 
     /** Renderable state. */
@@ -104,6 +123,7 @@ public class ProfileFactsViewModel(
             val unit =
                 if (settings.massUnit.first() == MassUnit.POUND) LengthUnit.INCH else LengthUnit.CENTIMETER
             profiles.active().getOrNull()?.let { profile ->
+                loadedProfileId = profile.id
                 val restoredProfile = savedStateHandle.get<String>(PROFILE_KEY) == profile.id
                 mutableState.value =
                     mutableState.value.copy(
@@ -123,6 +143,7 @@ public class ProfileFactsViewModel(
                             },
                         heightUnit = unit,
                         activityLevel = profile.activityLevel,
+                        health = ProfileHealthContextStore(documents).read(profile.id),
                     )
                 persist(profile.id)
             } ?: run { mutableState.value = mutableState.value.copy(loading = false) }
@@ -142,10 +163,57 @@ public class ProfileFactsViewModel(
                 mutableState.value = mutableState.value.copy(heightText = event.text, saved = false, heightError = null)
             is ProfileFactsEvent.ActivityChange ->
                 mutableState.value = mutableState.value.copy(activityLevel = event.level, saved = false)
+            is ProfileFactsEvent.HealthChange -> {
+                val health = mutableState.value.health
+                mutableState.value =
+                    mutableState.value.copy(
+                        health =
+                            health.copy(
+                                answers = health.answers.toMutableList().also { it[event.index] = event.answer },
+                                conflicts = health.conflicts - event.index,
+                                unreadable = false,
+                            ),
+                        healthNotice = null,
+                    )
+            }
+            ProfileFactsEvent.SaveHealth -> saveHealth()
             ProfileFactsEvent.Save -> save()
         }
         if (event != ProfileFactsEvent.Save) {
             viewModelScope.launch { profiles.active().getOrNull()?.let { persist(it.id) } }
+        }
+    }
+
+    @Suppress("TooGenericExceptionCaught") // Storage failures retain the draft; cancellation propagates.
+    private fun saveHealth() {
+        val health = mutableState.value.health
+        if (health.conflicts.isNotEmpty() || health.unreadable) {
+            mutableState.value = mutableState.value.copy(healthNotice = "Review the marked answers before saving.")
+            return
+        }
+        viewModelScope.launch {
+            mutableState.value = mutableState.value.copy(saving = true, healthNotice = null)
+            try {
+                val profileId =
+                    loadedProfileId
+                        ?: error("Reopen your profile to save health context.")
+                check(profiles.active().getOrNull()?.id == profileId) { "The active profile changed. Reopen it." }
+                ProfileHealthContextStore(documents).write(profileId, health.answers)
+                mutableState.value =
+                    mutableState.value.copy(
+                        saving = false,
+                        healthNotice = "Health context saved",
+                        healthSaved = true,
+                    )
+            } catch (cancelled: CancellationException) {
+                throw cancelled
+            } catch (failure: Exception) {
+                mutableState.value =
+                    mutableState.value.copy(
+                        saving = false,
+                        healthNotice = failure.message ?: "Could not save. Try again.",
+                    )
+            }
         }
     }
 
@@ -225,8 +293,13 @@ public class ProfileFactsViewModel(
 public fun ProfileFactsScreen(
     viewModel: ProfileFactsViewModel = koinViewModel(),
     modifier: Modifier = Modifier,
+    healthOnly: Boolean = false,
+    onHealthSaved: () -> Unit = {},
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
+    LaunchedEffect(state.healthSaved) {
+        if (healthOnly && state.healthSaved) onHealthSaved()
+    }
 
     Column(
         modifier =
@@ -237,6 +310,10 @@ public fun ProfileFactsScreen(
                 .padding(bottom = WloSpacing.SCREEN),
         verticalArrangement = Arrangement.spacedBy(WloSpacing.CARD),
     ) {
+        if (healthOnly) {
+            HealthContextFields(state, viewModel::onEvent, returnAfterSave = true)
+            return@Column
+        }
         state.notice?.let {
             WloBanner(text = it, tone = WloBannerTone.Warning, modifier = Modifier.testTag("profile-notice"))
         }
@@ -323,6 +400,7 @@ public fun ProfileFactsScreen(
                 enabled = !state.saving,
                 modifier = Modifier.fillMaxWidth().testTag("profile-save"),
             )
+            HealthContextFields(state, viewModel::onEvent)
         }
     }
 }
@@ -334,3 +412,54 @@ private fun sexLabel(sex: Sex?): String =
         Sex.OTHER -> "Other"
         null -> "Undisclosed"
     }
+
+/** Optional profile-owned facts, saved independently of numerical profile fields. */
+@Composable
+private fun HealthContextFields(
+    state: ProfileFactsUi,
+    onEvent: (ProfileFactsEvent) -> Unit,
+    returnAfterSave: Boolean = false,
+) {
+    if (!returnAfterSave) Text("Health context", style = MaterialTheme.typography.titleMedium)
+    Text(
+        "Optional. Used to check whether intake recommendations and projection models apply to you.",
+        style = wloType.caption,
+    )
+    if (state.health.unreadable) Text("Saved health context could not be read. Review your answers.")
+    listOf(
+        "Pregnant?",
+        "Breastfeeding?",
+        "Eating-disorder concern?",
+        "Medical factors affecting weight?",
+    ).forEachIndexed { index, label ->
+        Text(label, style = wloType.body)
+        if (index in state.health.conflicts) {
+            Text("Previous answers differ. Choose your current answer.", style = wloType.caption)
+        }
+        Row(horizontalArrangement = Arrangement.spacedBy(WloSpacing.TIGHT)) {
+            listOf(SafetyAnswer.NOT_ANSWERED, SafetyAnswer.NO, SafetyAnswer.YES).forEach { answer ->
+                FilterChip(
+                    selected = state.health.answers[index] == answer,
+                    enabled = !state.loading && !state.saving,
+                    onClick = { onEvent(ProfileFactsEvent.HealthChange(index, answer)) },
+                    label = {
+                        Text(
+                            when (answer) {
+                                SafetyAnswer.NOT_ANSWERED -> "Not answered"
+                                SafetyAnswer.NO -> "No"
+                                SafetyAnswer.YES -> "Yes"
+                            },
+                        )
+                    },
+                )
+            }
+        }
+    }
+    state.healthNotice?.let { Text(it, style = wloType.caption) }
+    WloButton(
+        label = if (returnAfterSave) "Save and return" else "Save health context",
+        onClick = { onEvent(ProfileFactsEvent.SaveHealth) },
+        enabled = !state.loading && !state.saving,
+        modifier = Modifier.fillMaxWidth().testTag("profile-health-save"),
+    )
+}

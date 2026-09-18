@@ -48,7 +48,7 @@ class TargetsDocumentIOTest {
     @Test
     fun envelopeCarriesSchemaVersionAndPinnedWriter() {
         val json = Json.parseToJsonElement(TargetsDocumentIO.encode(record())).jsonObject
-        assertEquals(1, json["schemaVersion"]!!.toString().toInt())
+        assertEquals(2, json["schemaVersion"]!!.toString().toInt())
         val recordJson = json["payload"]!!.jsonObject
         assertEquals("\"studio@F01\"", recordJson["createdBy"]!!.toString())
     }
@@ -62,6 +62,25 @@ class TargetsDocumentIOTest {
         val text = DocumentCodec.json.encodeToString(TargetsRecord.serializer(), invalid)
         // Raw decode through the funnel must refuse (no invariant-breaking row).
         assertFailsWith<IllegalArgumentException> { TargetsDocumentIO.decode(text) }
+    }
+
+    @Test
+    fun oldDocumentsNeverAcquireManualProvenance() {
+        val current = TargetsDocumentIO.encode(record())
+        val legacy = current.replace("\"schemaVersion\":2", "\"schemaVersion\":1")
+        assertEquals(record(), TargetsDocumentIO.decode(legacy))
+        val manual =
+            record().copy(
+                document =
+                    record().document.copy(
+                        energy = Energy(budgetKcal = 500.0, floorKcal = 1500.0, manuallyEntered = true),
+                    ),
+            )
+        val encoded = TargetsDocumentIO.encode(manual)
+        assertEquals(manual, TargetsDocumentIO.decode(encoded))
+        assertFailsWith<IllegalArgumentException> {
+            TargetsDocumentIO.decode(encoded.replace("\"schemaVersion\":2", "\"schemaVersion\":1"))
+        }
     }
 
     @Test

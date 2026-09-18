@@ -316,6 +316,8 @@ public fun WloForecastChart(
     describe: String,
     modifier: Modifier = Modifier,
     onClick: (() -> Unit)? = null,
+    goalColor: androidx.compose.ui.graphics.Color? = null,
+    rangeOnly: Boolean = false,
 ) {
     val chartModifier =
         if (onClick == null) {
@@ -330,7 +332,7 @@ public fun WloForecastChart(
     )
     val outline = MaterialTheme.colorScheme.outline
     val centerLine = MaterialTheme.colorScheme.onSurface
-    val accentDim = wloExtendedColors.accentDim
+    val accentDim = if (rangeOnly) wloExtendedColors.developing else wloExtendedColors.accentDim
     val chartBoundary = wloExtendedColors.chartBoundary
     val accent = MaterialTheme.colorScheme.primary
     val chrome = wloExtendedColors.textTertiary
@@ -446,7 +448,7 @@ public fun WloForecastChart(
         // Outer band (pessimistic..optimistic) light, inner (expected..optimistic) darker:
         // the center is where the probability mass sits (fan-chart grammar, §1.3).
         drawPath(bandPath(fast, slow), accentDim.copy(alpha = 0.16f))
-        drawPath(bandPath(fast, mid), accentDim.copy(alpha = 0.22f))
+        if (!rangeOnly) drawPath(bandPath(fast, mid), accentDim.copy(alpha = 0.22f))
 
         fun line(points: List<Pair<Float, Float>>): Path {
             val path = Path()
@@ -457,13 +459,28 @@ public fun WloForecastChart(
             return path
         }
 
-        drawPath(line(fast), chartBoundary, style = Stroke(1.5f))
-        drawPath(line(slow), chartBoundary, style = Stroke(1.5f))
-        drawPath(line(mid), centerLine, style = Stroke(2.8f, cap = StrokeCap.Round))
+        if (!rangeOnly) {
+            drawPath(line(fast), chartBoundary, style = Stroke(1.5f))
+            drawPath(line(slow), chartBoundary, style = Stroke(1.5f))
+            drawPath(line(mid), centerLine, style = Stroke(2.8f, cap = StrokeCap.Round))
+        }
 
         // Goal line: hairline across at the target weight.
         val goalY = yOf(bands.goalWeightKg.toFloat())
-        drawLine(outline, Offset(left, goalY), Offset(right, goalY), 1f)
+        drawLine(
+            goalColor ?: outline,
+            Offset(left, goalY),
+            Offset(right, goalY),
+            if (rangeOnly) 1.dp.toPx() else 1f,
+            pathEffect =
+                if (rangeOnly) {
+                    androidx.compose.ui.graphics.PathEffect.dashPathEffect(
+                        floatArrayOf(4.dp.toPx(), 4.dp.toPx()),
+                    )
+                } else {
+                    null
+                },
+        )
 
         // Finish-date ticks: one per band, ON the shared scale, accent for the
         // expected date. Out-of-window ticks (band finished past the display
@@ -475,8 +492,10 @@ public fun WloForecastChart(
             val x = xOf(fraction)
             drawLine(accent, Offset(x, top - 6f), Offset(x, top + 2f), 2f)
         }
-        finishTick(bands.optimisticFinishEpochDay)
-        finishTick(bands.pessimisticFinishEpochDay)
+        if (!rangeOnly) {
+            finishTick(bands.optimisticFinishEpochDay)
+            finishTick(bands.pessimisticFinishEpochDay)
+        }
         if (bands.pointDateEligible) finishTick(bands.expectedFinishEpochDay)
 
         // Month ticks along the bottom (mock "Sep ’26 · Jan ’27 · May ’27"),
@@ -503,7 +522,7 @@ public fun WloForecastChart(
         drawText(
             textMeasurer = textMeasurer,
             text = formatWeight(bands.goalWeightKg),
-            style = axisStyle,
+            style = axisStyle.copy(color = goalColor ?: chrome),
             topLeft =
                 Offset(
                     (right - 96.dp.toPx()).coerceAtLeast(left),

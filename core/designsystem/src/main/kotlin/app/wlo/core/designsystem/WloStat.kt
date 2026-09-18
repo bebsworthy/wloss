@@ -31,8 +31,17 @@ public fun <T : Any> WloStat(
     format: (T) -> String,
     modifier: Modifier = Modifier,
     valueStyle: TextStyle = wloType.statL,
+    horizontalAlignment: Alignment.Horizontal = Alignment.Start,
+    unit: String? = null,
+    sourceLabel: String? = null,
+    sourceColor: androidx.compose.ui.graphics.Color? = null,
+    compactSource: Boolean = false,
 ): Unit =
-    Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(WloSpacing.TIGHT)) {
+    Column(
+        modifier = modifier,
+        horizontalAlignment = horizontalAlignment,
+        verticalArrangement = Arrangement.spacedBy(WloSpacing.TIGHT),
+    ) {
         Text(
             text = label,
             style = wloType.label,
@@ -47,7 +56,14 @@ public fun <T : Any> WloStat(
             )
             Spacer(Modifier.width(WloSpacing.TIGHT))
         }
-        ProvenanceChip(value = value, format = format)
+        unit?.let { Text(it, style = MaterialTheme.typography.bodySmall) }
+        ProvenanceChip(
+            value = value,
+            format = format,
+            label = sourceLabel,
+            labelColor = sourceColor,
+            compact = compactSource,
+        )
     }
 
 /**

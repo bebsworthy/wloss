@@ -1,0 +1,331 @@
+{
+  "profileRoundTrip": "passed",
+  "errors": [],
+  "states": [
+    {
+      "objective": "loss",
+      "value": "-500",
+      "positions": {
+        ".projection-plot": [
+          481.640625,
+          166
+        ],
+        ".entry-modes": [
+          717.640625,
+          50
+        ],
+        ".editor-field": [
+          777.640625,
+          90.6875
+        ],
+        "#deficit-slider": [
+          868.328125,
+          48
+        ],
+        ".suggestion-row": [
+          942.5625,
+          64
+        ]
+      },
+      "chart": "visible"
+    },
+    {
+      "objective": "loss",
+      "value": "0",
+      "positions": {
+        ".projection-plot": [
+          481.640625,
+          166
+        ],
+        ".entry-modes": [
+          717.640625,
+          50
+        ],
+        ".editor-field": [
+          777.640625,
+          90.6875
+        ],
+        "#deficit-slider": [
+          868.328125,
+          48
+        ],
+        ".suggestion-row": [
+          942.5625,
+          64
+        ]
+      },
+      "chart": "visible"
+    },
+    {
+      "objective": "loss",
+      "value": "500",
+      "positions": {
+        ".projection-plot": [
+          481.640625,
+          166
+        ],
+        ".entry-modes": [
+          717.640625,
+          50
+        ],
+        ".editor-field": [
+          777.640625,
+          90.6875
+        ],
+        "#deficit-slider": [
+          868.328125,
+          48
+        ],
+        ".suggestion-row": [
+          942.5625,
+          64
+        ]
+      },
+      "chart": "visible"
+    },
+    {
+      "objective": "loss",
+      "value": "",
+      "positions": {
+        ".projection-plot": [
+          481.640625,
+          166
+        ],
+        ".entry-modes": [
+          717.640625,
+          50
+        ],
+        ".editor-field": [
+          777.640625,
+          90.6875
+        ],
+        "#deficit-slider": [
+          868.328125,
+          48
+        ],
+        ".suggestion-row": [
+          942.5625,
+          64
+        ]
+      },
+      "chart": "hidden"
+    },
+    {
+      "objective": "maintenance",
+      "value": "-500",
+      "positions": {
+        ".projection-plot": [
+          481.640625,
+          166
+        ],
+        ".entry-modes": [
+          717.640625,
+          50
+        ],
+        ".editor-field": [
+          777.640625,
+          90.6875
+        ],
+        "#deficit-slider": [
+          868.328125,
+          48
+        ],
+        ".suggestion-row": [
+          942.5625,
+          64
+        ]
+      },
+      "chart": "visible"
+    },
+    {
+      "objective": "maintenance",
+      "value": "0",
+      "positions": {
+        ".projection-plot": [
+          481.640625,
+          166
+        ],
+        ".entry-modes": [
+          717.640625,
+          50
+        ],
+        ".editor-field": [
+          777.640625,
+          90.6875
+        ],
+        "#deficit-slider": [
+          868.328125,
+          48
+        ],
+        ".suggestion-row": [
+          942.5625,
+          64
+        ]
+      },
+      "chart": "visible"
+    },
+    {
+      "objective": "maintenance",
+      "value": "500",
+      "positions": {
+        ".projection-plot": [
+          481.640625,
+          166
+        ],
+        ".entry-modes": [
+          717.640625,
+          50
+        ],
+        ".editor-field": [
+          777.640625,
+          90.6875
+        ],
+        "#deficit-slider": [
+          868.328125,
+          48
+        ],
+        ".suggestion-row": [
+          942.5625,
+          64
+        ]
+      },
+      "chart": "visible"
+    },
+    {
+      "objective": "maintenance",
+      "value": "",
+      "positions": {
+        ".projection-plot": [
+          481.640625,
+          166
+        ],
+        ".entry-modes": [
+          717.640625,
+          50
+        ],
+        ".editor-field": [
+          777.640625,
+          90.6875
+        ],
+        "#deficit-slider": [
+          868.328125,
+          48
+        ],
+        ".suggestion-row": [
+          942.5625,
+          64
+        ]
+      },
+      "chart": "hidden"
+    },
+    {
+      "objective": "gain",
+      "value": "-500",
+      "positions": {
+        ".projection-plot": [
+          481.640625,
+          166
+        ],
+        ".entry-modes": [
+          717.640625,
+          50
+        ],
+        ".editor-field": [
+          777.640625,
+          90.6875
+        ],
+        "#deficit-slider": [
+          868.328125,
+          48
+        ],
+        ".suggestion-row": [
+          942.5625,
+          64
+        ]
+      },
+      "chart": "visible"
+    },
+    {
+      "objective": "gain",
+      "value": "0",
+      "positions": {
+        ".projection-plot": [
+          481.640625,
+          166
+        ],
+        ".entry-modes": [
+          717.640625,
+          50
+        ],
+        ".editor-field": [
+          777.640625,
+          90.6875
+        ],
+        "#deficit-slider": [
+          868.328125,
+          48
+        ],
+        ".suggestion-row": [
+          942.5625,
+          64
+        ]
+      },
+      "chart": "visible"
+    },
+    {
+      "objective": "gain",
+      "value": "500",
+      "positions": {
+        ".projection-plot": [
+          481.640625,
+          166
+        ],
+        ".entry-modes": [
+          717.640625,
+          50
+        ],
+        ".editor-field": [
+          777.640625,
+          90.6875
+        ],
+        "#deficit-slider": [
+          868.328125,
+          48
+        ],
+        ".suggestion-row": [
+          942.5625,
+          64
+        ]
+      },
+      "chart": "visible"
+    },
+    {
+      "objective": "gain",
+      "value": "",
+      "positions": {
+        ".projection-plot": [
+          481.640625,
+          166
+        ],
+        ".entry-modes": [
+          717.640625,
+          50
+        ],
+        ".editor-field": [
+          777.640625,
+          90.6875
+        ],
+        "#deficit-slider": [
+          868.328125,
+          48
+        ],
+        ".suggestion-row": [
+          942.5625,
+          64
+        ]
+      },
+      "chart": "hidden"
+    }
+  ],
+  "longGoalAxis": "8465Now41 months81 months"
+}

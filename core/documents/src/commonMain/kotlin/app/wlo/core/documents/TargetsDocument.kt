@@ -59,13 +59,15 @@ public data class Energy(
     public val weeklyBudgetKcal: Double? = null,
     /** kcal per weekday (Mon–Sun), weekly cadence only. */
     public val schedule: List<Double> = emptyList(),
-    /** Calorie floor: no version may budget below it (A.2 invariant 1). */
+    /** Recommendation floor; explicit manual intake is exempt (WLO-0126). */
     public val floorKcal: Double,
     /**
      * Persistent acknowledgment for overriding the default floor (A.1).
-     * The override can never weaken validation — the floor check always runs.
+     * Legacy automatic-plan override; separate from explicit manual intake.
      */
     public val floorOverrideAcknowledged: Boolean = false,
+    /** Explicit user-authored intake, never evidence of clinical eligibility. */
+    public val manuallyEntered: Boolean = false,
 )
 
 /**

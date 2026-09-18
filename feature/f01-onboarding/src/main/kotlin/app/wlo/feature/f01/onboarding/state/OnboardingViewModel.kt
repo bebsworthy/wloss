@@ -4,7 +4,9 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import app.wlo.core.common.ClockPort
 import app.wlo.core.common.MassUnit
+import app.wlo.core.common.getOrNull
 import app.wlo.core.data.NewProfile
+import app.wlo.core.data.ProfileRepository
 import app.wlo.core.datastore.JsonDocumentStore
 import app.wlo.core.datastore.SettingsStore
 import app.wlo.core.documents.ConstraintApplier
@@ -25,6 +27,7 @@ import app.wlo.feature.f01.onboarding.domain.FinishOnboarding
 import app.wlo.feature.f01.onboarding.domain.GoalEditorSafety
 import app.wlo.feature.f01.onboarding.domain.OnboardingDraft
 import app.wlo.feature.f01.onboarding.domain.OnboardingDraftIO
+import app.wlo.feature.f01.onboarding.domain.ProfileHealthContextStore
 import app.wlo.feature.f01.onboarding.domain.TemplateLibrary
 import app.wlo.feature.f01.onboarding.domain.WeightGoalPreview
 import app.wlo.feature.f01.onboarding.domain.WeightGoalPreviewInput
@@ -141,6 +144,7 @@ public class OnboardingViewModel(
     private val documents: JsonDocumentStore,
     private val settings: SettingsStore,
     private val clock: ClockPort,
+    private val profiles: ProfileRepository,
 ) : ViewModel() {
     /** The shipped library, loaded lazily at holder construction. */
     private val shipped: List<DietTemplate> =
@@ -481,6 +485,20 @@ public class OnboardingViewModel(
                 } else {
                     recompute(_uiState.value.copy(massUnit = storedUnit)).copy(restoreAttempted = true)
                 }
+            val profile = profiles.active().getOrNull()
+            if (profile != null) {
+                val health = ProfileHealthContextStore(documents).read(profile.id)
+                val answers = if (health.unreadable) List(4) { SafetyAnswer.NOT_ANSWERED } else health.answers
+                _uiState.value =
+                    recompute(
+                        _uiState.value.copy(
+                            pregnant = answers[0],
+                            breastfeeding = answers[1],
+                            eatingDisorderConcern = answers[2],
+                            medicallyInfluencedWeight = answers[3],
+                        ),
+                    )
+            }
             // An explicit draft choice wins over the compatibility mirror
             // after process death; all values themselves remain canonical kg.
             settings.setMassUnit(_uiState.value.massUnit)

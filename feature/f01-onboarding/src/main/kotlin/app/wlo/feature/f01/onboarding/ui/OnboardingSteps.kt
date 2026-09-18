@@ -386,16 +386,7 @@ internal fun GoalStep(
         }
 
         WloCard(header = { WloCardHeader(title = "Goal safety check") }) {
-            WeightGoalSafetyControls(
-                pregnant = state.pregnant,
-                breastfeeding = state.breastfeeding,
-                eatingDisorderConcern = state.eatingDisorderConcern,
-                medicallyInfluencedWeight = state.medicallyInfluencedWeight,
-                onAnswer = { question, answer ->
-                    viewModel.onEvent(OnboardingEvent.SetGoalSafety(question, answer))
-                },
-                testTagPrefix = "onboarding-goal-safety",
-            )
+            Text("Health context is managed in your profile.", style = wloType.caption)
             WloBanner(
                 text = "${state.goalSafetyCopy.title}. ${state.goalSafetyCopy.body}",
                 tone =

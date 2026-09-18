@@ -1,0 +1,11 @@
+document.querySelector('[name="entry-mode"][value="intake"]').checked = true;
+setEntryMode(true);
+document.querySelector('.maintenance .amount').textContent = '1,776';
+document.querySelector('#result').textContent = '1,276';
+document.querySelector('#weight-goal').textContent = '77.1 → 74.0 kg';
+document.querySelector('#calories').value = 1276;
+const control = document.querySelector('#deficit-slider');
+control.min = 776; control.max = 2776; control.value = 1276;
+document.querySelector('#slider-left').textContent = '776';
+document.querySelector('#slider-center').textContent = '1,776 maintenance';
+document.querySelector('#slider-right').textContent = '2,776';

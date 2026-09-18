@@ -1,0 +1,233 @@
+.maintenance .amount {
+  fonts: [
+    {
+      familyName: 'Inter Medium',
+      postScriptName: 'Inter-Medium',
+      isCustomFont: true,
+      glyphCount: 5
+    }
+  ]
+}
+.editor-value input { fonts: [] }
+.top strong {
+  fonts: [
+    {
+      familyName: 'Inter SemiBold',
+      postScriptName: 'Inter-SemiBold',
+      isCustomFont: true,
+      glyphCount: 11
+    }
+  ]
+}
+[
+  {
+    el: 'top',
+    x: 1,
+    y: 37,
+    w: 388,
+    h: 58,
+    font: '14px / 20.3px Inter, "Inter var", system-ui, -apple-system, "Segoe UI", sans-serif',
+    line: '20.3px',
+    tracking: 'normal'
+  },
+  {
+    el: 'STRONG',
+    x: 73,
+    y: 53.671875,
+    w: 95.09375,
+    h: 24.640625,
+    font: '550 17px / 24.65px Inter, "Inter var", system-ui, -apple-system, "Segoe UI", sans-serif',
+    line: '24.65px',
+    tracking: 'normal'
+  },
+  {
+    el: 'goal-summary',
+    x: 23,
+    y: 103,
+    w: 344,
+    h: 38.84375,
+    font: '13px / 18.85px Inter, "Inter var", system-ui, -apple-system, "Segoe UI", sans-serif',
+    line: '18.85px',
+    tracking: 'normal'
+  },
+  {
+    el: 'energy-summary',
+    x: 23,
+    y: 141.84375,
+    w: 344,
+    h: 143.46875,
+    font: '14px / 20.3px Inter, "Inter var", system-ui, -apple-system, "Segoe UI", sans-serif',
+    line: '20.3px',
+    tracking: 'normal'
+  },
+  {
+    el: 'P',
+    x: 23,
+    y: 145.84375,
+    w: 164,
+    h: 17.390625,
+    font: '12px / 17.4px Inter, "Inter var", system-ui, -apple-system, "Segoe UI", sans-serif',
+    line: '17.4px',
+    tracking: 'normal'
+  },
+  {
+    el: 'amount',
+    x: 23,
+    y: 169.234375,
+    w: 164,
+    h: 44.1875,
+    font: '',
+    line: '44.2px',
+    tracking: '-0.5px'
+  },
+  {
+    el: 'P',
+    x: 23,
+    y: 215.421875,
+    w: 164,
+    h: 17.390625,
+    font: '12px / 17.4px Inter, "Inter var", system-ui, -apple-system, "Segoe UI", sans-serif',
+    line: '17.4px',
+    tracking: 'normal'
+  },
+  {
+    el: 'source',
+    x: 23,
+    y: 242.8125,
+    w: 101.140625,
+    h: 24.5,
+    font: '10px / 14.5px Inter, "Inter var", system-ui, -apple-system, "Segoe UI", sans-serif',
+    line: '14.5px',
+    tracking: 'normal'
+  },
+  {
+    el: 'projection',
+    x: 23,
+    y: 285.3125,
+    w: 344,
+    h: 247.5,
+    font: '14px / 20.3px Inter, "Inter var", system-ui, -apple-system, "Segoe UI", sans-serif',
+    line: '20.3px',
+    tracking: 'normal'
+  },
+  {
+    el: 'row',
+    x: 23,
+    y: 300.3125,
+    w: 344,
+    h: 24.5,
+    font: '14px / 20.3px Inter, "Inter var", system-ui, -apple-system, "Segoe UI", sans-serif',
+    line: '20.3px',
+    tracking: 'normal'
+  },
+  {
+    el: 'projection-chart',
+    x: 23,
+    y: 330.8125,
+    w: 344,
+    h: 166,
+    font: '14px / 20.3px Inter, "Inter var", system-ui, -apple-system, "Segoe UI", sans-serif',
+    line: '20.3px',
+    tracking: 'normal'
+  },
+  {
+    el: 'projection-outcome',
+    x: 23,
+    y: 501.8125,
+    w: 344,
+    h: 18,
+    font: '12px / 18px Inter, "Inter var", system-ui, -apple-system, "Segoe UI", sans-serif',
+    line: '18px',
+    tracking: 'normal'
+  },
+  {
+    el: 'entry-modes',
+    x: 23,
+    y: 548.8125,
+    w: 344,
+    h: 50,
+    font: '14px / 20.3px Inter, "Inter var", system-ui, -apple-system, "Segoe UI", sans-serif',
+    line: '20.3px',
+    tracking: 'normal'
+  },
+  {
+    el: 'editor-field',
+    x: 23,
+    y: 608.8125,
+    w: 344,
+    h: 90.6875,
+    font: '14px / 20.3px Inter, "Inter var", system-ui, -apple-system, "Segoe UI", sans-serif',
+    line: '20.3px',
+    tracking: 'normal'
+  },
+  {
+    el: 'amount-label',
+    x: 38,
+    y: 617.8125,
+    w: 314,
+    h: 17.390625,
+    font: '12px / 17.4px Inter, "Inter var", system-ui, -apple-system, "Segoe UI", sans-serif',
+    line: '17.4px',
+    tracking: 'normal'
+  },
+  {
+    el: 'calories',
+    x: 38,
+    y: 635.203125,
+    w: 238.21875,
+    h: 55.296875,
+    font: '',
+    line: '49.3px',
+    tracking: '-2px'
+  },
+  {
+    el: 'deficit-slider',
+    x: 23,
+    y: 699.5,
+    w: 344,
+    h: 48,
+    font: '14px / 20.3px Inter, "Inter var", system-ui, -apple-system, "Segoe UI", sans-serif',
+    line: '20.3px',
+    tracking: 'normal'
+  },
+  {
+    el: 'slider-direction',
+    x: 23,
+    y: 747.796875,
+    w: 344,
+    h: 15.9375,
+    font: '11px / 15.95px Inter, "Inter var", system-ui, -apple-system, "Segoe UI", sans-serif',
+    line: '15.95px',
+    tracking: 'normal'
+  },
+  {
+    el: 'SUMMARY',
+    x: 23,
+    y: 773.734375,
+    w: 344,
+    h: 62,
+    font: '14px / 20.3px Inter, "Inter var", system-ui, -apple-system, "Segoe UI", sans-serif',
+    line: '20.3px',
+    tracking: 'normal'
+  },
+  {
+    el: 'foot',
+    x: 1,
+    y: 812,
+    w: 388,
+    h: 87,
+    font: '14px / 20.3px Inter, "Inter var", system-ui, -apple-system, "Segoe UI", sans-serif',
+    line: '20.3px',
+    tracking: 'normal'
+  },
+  {
+    el: 'primary',
+    x: 23,
+    y: 826,
+    w: 344,
+    h: 48,
+    font: '650 14px / 20.3px Inter, "Inter var", system-ui, -apple-system, "Segoe UI", sans-serif',
+    line: '20.3px',
+    tracking: 'normal'
+  }
+]

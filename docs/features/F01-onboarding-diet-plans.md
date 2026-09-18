@@ -23,7 +23,7 @@
     Creating a Diet Plan is a separate optional success metric.
   - A **3-band forecast preview** (optimistic / expected / pessimistic) is on screen **within 30 s** of entering a goal, rendered via the F07 forecast engine.
   - Every value the wizard produces is editable afterwards in the Studio; nothing is write-once; every edit is a new plan version with a human-readable diff.
-  - Any goal requiring calories below the safety floor is **refused with a counter-proposal** (slower pace), never silently accepted — in code, not copy.
+  - Automatic recommendations below the configured floor are withheld. Explicit manual intake remains saveable (WLO-0126); it does not qualify for a forecast.
   - Fresh Start hides history without deleting a single row; import brings in generic CSV/JSON data fully offline at v1 — MFP/Lose It!/Paprika/Mealime converters follow in v1.x (R-S4) — with a per-category report.
 - Benefit to the user: a plan that feels *authored by them*, not issued to them — with honest math labels from day one. Benefit to other features: F01 defines the shared **Targets** and **Plan** objects; without F01, F02 has no budget, F03 has no rules, F07 has nothing to adapt.
 
@@ -92,6 +92,33 @@
   conflicts never overwrite, and a small operation journal reconciles the
   immutable Targets version with its safety metadata after interruption.
 
+
+### Food intake editor — WLO-0126 (2026-09-18)
+
+Weight → Food intake opens one optional screen after a weight goal exists.
+Maintenance and gold daily intake sit side by side, with the production forecast
+below. Adjustment/Intake segmented modes share one canonical intake and both
+provide a slider (25 kcal steps) plus exact numeric entry. Zero adjustment and
+surplus are supported regardless of weight-goal direction. Finite non-negative
+manual intake is saved without a calorie-floor rejection; unsupported projections
+are held independently, including weekly schedules with below-floor days.
+
+Maintenance uses quality-gated logged data or the documented formula estimate
+while data is developing. Missing profile facts link to their existing editor;
+unanswered screening remains unknown. Loss candidates use −500 kcal only in the
+reviewed overweight/obesity population; gain candidates use +300 kcal. Candidates
+must pass the shared eligibility boundary before being offered. Goal distance
+never increases the deficit. The forecast uses the shared decelerating engine,
+not the mockup's illustrative geometry.
+
+Nutrients and daily schedule expand in place. Percentages must total 100; fiber
+is editable. Weekday/weekend redistribution preserves the weekly total, and
+existing arbitrary schedules are preserved unless explicitly edited. Saves
+create immutable target revisions, preserve unrelated fields, and reject stale
+versions. Saving returns to Weight with a brief confirmation; cancellation
+leaves targets unchanged. Updated maintenance estimates do not change a saved
+intake automatically.
+
 ## 4. User Interaction Model
 
 - **Entry points:** optional continuation after weight-first setup; Settings → Plan Studio; F10 nudge "your targets haven't been reviewed in 30 days"; F07 check-in deep link "adjust plan" (opens the Studio pre-filled with the proposal as a pending diff); post-import CTA.
@@ -152,7 +179,7 @@
 
 - **[v1] Plan-as-document with diffs.** Every target change — user edit or F07 check-in apply — is a version with a readable diff. "Show me what changed since I started" becomes a trust-building timeline. No competitor versions their plan at all.
 - **[v1] Honest 3-band forecast at goal-set time.** Optimistic/expected/pessimistic from minute one, explicitly wide when data is absent ("this band is wide because we know nothing about you yet — good"). Directly attacks the category-wide linear-extrapolation lie (synthesis §1.5).
-- **[v1] Calorie-floor wall with counter-proposal.** The unsafe-pace refusal is itself a designed moment: the slider hits a physical haptic wall and the app *negotiates* instead of obeying.
+- **[v1] Independent manual entry and forecast eligibility.** Intake sliders allow deficit, maintenance and surplus; a held projection does not block saving manual values (WLO-0126).
 - **[v1.x] Template sharing without a server.** Signed `DietPlan` JSON files, shareable via QR code / file / any link; the importer verifies the signature and shows a plain-language diff against the current plan before applying. Community templates circulate as *files* — the open-source answer to Yazio's content team.
 - **[v1.x] Diet DNA.** With imported history, the Studio overlays the proposed template on the user's real past eating ("your median day was 2,150 kcal / 74 g protein — this plan asks −12 % / +38 %"), making the change concrete instead of aspirational.
 - **[v1.x] Preference quiz as a re-runnable instrument.** Re-run the swipe deck anytime to re-filter F03's recipe space, with a "what changed" summary and an immediate plan re-fit preview. Mealime's preferences were a config file; WLO's are a living instrument.
@@ -165,7 +192,7 @@
 
 - **No account is ever created, requested, or useful.** Onboarding completes fully offline; if the device has never had network, nothing degrades except the optional cloud refinement (F12 `meal-planning` toggle + BYOK key, with a pre-send payload preview).
 - Goal weight, body stats and the plan are sensitive health data: protected by the app lock (biometric/PIN, F13), stored in encrypted local storage, exported only through F13's explicit export action.
-- The **calorie floor is non-negotiable in code**: no plan version, import, AI proposal, or blue-sky feature may produce targets below it; imported plans with unsafe historical targets are imported as *history*, never as the active plan.
+- The **calorie floor applies to automatic recommendations and forecasts**. Per the 2026-09-18 owner amendment (WLO-0126, FEATURES Appendix A), explicit manual intake may be saved below it; Targets v2 records manual provenance. F07 clears that provenance and revalidates every automatic Apply.
 - Goal UI consumes the shared WLO-0080 eligibility result. It never assumes an
   unanswered safety question means “no,” and it never produces a confident
   target, milestone, or date for a held/unsupported result.
@@ -184,3 +211,42 @@
 - **Plan Studio activation metric:** plan written + first applicable food log
   within 24 h. This is not the first-run completion metric; first run completes
   on arrival at Weight.
+
+
+### Intake scenario amendment — WLO-0126, 2026-09-18
+
+The editor asks “what happens at this intake?”, independently of the weight
+objective. Its adaptive-horizon projection reuses the existing loss BMR feedback and
+22 kcal/day/kg gain feedback with fixed intake and the published 7,700 kcal/kg
+product approximation. The goal is a gold reference/crossing annotation, never
+an integration stopping condition. Lower/upper trajectories are existing pace
+sensitivity factors, not calibrated confidence bounds; maintenance can render
+a flat path. Known population exclusions and data holds still apply, separately
+from recommendation floors, pace caps and goal-direction rules. Unanswered
+health context does not hide exploratory scenarios. Optional health answers
+live only in Profile → Health context; intake reads them and links to Profile
+when recommendation eligibility is incomplete. Legacy answers are reconciled
+without turning missing answers into No; contradictory answers need review.
+Saved targets, selected suggestions and manual drafts have explicit origins;
+numeric equality does not infer recommendation provenance.
+
+The 166dp plot, provenance header and two-line caption space remain present
+for ready, maintenance, away-from-goal, blank input and unavailable states.
+Recalculation publishes completed state atomically. A visible recommendation
+row shows an amount with Use, an applied state, a specific unavailable reason,
+or Complete/Profile for missing information. Reset is removed. Numeric entry
+uses the decimal keyboard and Done, with no additional sign control.
+Health completion opens the profile section directly and offers Save and return.
+Profile/health changes are observed while the intake editor remains alive;
+refresh preserves canonical intake, mode, nutrients, schedule and scroll, and
+never auto-applies a newly available suggestion.
+
+Horizon follows the slow modeled goal crossing with 10% padding, rounded to
+13-week intervals; goal never changes the trajectory equation. Maintenance and
+away-from-goal use 26 weeks; a mathematically unreachable target uses a 104-week
+leveling view with an explicit explanation. A 5,200-week numerical guard avoids
+unbounded calculations, with qualified/no-arrival output rather than invented
+dates. This is not a validation of century-long estimates. Long-term ranges
+remain conditional on unchanged intake and the model assumptions. The x-axis
+is held during a slider drag and reframed on release; reserved chart space
+never changes. Tests cover horizons around 9/18/36 months and true plateaus.

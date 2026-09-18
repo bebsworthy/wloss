@@ -30,4 +30,5 @@ dependencies {
     implementation(project(":core:datastore"))
 
     testImplementation(libs.kotlin.test.junit)
+    testImplementation(libs.okio)
 }

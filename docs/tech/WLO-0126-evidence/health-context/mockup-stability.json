@@ -1,0 +1,290 @@
+[
+  {
+    "objective": "loss",
+    "value": "-500",
+    "positions": {
+      ".projection-plot": [
+        481.640625,
+        166
+      ],
+      ".entry-modes": [
+        717.640625,
+        50
+      ],
+      ".editor-field": [
+        777.640625,
+        90.6875
+      ],
+      "#deficit-slider": [
+        868.328125,
+        48
+      ]
+    },
+    "chart": "visible",
+    "placeholder": "none"
+  },
+  {
+    "objective": "loss",
+    "value": "0",
+    "positions": {
+      ".projection-plot": [
+        481.640625,
+        166
+      ],
+      ".entry-modes": [
+        717.640625,
+        50
+      ],
+      ".editor-field": [
+        777.640625,
+        90.6875
+      ],
+      "#deficit-slider": [
+        868.328125,
+        48
+      ]
+    },
+    "chart": "visible",
+    "placeholder": "none"
+  },
+  {
+    "objective": "loss",
+    "value": "500",
+    "positions": {
+      ".projection-plot": [
+        481.640625,
+        166
+      ],
+      ".entry-modes": [
+        717.640625,
+        50
+      ],
+      ".editor-field": [
+        777.640625,
+        90.6875
+      ],
+      "#deficit-slider": [
+        868.328125,
+        48
+      ]
+    },
+    "chart": "visible",
+    "placeholder": "none"
+  },
+  {
+    "objective": "loss",
+    "value": "",
+    "positions": {
+      ".projection-plot": [
+        481.640625,
+        166
+      ],
+      ".entry-modes": [
+        717.640625,
+        50
+      ],
+      ".editor-field": [
+        777.640625,
+        90.6875
+      ],
+      "#deficit-slider": [
+        868.328125,
+        48
+      ]
+    },
+    "chart": "hidden",
+    "placeholder": "grid"
+  },
+  {
+    "objective": "maintenance",
+    "value": "-500",
+    "positions": {
+      ".projection-plot": [
+        481.640625,
+        166
+      ],
+      ".entry-modes": [
+        717.640625,
+        50
+      ],
+      ".editor-field": [
+        777.640625,
+        90.6875
+      ],
+      "#deficit-slider": [
+        868.328125,
+        48
+      ]
+    },
+    "chart": "visible",
+    "placeholder": "none"
+  },
+  {
+    "objective": "maintenance",
+    "value": "0",
+    "positions": {
+      ".projection-plot": [
+        481.640625,
+        166
+      ],
+      ".entry-modes": [
+        717.640625,
+        50
+      ],
+      ".editor-field": [
+        777.640625,
+        90.6875
+      ],
+      "#deficit-slider": [
+        868.328125,
+        48
+      ]
+    },
+    "chart": "visible",
+    "placeholder": "none"
+  },
+  {
+    "objective": "maintenance",
+    "value": "500",
+    "positions": {
+      ".projection-plot": [
+        481.640625,
+        166
+      ],
+      ".entry-modes": [
+        717.640625,
+        50
+      ],
+      ".editor-field": [
+        777.640625,
+        90.6875
+      ],
+      "#deficit-slider": [
+        868.328125,
+        48
+      ]
+    },
+    "chart": "visible",
+    "placeholder": "none"
+  },
+  {
+    "objective": "maintenance",
+    "value": "",
+    "positions": {
+      ".projection-plot": [
+        481.640625,
+        166
+      ],
+      ".entry-modes": [
+        717.640625,
+        50
+      ],
+      ".editor-field": [
+        777.640625,
+        90.6875
+      ],
+      "#deficit-slider": [
+        868.328125,
+        48
+      ]
+    },
+    "chart": "hidden",
+    "placeholder": "grid"
+  },
+  {
+    "objective": "gain",
+    "value": "-500",
+    "positions": {
+      ".projection-plot": [
+        481.640625,
+        166
+      ],
+      ".entry-modes": [
+        717.640625,
+        50
+      ],
+      ".editor-field": [
+        777.640625,
+        90.6875
+      ],
+      "#deficit-slider": [
+        868.328125,
+        48
+      ]
+    },
+    "chart": "visible",
+    "placeholder": "none"
+  },
+  {
+    "objective": "gain",
+    "value": "0",
+    "positions": {
+      ".projection-plot": [
+        481.640625,
+        166
+      ],
+      ".entry-modes": [
+        717.640625,
+        50
+      ],
+      ".editor-field": [
+        777.640625,
+        90.6875
+      ],
+      "#deficit-slider": [
+        868.328125,
+        48
+      ]
+    },
+    "chart": "visible",
+    "placeholder": "none"
+  },
+  {
+    "objective": "gain",
+    "value": "500",
+    "positions": {
+      ".projection-plot": [
+        481.640625,
+        166
+      ],
+      ".entry-modes": [
+        717.640625,
+        50
+      ],
+      ".editor-field": [
+        777.640625,
+        90.6875
+      ],
+      "#deficit-slider": [
+        868.328125,
+        48
+      ]
+    },
+    "chart": "visible",
+    "placeholder": "none"
+  },
+  {
+    "objective": "gain",
+    "value": "",
+    "positions": {
+      ".projection-plot": [
+        481.640625,
+        166
+      ],
+      ".entry-modes": [
+        717.640625,
+        50
+      ],
+      ".editor-field": [
+        777.640625,
+        90.6875
+      ],
+      "#deficit-slider": [
+        868.328125,
+        48
+      ]
+    },
+    "chart": "hidden",
+    "placeholder": "grid"
+  }
+]

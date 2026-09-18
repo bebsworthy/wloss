@@ -655,18 +655,40 @@ Writers are exactly two, enforced by the write path, not convention:
 
 Validation invariants — rejections are hard, never silent clamps:
 
-1. **Floor** — no version may budget below `floorKcal`; imports carrying
-   unsafe historical targets land as history, never as the active plan.
+1. **Floor** — automated targets may not budget below `floorKcal`.
+   Owner amendment, 2026-09-18 (WLO-0126): explicit manual food-intake values
+   may be saved below this floor, at maintenance, or opposite the weight-goal
+   direction. `energy.manuallyEntered` records this distinction in Targets
+   schema v2; v1 documents retain floor enforcement. Manual values must be
+   finite and non-negative; schedule consistency still applies. This is a
+   user choice, not a recommendation or a clinical eligibility attestation.
+   F07 clears manual provenance and revalidates the floor on every Apply.
 2. **No eat-back** — exercise expenditure is structurally incapable of
    raising eating targets; F05/F13 inputs are read-only context.
 3. **Schedule sum** — weekly-cadence schedules must sum to the weekly
    budget.
-4. **Pace and eligibility** — active targets must first pass the shared
+4. **Pace and eligibility** — automated recommendations and forecasts must first pass the shared
    WLO-0080 eligibility result. Pace is rejected, never silently clamped: loss
    uses the lower of 1.0% body weight/week and 0.9 kg/week; maintenance uses
    zero; gain uses WLO's conservative 0.5%/week product cap. See the cited
    [safety contract](../research/weight-goal-safety-contract.md); these are app
-   support boundaries, not individualized medical advice.
+   support boundaries, not individualized medical advice. Manual intake edits
+   preserve the weight goal and do not infer or require a chosen pace; a held
+   forecast never blocks saving that manual intake.
+   Owner amendment, 2026-09-18 (WLO-0126): the food-intake editor additionally
+   provides an **intake scenario**, distinct from a recommended goal plan.
+   This adaptive-horizon path is driven by energy balance, not the goal's
+   direction; it includes maintenance, movement away from the goal and
+   continuation past a target crossing. Recommendation floors/pace limits
+   do not suppress this hypothetical manual-input scenario. Adult model applicability, known unsupported health context, held-data rules
+   and finite/physically meaningful model output remain applicable. Unanswered
+   health context alone does not hide an exploratory scenario. Health answers
+   are owned by Profile, not weight/intake forms; recommendations retain their
+   explicit eligibility checks. Invalid/unavailable states retain the full chart space.
+   Goal-directed scenarios extend through the modeled arrival range, with
+   padding; a goal changes framing, not the energy equation. Plateau/no-crossing
+   is distinct from a display cutoff. Maintenance and away-from-goal scenarios
+   retain a six-month viewing window. F07's automated-target gates are unchanged.
 
 AI proposals (template refinement, [v1.x] per R-S10) are drafts against
 this API: apply/discard, never auto-commit.

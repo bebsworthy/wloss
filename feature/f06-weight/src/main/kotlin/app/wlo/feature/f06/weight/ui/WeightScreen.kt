@@ -119,6 +119,7 @@ public fun WeightScreen(
     onOpenMath: () -> Unit,
     onOpenLogbook: (HistoryRange?) -> Unit,
     onEditGoal: () -> Unit,
+    onEditIntake: () -> Unit = {},
     onOpenMeasurements: () -> Unit = {},
     modifier: Modifier = Modifier,
     showTopBar: Boolean = false,
@@ -294,6 +295,12 @@ public fun WeightScreen(
                                 viewModel = viewModel,
                                 onOpenMath = onOpenMath,
                                 onOpenLogbook = { onOpenLogbook(null) },
+                            )
+                            app.wlo.core.designsystem.WloListRow(
+                                label = "Food intake",
+                                secondary = "Daily target and projection",
+                                chevron = true,
+                                onClick = onEditIntake,
                             )
                             app.wlo.core.designsystem.WloListRow(
                                 label = "Body measurements",

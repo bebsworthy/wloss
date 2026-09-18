@@ -19,6 +19,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import app.wlo.core.model.DerivedValue
 import app.wlo.core.model.Provenance
 
@@ -53,24 +54,41 @@ public fun <T : Any> ProvenanceChip(
     format: (T) -> String,
     modifier: Modifier = Modifier,
     onClick: (() -> Unit)? = null,
+    label: String? = null,
+    labelColor: Color? = null,
+    compact: Boolean = false,
 ) {
     val provenance = value.provenance
-    val state = stateColor(provenance)
-    val word = userWord(provenance)
+    val state = labelColor ?: stateColor(provenance)
+    val word = label ?: userWord(provenance)
     val description = word
-    val border = BorderStroke(1.dp, state.copy(alpha = BORDER_ALPHA))
+    val border =
+        BorderStroke(
+            1.dp,
+            if (compact) MaterialTheme.colorScheme.outlineVariant else state.copy(alpha = BORDER_ALPHA),
+        )
 
     val anatomy: @Composable () -> Unit = {
         Row(
             verticalAlignment = Alignment.CenterVertically,
             modifier =
                 Modifier
-                    .padding(horizontal = 8.dp, vertical = 4.dp)
-                    .heightIn(min = 22.dp),
+                    .padding(horizontal = if (compact) 10.dp else 8.dp, vertical = if (compact) 5.dp else 4.dp)
+                    .heightIn(min = if (compact) 14.5.dp else 22.dp),
         ) {
             Text(
                 text = word,
-                style = wloType.label,
+                style =
+                    if (compact) {
+                        wloType.label.copy(
+                            fontSize = 10.sp,
+                            lineHeight = 14.5.sp,
+                            fontWeight = androidx.compose.ui.text.font.FontWeight.Normal,
+                            letterSpacing = 0.sp,
+                        )
+                    } else {
+                        wloType.label
+                    },
                 color = state,
             )
             if (onClick != null) {
@@ -90,7 +108,13 @@ public fun <T : Any> ProvenanceChip(
     if (onClick == null) {
         Surface(
             modifier = outer,
-            shape = WloShape.Pill,
+            shape =
+                if (compact) {
+                    androidx.compose.foundation.shape
+                        .RoundedCornerShape(7.dp)
+                } else {
+                    WloShape.Pill
+                },
             color = Color.Transparent,
             contentColor = Color.Unspecified,
             border = border,

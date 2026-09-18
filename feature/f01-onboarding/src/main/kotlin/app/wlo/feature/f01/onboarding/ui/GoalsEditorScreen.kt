@@ -201,17 +201,7 @@ public fun GoalsEditorScreen(
                         enabled = state.formState != GoalFormState.SAVING,
                         modifier = Modifier.fillMaxWidth().testTag("f01-goals-budget"),
                     )
-                    WloCardHeader(title = "Goal safety check")
-                    WeightGoalSafetyControls(
-                        pregnant = state.pregnant,
-                        breastfeeding = state.breastfeeding,
-                        eatingDisorderConcern = state.eatingDisorderConcern,
-                        medicallyInfluencedWeight = state.medicallyInfluencedWeight,
-                        onAnswer = { question, answer ->
-                            viewModel.onEvent(GoalsEditorEvent.SafetyChange(question, answer))
-                        },
-                        testTagPrefix = "f01-goals-safety",
-                    )
+                    Text("Health context is managed in your profile.", style = wloType.caption)
                     WloBanner(
                         text = "${state.safetyCopy.title}. ${state.safetyCopy.body}",
                         tone =
