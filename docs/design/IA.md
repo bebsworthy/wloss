@@ -31,7 +31,7 @@ top-level chrome and use a Material 3 top app bar with Up navigation.
 |---|---|---|
 | **Weight** | F06 + F07 | **Default and primary surface**; trend/raw chart, goal state, weigh-in, history, forecast, and logbook |
 | **Hub** | F10 | Optional broader day surface; Adaptive Day Model card stack and quick-action rail |
-| **Plan** | F03 + F04 | Segmented: **Plan** (week grid) · **Recipes** · **List** · **Pantry** — the plan→shop→stock pipeline in one place, because the Week loop crosses it end-to-end |
+| **Plan** | F03 | Permanent daily meal agenda: compact calendar navigation, nutrition coverage, four meal containers, direct add/replace/remove and optional suggestion preview. Independent F04 routes/data remain compatible; pantry and shopping are outside this surface (WLO-0156). |
 | **More** | cross-feature | Your profile and Settings. Archive, Digestion and Exercise join when implemented |
 
 **Decisions and rationale:**

@@ -129,7 +129,7 @@ class PlanningRepositoriesTest {
             val swapped = planner.swapSlot(plan.slots[1].id, plan.slots[1].recipeId!!, clock.now()).okOrDie()
             assertEquals(PlannedSlotState.PLANNED, swapped.state, "the successor is planned")
             assertEquals(plan.slots[1].id, swapped.replacesSlotId, "the chain is recorded")
-            val retired = planner.slots(profileId, weekStart, weekStart + 6).okOrDie().first { it.id == plan.slots[1].id }
+            val retired = db.planSlots().byId(plan.slots[1].id)!!.toDomain()
             assertEquals(PlannedSlotState.SWAPPED, retired.state)
             assertEquals(swapped.id, retired.successorSlotId)
 

@@ -1,0 +1,1 @@
+Removed redundant visible overage percentage subtext. Retained proportional green/orange bars, target marker, and existing over-target amounts. Browser verified 22nd summary. Syntax/whitespace checks passed.

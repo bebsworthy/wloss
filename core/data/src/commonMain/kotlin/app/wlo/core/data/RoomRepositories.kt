@@ -512,7 +512,8 @@ public class DayProjector public constructor(
                 val intakeEvents = dayEvents.filter { it.kind == MeasurementKind.INTAKE.wireName }
                 val burnEvents = dayEvents.filter { it.kind == MeasurementKind.BURN.wireName }
                 val trendEvent = dayEvents.lastOrNull { it.kind == MeasurementKind.TREND.wireName }
-                val diaryKcal = diaryByDay[day]?.sumOf { it.computedKcal } ?: 0.0
+                val incompleteIntake = diaryByDay[day].orEmpty().any { it.computedKcal == null }
+                val diaryKcal = diaryByDay[day].orEmpty().sumOf { it.computedKcal ?: 0.0 }
                 val hasIntake = intakeEvents.isNotEmpty() || diaryByDay[day] != null
                 val intake = intakeEvents.sumOf { it.valueReal } + diaryKcal
                 val burn = burnEvents.sumOf { it.valueReal }
@@ -522,7 +523,7 @@ public class DayProjector public constructor(
                         profileId = profileId,
                         dayEpochDay = day,
                         trendWeightKg = trendEvent?.valueReal,
-                        intakeKcal = if (hasIntake) intake else null,
+                        intakeKcal = if (hasIntake && !incompleteIntake) intake else null,
                         burnKcal = burnEvents.takeIf { it.isNotEmpty() }?.sumOf { e -> e.valueReal },
                         computedAtEpochMs = now,
                     ),
@@ -600,11 +601,15 @@ public class RoomDayProjectionRepository public constructor(
         fromDay: Long,
         toDay: Long,
     ): Flow<WloResult<List<DayView>>> =
-        db
-            .dayRecords()
-            .observeRange(profileId, fromDay, toDay)
-            .map { records -> WloResult.ok(records.map { assemble(profileId, it.dayEpochDay, it) }) }
-            .catch { emit(WloResult.err(AppError.Storage(cause = it, detail = "projection.observeRange"))) }
+        kotlinx.coroutines.flow
+            .combine(
+                db.dayRecords().observeRange(profileId, fromDay, toDay),
+                targets.observeCurrent(profileId),
+                db.planSlots().observeRange(profileId, fromDay, toDay),
+            ) { records, _, _ ->
+                val byDay = records.associateBy { it.dayEpochDay }
+                WloResult.ok((fromDay..toDay).map { assemble(profileId, it, byDay[it]) })
+            }.catch { emit(WloResult.err(AppError.Storage(cause = it, detail = "projection.observeRange"))) }
 
     override suspend fun day(
         profileId: String,
@@ -669,14 +674,24 @@ public class RoomDayProjectionRepository public constructor(
                 formulaVersion = PLANNED_DAY_PROJECTION_VERSION,
                 inputs = listOf("slots=${planned.slotCount}", "planId=${planSlots.firstOrNull()?.planId ?: "none"}"),
             )
+        val claimed =
+            planSlots.filter {
+                (it.recipeId != null || it.itemJson != null) &&
+                    it.state in listOf(app.wlo.core.model.PlannedSlotState.PLANNED, app.wlo.core.model.PlannedSlotState.CONFIRMED)
+            }
+
+        fun completeClaim(
+            total: Double,
+            value: (app.wlo.core.model.PlannedSlot) -> Double?,
+        ): DerivedValue<Double>? = if (claimed.any { value(it) == null }) null else DerivedValue(round1(total), plannedProvenance)
         val plannedDerived =
             if (planned.slotCount > 0) {
                 DayPlannedScalars(
-                    kcal = DerivedValue(round1(planned.kcal), plannedProvenance),
-                    proteinG = DerivedValue(round1(planned.proteinG), plannedProvenance),
-                    carbG = DerivedValue(round1(planned.carbG), plannedProvenance),
-                    fatG = DerivedValue(round1(planned.fatG), plannedProvenance),
-                    fiberG = DerivedValue(round1(planned.fiberG), plannedProvenance),
+                    kcal = completeClaim(planned.kcal) { it.kcalPerServing },
+                    proteinG = completeClaim(planned.proteinG) { it.proteinGPerServing },
+                    carbG = completeClaim(planned.carbG) { it.carbGPerServing },
+                    fatG = completeClaim(planned.fatG) { it.fatGPerServing },
+                    fiberG = completeClaim(planned.fiberG) { it.fiberGPerServing },
                     slotCount = planned.slotCount,
                     openCount = planSlots.count { it.state == app.wlo.core.model.PlannedSlotState.PLANNED },
                 )
@@ -708,11 +723,11 @@ public class RoomDayProjectionRepository public constructor(
 }
 
 internal data class DayPlannedScalars(
-    val kcal: DerivedValue<Double>,
-    val proteinG: DerivedValue<Double>,
-    val carbG: DerivedValue<Double>,
-    val fatG: DerivedValue<Double>,
-    val fiberG: DerivedValue<Double>,
+    val kcal: DerivedValue<Double>?,
+    val proteinG: DerivedValue<Double>?,
+    val carbG: DerivedValue<Double>?,
+    val fatG: DerivedValue<Double>?,
+    val fiberG: DerivedValue<Double>?,
     val slotCount: Int,
     val openCount: Int,
 )
@@ -752,7 +767,7 @@ internal fun dayProjectionOf(
     val custom = document.macros.split as? MacroSplit.Custom
     return ResolvedDayProjection(
         budget = DerivedValue(budget, derived(budget)),
-        proteinG = custom?.proteinPct?.let { DerivedValue(grams(it), derived(grams(it))) },
+        proteinG = (custom?.proteinG ?: custom?.proteinPct?.let(::grams))?.let { DerivedValue(it, derived(it)) },
         carbG = custom?.carbPct?.let { DerivedValue(grams(it), derived(grams(it))) },
         fatG = custom?.fatPct?.let { DerivedValue(it / 100.0 * budget / ConstantsRegistry.KCAL_PER_G_FAT, derived(it)) },
         fiberG = DerivedValue(document.fiber.targetG, derived(document.fiber.targetG)),

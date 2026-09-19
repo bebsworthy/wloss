@@ -182,7 +182,7 @@ public class StagedRestorer(
                             .all()
                             .map { it.id }
                             .toSet()
-                val orphanSlots = payload.planSlots.filter { it.planId !in planIds }.map { it.id }
+                val orphanSlots = payload.planSlots.filter { it.planId.isNotEmpty() && it.planId !in planIds }.map { it.id }
                 if (orphanSlots.isNotEmpty()) add("plan slots reference missing plans: $orphanSlots")
                 val localFoods =
                     db
@@ -609,6 +609,7 @@ internal fun DiaryEntryRow.toEntity(): DiaryEntryEntity =
         quantity = quantity,
         unit = unit,
         computedKcal = computedKcal,
+        itemJson = itemJson,
         computedProteinG = computedProteinG,
         computedCarbG = computedCarbG,
         computedFatG = computedFatG,
@@ -634,6 +635,7 @@ internal fun DiaryRevisionRow.toEntity(): DiaryEntryRevisionEntity =
         quantity = quantity,
         unit = unit,
         computedKcal = computedKcal,
+        itemJson = itemJson,
         computedProteinG = computedProteinG,
         computedCarbG = computedCarbG,
         computedFatG = computedFatG,
@@ -779,6 +781,8 @@ internal fun PlanSlotRow.toEntity(): PlanSlotEntity =
         fiberGPerServing = fiberGPerServing,
         createdAtEpochMs = createdAtEpochMs,
         updatedAtEpochMs = updatedAtEpochMs,
+        itemJson = itemJson,
+        sortOrder = sortOrder,
     )
 
 internal fun ListItemRow.toEntity(): ListItemEntity =

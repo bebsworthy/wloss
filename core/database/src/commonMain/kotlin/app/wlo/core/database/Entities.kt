@@ -317,7 +317,7 @@ public data class DiaryEntryEntity(
     public val quantity: Double,
     /** "g" | "ml" | "serving" (v1 portion vocabulary). */
     public val unit: String,
-    public val computedKcal: Double,
+    public val computedKcal: Double?,
     public val computedProteinG: Double? = null,
     public val computedCarbG: Double? = null,
     public val computedFatG: Double? = null,
@@ -335,6 +335,7 @@ public data class DiaryEntryEntity(
     /** Fresh Start ledger (R-B7): NULL = visible. */
     public val hiddenAtEpochMs: Long? = null,
     public val hiddenReason: String? = null,
+    public val itemJson: String? = null,
 )
 
 /**
@@ -357,7 +358,7 @@ public data class DiaryEntryRevisionEntity(
     public val textHint: String? = null,
     public val quantity: Double,
     public val unit: String,
-    public val computedKcal: Double,
+    public val computedKcal: Double?,
     public val computedProteinG: Double? = null,
     public val computedCarbG: Double? = null,
     public val computedFatG: Double? = null,
@@ -365,6 +366,7 @@ public data class DiaryEntryRevisionEntity(
     public val enteredVia: String,
     /** When this version was superseded by the next edit. */
     public val editedAtEpochMs: Long,
+    public val itemJson: String? = null,
 )
 
 /**
@@ -536,6 +538,9 @@ public data class PlanSlotEntity(
     public val fiberGPerServing: Double? = null,
     public val createdAtEpochMs: Long,
     public val updatedAtEpochMs: Long? = null,
+    /** Nullable for legacy recipe slots; explicit food/custom portion metadata otherwise. */
+    public val itemJson: String? = null,
+    public val sortOrder: Long? = null,
 )
 
 /**

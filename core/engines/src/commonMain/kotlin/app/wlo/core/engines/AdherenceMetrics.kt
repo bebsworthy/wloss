@@ -89,6 +89,7 @@ public object AdherenceMetrics {
         val fidelityValues =
             daysWithPlan.entries.mapNotNull { (day, slots) ->
                 val actual = input.actualKcalByDay[day] ?: return@mapNotNull null
+                if (slots.any { it.kcalPerServing == null }) return@mapNotNull null
                 val planned = PlannerEngine.plannedDayTotals(slots).kcal
                 if (planned <= 0.0) return@mapNotNull null
                 kotlin.math.abs(actual - planned)

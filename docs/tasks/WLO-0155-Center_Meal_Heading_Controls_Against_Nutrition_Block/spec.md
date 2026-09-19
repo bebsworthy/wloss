@@ -1,0 +1,1 @@
+Centered meal icon, name and + vertically against the complete calorie/macro block using a two-column header grid. Browser verified all four vertical centers identical and visually inspected. Whitespace check passed.

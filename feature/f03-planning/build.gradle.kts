@@ -10,6 +10,7 @@ dependencies {
     implementation(libs.androidx.lifecycle.runtime.compose)
     implementation(libs.kotlinx.datetime)
     implementation(libs.kotlinx.coroutines.core)
+    implementation(libs.kotlinx.serialization.json)
 
     // MVI-lite state holder + ViewModel DSL (koin-android carries the
     // lifecycle-viewmodel types the state holder extends).

@@ -1,5 +1,32 @@
 # F03 — Meal Planning & Recipes — Functional Specification
 
+> **Current implementation contract — WLO-0156, 19 September 2026:**
+> [Daily meal agenda specification](../tasks/WLO-0156-Implement_The_Daily_Meal_Agenda_And_Multi_Item_Planning/spec.md)
+> supersedes the legacy week-first/single-recipe UX below. It specifies multiple
+> items per meal, optional planning, direct acquisition, coverage nutrition,
+> scoped suggestions, and the required persistence/integration migration.
+> Pantry and shopping work are outside this implementation; Mark eaten is parked.
+> Earlier UX proposals below are historical where they conflict with this handoff.
+
+> **Implementation — WLO-0156:** The Android Plan tab now uses the daily agenda.
+> The existing `plan_slots` store is evolved in place into item-granular storage,
+> with immutable food/unit snapshots and stable order; no competing plan store
+> is introduced. Room schema 11 and backup schema 2 preserve legacy recipes,
+> links, revisions and unknown nutrition. F02 continues to own actual entries.
+> [Implementation and verification evidence](../tech/WLO-0156-evidence/README.md).
+
+> **Current scope — WLO-0151, 19 September 2026:** Recipe import and AI recipe
+> drafting are deferred per amended R-S3 in FEATURES.md. Existing recipe use and
+> meal suggestions remain in scope. Older import/drafting descriptions below are
+> future reference only.
+
+> **UX review proposal — WLO-0127, 18 September 2026.** The
+> [proposed user flow](../design/meal-planning-user-flow.md) reviews this legacy
+> week/library-first experience around the current intake target, recipe import,
+> AI drafting, familiar meals, and partial planning. Pantry is excluded from that
+> proposal. See its reconciliation table before implementation; frozen master
+> rulings remain authoritative. [Research review](../research/meal-planning-ux-review.md).
+
 ---
 
 ## Identity

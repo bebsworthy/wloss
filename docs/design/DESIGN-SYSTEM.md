@@ -548,3 +548,17 @@ content alignment as the overview. No nested card, milestones, mode selector,
 pace/date, calorie-plan or screening controls. Save is versioned and explicit;
 closing/back/scrim discards the draft. Busy saves cannot be submitted twice;
 errors retain the input. Preserve IME/system insets and large-text scrolling.
+
+### Daily meal agenda nutrition coverage (WLO-0156)
+
+The agenda uses standard M3 layout/components and shared release-gated swipe
+reveal rows. Meal outline glyphs occupy M3 Icon slots. Meal nutrition forms one
+right-aligned block; icon/name/add center vertically against that block.
+
+`nutritionOverage` is orange: dark `#E9A05B`, light `#A64B00`. It is distinct
+from the yellow held-data color. When total V exceeds target T, the whole bar
+represents V: primary fills T/V and orange fills (V−T)/V. Text states the
+absolute overage. Incomplete nutrition never receives a precise progress arc.
+Only the selected date receives a filled background; date rings remain neutral.
+Totals can be tapped for source/target-version explanation without persistent
+extra captions. Large text stacks the calorie summary and meal macro values.

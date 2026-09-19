@@ -1,0 +1,4 @@
+Amend the meal-planning UX proposal for the owner's office-lunch example: intentional flexible meals, recurring weekday scope, no advance selection or later logging obligation, truthful calorie context, optional planning allowances distinct from actual intake, and preservation during generation/reuse. Keep pantry excluded. Documentation only; verify consistency and links.
+
+
+Completed: generalized intentional flexibility to any meal, selected meal types, whole days, date ranges and recurring patterns, including travel weeks. Documented range overrides, existing-plan review/Undo, dependent leftovers/list reconciliation, optional logging, no catch-up tasks, and resumption of ordinary planning scope. Added optional planning allowances separate from intake and full-day coverage, with no allocation form for wholly flexible days. Updated flow diagram, scenarios and research owner-input note. Verified local links, fence balance and whitespace. Documentation only.

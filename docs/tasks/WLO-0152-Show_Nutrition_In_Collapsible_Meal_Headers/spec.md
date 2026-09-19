@@ -1,0 +1,1 @@
+Added two-line meal headers: name/calories, then P/C/F totals. Header toggles body with chevron; + remains independent. Removed old body estimated-total line. Unknown totals use + or — with missing-data explanation. Browser verified collapsed Lunch retains 805 kcal and P30/C120/F24 while item rows hide. Syntax/whitespace checks passed. Updated UX contract.

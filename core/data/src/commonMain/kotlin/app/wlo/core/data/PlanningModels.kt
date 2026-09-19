@@ -131,6 +131,8 @@ internal fun PlanSlotEntity.toDomain(): PlannedSlot =
         fiberGPerServing = fiberGPerServing,
         createdAtEpochMs = createdAtEpochMs,
         updatedAtEpochMs = updatedAtEpochMs,
+        itemJson = itemJson,
+        sortOrder = sortOrder,
     )
 
 /** One persisted shopping-list row (F04 §3 `ListItem`), checks riding the row. */

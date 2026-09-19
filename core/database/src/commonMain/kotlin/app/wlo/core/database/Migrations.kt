@@ -420,6 +420,44 @@ public object Migrations {
      * Fixed daily-weight policy metadata. Legacy rows remain null until the
      * repository captures the device zone once, preserving existing day buckets.
      */
+    /** WLO-0156: item metadata and honest unknown diary nutrition. */
+    public val MIGRATION_10_11: Migration =
+        object : Migration(10, 11) {
+            override suspend fun migrate(connection: SQLiteConnection) {
+                connection.exec("ALTER TABLE plan_slots ADD COLUMN sortOrder INTEGER")
+            }
+        }
+
+    public val MIGRATION_9_10: Migration =
+        object : Migration(9, 10) {
+            override suspend fun migrate(connection: SQLiteConnection) {
+                connection.exec("ALTER TABLE plan_slots ADD COLUMN itemJson TEXT")
+                connection.exec(
+                    "CREATE TABLE IF NOT EXISTS `diary_entries_new` (`id` TEXT NOT NULL, `profileId` TEXT NOT NULL, `dayEpochDay` INTEGER NOT NULL, `mealSlot` TEXT NOT NULL, `foodItemId` TEXT, `textHint` TEXT, `quantity` REAL NOT NULL, `unit` TEXT NOT NULL, `computedKcal` REAL, `computedProteinG` REAL, `computedCarbG` REAL, `computedFatG` REAL, `computedFiberG` REAL, `enteredVia` TEXT NOT NULL, `provenanceScalar` TEXT NOT NULL, `revision` INTEGER NOT NULL, `createdAtEpochMs` INTEGER NOT NULL, `editedAtEpochMs` INTEGER, `archivedAtEpochMs` INTEGER, `hiddenAtEpochMs` INTEGER, `hiddenReason` TEXT, PRIMARY KEY(`id`))",
+                )
+                connection.exec(
+                    "INSERT INTO `diary_entries_new` (`id`, `profileId`, `dayEpochDay`, `mealSlot`, `foodItemId`, `textHint`, `quantity`, `unit`, `computedKcal`, `computedProteinG`, `computedCarbG`, `computedFatG`, `computedFiberG`, `enteredVia`, `provenanceScalar`, `revision`, `createdAtEpochMs`, `editedAtEpochMs`, `archivedAtEpochMs`, `hiddenAtEpochMs`, `hiddenReason`) SELECT `id`, `profileId`, `dayEpochDay`, `mealSlot`, `foodItemId`, `textHint`, `quantity`, `unit`, `computedKcal`, `computedProteinG`, `computedCarbG`, `computedFatG`, `computedFiberG`, `enteredVia`, `provenanceScalar`, `revision`, `createdAtEpochMs`, `editedAtEpochMs`, `archivedAtEpochMs`, `hiddenAtEpochMs`, `hiddenReason` FROM `diary_entries`",
+                )
+                connection.exec("DROP TABLE `diary_entries`")
+                connection.exec("ALTER TABLE `diary_entries_new` RENAME TO `diary_entries`")
+                connection.exec(
+                    "CREATE INDEX IF NOT EXISTS `index_diary_entries_profileId_dayEpochDay` ON `diary_entries` (`profileId`, `dayEpochDay`)",
+                )
+                connection.exec("CREATE INDEX IF NOT EXISTS `index_diary_entries_foodItemId` ON `diary_entries` (`foodItemId`)")
+                connection.exec(
+                    "CREATE TABLE IF NOT EXISTS `diary_entry_revisions_new` (`id` TEXT NOT NULL, `entryId` TEXT NOT NULL, `revision` INTEGER NOT NULL, `mealSlot` TEXT NOT NULL, `foodItemId` TEXT, `textHint` TEXT, `quantity` REAL NOT NULL, `unit` TEXT NOT NULL, `computedKcal` REAL, `computedProteinG` REAL, `computedCarbG` REAL, `computedFatG` REAL, `computedFiberG` REAL, `enteredVia` TEXT NOT NULL, `editedAtEpochMs` INTEGER NOT NULL, PRIMARY KEY(`id`))",
+                )
+                connection.exec(
+                    "INSERT INTO `diary_entry_revisions_new` (`id`, `entryId`, `revision`, `mealSlot`, `foodItemId`, `textHint`, `quantity`, `unit`, `computedKcal`, `computedProteinG`, `computedCarbG`, `computedFatG`, `computedFiberG`, `enteredVia`, `editedAtEpochMs`) SELECT `id`, `entryId`, `revision`, `mealSlot`, `foodItemId`, `textHint`, `quantity`, `unit`, `computedKcal`, `computedProteinG`, `computedCarbG`, `computedFatG`, `computedFiberG`, `enteredVia`, `editedAtEpochMs` FROM `diary_entry_revisions`",
+                )
+                connection.exec("DROP TABLE `diary_entry_revisions`")
+                connection.exec("ALTER TABLE `diary_entry_revisions_new` RENAME TO `diary_entry_revisions`")
+                connection.exec("CREATE INDEX IF NOT EXISTS `index_diary_entry_revisions_entryId` ON `diary_entry_revisions` (`entryId`)")
+                connection.exec("ALTER TABLE diary_entries ADD COLUMN itemJson TEXT")
+                connection.exec("ALTER TABLE diary_entry_revisions ADD COLUMN itemJson TEXT")
+            }
+        }
+
     public val MIGRATION_8_9: Migration =
         object : Migration(8, 9) {
             override suspend fun migrate(connection: SQLiteConnection) {
@@ -438,6 +476,8 @@ public object Migrations {
             MIGRATION_6_7,
             MIGRATION_7_8,
             MIGRATION_8_9,
+            MIGRATION_9_10,
+            MIGRATION_10_11,
         )
 }
 

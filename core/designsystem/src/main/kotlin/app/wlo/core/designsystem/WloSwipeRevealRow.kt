@@ -64,6 +64,9 @@ public fun WloSwipeRevealRow(
     reveal: @Composable (progress: Float, armed: Boolean) -> Unit,
     modifier: Modifier = Modifier,
     triggerFraction: Float = 0.9f,
+    /** Controlled reveal for multi-action rows; null preserves the original trigger behavior. */
+    revealed: Boolean? = null,
+    onRevealChange: (Boolean) -> Unit = {},
     content: @Composable () -> Unit,
 ) {
     val revealPx = with(LocalDensity.current) { revealWidth.toPx() }
@@ -71,6 +74,10 @@ public fun WloSwipeRevealRow(
     val scope = rememberCoroutineScope()
     val offset = remember { Animatable(0f) }
     val haptics = rememberWloHaptics()
+
+    LaunchedEffect(revealed, revealPx) {
+        if (revealed != null) offset.animateTo(if (revealed) revealPx else 0f, WloMotion.Springs.Snap)
+    }
 
     // The arm tick: exactly one haptic per crossing, in either direction.
     LaunchedEffect(revealPx, triggerPx) {
@@ -102,7 +109,7 @@ public fun WloSwipeRevealRow(
             modifier =
                 Modifier
                     .offset { IntOffset(-offset.value.roundToInt(), 0) }
-                    .pointerInput(revealPx, triggerPx) {
+                    .pointerInput(revealPx, triggerPx, revealed) {
                         awaitEachGesture {
                             val down = awaitFirstDown(requireUnconsumed = false)
                             val dragPointer =
@@ -110,7 +117,7 @@ public fun WloSwipeRevealRow(
                                     change.consume()
                                 }
                             if (dragPointer == null) return@awaitEachGesture
-                            var travelled = 0f
+                            var travelled = if (revealed == true) revealPx else 0f
                             val completed =
                                 horizontalDrag(dragPointer.id) { change ->
                                     val dx = change.positionChange().x
@@ -122,8 +129,9 @@ public fun WloSwipeRevealRow(
                                 }
                             if (completed && travelled >= triggerPx) {
                                 scope.launch { offset.animateTo(revealPx, WloMotion.Springs.Snap) }
-                                onTrigger()
+                                if (revealed == null) onTrigger() else onRevealChange(true)
                             } else {
+                                if (revealed != null) onRevealChange(false)
                                 scope.launch { offset.animateTo(0f, WloMotion.Springs.Snap) }
                             }
                         }

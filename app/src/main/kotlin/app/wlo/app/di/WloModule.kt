@@ -181,6 +181,10 @@ public val platformModule: Module =
 
         // F03/F04 planning spine (M5): the planner + list + pantry + recipe
         // doors, and the shipped seed bundle's reader (R-S3 content rules).
+        single {
+            app.wlo.core.data
+                .MealAgendaRepository(get(), get(), get(), get(), get(), get(), get())
+        }
         single<RecipeRepository> { RoomRecipeRepository(db = get<WloDatabase>()) }
         single<PlannerRepository> {
             RoomPlannerRepository(

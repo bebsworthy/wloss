@@ -16,7 +16,6 @@ import app.wlo.core.data.RoomDiaryRepository
 import app.wlo.core.model.DerivedValue
 import app.wlo.core.model.DiaryEntry
 import app.wlo.core.model.EntryVia
-import app.wlo.core.model.HoldReason
 import app.wlo.core.model.MealSlot
 import app.wlo.core.model.Provenance
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -160,7 +159,7 @@ public class DiaryViewModel(
                 SlotUi(
                     slot = slot,
                     entries = entries.map { entry -> entry.toRow(entry.foodItemId?.let(names::get)) },
-                    kcal = entries.sumOf { it.kcal },
+                    kcal = if (entries.any { it.kcal == null }) null else entries.sumOf { it.kcal!! },
                 )
             }
         val totals = dayDiary.totals
@@ -169,7 +168,7 @@ public class DiaryViewModel(
             dayEpochDay = dayEpochDay,
             dayLabel = dayLabel(dayEpochDay),
             slots = slotSections,
-            totals = DerivedValue(totals.kcal, dayProvenance(dayDiary.entries)),
+            totals = totals.kcal?.let { DerivedValue(it, dayProvenance(dayDiary.entries)) },
             macroLine = macroLine(totals.proteinG, totals.carbG, totals.fatG, totals.fiberG),
             dayStatus = session.statuses[dayEpochDay] ?: DayStatusUi.LOGGED.takeIf { dayDiary.entries.isNotEmpty() },
             openEntry = detail,
@@ -294,7 +293,7 @@ public class DiaryViewModel(
                 ?: "quick add"
         val subtitle =
             when {
-                kcalOnlyQuickAdd -> "%,d kcal".format(kcal.toInt())
+                kcalOnlyQuickAdd -> "%,d kcal".format(kcal?.toInt())
                 unit == "serving" ->
                     "${FoodLogViewModel.formatQuantity(quantity)} serving"
                 else -> "${FoodLogViewModel.formatQuantity(quantity)} $unit"
@@ -311,30 +310,18 @@ public class DiaryViewModel(
     }
 
     /** The D6-typed kcal chip: derived for portion math, measured for quick adds, held for notes. */
-    private fun DiaryEntry.toDerived(): DerivedValue<Double> =
-        when {
-            kcalOnlyQuickAdd ->
-                DerivedValue(kcal, Provenance.Measured(at = createdAt, instrument = "user entry"))
-            foodItemId != null ->
-                DerivedValue(
-                    kcal,
-                    Provenance.Derived(
-                        formulaVersion = RoomDiaryRepository.PORTION_FORMULA_VERSION,
-                        inputs = listOf("food=$foodItemId", "portion=$quantity $unit"),
-                    ),
-                )
-            else ->
-                DerivedValue(kcal, Provenance.Held(HoldReason.INSUFFICIENT_DATA))
+    private fun DiaryEntry.toDerived(): DerivedValue<Double>? =
+        kcal?.let { value ->
+            DerivedValue(
+                value,
+                Provenance.Derived(RoomDiaryRepository.PORTION_FORMULA_VERSION, listOf("entry=$id", "portion=$quantity $unit")),
+            )
         }
 
-    private fun app.wlo.core.model.DiaryRevision.toDerived(): DerivedValue<Double> =
-        DerivedValue(
-            kcal,
-            Provenance.Derived(
-                formulaVersion = RoomDiaryRepository.PORTION_FORMULA_VERSION,
-                inputs = listOf("portion=$quantity $unit"),
-            ),
-        )
+    private fun app.wlo.core.model.DiaryRevision.toDerived(): DerivedValue<Double>? =
+        kcal?.let { value ->
+            DerivedValue(value, Provenance.Derived(RoomDiaryRepository.PORTION_FORMULA_VERSION, listOf("portion=$quantity $unit")))
+        }
 
     private fun dayProvenance(entries: List<DiaryEntry>): Provenance =
         Provenance.Derived(

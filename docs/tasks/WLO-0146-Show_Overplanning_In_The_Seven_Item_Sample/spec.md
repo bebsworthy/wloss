@@ -1,0 +1,1 @@
+Updated seven-item sample: preserved September 21; September 22 now has breakfast, seven-item lunch, dinner yielding 2410 planned kcal against 1900 target (510 over). Browser verified selected 22nd, planned caption and over-target calorie/carbs/fat values. Syntax/whitespace passed. Left prototype on 22nd.

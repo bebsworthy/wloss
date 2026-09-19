@@ -190,7 +190,7 @@ public class M4CaptureFlowTest {
                     .epochDay(clock.now(), kotlinx.datetime.TimeZone.currentSystemDefault())
             val entries = diary.day(profileId, day).getOrNull()!!.entries
             val photoEntry = entries.last { it.enteredVia == EntryVia.PHOTO }
-            assertTrue(photoEntry.kcal > 0.0, "portion math ran on the swapped food")
+            assertTrue(photoEntry.kcal != null && photoEntry.kcal!! > 0.0, "portion math ran on the swapped food")
 
             // Provenance row names the model + consent state (F02 §5).
             val db = koin.get<app.wlo.core.database.WloDatabase>()

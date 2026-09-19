@@ -25,7 +25,7 @@ public data class DiaryEntry(
     public val quantity: Double,
     /** "g" | "ml" | "serving" (v1 portion vocabulary). */
     public val unit: String,
-    public val kcal: Double,
+    public val kcal: Double?,
     public val proteinG: Double? = null,
     public val carbG: Double? = null,
     public val fatG: Double? = null,
@@ -45,6 +45,7 @@ public data class DiaryEntry(
     /** Fresh Start ledger columns (R-B7, added now so no later migration is needed). */
     public val hiddenAt: Instant? = null,
     public val hiddenReason: String? = null,
+    public val itemJson: String? = null,
 )
 
 /**
@@ -63,7 +64,7 @@ public data class DiaryRevision(
     public val textHint: String? = null,
     public val quantity: Double,
     public val unit: String,
-    public val kcal: Double,
+    public val kcal: Double?,
     public val proteinG: Double? = null,
     public val carbG: Double? = null,
     public val fatG: Double? = null,
@@ -71,6 +72,7 @@ public data class DiaryRevision(
     public val enteredVia: EntryVia,
     /** When this version was superseded by the next edit. */
     public val editedAt: Instant,
+    public val itemJson: String? = null,
 )
 
 /** F06 trend smoother selection (F06 §3; R-A2 fixes the default α at 0.15). */

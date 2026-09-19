@@ -1,0 +1,16 @@
+{
+  "url": "file:///Users/boyd/wip/wloss/docs/design/flows/11-flexible-meal-planning.html",
+  "bounds": {
+    "x": 365,
+    "y": 196.8125,
+    "width": 390,
+    "height": 844
+  },
+  "anchor": {
+    "x": 21,
+    "y": 182.9375,
+    "width": 71.78125,
+    "height": 31
+  },
+  "anchorSelector": ".nutrient-kcal .nutrient-value strong"
+}

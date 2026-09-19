@@ -41,6 +41,38 @@ class MigrationTest {
         )
 
     @Test
+    fun migrate10To11_keepsExistingAgendaRows() =
+        runTest {
+            helper.createDatabase(10).use { connection ->
+                connection.exec(
+                    "INSERT INTO plan_slots (id,planId,profileId,dayEpochDay,mealSlot,servings,state,isCookEvent,createdAtEpochMs,itemJson) VALUES ('item','','p',20717,'lunch',1,'planned',0,1000,'{}')",
+                )
+            }
+            helper.runMigrationsAndValidate(11, listOf(Migrations.MIGRATION_10_11)).use { connection ->
+                assertEquals(1L, queryLong(connection, "SELECT COUNT(*) FROM plan_slots WHERE id='item' AND sortOrder IS NULL"))
+            }
+        }
+
+    @Test
+    fun migrate9To10_preservesItemsAndAllowsUnknownKcal() =
+        runTest {
+            helper.createDatabase(9).use { connection ->
+                connection.exec(
+                    "INSERT INTO diary_entries (id,profileId,dayEpochDay,mealSlot,quantity,unit,computedKcal,enteredVia,provenanceScalar,revision,createdAtEpochMs) VALUES ('food','p',20717,'lunch',1,'serving',100,'manual_search','test',1,1000)",
+                )
+                connection.exec(
+                    "INSERT INTO plan_slots (id,planId,profileId,dayEpochDay,mealSlot,servings,state,isCookEvent,createdAtEpochMs) VALUES ('slot','plan','p',20717,'lunch',1,'planned',0,1000)",
+                )
+            }
+            helper.runMigrationsAndValidate(10, listOf(Migrations.MIGRATION_9_10)).use { connection ->
+                assertEquals(100L, queryLong(connection, "SELECT computedKcal FROM diary_entries WHERE id='food'"))
+                connection.exec("UPDATE diary_entries SET computedKcal=NULL WHERE id='food'")
+                assertEquals(1L, queryLong(connection, "SELECT COUNT(*) FROM diary_entries WHERE computedKcal IS NULL"))
+                assertEquals(1L, queryLong(connection, "SELECT COUNT(*) FROM plan_slots WHERE id='slot' AND itemJson IS NULL"))
+            }
+        }
+
+    @Test
     fun migrate8To9_preservesRowsAndAddsNullableWeightPolicyMetadata() =
         runTest {
             helper.createDatabase(8).use { connection ->

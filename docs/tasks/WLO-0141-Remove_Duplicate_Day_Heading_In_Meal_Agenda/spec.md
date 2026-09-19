@@ -1,0 +1,1 @@
+Removed redundant day-heading row (Today · date) between date navigation and nutrition summary. Date remains in week/day navigation. Browser confirmed duplicate label absent. Syntax/whitespace checks passed.

@@ -1,0 +1,4 @@
+Flatten Flow 11: day is the editing surface; inline portions/removal; persistent add-many bottom sheet with today/past default Eaten and future Planned; planned meals Mark eaten immediately with Undo. Remove duplicate food-log review and ordinary food-edit subscreens. Recipes open details only on request. Browser verify batch additions, portions, mark/Undo, future behavior, totals; update UX documentation. HTML prototype only.
+
+
+Completed: removed duplicate food-log and ordinary item-edit routes; direct quantity/removal in agenda; native add-many dialog with immediate adds, Eaten/Planned choice and persistent Done; one-tap Mark eaten + Undo. Recipe details remain optional. Updated current UX contract and HTML handoff. Browser verified consecutive additions, mode switching/Escape, inline portion totals, mark/Undo and future guards. Evidence: docs/design/flows/evidence/WLO-0132/README.md. Syntax/whitespace checks passed.

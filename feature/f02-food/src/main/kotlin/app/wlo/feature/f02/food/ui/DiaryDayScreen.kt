@@ -78,14 +78,21 @@ public fun DiaryDayScreen(
             header = {
                 WloCardHeader(
                     title = "Eaten so far",
-                    provenance = { ProvenanceChip(value = state.totals, format = ::formatKcal) },
+                    provenance = {
+                        state.totals?.let {
+                            ProvenanceChip(
+                                value = it,
+                                format = ::formatKcal,
+                            )
+                        } ?: Text("Nutrition incomplete")
+                    },
                 )
             },
         ) {
             // The numeral renders HERE; the chip in the header carries the
             // kind + info mark only (never repeats the value).
             Text(
-                text = formatKcal(state.totals.value),
+                text = state.totals?.value?.let(::formatKcal) ?: "Nutrition incomplete",
                 style = wloType.statL,
                 modifier = Modifier.testTag("f02-day-total"),
             )
@@ -187,7 +194,7 @@ private fun SlotSection(
                 title = slotLabel(slot.slot),
                 provenance = {
                     Text(
-                        text = formatKcal(slot.kcal),
+                        text = slot.kcal?.let(::formatKcal) ?: "Incomplete",
                         style = wloType.receipt,
                         color = wloExtendedColors.textTertiary,
                     )
@@ -211,7 +218,7 @@ private fun EntryRow(
     WloListRow(
         label = entry.title,
         secondary = entry.subtitle + if (entry.edited) " · edited" else "",
-        value = { ProvenanceChip(value = entry.kcal, format = ::formatKcal) },
+        value = { entry.kcal?.let { ProvenanceChip(value = it, format = ::formatKcal) } ?: Text("Unknown kcal") },
         onClick = { onEntryTap(entry.id) },
     )
 
@@ -272,7 +279,7 @@ private fun EntrySheetContent(
                             style = wloType.receipt,
                             color = wloExtendedColors.textTertiary,
                         )
-                        ProvenanceChip(value = rev.kcal, format = ::formatKcal)
+                        rev.kcal?.let { ProvenanceChip(value = it, format = ::formatKcal) } ?: Text("Unknown kcal")
                     }
                 }
             }

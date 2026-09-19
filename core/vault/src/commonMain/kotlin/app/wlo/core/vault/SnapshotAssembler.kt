@@ -151,6 +151,7 @@ internal fun DiaryEntryEntity.toRow(revisions: List<DiaryRevisionRow>): DiaryEnt
         quantity = quantity,
         unit = unit,
         computedKcal = computedKcal,
+        itemJson = itemJson,
         computedProteinG = computedProteinG,
         computedCarbG = computedCarbG,
         computedFatG = computedFatG,
@@ -177,6 +178,7 @@ internal fun DiaryEntryRevisionEntity.toRow(): DiaryRevisionRow =
         quantity = quantity,
         unit = unit,
         computedKcal = computedKcal,
+        itemJson = itemJson,
         computedProteinG = computedProteinG,
         computedCarbG = computedCarbG,
         computedFatG = computedFatG,
@@ -320,6 +322,8 @@ internal fun PlanSlotEntity.toRow(): PlanSlotRow =
         fiberGPerServing = fiberGPerServing,
         createdAtEpochMs = createdAtEpochMs,
         updatedAtEpochMs = updatedAtEpochMs,
+        itemJson = itemJson,
+        sortOrder = sortOrder,
     )
 
 internal fun ListItemEntity.toRow(): ListItemRow =

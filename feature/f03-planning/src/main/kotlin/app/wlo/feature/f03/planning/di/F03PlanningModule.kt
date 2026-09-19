@@ -13,6 +13,10 @@ import org.koin.dsl.module
 public val f03PlanningModule: Module =
     module {
         viewModel { (focusDay: Long?, focusSlot: String?) ->
+            app.wlo.feature.f03.planning.state
+                .AgendaViewModel(get(), get(), get(), get(), get(), get(), focusDay, focusSlot)
+        }
+        viewModel { (focusDay: Long?, focusSlot: String?) ->
             PlanViewModel(
                 clock = get(),
                 profiles = get(),

@@ -417,7 +417,7 @@ public object PlannerEngine {
      */
     public fun plannedDayTotals(slots: List<PlannedSlot>): NutritionTotals =
         slots
-            .filter { it.recipeId != null }
+            .filter { it.recipeId != null || it.itemJson != null }
             .filter { it.state == PlannedSlotState.PLANNED || it.state == PlannedSlotState.CONFIRMED }
             .fold(NutritionTotals()) { acc, slot ->
                 val n = slot.servings

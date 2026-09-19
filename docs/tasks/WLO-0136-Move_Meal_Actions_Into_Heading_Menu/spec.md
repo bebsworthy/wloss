@@ -1,0 +1,1 @@
+Removed meal-level status labels and persistent action rows. Added labelled right-hand meal overflow menus on empty/populated entries with Add, Suggest, eligible Mark eaten, Move/repeat and Remove. Preserved item-level status. Browser checked layout, opening add sheet from menu, Mark eaten and Undo. Syntax/whitespace checks passed. Updated UX handoff. Prototype only.

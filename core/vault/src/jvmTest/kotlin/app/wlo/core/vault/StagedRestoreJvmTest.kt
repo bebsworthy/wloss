@@ -216,13 +216,44 @@ class StagedRestoreJvmTest {
             passphrase,
         )
 
+    @Test
+    fun agendaItemsAndUnknownDiaryNutritionSurviveEncryptedRestore() =
+        runTest {
+            val source = payload()
+            val snapshot = "{\"name\":\"Office lunch\",\"unit\":\"portion\"}"
+            val agenda =
+                PlanSlotRow(
+                    id = "independent",
+                    planId = "",
+                    profileId = "prof-1",
+                    dayEpochDay = 20_000,
+                    mealSlot = "lunch",
+                    recipeName = "Office lunch",
+                    servings = 1.0,
+                    createdAtEpochMs = 1234,
+                    itemJson = snapshot,
+                )
+            val document =
+                source.copy(
+                    diary = source.diary.map { it.copy(computedKcal = null, itemJson = snapshot) },
+                    planSlots = listOf(agenda),
+                )
+            val staged = restorer.stage(containerFor(document), passphrase)
+            committer.commit(staged)
+            assertEquals(snapshot, db.planSlots().byId("independent")?.itemJson)
+            val actual = db.diaryEntries().all().single()
+            assertEquals(null, actual.computedKcal)
+            assertEquals(snapshot, actual.itemJson)
+            assertEquals(null, db.dayRecords().day("prof-1", 20_000)?.intakeKcal)
+        }
+
     // --- happy path ---------------------------------------------------------
 
     @Test
     fun stageAndCommit_restoresIntoEmptyStore() =
         runTest {
             val staged = restorer.stage(containerFor(payload()), passphrase)
-            assertEquals(1, staged.schemaVersionRead)
+            assertEquals(BackupSchema.SCHEMA_VERSION, staged.schemaVersionRead)
             assertEquals(BackupSchema.SECTION_ORDER.size, staged.sections.size)
             assertTrue(staged.warnings.isEmpty())
 

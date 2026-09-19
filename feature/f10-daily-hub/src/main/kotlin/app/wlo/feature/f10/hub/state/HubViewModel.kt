@@ -143,7 +143,7 @@ public data class HubMoment(
 
 /** The diary's today slice (F10 renders it; F02 owns the diary, R-B1). */
 public data class DiarySliceUi(
-    public val kcal: DerivedValue<Double>,
+    public val kcal: DerivedValue<Double>?,
     public val entryCount: Int,
     public val slotSummary: String,
     /** Consumed macros — null while no entry today carries that macro. */
@@ -594,7 +594,7 @@ public class HubViewModel(
                 "${slotLabel(slot)} ${entries.size}"
             }
         return DiarySliceUi(
-            kcal = DerivedValue(day.totals.kcal, dayProvenance(day.entries.size)),
+            kcal = day.totals.kcal?.let { DerivedValue(it, dayProvenance(day.entries.size)) },
             entryCount = day.entries.size,
             slotSummary = summary,
             proteinG = day.totals.proteinG,
@@ -729,7 +729,7 @@ public class HubViewModel(
             headline = "How we got here",
             rows =
                 listOf(
-                    "logged today" to formatKcal(slice.kcal.value),
+                    "logged today" to (slice.kcal?.value?.let(::formatKcal) ?: "Nutrition incomplete"),
                     "entries" to slice.entryCount.toString(),
                     "method" to "portion × per-100 g energy, summed",
                     "formula" to ConstantsRegistry.DIARY_PORTION_FORMULA_VERSION,

@@ -333,6 +333,9 @@ public data class PlannedSlot(
     public val fiberGPerServing: Double? = null,
     public val createdAtEpochMs: Long = 0,
     public val updatedAtEpochMs: Long? = null,
+    /** Nullable for legacy recipe slots; explicit food/custom portion metadata otherwise. */
+    public val itemJson: String? = null,
+    public val sortOrder: Long? = null,
 )
 
 /**

@@ -18,7 +18,7 @@ public data class EntryRowUi(
     /** The quantity line ("150 g", "1 serving", "500 ml water"). */
     public val subtitle: String,
     /** The kcal the diary math computed — D6-typed for the chip. */
-    public val kcal: DerivedValue<Double>,
+    public val kcal: DerivedValue<Double>?,
     public val isDrink: Boolean,
     public val revision: Int,
     public val edited: Boolean,
@@ -28,7 +28,7 @@ public data class EntryRowUi(
 public data class SlotUi(
     public val slot: MealSlot,
     public val entries: List<EntryRowUi>,
-    public val kcal: Double,
+    public val kcal: Double?,
 )
 
 /**
@@ -48,7 +48,7 @@ public enum class DayStatusUi(
 /** One frozen revision of the entry (the correction audit, R-B8). */
 public data class RevisionUi(
     public val revision: DiaryRevision,
-    public val kcal: DerivedValue<Double>,
+    public val kcal: DerivedValue<Double>?,
 )
 
 /** The open provenance sheet: the entry, its math, and its history. */
@@ -66,7 +66,7 @@ public data class DiaryUiState(
     public val dayEpochDay: Long,
     public val dayLabel: String,
     public val slots: List<SlotUi>,
-    public val totals: DerivedValue<Double>,
+    public val totals: DerivedValue<Double>?,
     public val macroLine: String,
     public val dayStatus: DayStatusUi?,
     public val openEntry: EntryDetailUi? = null,

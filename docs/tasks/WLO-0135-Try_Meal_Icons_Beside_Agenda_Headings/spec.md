@@ -1,0 +1,1 @@
+Added small monochrome outline icons before meal headings: sunrise/breakfast, sun/lunch, moon/dinner, apple/snacks. Kept existing compact layout and text labels; SVGs decorative and hidden from accessibility tree. Browser visually verified. Syntax and whitespace checks passed. Prototype only.

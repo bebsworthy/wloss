@@ -106,7 +106,7 @@ class LogAsPlannedTest {
             assertEquals(slot.recipeName, logged.textHint)
             assertEquals(slot.mealSlot, logged.mealSlot.wireName)
             assertEquals(slot.dayEpochDay, logged.dayEpochDay)
-            assertEquals(slot.kcalPerServing!!, logged.kcal, absoluteTolerance = 1e-9)
+            assertEquals(slot.kcalPerServing!!, logged.kcal!!, absoluteTolerance = 1e-9)
             assertEquals(slot.proteinGPerServing!!, logged.proteinG!!, absoluteTolerance = 1e-9)
             assertEquals(slot.carbGPerServing!!, logged.carbG!!, absoluteTolerance = 1e-9)
             assertEquals(slot.fatGPerServing!!, logged.fatG!!, absoluteTolerance = 1e-9)
@@ -128,7 +128,7 @@ class LogAsPlannedTest {
             // the read-time planned fold drops the confirmed slot from the
             // open count while the plan's claim stays whole.
             val after = projection.day(profileId, slot.dayEpochDay).okOrDie()
-            assertEquals(logged.kcal, after.intakeKcal!!.value, absoluteTolerance = 1e-9)
+            assertEquals(logged.kcal!!, after.intakeKcal!!.value, absoluteTolerance = 1e-9)
             assertEquals(2, after.plannedOpenSlots)
             assertEquals(3, after.plannedSlotCount, "confirmed stays inside the plan's claim")
         }

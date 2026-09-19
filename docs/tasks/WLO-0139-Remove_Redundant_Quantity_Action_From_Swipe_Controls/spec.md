@@ -1,0 +1,1 @@
+Removed Edit portion from swipe actions, preserving Replace, Remove and recipe-only Details. Reveal width automatically contracts. Browser verified food actions are Replace and Remove only. JavaScript syntax and whitespace checks passed. Updated UX contract.

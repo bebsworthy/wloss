@@ -271,6 +271,29 @@ public class RoomPlannerRepository public constructor(
     override suspend fun logAsPlanned(
         slotId: String,
         at: Instant,
+    ): WloResult<DiaryEntry> =
+        try {
+            db.withWriteTransaction {
+                when (val result = logAsPlannedInTransaction(slotId, at)) {
+                    is WloResult.Ok -> result
+                    is WloResult.Err -> throw ReplayFailure(result.error)
+                }
+            }
+        } catch (failure: ReplayFailure) {
+            WloResult.err(failure.failure)
+        } catch (cancelled: kotlinx.coroutines.CancellationException) {
+            throw cancelled
+        } catch (failure: Throwable) {
+            WloResult.err(AppError.Storage(cause = failure, detail = "planner.logAsPlanned.transaction"))
+        }
+
+    private class ReplayFailure(
+        val failure: AppError,
+    ) : RuntimeException()
+
+    private suspend fun logAsPlannedInTransaction(
+        slotId: String,
+        at: Instant,
     ): WloResult<DiaryEntry> {
         val load = storageGuard("planner.logAsPlanned.load") { slots.byId(slotId) }
         val current = load.getOrNull() ?: return notFoundSlotOr(load, slotId)
@@ -279,7 +302,7 @@ public class RoomPlannerRepository public constructor(
                 AppError.InvalidInput("slot $slotId is ${current.state}; only planned slots can be logged as planned"),
             )
         }
-        if (current.recipeId == null) {
+        if (current.recipeId == null && current.itemJson == null) {
             return WloResult.err(
                 AppError.InvalidInput("slot $slotId is a free-text card; there is no recipe to replay"),
             )
@@ -303,16 +326,23 @@ public class RoomPlannerRepository public constructor(
                         mealSlot = meal,
                         textHint = current.recipeName,
                         quantity = servings,
-                        unit = RoomDiaryRepository.UNIT_SERVING,
+                        operationId = "planned-${current.id}",
+                        itemJson = current.itemJson,
+                        unit =
+                            current.itemJson?.let {
+                                kotlinx.serialization.json.Json
+                                    .decodeFromString<AgendaFood>(it)
+                                    .unit
+                            } ?: RoomDiaryRepository.UNIT_SERVING,
                         enteredVia = EntryVia.PLAN,
                         planNutrition =
                             PlanNutrition(
                                 slotId = current.id,
-                                kcal = (current.kcalPerServing ?: 0.0) * servings,
-                                proteinG = (current.proteinGPerServing ?: 0.0) * servings,
-                                carbG = (current.carbGPerServing ?: 0.0) * servings,
-                                fatG = (current.fatGPerServing ?: 0.0) * servings,
-                                fiberG = (current.fiberGPerServing ?: 0.0) * servings,
+                                kcal = current.kcalPerServing?.times(servings),
+                                proteinG = current.proteinGPerServing?.times(servings),
+                                carbG = current.carbGPerServing?.times(servings),
+                                fatG = current.fatGPerServing?.times(servings),
+                                fiberG = current.fiberGPerServing?.times(servings),
                             ),
                     ),
                     at,
@@ -439,7 +469,8 @@ public class RoomPlannerRepository public constructor(
                     .diaryEntries()
                     .range(profileId, firstDay, asOfDayEpochDay)
                     .groupBy({ it.dayEpochDay }, { it.computedKcal })
-                    .mapValues { (_, values) -> values.sum() }
+                    .filterValues { values -> values.all { it != null } }
+                    .mapValues { (_, values) -> values.filterNotNull().sum() }
             AdherenceMetrics.compute(
                 AdherenceMetrics.Input(
                     slots = allSlots,

@@ -4,3 +4,7 @@ root = true
 # WLO is Compose-first: PascalCase @Composable functions are factory-style
 # components, not violations (ktlint function-naming exemption).
 ktlint_function_naming_ignore_when_annotated_with = Composable
+
+[**/{MealAgenda,MealAgendaTest,MealAgendaUiTest,MealAgendaScreen,AgendaViewModel}.kt]
+# Keep the agenda's new code within the existing Detekt 120-column limit.
+max_line_length = 120

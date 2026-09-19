@@ -213,7 +213,7 @@ class FoodDiaryWeighInTest {
             assertEquals(5, day0Diary.entries.size)
             assertEquals(MealSlot.BREAKFAST, day0Diary.slots.keys.first())
             assertEquals(setOf(MealSlot.BREAKFAST, MealSlot.LUNCH, MealSlot.DINNER, MealSlot.SNACK, MealSlot.DRINK), day0Diary.slots.keys)
-            assertEquals(455.1, day0Diary.totals.kcal, absoluteTolerance = 1e-9)
+            assertEquals(455.1, day0Diary.totals.kcal!!, absoluteTolerance = 1e-9)
 
             // The A.3 day projection folds the diary in (R-B1: one intake door).
             val view = projection.day(profileId, day0).okOrDie()
@@ -226,8 +226,8 @@ class FoodDiaryWeighInTest {
             week.forEach { (offset, seeds) ->
                 val day = diary.day(profileId, day0 + offset).okOrDie()
                 assertEquals(
-                    seeds.sumOf { it.kcal },
-                    day.totals.kcal,
+                    seeds.sumOf { it.kcal!! },
+                    day.totals.kcal!!,
                     absoluteTolerance = 1e-9,
                     "day $offset totals must match the seeder's pre-computed kcal",
                 )
@@ -244,7 +244,7 @@ class FoodDiaryWeighInTest {
                 diary
                     .day(profileId, day0)
                     .okOrDie()
-                    .totals.kcal
+                    .totals.kcal!!
 
             // Correct the portion: 60 g → 40 g of oats (372/100·40 = 148.8).
             val catalog =
@@ -263,21 +263,21 @@ class FoodDiaryWeighInTest {
 
             assertEquals(2, corrected.revision, "the revision pointer bumps on edit")
             assertNotNull(corrected.editedAt)
-            assertEquals(148.8, corrected.kcal, absoluteTolerance = 1e-9)
+            assertEquals(148.8, corrected.kcal!!, absoluteTolerance = 1e-9)
 
             // The audit chain keeps the prior state verbatim.
             val revisions = diary.revisionsOf(entryId).okOrDie()
             assertEquals(1, revisions.size)
             assertEquals(1, revisions.single().revision)
             assertEquals(60.0, revisions.single().quantity)
-            assertEquals(223.2, revisions.single().kcal, absoluteTolerance = 1e-9)
+            assertEquals(223.2, revisions.single().kcal!!, absoluteTolerance = 1e-9)
 
             // Totals and the projection moved with the correction.
             val after =
                 diary
                     .day(profileId, day0)
                     .okOrDie()
-                    .totals.kcal
+                    .totals.kcal!!
             assertEquals(before - 223.2 + 148.8, after, absoluteTolerance = 1e-9)
             val projected = assertNotNull(projection.day(profileId, day0).okOrDie().intakeKcal)
             assertEquals(after, projected.value, absoluteTolerance = 1e-9)
@@ -293,7 +293,7 @@ class FoodDiaryWeighInTest {
                 diary
                     .day(profileId, day0)
                     .okOrDie()
-                    .totals.kcal
+                    .totals.kcal!!
 
             diary.archiveEntry(snackId, clock.now()).okOrDie()
 
@@ -301,7 +301,7 @@ class FoodDiaryWeighInTest {
             assertNull(after.entries.firstOrNull { it.id == snackId }, "archived entries leave the day view")
             assertEquals(
                 withSnack - 46.8,
-                after.totals.kcal,
+                after.totals.kcal!!,
                 absoluteTolerance = 1e-9,
                 "the projection drops archived intake (R-B7 hide-not-delete)",
             )
@@ -417,6 +417,6 @@ class FoodDiaryWeighInTest {
                     ).okOrDie()
             val observed = diary.observeDay(profileId, day0).first().okOrDie()
             assertEquals(listOf(first.id), observed.entries.map { it.id })
-            assertEquals(300.0, observed.totals.kcal, absoluteTolerance = 1e-9)
+            assertEquals(300.0, observed.totals.kcal!!, absoluteTolerance = 1e-9)
         }
 }

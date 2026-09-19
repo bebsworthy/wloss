@@ -793,6 +793,9 @@ public interface PlanVersionDao {
  */
 @Dao
 public interface PlanSlotDao {
+    @Update
+    public suspend fun update(item: PlanSlotEntity)
+
     @Insert
     public suspend fun insertAll(slots: List<PlanSlotEntity>)
 
@@ -800,7 +803,7 @@ public interface PlanSlotDao {
     public suspend fun insert(slot: PlanSlotEntity)
 
     /** F13 backup snapshot (M6). */
-    @Query("SELECT * FROM plan_slots ORDER BY dayEpochDay ASC, createdAtEpochMs ASC")
+    @Query("SELECT * FROM plan_slots ORDER BY dayEpochDay ASC, COALESCE(sortOrder, createdAtEpochMs) ASC")
     public suspend fun all(): List<PlanSlotEntity>
 
     /** F13 staged restore (M6): keep-local on conflict. */
@@ -810,15 +813,16 @@ public interface PlanSlotDao {
     @Query("SELECT * FROM plan_slots WHERE id = :id")
     public suspend fun byId(id: String): PlanSlotEntity?
 
-    @Query("SELECT * FROM plan_slots WHERE planId = :planId ORDER BY dayEpochDay ASC, createdAtEpochMs ASC")
+    @Query("SELECT * FROM plan_slots WHERE planId = :planId ORDER BY dayEpochDay ASC, COALESCE(sortOrder, createdAtEpochMs) ASC")
     public suspend fun forPlan(planId: String): List<PlanSlotEntity>
 
-    @Query("SELECT * FROM plan_slots WHERE planId = :planId ORDER BY dayEpochDay ASC, createdAtEpochMs ASC")
+    @Query("SELECT * FROM plan_slots WHERE planId = :planId ORDER BY dayEpochDay ASC, COALESCE(sortOrder, createdAtEpochMs) ASC")
     public fun observeForPlan(planId: String): Flow<List<PlanSlotEntity>>
 
     @Query(
         "SELECT * FROM plan_slots WHERE profileId = :profileId AND dayEpochDay BETWEEN :fromDay AND :toDay " +
-            "ORDER BY dayEpochDay ASC, createdAtEpochMs ASC",
+            "AND (planId = '' OR planId IN (SELECT id FROM plan_versions WHERE supersededAtEpochMs IS NULL)) " +
+            "ORDER BY dayEpochDay ASC, COALESCE(sortOrder, createdAtEpochMs) ASC",
     )
     public suspend fun range(
         profileId: String,
@@ -828,7 +832,8 @@ public interface PlanSlotDao {
 
     @Query(
         "SELECT * FROM plan_slots WHERE profileId = :profileId AND dayEpochDay BETWEEN :fromDay AND :toDay " +
-            "ORDER BY dayEpochDay ASC, createdAtEpochMs ASC",
+            "AND (planId = '' OR planId IN (SELECT id FROM plan_versions WHERE supersededAtEpochMs IS NULL)) " +
+            "ORDER BY dayEpochDay ASC, COALESCE(sortOrder, createdAtEpochMs) ASC",
     )
     public fun observeRange(
         profileId: String,

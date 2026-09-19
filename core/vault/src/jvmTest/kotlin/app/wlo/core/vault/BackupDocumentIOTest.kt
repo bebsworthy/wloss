@@ -117,7 +117,7 @@ class BackupDocumentIOTest {
             BackupCodec
                 .encode(samplePayload(), 42)
                 .toString(Charsets.UTF_8)
-                .replace("\"schemaVersion\":1", "\"schemaVersion\":999")
+                .replace("\"schemaVersion\":${BackupSchema.SCHEMA_VERSION}", "\"schemaVersion\":999")
                 .toByteArray()
         val failure =
             assertFailsWith<BackupDocumentException> { BackupCodec.decodeVerified(bytes) }

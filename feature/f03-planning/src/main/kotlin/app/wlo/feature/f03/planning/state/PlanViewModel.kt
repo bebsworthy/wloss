@@ -515,7 +515,8 @@ public class PlanViewModel(
         }
     }
 
-    private fun entryLabel(entry: DiaryEntry): String = formatEntry(entry.textHint, entry.kcal)
+    private fun entryLabel(entry: DiaryEntry): String =
+        entry.kcal?.let { formatEntry(entry.textHint, it) } ?: "${entry.textHint ?: "Food"} · kcal unknown"
 
     private fun formatEntry(
         textHint: String?,

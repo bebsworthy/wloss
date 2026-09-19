@@ -1,0 +1,1 @@
+Replaced date input panel with month calendar picker, month arrows, day grid, selected/today styling, Today and Cancel. Selecting a day navigates immediately. Added keyboard day/month navigation. Browser verified next month and 3 Oct selection updates agenda. Syntax/whitespace checks passed. Updated native M3 handoff. Prototype only.

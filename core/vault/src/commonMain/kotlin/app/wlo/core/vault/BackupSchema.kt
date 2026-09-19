@@ -25,7 +25,7 @@ import kotlinx.serialization.Serializable
  */
 public object BackupSchema {
     /** The current backup document version (see [BackupMigrations] for history). */
-    public const val SCHEMA_VERSION: Int = 1
+    public const val SCHEMA_VERSION: Int = 2
 
     /** Section names — the manifest keys and the on-disk JSON keys. */
     public const val SECTION_PROFILES: String = "profiles"
@@ -123,7 +123,7 @@ public data class DiaryEntryRow(
     val textHint: String? = null,
     val quantity: Double,
     val unit: String,
-    val computedKcal: Double,
+    val computedKcal: Double?,
     val computedProteinG: Double? = null,
     val computedCarbG: Double? = null,
     val computedFatG: Double? = null,
@@ -137,6 +137,7 @@ public data class DiaryEntryRow(
     val hiddenAtEpochMs: Long? = null,
     val hiddenReason: String? = null,
     val revisions: List<DiaryRevisionRow> = emptyList(),
+    public val itemJson: String? = null,
 )
 
 @Serializable
@@ -149,13 +150,14 @@ public data class DiaryRevisionRow(
     val textHint: String? = null,
     val quantity: Double,
     val unit: String,
-    val computedKcal: Double,
+    val computedKcal: Double?,
     val computedProteinG: Double? = null,
     val computedCarbG: Double? = null,
     val computedFatG: Double? = null,
     val computedFiberG: Double? = null,
     val enteredVia: String,
     val editedAtEpochMs: Long,
+    public val itemJson: String? = null,
 )
 
 /** One immutable Targets version (full DocumentEnvelope JSON, R-B2 two-writer rule). */
@@ -300,6 +302,9 @@ public data class PlanSlotRow(
     val fiberGPerServing: Double? = null,
     val createdAtEpochMs: Long,
     val updatedAtEpochMs: Long? = null,
+    /** Nullable for legacy recipe slots; explicit food/custom portion metadata otherwise. */
+    val itemJson: String? = null,
+    public val sortOrder: Long? = null,
 )
 
 @Serializable

@@ -1,0 +1,79 @@
+{
+  "schemaVersion": 1,
+  "warnings": [
+    "Screen widths are normalized uniformly; desktop chrome must be excluded.",
+    "Glyph anchors align visible ink, not font size. Data/state equality is not inferred.",
+    "Background mask is contrast-based, not OCR. Difference includes rasterization changes.",
+    "Candidate overflow is clipped to the reference. Difference excludes uncovered pixels."
+  ],
+  "android": {
+    "serial": "emulator-5554",
+    "anchorText": "2,410"
+  },
+  "browser": {
+    "url": "file:///Users/boyd/wip/wloss/docs/design/flows/11-flexible-meal-planning.html",
+    "bounds": {
+      "x": 365,
+      "y": 196.8125,
+      "width": 390,
+      "height": 844
+    },
+    "anchor": {
+      "x": 21,
+      "y": 182.9375,
+      "width": 71.78125,
+      "height": 31
+    },
+    "anchorSelector": ".nutrient-kcal .nutrient-value strong"
+  },
+  "anchorRegions": {
+    "reference": {
+      "x": 21,
+      "y": 182.9375,
+      "width": 71.78125,
+      "height": 31
+    },
+    "candidate": {
+      "x": 53,
+      "y": 435,
+      "width": 204,
+      "height": 89
+    }
+  },
+  "referenceSize": [
+    390,
+    845
+  ],
+  "candidateSize": [
+    1080,
+    2400
+  ],
+  "scale": 0.3611111111111111,
+  "offset": {
+    "x": 2.416666666666668,
+    "y": 26.138888888888886
+  },
+  "backgroundMode": "dark",
+  "referenceAnchor": {
+    "x": 23,
+    "y": 189,
+    "width": 13,
+    "height": 20
+  },
+  "candidateAnchor": {
+    "x": 57,
+    "y": 451,
+    "width": 38,
+    "height": 55
+  },
+  "alignment": "first visible glyph top-left",
+  "outputs": {
+    "reference.png": "/Users/boyd/wip/wloss/docs/tech/WLO-0156-evidence/overlay-verified/reference.png",
+    "candidate.png": "/Users/boyd/wip/wloss/docs/tech/WLO-0156-evidence/overlay-verified/candidate.png",
+    "aligned.png": "/Users/boyd/wip/wloss/docs/tech/WLO-0156-evidence/overlay-verified/aligned.png",
+    "overlay.png": "/Users/boyd/wip/wloss/docs/tech/WLO-0156-evidence/overlay-verified/overlay.png",
+    "blend.png": "/Users/boyd/wip/wloss/docs/tech/WLO-0156-evidence/overlay-verified/blend.png",
+    "difference.png": "/Users/boyd/wip/wloss/docs/tech/WLO-0156-evidence/overlay-verified/difference.png",
+    "side-by-side.png": "/Users/boyd/wip/wloss/docs/tech/WLO-0156-evidence/overlay-verified/side-by-side.png"
+  }
+}

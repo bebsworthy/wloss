@@ -16,7 +16,7 @@ import kotlinx.serialization.json.JsonObject
  */
 public object BackupMigrations {
     /** One migration hop: writtenVersion → writtenVersion + 1. */
-    private val HOPS: Map<Int, (JsonObject) -> JsonObject> = emptyMap()
+    private val HOPS: Map<Int, (JsonObject) -> JsonObject> = mapOf(1 to { sections -> sections })
 
     public fun migrate(
         sections: JsonObject,

@@ -14,7 +14,7 @@ follow is [`TEMPLATE.md`](TEMPLATE.md). Companion docs:
 |----|---------|-----|---------------------|------------|
 | F01 | Onboarding, Goals & Diet Plan Studio | [F01](F01-onboarding-diet-plans.md) | Zero-account path to a versioned, user-owned Diet Plan | consumes `meal-planning` |
 | F02 | Food Logging & AI Nutrient Estimation | [F02](F02-food-logging.md) | Any meal → trusted nutrient record in seconds, photo-first | consumes `food-photo`, `voice-input` |
-| F03 | Meal Planning & Recipes | [F03](F03-meal-planning.md) | Template → week plan → pre-logs; planned-vs-actual adherence | consumes `meal-planning` |
+| F03 | Meal Planning & Recipes | [F03](F03-meal-planning.md) | Daily multi-item agenda; optional scoped suggestions; separate coverage and actual intake | consumes `meal-planning` |
 | F04 | Shopping List & Pantry | [F04](F04-shopping-pantry.md) | Auto list from the plan; pantry ground truth; edit-proof checks | none in v1 (see R-C3) |
 | F05 | Exercise Planning & Tracking | [F05](F05-exercise.md) | Movement tracker: strength logging loop + first-class cardio (live GPS/HR sessions); explainable adaptation; expenditure context | none (see R-C2) |
 | F06 | Weight & Body Metrics | [F06](F06-weight-body-metrics.md) | The honest measurement layer: trend weight, provenance, EAV metrics | none — local math only |
@@ -208,6 +208,15 @@ these are binding until amended *here* (feature docs must not re-litigate them).
   F03 owns the planned-slot state machine (`planned/confirmed/swapped/skipped/
   replaced`) that projects into it; a `replaced` slot links to the actual F02
   entry, which owns the nutrition; F03 keeps slot labeling. F07/F10 consume.
+  **Daily-agenda amendment (WLO-0156, 19 September 2026):** meals contain
+  multiple independent planned items; empty day/meal containers need no stored
+  plan. F03 retains planned-item ownership and legacy state/history compatibility;
+  F02 retains actual-entry ownership. Agenda coverage combines unresolved planned
+  items and actual entries exactly once through explicit links. Coverage is not
+  actual intake and must not feed F07 as intake. Meal/item Mark eaten UI is parked;
+  direct Eaten additions remain F02 writes. The
+  [implementation specification](../tasks/WLO-0156-Implement_The_Daily_Meal_Agenda_And_Multi_Item_Planning/spec.md)
+  defines the migration and supersedes the legacy planner UX for this work.
 - **R-B2 — Targets:** single versioned document; F01 writes v1, F07 writes
   adaptive adjustments **only via explicit Apply** (ledgered, reversible);
   all other features read-only. Exercise expenditure is structurally incapable
@@ -379,8 +388,12 @@ these are binding until amended *here* (feature docs must not re-litigate them).
   libraries) are a tracked exception pending the tech phase's size audit.
 - **R-S2 — Exercise library:** authored minimal set (CC0) + community additions;
   no proprietary bundled database; the two-level muscle schema is the keystone.
-- **R-S3 — Seed recipes:** ~50 open-licensed starter recipes + import + AI
-  drafting; a larger curated library is v1.x content work.
+- **R-S3 — Seed recipes:** ~50 open-licensed starter recipes; a larger curated
+  library is v1.x content work. **Amended 19 September 2026 (owner, WLO-0151):**
+  recipe import and AI recipe drafting are deferred, outside the current meal
+  planning implementation. Planning/suggestions may use existing recipes; this
+  does not defer meal suggestions themselves. Legacy import/drafting flows in F03
+  are future reference, not implementation requirements.
 - **R-S4 — Import converters:** generic CSV/JSON at v1; MFP/Lose It!/Paprika/
   Mealime converters v1.x.
 - **R-S5 — Pantry partial-stock deduction:** default off globally; one-time

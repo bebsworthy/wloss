@@ -501,12 +501,16 @@ private fun HubCardView(
             WloCard(modifier = Modifier.testTag("hub-recap-card")) {
                 WloCardHeader(title = "The day, so far")
                 state.diarySlice?.let { slice ->
-                    WloStatRow(
-                        label = "logged today",
-                        value = slice.kcal,
-                        format = ::formatKcalValue,
-                        onExplain = state.diaryExplainer?.let { handler -> { onExplain(handler) } },
-                    )
+                    if (slice.kcal == null) {
+                        Text("Nutrition incomplete", style = wloType.caption)
+                    } else {
+                        WloStatRow(
+                            label = "logged today",
+                            value = slice.kcal,
+                            format = ::formatKcalValue,
+                            onExplain = state.diaryExplainer?.let { handler -> { onExplain(handler) } },
+                        )
+                    }
                 } ?: Text(
                     text = "Nothing logged yet today.",
                     style = wloType.caption,
@@ -707,6 +711,10 @@ private fun BudgetCard(
         modifier = Modifier.testTag("f10-ring-card"),
     ) {
         WloCardHeader(title = "Calories")
+        if (state.diarySlice != null && state.diarySlice.kcal == null) {
+            Text("Nutrition incomplete", style = wloType.caption)
+            return@WloCard
+        }
         state.budget?.let { budget ->
             val budgetKcal = budget.value
             val consumedKcal = state.diarySlice?.kcal?.value ?: 0.0
@@ -867,12 +875,16 @@ private fun DiaryCard(
                 )
             },
         )
-        WloStatRow(
-            label = slice.slotSummary,
-            value = slice.kcal,
-            format = ::formatKcalValue,
-            onExplain = diaryExplainer?.let { handler -> { onExplain(handler) } },
-        )
+        if (slice.kcal == null) {
+            Text("Nutrition incomplete", style = wloType.caption)
+        } else {
+            WloStatRow(
+                label = slice.slotSummary,
+                value = slice.kcal,
+                format = ::formatKcalValue,
+                onExplain = diaryExplainer?.let { handler -> { onExplain(handler) } },
+            )
+        }
         WeekDotsRow(weekDots)
         WloSecondaryButton(
             label = "Open diary",

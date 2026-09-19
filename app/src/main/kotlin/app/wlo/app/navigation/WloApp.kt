@@ -71,8 +71,6 @@ import app.wlo.feature.f02.food.ui.CaptureScreen
 import app.wlo.feature.f02.food.ui.DiaryDayScreen
 import app.wlo.feature.f02.food.ui.FoodLogScreen
 import app.wlo.feature.f03.planning.F03Routes
-import app.wlo.feature.f03.planning.ui.PlanScreen
-import app.wlo.feature.f03.planning.ui.PlanSegment
 import app.wlo.feature.f03.planning.ui.RecipeEditScreen
 import app.wlo.feature.f04.shopping.F04Routes
 import app.wlo.feature.f04.shopping.ui.ListScreen
@@ -185,7 +183,13 @@ public fun WloApp(
             containerColor = MaterialTheme.colorScheme.background,
             contentColor = MaterialTheme.colorScheme.onBackground,
             topBar = {
-                val customAppBar = currentRoute == WloTabs.WEIGHT || currentRoute == F06Routes.MEASUREMENTS
+                val customAppBar =
+                    currentRoute == WloTabs.WEIGHT ||
+                        currentRoute == F06Routes.MEASUREMENTS ||
+                        currentRoute == WloTabs.PLAN ||
+                        currentRoute == F03Routes.FOCUS ||
+                        currentRoute == F03Routes.TOMORROW ||
+                        currentRoute == F03Routes.STUDIO
                 if (appBarMetadata != null && !customAppBar) {
                     DestinationAppBar(appBarMetadata, currentRoute == F01Routes.INTAKE) {
                         val guarded = guardedUpHandler
@@ -716,9 +720,7 @@ private fun hubActions(navController: NavHostController): HubActions =
     )
 
 /**
- * The Plan tab host (M5): owns the IA §1 segmented pipeline state (Plan ·
- * Recipes · List · Pantry) and wires the segment exits onto the :app nav
- * graph (D2 — the features never see each other). [focusDay]/[focusSlot]
+ * Hosts the daily meal agenda. [focusDay]/[focusSlot]
  * carry the deep-link context in (wlo://log/planned, wlo://plan/tomorrow).
  */
 @Composable
@@ -727,24 +729,10 @@ private fun PlanTabRoute(
     focusSlot: String?,
     navController: NavHostController,
 ) {
-    val viewModel: app.wlo.feature.f03.planning.state.PlanViewModel =
+    val viewModel: app.wlo.feature.f03.planning.state.AgendaViewModel =
         koinViewModel(parameters = { parametersOf(focusDay, focusSlot) })
-    var segment by androidx.compose.runtime.saveable.rememberSaveable {
-        androidx.compose.runtime.mutableStateOf(PlanSegment.PLAN)
-    }
-    PlanScreen(
-        viewModel = viewModel,
-        segment = segment,
-        onSegmentSelect = { next -> segment = next },
-        onOpenDiet = { navController.navigate(F01Routes.PLAN_STUDIO) },
-        onOpenList = { navController.navigate(F04Routes.LIST) },
-        onOpenPantry = { navController.navigate(F04Routes.PANTRY) },
-        onEditRecipe = { recipeId ->
-            // Navigation's route matcher rejects empty query values; "new" is
-            // the sentinel for the create path.
-            navController.navigate("f03/recipe/edit?recipeId=${recipeId ?: "new"}")
-        },
-    )
+    app.wlo.feature.f03.planning.ui
+        .MealAgendaScreen(viewModel)
 }
 
 /** Tomorrow in the device zone — the plan-tomorrow deep link's focus day. */

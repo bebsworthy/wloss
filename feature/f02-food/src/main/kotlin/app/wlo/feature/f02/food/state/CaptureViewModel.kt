@@ -398,7 +398,7 @@ public class CaptureViewModel(
                         app.wlo.core.model.EntryVia.PHOTO,
                     )
                 if (log != null) {
-                    savedKcal += log.kcal
+                    savedKcal += log.kcal ?: 0.0
                     savedCount++
                 }
                 // R-B6: record the correction as prior signal (swaps + portions).

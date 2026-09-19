@@ -96,6 +96,8 @@ public data class NewDiaryEntry(
      * one-tap replay; null for every pre-existing save path.
      */
     public val planNutrition: PlanNutrition? = null,
+    public val operationId: String? = null,
+    public val itemJson: String? = null,
 )
 
 /** Model + consent paperwork for one AI-assisted save (no schema change — rides the provenance row). */
@@ -121,11 +123,11 @@ public data class EstimateProvenance(
 public data class PlanNutrition(
     /** The [app.wlo.core.model.PlannedSlot.id] this entry replays. */
     public val slotId: String,
-    public val kcal: Double,
-    public val proteinG: Double,
-    public val carbG: Double,
-    public val fatG: Double,
-    public val fiberG: Double,
+    public val kcal: Double?,
+    public val proteinG: Double?,
+    public val carbG: Double?,
+    public val fatG: Double?,
+    public val fiberG: Double?,
 )
 
 /** Edit input; every accepted edit bumps the entry's revision chain. */
@@ -138,6 +140,8 @@ public data class EditDiaryEntry(
     public val unit: String = "g",
     public val servingGrams: Double? = null,
     public val kcalOnly: Double? = null,
+    public val planNutrition: PlanNutrition? = null,
+    public val itemJson: String? = null,
 )
 
 /** One day's diary, grouped by meal slot with the day's totals. */
@@ -153,7 +157,7 @@ public data class DayDiary(
 
 @Serializable
 public data class DayDiaryTotals(
-    public val kcal: Double,
+    public val kcal: Double?,
     public val proteinG: Double?,
     public val carbG: Double?,
     public val fatG: Double?,
@@ -171,6 +175,7 @@ internal fun DiaryEntryEntity.toDomain(): DiaryEntry =
         quantity = quantity,
         unit = unit,
         kcal = computedKcal,
+        itemJson = itemJson,
         proteinG = computedProteinG,
         carbG = computedCarbG,
         fatG = computedFatG,
@@ -196,6 +201,7 @@ internal fun DiaryEntryRevisionEntity.toDomain(): DiaryRevision =
         quantity = quantity,
         unit = unit,
         kcal = computedKcal,
+        itemJson = itemJson,
         proteinG = computedProteinG,
         carbG = computedCarbG,
         fatG = computedFatG,
@@ -207,7 +213,7 @@ internal fun DiaryEntryRevisionEntity.toDomain(): DiaryRevision =
 /** Computed numbers for one entry (portion math or quick-add), provenance-ready. */
 internal data class ComputedEntry(
     val grams: Double,
-    val kcal: Double,
+    val kcal: Double?,
     val proteinG: Double?,
     val carbG: Double?,
     val fatG: Double?,
@@ -237,7 +243,11 @@ public class RoomDiaryRepository public constructor(
         val computed = compute(entry, item, entry.kcalOnly)
 
         return storageGuard("diary.logEntry") {
-            val id = Uuid.random().toString()
+            val id = entry.operationId ?: Uuid.random().toString()
+            dao.byId(id)?.let { existing ->
+                require(existing.profileId == entry.profileId)
+                return@storageGuard existing.toDomain()
+            }
             val scalar = "diary/kcal/$id"
             val entity =
                 DiaryEntryEntity(
@@ -250,6 +260,7 @@ public class RoomDiaryRepository public constructor(
                     quantity = entry.quantity,
                     unit = entry.unit,
                     computedKcal = computed.kcal,
+                    itemJson = entry.itemJson,
                     computedProteinG = computed.proteinG,
                     computedCarbG = computed.carbG,
                     computedFatG = computed.fatG,
@@ -292,6 +303,8 @@ public class RoomDiaryRepository public constructor(
                 unit = edit.unit,
                 servingGrams = edit.servingGrams,
                 kcalOnly = edit.kcalOnly,
+                itemJson = edit.itemJson,
+                planNutrition = edit.planNutrition,
                 enteredVia = current.toDomain().enteredVia,
             )
         val computed = compute(editInput, item, edit.kcalOnly)
@@ -310,6 +323,7 @@ public class RoomDiaryRepository public constructor(
                     quantity = current.quantity,
                     unit = current.unit,
                     computedKcal = current.computedKcal,
+                    itemJson = current.itemJson,
                     computedProteinG = current.computedProteinG,
                     computedCarbG = current.computedCarbG,
                     computedFatG = current.computedFatG,
@@ -327,6 +341,7 @@ public class RoomDiaryRepository public constructor(
                     quantity = edit.quantity,
                     unit = edit.unit,
                     computedKcal = computed.kcal,
+                    itemJson = edit.itemJson,
                     computedProteinG = computed.proteinG,
                     computedCarbG = computed.carbG,
                     computedFatG = computed.fatG,
@@ -388,7 +403,7 @@ public class RoomDiaryRepository public constructor(
             entries = domain,
             totals =
                 DayDiaryTotals(
-                    kcal = domain.sumOf { it.kcal },
+                    kcal = nullableSum(domain.map { it.kcal }),
                     proteinG = nullableSum(domain.map { it.proteinG }),
                     carbG = nullableSum(domain.map { it.carbG }),
                     fatG = nullableSum(domain.map { it.fatG }),
@@ -451,7 +466,7 @@ public class RoomDiaryRepository public constructor(
                     }
                 ComputedEntry(
                     grams = grams,
-                    kcal = FoodMath.scale(item.kcalPer100g, grams) ?: 0.0,
+                    kcal = FoodMath.scale(item.kcalPer100g, grams),
                     proteinG = FoodMath.scale(item.proteinGPer100g, grams),
                     carbG = FoodMath.scale(item.carbGPer100g, grams),
                     fatG = FoodMath.scale(item.fatGPer100g, grams),
@@ -461,11 +476,11 @@ public class RoomDiaryRepository public constructor(
                     inputs = FoodMath.scaleInputs(item.id, grams, FoodMath.scale(item.kcalPer100g, grams) ?: 0.0),
                 )
             }
-            // Free-text placeholder (R-U15 path): 0 kcal until an estimate lands.
+            // Unknown food is incomplete, never a zero-calorie claim.
             else ->
                 ComputedEntry(
                     grams = 0.0,
-                    kcal = 0.0,
+                    kcal = null,
                     proteinG = null,
                     carbG = null,
                     fatG = null,
@@ -527,7 +542,7 @@ public class RoomDiaryRepository public constructor(
             is WloResult.Ok -> AppError.InvalidInput("no such entry: $entryId")
         }
 
-    private fun nullableSum(values: List<Double?>): Double? = values.takeIf { it.any { v -> v != null } }?.sumOf { it ?: 0.0 }
+    private fun nullableSum(values: List<Double?>): Double? = values.takeIf { it.isNotEmpty() && it.all { v -> v != null } }?.sumOf { it!! }
 
     public companion object {
         /** Provenance method labels (the "how we got here" sheet reads these). */

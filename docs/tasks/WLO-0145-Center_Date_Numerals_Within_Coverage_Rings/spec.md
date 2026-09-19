@@ -1,0 +1,1 @@
+Removed inherited 5 px date-number top margin inside ring. Browser verified exact center alignment of number box and ring and visually inspected. Current overflow behavior audited: rings/bars cap at 100%, totals stay uncapped, summary reports over-target amount; circle description reports over target. Whitespace check passed.
