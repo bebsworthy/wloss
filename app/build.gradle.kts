@@ -103,7 +103,7 @@ dependencies {
     // M4 E2E: zxing's EAN-13 ENCODER renders test barcodes (decode via the
     // port; encode is a test-side capability — no shipping dependency). The
     // version follows zxing-android-embedded's strict core pin (3.4.1).
-    androidTestImplementation("com.google.zxing:core:3.4.1")
+    androidTestImplementation("com.google.zxing:core:3.5.4")
     androidTestImplementation(libs.androidx.test.runner)
     androidTestImplementation(libs.androidx.test.rules)
     androidTestImplementation(libs.androidx.test.ext.junit)
