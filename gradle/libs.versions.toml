@@ -74,7 +74,7 @@ okio = "3.18.2"
 # client-okhttp, client-content-negotiation, serialization-kotlinx-json all carry 3.5.2,
 # lastUpdated 2026-07-31). ADR-004 pin (3.5.x line). Declared ONLY in :core:network
 # (D9 allowlist — the single egress choke point).
-ktor = "3.5.2"
+ktor = "3.6.0"
 # OkHttp 5.5.0 = <release> on repo1 com.squareup.okhttp3 (verified 2026-09-12).
 # Backs Ktor's OkHttp engine (ADR-004: Android engine lacks HTTP/2) and
 # mockwebserver3 5.5.0 (same line, same repo1 check) for JVM tests. Declared only
