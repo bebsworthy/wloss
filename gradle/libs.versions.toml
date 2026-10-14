@@ -85,7 +85,7 @@ okhttp = "5.5.0"
 # <release> on repo1 onnxruntime-android metadata (verified 2026-09-12; 1.29.1/1.30.0
 # AARs not on Central — see docs/tech/audit/onnxruntime.md). Consumed by :core:ai
 # from PART B (PhotoAnalyzer actuals); catalog entry records the verified pin.
-onnxruntime = "1.29.0"
+onnxruntime = "1.31.0"
 # CameraX 1.6.2 = latest STABLE on dl.google.com androidx.camera group index
 # (verified 2026-09-12; 1.7.0 only alphas). :core:media capture stack (F02 §3).
 camerax = "1.6.2"
