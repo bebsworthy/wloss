@@ -394,6 +394,22 @@ these are binding until amended *here* (feature docs must not re-litigate them).
   planning implementation. Planning/suggestions may use existing recipes; this
   does not defer meal suggestions themselves. Legacy import/drafting flows in F03
   are future reference, not implementation requirements.
+  **Recipe UX contract, 19 September 2026 (owner, WLO-0165):** future recipe
+  acquisition allows explicit library saving with unresolved yield/nutrition;
+  only calculations and actions needing that basis are held. Contextual review,
+  text-first ingredients, retrieval/reuse, stable component references and a
+  bounded basic-cooking follow-on are specified in
+  [recipe creation and reuse](../research/recipe-creation-ux.md). This accepts
+  the future interaction contract without lifting the import/AI deferral or
+  adding cook mode to the current weight-first release. Counted-component math,
+  multiple active dishes and timers are subsequent extensions.
+  **Implementation handoff, 21 September 2026 (WLO-0167):** owner acceptance
+  of the [recipe mockup](../design/flows/12-recipe-creation.html) is captured in
+  the detailed [functional contract](F03-recipe-creation.md) and
+  [technical contract](../tech/WLO-0167-recipe-implementation.md). These specify
+  implementation and verification, not a release-scope change. Recipe-site
+  fetching remains denied until its proposed non-AI egress policy is explicitly
+  approved and added to the governing consent contract; R-C4 is not that grant.
 - **R-S4 — Import converters:** generic CSV/JSON at v1; MFP/Lose It!/Paprika/
   Mealime converters v1.x.
 - **R-S5 — Pantry partial-stock deduction:** default off globally; one-time

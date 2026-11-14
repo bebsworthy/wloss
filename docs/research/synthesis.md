@@ -3,6 +3,13 @@
 *Derived from 19 deep-dive analyses in `docs/research/` (18 apps + 1 category study).
 Date: 2026-09-10. Companion doc: [`../objective.md`](../objective.md).*
 
+**Meal-planning review, 18 September 2026 (WLO-0127):** see the
+[research supplement](meal-planning-ux-review.md) for the audit of these studies,
+additional YouMealPlan / Eat This Much / Plan to Eat evidence, and corrections to
+overbroad market claims. The [proposed user flow](../design/meal-planning-user-flow.md)
+focuses on partial planning, recipe acquisition and reuse, with pantry excluded.
+It is a proposal, not an amendment to the frozen release scope.
+
 ---
 
 ## 0. The field at a glance
@@ -19,7 +26,7 @@ Date: 2026-09-10. Companion doc: [`../objective.md`](../objective.md).*
 | 8 | [SnapCalorie](snapcalorie.md) | AI-photo tracker | Research-grade CV; LiDAR volume; 100+ nutrients from a photo |
 | 9 | [Foodvisor](foodvisor.md) | AI-photo tracker | European ecosystem; structured correction modal; pet gamification |
 | 10 | [Mealime](mealime.md) | Meal planner + shopping | Auto plan→aisle-sorted list pipeline; **shutting down Oct 2026** |
-| 11 | [Paprika](paprika.md) | Recipe manager + shopping | Best-in-class unit-aware list, pantry, aisle learning; one-time price |
+| 11 | [Paprika](paprika.md) | Recipe manager + shopping | Consolidated lists, pantry, aisle learning; v3 purchase / v4 optional subscription (see updated study) |
 | 12 | [Hevy](hevy.md) | Exercise tracker | Friction-free strength logbook; PR banners; muscle heatmap |
 | 13 | [Fitbod](fitbod.md) | Exercise planner | Per-muscle recovery model; one-tap-confirm generated workouts |
 | 14 | [Happy Scale](happy-scale.md) | Weight trend/forecast | Trend-weight smoothing + goal-date prediction; 4 selectable smoothers |
@@ -59,7 +66,7 @@ Every v1 feature survives contact with the market. What changes after research i
 ### 1.3 Auto-generated shopping list ✅ validated — and the market just got emptier
 - Paprika defines the data model: unit-aware consolidation (2+3 eggs = 5 eggs),
   auto-aisle assignment that **learns from user corrections**, pantry with
-  expiry/out-of-stock that auto-deducts staples, per-item recipe provenance, scaling
+  expiry/out-of-stock that auto-unchecks matching list ingredients (not stock depletion), per-item recipe provenance, scaling
   that propagates into the list.
 - Mealime defines the automation: preference-filtered plan → one consolidated
   aisle-sorted check-off list. **Mealime shuts down Oct 21, 2026** — its audience and

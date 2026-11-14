@@ -307,3 +307,19 @@ with F01 owning the ritual and F13 the data mechanics.
   Connect (which is single-profile per device)?
   *(Scope ruled: R-B9 — single-profile v1 with `profileId` on every row;
   partitioning, locks, and backup separation land with multi-profile [v1.x].)*
+
+## Recipe portability clarification — WLO-0165
+
+The detailed implementation/restore contract is now [WLO-0167 §11](../tech/WLO-0167-recipe-implementation.md#11-migration-compatibility-and-portability): migrate existing schema versions without guessed food links, retain self-contained food/conversion evidence, remap the complete recipe/draft/session/operation graph, and distinguish private backup from outward recipe sharing. It supplements the requirements below when the recipe increment lands.
+
+When the revised recipe model lands, exports/restores preserve absent yield and
+unresolved ingredients without defaulting them to one serving or zero nutrients.
+Carry original/current ingredient text, section order and stable IDs, personal
+notes, provenance, selected food revisions and recipe versions. Remap stable
+navigational recipe references on import; their labels are not their identity.
+Unsupported counted-component lines remain visible and unresolved, never silently
+flattened or omitted. Any later counted-component implementation must export its
+child revision and quantity/basis so restored historical calculations do not bind
+to a newer child. The canonical [recipe UX contract](../research/recipe-creation-ux.md)
+provides the saving and calculation gates. This clarification does not advance
+competitor converters or cooking extensions into the current release.

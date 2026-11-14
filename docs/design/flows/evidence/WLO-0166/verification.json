@@ -1,0 +1,20 @@
+{
+  "checks": [
+    "Modal traps keyboard focus; Escape closes it.",
+    "AI draft refinement/undo, half-portion calculation and atomic save/add preserve existing meals.",
+    "Missing-yield import saves; ambiguous ingredient is correctable; cancel does not add an empty row; portion use stays gated; search/empty recovery work.",
+    "Manual sections and unresolved lines survive row conversion, leaving and reloading; no yield is invented.",
+    "Cooking marks and step survive reload and recipe edits; pinned revision stays stable; finishing does not log food.",
+    "Variation saves with a distinct identity.",
+    "A four-serving AI fixture scales ingredients; adding to breakfast keeps existing food visible and updates day macros.",
+    "360px mobile library/editor and text-enlarged library have no page-width overflow.",
+    "No JavaScript errors or external network requests across checked flows."
+  ],
+  "errors": [],
+  "external": [],
+  "limits": [
+    "HTML browser interaction test, not Android/TalkBack certification",
+    "AI/import use fixtures; no extraction quality claim",
+    "Large text check covers the library only; native IME and wake-lock reliability need Android validation"
+  ]
+}

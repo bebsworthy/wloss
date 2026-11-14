@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>WLO · Recipes, from idea to table</title><link rel="stylesheet" href="_wlo.css"><link rel="stylesheet" href="11-meal-planning.css"><link rel="stylesheet" href="12-recipe-creation.css"></head>
+<body class="recipe-study">
+<main class="study">
+  <header class="study-head"><div><a class="back-link" href="index.html">WLO / FLOW STUDIES</a><h1>From idea<br>to your table.</h1></div><p>Recipe creation & reuse<br>Interactive mockup · September 2026</p></header>
+  <div class="workbench">
+    <aside class="guide"><p class="eyebrow">TRY A PATH</p><div id="scenarios"></div><div class="guide-note"><p>One recipe. Several ways in.</p><span>Start from dinner, save a recipe for later, or write one from scratch. Every path meets in the same editable recipe.</span></div><button class="text-button" data-action="reset">Reset sample data</button><details><summary>About this mockup</summary><p>Local demonstration only. AI and import use prepared examples; they do not call a model or website. Food values are illustrative fixtures. Changes stay in this browser. This explores future features, not the current release.</p></details></aside>
+    <section class="device" aria-label="WLO recipe prototype">
+      <div class="status" aria-hidden="true"><span>9:41</span><span>◔ &nbsp; ▰</span></div>
+      <header id="appbar" class="appbar"></header>
+      <div id="screen" class="screen" tabindex="-1"></div>
+      <footer id="actions" class="actions" hidden></footer>
+      <nav id="appnav" class="appnav" aria-label="App navigation context" hidden><span>◷<small>Weight</small></span><span>⌂<small>Hub</small></span><span class="current">▦<small>Plan</small></span><span>•••<small>More</small></span></nav>
+      <div class="gesture" aria-hidden="true"></div>
+      <div id="toast" class="toast" role="status" hidden></div>
+      <dialog id="sheet" class="recipe-sheet" aria-labelledby="sheet-title"></dialog>
+    </section>
+    <aside class="context"><p class="eyebrow">DESIGN NOTES</p><h2 id="context-title">A collection you can use.</h2><p id="context-body"></p><div class="principle"><span>01</span><p><strong>Keep it first.</strong><br>Missing yield or nutrition does not prevent saving.</p></div><div class="principle"><span>02</span><p><strong>Make it yours.</strong><br>Text, ingredients and personal notes remain editable.</p></div><div class="principle"><span>03</span><p><strong>Pick up where you left off.</strong><br>Drafts and cooking progress survive a reload.</p></div><a class="doc-link" href="../../research/recipe-creation-ux.md">Recipe UX specification ↗</a><a class="doc-link" href="11-flexible-meal-planning.html">Current daily agenda ↗</a></aside>
+  </div>
+  <details class="handoff"><summary>Scope, interaction map & native handoff</summary><p>First pass: agenda → Add to dinner → create with AI / import / write → shared editable review → save / save & add. Library → search / favorites → details → variation / notes / cook. Unknown yield can be saved; portion-dependent actions stay held. Local draft and cooking session recovery, ingredient correction and text/row editing are interactive.</p><p>Visual baseline: WLO-0156 daily agenda, Inter from the local design system, shared dark/teal semantic tokens and dense divider-separated rows. The Recipes toolbar entry is a proposed extension; the existing four navigation destinations are retained. Nested screens hide the navigation bar. This HTML study maps to native M3 Scaffold, TopAppBar, ListItem, Checkbox, OutlinedTextField, Button, FilterChip, ModalBottomSheet and Snackbar; it is not a Compose build or official Material Web implementation.</p><p>AI produces one fixed dish in this pass; “use lentils” demonstrates one refinement. Website import loads a sample with incomplete yield; pasted text remains editable. Matching is a small local fixture vocabulary, with unknown lines held. Multi-recipe meals, counted sub-recipes, nested links, timers, cloud consent setup and large-window app layouts are outside this first mockup. The responsive workbench is review tooling, not a tablet app proposal.</p><p>Validation and screenshots: <a href="evidence/WLO-0166/README.md">WLO-0166 review evidence</a>. Nothing is written to the Android app or sent to an external service.</p></details>
+</main><script src="12-recipe-creation.js"></script>
+</body></html>

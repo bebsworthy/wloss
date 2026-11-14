@@ -27,6 +27,23 @@
 > proposal. See its reconciliation table before implementation; frozen master
 > rulings remain authoritative. [Research review](../research/meal-planning-ux-review.md).
 
+> **Recipe UX revision — WLO-0165, 19 September 2026 (owner accepted):**
+> [Recipe creation and reuse specification](../research/recipe-creation-ux.md)
+> governs future recipe acquisition/reuse: saving with unknown yield/nutrition,
+> contextual review, text-first ingredients, retrieval, stable recipe references
+> and a bounded basic-cooking follow-on. It supersedes conflicting recipe rules
+> below without changing WLO-0151 / R-S3 / R-S10 or the current agenda delivery.
+
+> **Detailed implementation specification — WLO-0167, 21 September 2026:**
+> The owner accepted the [recipe mockup](../design/flows/12-recipe-creation.html).
+> [Recipe creation, reuse and cooking — functional specification](F03-recipe-creation.md)
+> and its [technical specification](../tech/WLO-0167-recipe-implementation.md)
+> now define the full acquisition/editor/library contract, food-linked nutrition,
+> durable drafts, atomic meal commits, import/AI pipelines, migration, portability
+> and cooking follow-on. These detailed contracts supersede conflicting legacy
+> recipe descriptions below. They retain the current release deferrals and
+> identify the additional website-egress policy that must be approved before use.
+
 ---
 
 ## Identity
@@ -37,7 +54,7 @@
 | **Provides** | A week/month meal planner that turns the user's diet template (F01) into concrete meals, feeds them forward as one-tap pre-logs (F02) and backward into the shopping list (F04), with per-day nutrition rollups against targets and planned-vs-actual adherence stats. |
 | **User problems solved** | • "What's for dinner" decision fatigue at 6 p.m., solved once a week instead of daily. • MacroFactor has no planner and Mealime died taking users' plans with it; planning and nutrition math never coexist in one app — WLO fuses them. • Planned meals and logged meals are separate universes everywhere; here the plan *is* tomorrow's diary. • Nobody can answer "do I actually eat what I plan?" — adherence is invisible in every competitor. |
 | **AI consent category** | Consumes the F12 `meal-planning` toggle (cloud plan/recipe generation); deterministic on-device generation is the default and full fallback. Recipe *import* uses on-device structured parsing (no AI). Voice planning would additionally consume `voice-input`. |
-| **Primary evidence** | `mealime.md` (preferences→plan→list pipeline, waste-aware ingredient reuse, no-swap-after-the-fact anti-pattern, 2/4/6 servings rigidity, cook mode, list-reset-on-edit fatal bug); `paprika.md` (day/week/month calendar, reusable menus, arbitrary date ranges, recipe linking, scaling limits); `yazio.md` (recipe→diary integration, cook-mode pipeline); `macrofactor.md` (planned/future timeline entries, "log tomorrow's food today"); `synthesis.md` §1.2, §2 item 8, §3 (cook mode, recipe URL import), §6 checklist. |
+| **Primary evidence** | `mealime.md` (preferences→plan→list pipeline, waste-aware ingredient reuse, no-swap-after-the-fact anti-pattern, 2/4/6 servings rigidity, cook mode, list-reset-on-edit fatal bug); `paprika.md` (day/week/month calendar, reusable menus, arbitrary date ranges, recipe linking and practical cooking interactions; see `paprika-ux-deep-dive.md` for corrected evidence); `yazio.md` (recipe→diary integration, cook-mode pipeline); `macrofactor.md` (planned/future timeline entries, "log tomorrow's food today"); `synthesis.md` §1.2, §2 item 8, §3 (cook mode, recipe URL import), §6 checklist. |
 
 ## 1. Purpose & Core Objectives
 
@@ -64,13 +81,13 @@
 
 - **Inputs:** `DietPlan vN` + `PreferenceProfile` (F01); recipe library (seeded + imported + AI-drafted); weekly targets from F01/F07 (including mid-week check-in adjustments); pantry "expiring soon" hints (F04, opt-in influence); past adherence data; household size for default servings.
 - **The recipe object:** versioned, editable, exportable (F13):
-  - `{name, servingsBase, cuisine, tags[]}` — identity and facets for filtering.
-  - `ingredients[{item, qty, unit, optional?}]` — normalized against the same canonical item space F04 uses, so consolidation and pantry deduction work with zero mapping.
-  - `steps[]` — plain text in v1; cook-mode formatting and auto-detected timers are a [future] concern.
-  - `nutrition{perServing, basis: label | db | estimated}` — with per-ingredient breakdown available for the "how we got here" drill-down.
+  - `{id, revision, name, yield?, cuisine, tags[]}` — stable identity and optional typed yield (servings, count or cooked weight with its basis). Unknown yield stays absent, never coerced to one. A named recipe with ingredient text can be saved, searched and read/cooked without a known yield; per-serving and other portion-dependent operations require the relevant basis. Existing `servingsBase` migrates only to its established serving basis.
+  - `ingredients[{id, sectionId?, sourceText, text, foodRevisionRef?, groceryItemRef?, qty?, unit?, preparationNote, optional?}]` plus ordered named sections. Preserve original and edited text, unresolved lines and explicit user corrections. Food references and traceable conversions supply nutrition (WLO-0157/WLO-0160); grocery identity serves shopping. These identities are not interchangeable. Headers never contribute nutrients; unsupported quantities remain unknown.
+  - `steps[{id, text}]` and personal notes — optional directions, stable step identities and preserved ingredient sections. Basic cooking is the bounded follow-on below; multiple dishes and timers are a subsequent increment.
+  - `nutrition{perServing?, basis: label | db | estimated, completeness}` — derived values require their resolved yield/ingredient basis, with per-ingredient breakdown available for the "how we got here" drill-down.
   - `provenance{source: url | import | manual | aiDraft, author, importedAt}` — AI drafts are visually distinct until reviewed.
-  - `linkedRecipes[]` — Paprika's sub-recipe linking (a vinaigrette referenced from a salad).
-  - `lastPlanned, rating, menus[]` — usage memory for the variety heatmap and suggestions.
+  - `linkedRecipes[]` — stable navigational references with separate display labels; no nutrient or grocery contribution. Counted components are a separate extension using a child recipe revision plus quantity/yield basis, cycle rejection and exactly-once child contribution. Never infer them from text links. Until supported, retain counted source lines as unresolved ingredients. See the canonical UX contract for revision and expansion rules.
+  - `savedAt, favorite, personalNotes, lastPlanned, rating, menus[]` — retrieval and usage memory. Search names, source and ingredient text, including unresolved lines; support recent/favorites without mandatory categories. Scheduling must not be labelled cooking or eating history.
 - **Processing:**
   - **On-device generation engine (default; no consent needed):** deterministic pipeline —
     1. *Filter* recipes by hard rules (allergies, exclusions, IF timing windows, budget band hints).
@@ -80,7 +97,7 @@
     5. *Report*: per-day fit deltas and an overlap score accompany the plan.
     Runs in well under a second for a few hundred recipes on mid-range Android. Variety is enforced as a soft constraint (recently-planned recipes down-weighted) so the anti-waste overlap objective never collapses into eating chili four nights running — the solver reports when the two objectives pull against each other.
   - **Cloud generation (optional) [v1.x — deterministic-only in v1 per R-S10]:** with the F12 **`meal-planning`** consent toggle ON + BYOK key, the user can request "plan a lighter week, cooking only 3 times" or novel recipes with constraints. Payload preview shown before send; results are **drafts** — every AI-generated recipe carries an `AI-drafted · nutrition estimated` provenance badge and must be reviewed and saved before entering the library or a committed plan. **Fallback when off/offline:** the deterministic engine plans from the existing library and says so ("planning from your 214 saved recipes").
-  - **Recipe import [v1.x — URL/photo importers sit outside the v1 scope per the master doc]:** on-device structured parsing of recipe-schema markup from URLs and share-sheet text (Paprika's pattern, no AI); when the source provides no nutrition (Paprika's gaping hole), per-ingredient nutrition is estimated on-device via F02's food data, provenance-tagged `estimated`; manual entry always available; batch import from Paprika/Mealime exports (with F13).
+  - **Recipe import [v1.x — URL/photo importers sit outside the v1 scope per the master doc]:** prefer on-device structured recipe parsing after authorized website fetching; retain original text and manual paste fallback. This is WLO's parser choice, not a claim about Paprika internals. Ingredient-linked F02 calculations remain distinct from stored publisher nutrition; absent food matches, amounts or yield hold the relevant calculation, never saving the recipe. Manual multiline entry remains available; batch import from Paprika/Mealime exports (with F13).
   - **Planned meals as pre-logs:** a planned meal writes a *planned* entry into F02's timeline for its date/slot (MacroFactor's "log tomorrow today"). State machine, owned by F03: `planned → confirmed` (one tap, adopts recipe nutrition) | `swapped` (old plan retired, swap recorded) | `skipped` (no guilt; feeds adherence honestly) | `replaced` (links to the actual F02 entry, which supplies nutrition).
   - **Leftovers / cook-once-eat-twice:** a scheduled cook-event can emit N cooked servings; subsequent days reference the *same cooked batch* as leftover instances carrying parent provenance; ingredient weight is charged to the cook day only, so F04's list pays for cook events, not eating events. Semantics: a cook-event has a date, a slot, a batch size, and a shelf-life hint (default 3 days); leftover instances beyond shelf life are flagged, not blocked; deleting the cook-event offers to convert its leftovers to `skipped` or `replaced`.
   - **Swap with rebalancing:** swapping a meal recomputes the day rollup instantly and shows delta chips (−230 kcal, +14 g P); the engine proposes top-3 swaps that best restore target fit; day- and week-level targets are *never* silently re-based — the user sees what the swap did.
@@ -141,7 +158,26 @@
 - **Consumes from:** **F01** (diet template, preference profile, targets, household size for default servings); **F07** (current weekly targets incl. check-in adjustments — plans are generated against *today's* budget, not onboarding's); **F02** (actual logged meals for planned-vs-actual; F02's food/nutrition engine for recipe nutrition estimation); **F04** (pantry expiring-soon hints; list-reconciliation status); **F13** (recipe export/import, Paprika/Mealime migration); **F12** (`meal-planning` consent; `voice-input` if voice planning ships).
 - **Feeds into:** **F04** (date-range + scaled ingredient requirements + cook-vs-leftover semantics → auto list; edit deltas for reconciliation); **F02** (planned entries as pre-logs; confirmed plans become diary rows); **F09** (per-meal fiber/FODMAP-category content of planned *and* eaten meals — the plan↔poop correlation depends on this); **F10** (today's planned meals card, "plan your week" nudge); **F11** (planning-streak and confirmation hook events); **F13** (recipes/menus/plans in export bundles).
 - **Shared concepts:** Targets, Provenance, Consent, Logs (planned vs actual states), Trend.
-- **Conflict/boundary notes:** F03 owns *what will be eaten*; F02 owns *what was eaten* — the planned-meal state machine is the treaty (planned entries live in F02's timeline but are owned and mutated by F03 until confirmed or replaced). F04 never mutates the plan; it only derives and reconciles. Cook mode is explicitly **out of scope here beyond a note** — see Blue Sky. Until a dedicated cook-mode spec exists, the in-app step view stays read-only: no partial cook-mode shims, no half-persisted session state.
+- **Conflict/boundary notes:** F03 owns *what will be eaten*; F02 owns *what was eaten* — the planned-meal state machine is the treaty (planned entries live in F02's timeline but are owned and mutated by F03 until confirmed or replaced). F04 never mutates the plan; it only derives and reconciles. Basic cooking is a specified **follow-on to future recipe acquisition**, outside the current agenda and weight-first release. Its contract below requires complete recovery behavior; the current step view remains read-only until that increment is implemented and verified.
+
+### Basic cooking follow-on contract
+
+The first increment offers Start/Resume cooking, foreground-only screen awake,
+reversible ingredient check-offs, current-step marking and locally persisted
+placekeeping. Pin session state to recipe revision and displayed batch scale,
+with stable ingredient/step IDs. Restore after navigation, rotation and process
+recreation. Recipe edits leave an active session on its original revision;
+starting again on a new revision is explicit. Ending a session does not edit
+recipe content or log food. Missing yield/nutrition does not block reading or
+following the recipe; unsupported scaling/conversions remain held.
+
+Use standard M3 controls with TalkBack state announcements, preserved focus,
+large-text support and visible non-gesture recovery. Keep awake only on the
+foreground cooking surface. Multiple active dishes and named timers form a
+subsequent increment with independent session state and defined background/restart
+behavior. Hands-free navigation and per-step macro callouts are not required.
+The [canonical UX contract](../research/recipe-creation-ux.md) contains the
+acceptance scenarios for each increment.
 
 ## 8. Blue Sky Ideas
 
@@ -152,8 +188,8 @@
 - **[v1.x] Pantry-aware generation.** A toggle makes the engine weight F04's expiring-soon items when scoring recipes ("this week's plan consumes your wilting spinach, the open feta, and 4 eggs approaching date"). The planner becomes the anti-waste engine Mealime only advertised.
 - **[v1.x] Voice planning.** "Plan a light week, eating out Thursday and Friday, fish twice" → on-device STT + parser drafts constraint chips for confirmation, then generates. Needs the F12 **`voice-input`** toggle; full on-device fallback is the same chips set by hand.
 - **[v1.x] Adherence forensics.** Drill from any adherence week into the gap decomposition: which meals, which weekdays, planned-vs-replaced nutrition distributions — turning "I'm always 8 % over" into "I'm 22 % over on Fridays, all from replaced dinners".
-- **[future] Cook mode (hands-free).** Mealime's hover-to-advance + Paprika's keep-awake/timers, with WLO fixes: cook-session state persisted in the local DB (never lost on navigation — Paprika's bug), per-step macro callouts, pinned-multi-recipe bottom bar for coordinated cooking. Deliberately not spec'd here; deserves its own mini-spec when scheduled.
-- **[future] Photo-to-recipe.** Photograph a cookbook page or handwritten card → on-device OCR/vision drafts a structured recipe (F12 **`food-photo`** toggle for any cloud assist; pure on-device OCR fallback). Paprika's open flank (URL-only capture), attacked photo-first.
+- **[future] Cooking extensions.** After the bounded basic-cooking increment, add coordinated dishes and timers under their own acceptance contract; hands-free interaction remains exploratory. Paprika retains placekeeping for pinned recipes, so unconditional navigation-state loss is not a valid competitor claim.
+- **[future] Photo-to-recipe.** Photograph a cookbook page or handwritten card → on-device OCR/vision drafts a structured recipe (F12 **`food-photo`** toggle for any cloud assist; pure on-device OCR fallback). Treat document recognition separately from cooked-food logging. Paprika 4 beta reports include scanning; do not justify this feature with a blanket URL-only competitor claim.
 - **[moonshot] The leftover graph solver.** Full constraint optimization across recipes, portions, cook-events, leftovers, pantry expiries and prices (F04 [v1.x] cost data): "minimize cost + waste subject to hitting every day's macros" — rendered as an editable solution with slack dials. The waste/cost/adherence triangle becomes the geek's weekly chess puzzle, all on-device.
 
 ## 9. Guardrails, Privacy & Sensitivity

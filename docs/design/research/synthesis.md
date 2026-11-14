@@ -350,8 +350,10 @@ sections or design bar. These are review gates for every prototype:
    "an estimate, not a promise."
 10. **State loss** — check-offs lost on plan edit (Mealime's bug — WLO's
     reconciliation contract exists because of it), progress lost on navigate.
-11. **Trap ergonomics** — bottom-anchored Cancel/Next mis-taps (Paprika
-    review), rigid servings (Mealime 2/4/6), multi-step everything.
+11. **Trap ergonomics** — bottom-anchored Cancel/Next mis-taps reported in
+    a competing vendor's Paprika review (anecdotal; see the
+    [updated study](../../research/paprika-ux-deep-dive.md)), rigid servings
+    (Mealime 2/4/6), multi-step everything.
 12. **Spinner-that-implies-a-server / cloud-only paths** — offline must be a
     non-state (F10 §9); Mealime's cloud death is the cautionary tale.
 13. **Opaque capture failures** — guards that reject without naming the fix

@@ -70,6 +70,8 @@ Plain DB lookups (OFF/USDA) are *not* AI and need no category, but all egress
 flows through F12's dispatcher and connection log. A capability that fits no
 category is a master-doc decision, not a feature-level new toggle.
 
+Recipe acquisition's detailed future integration is specified in [WLO-0167 §7–8](../tech/WLO-0167-recipe-implementation.md#7-website-and-pasted-text-import): recipe generation/refinement consumes `meal-planning`; deterministic import does not. Recipe-site fetching requires a separately approved non-AI purpose and remains denied under the current matrix. The proposed one-import grant is not an existing allowance or a seventh AI category. The same spec requires capability validation, payload minimization, cancellation and protection of manual draft edits before enabling an AI recipe adapter.
+
 ### 3.2 On-device model zoo
 
 | Model | Serves | Size | Distribution |
@@ -98,8 +100,10 @@ shows per-model/total storage with one-tap reclaim, plus version eval deltas.
 - **Providers:** any OpenAI-compatible endpoint (custom base URL covers
   OpenRouter, LiteLLM, self-hosted gateways), Google (Gemini), Anthropic
   (Claude), and local runtimes — Ollama or llama.cpp on-device or on the
-  user's network. Local runtimes need no consent category (nothing leaves
-  the device) but still get receipts (cost $0, marked `local`).
+  user's network. Only runtimes executing on this same device need no cloud
+  consent category; they still get local receipts. A LAN/self-hosted server
+  on another device is egress and requires the calling capability's grant,
+  payload preview and receipt, just like other off-device providers.
 - **Setup:** pick provider → paste key / endpoint URL → **connection test**
   (one live call, round-trip ms with a pulse animation) → **model listing**
   (live, searchable) → default model per category.

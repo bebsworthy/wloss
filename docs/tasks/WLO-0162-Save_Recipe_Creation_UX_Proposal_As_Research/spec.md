@@ -1,0 +1,1 @@
+Saved the full recipe creation UX proposal as docs/research/recipe-creation-ux.md. Preserved all proposal sections and retained docs/design/recipe-creation-user-flow.md as a forwarding link. Updated WLO-0161 with the canonical research location. Verified original proposal content is preserved. Documentation only.
