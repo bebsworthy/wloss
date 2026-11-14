@@ -1,15 +1,25 @@
 ---
 id: WLO-0052
+
 title: 'Global mass unit preference (kg|lb): ask once at onboarding, Settings-only switch, honor everywhere'
+
 status: done
-theme: weight-core
-release: 1
-created: 2026-09-14T16:51:44Z
-modified: 2026-09-15T22:25:06Z
 closed: 2026-09-15T22:25:06Z
-revision: 5f8591b744e4f885
+status_changed: 2026-09-15T22:25:06Z
+
+theme: weight-core
+
+release: 1
+
+created: 2026-09-14T16:51:44Z
+
 blocks: [WLO-0051, WLO-0074]
+
 related: [WLO-0038, WLO-0051, WLO-0053, WLO-0055, WLO-0062, WLO-0079, WLO-0081]
+
+parent:
+
+rank:
 ---
 
 # Description

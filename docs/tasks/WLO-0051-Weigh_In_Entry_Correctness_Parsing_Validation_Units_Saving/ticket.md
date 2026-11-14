@@ -1,15 +1,25 @@
 ---
 id: WLO-0051
+
 title: 'Weigh-in entry correctness: parsing, validation, units, saving state, and outlier actions'
+
 status: done
-theme: weight-core
-release: 1
-created: 2026-09-14T16:45:09Z
-modified: 2026-09-15T22:50:36Z
 closed: 2026-09-15T22:50:36Z
-revision: f884eb8b7d1e414e
+status_changed: 2026-09-15T22:50:36Z
+
+theme: weight-core
+
+release: 1
+
+created: 2026-09-14T16:45:09Z
+
 blocks: [WLO-0037, WLO-0069, WLO-0070]
+
 related: [WLO-0038, WLO-0050, WLO-0052, WLO-0079]
+
+parent:
+
+rank:
 ---
 
 # Description

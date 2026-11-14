@@ -1,15 +1,25 @@
 ---
 id: WLO-0056
+
 title: 'M3 list conformance sweep: all list surfaces onto ListItem/WloListRow per the AGENTS.md M3-first rule'
+
 status: done
-theme:
-release:
-created: 2026-09-14T22:39:41Z
-modified: 2026-09-15T21:28:00Z
 closed: 2026-09-15T21:28:00Z
-revision: dbac24dbddfa7bef
+status_changed: 2026-09-15T21:28:00Z
+
+theme:
+
+release:
+
+created: 2026-09-14T22:39:41Z
+
 blocks: []
+
 related: [WLO-0055, WLO-0057]
+
+parent:
+
+rank:
 ---
 
 # Description

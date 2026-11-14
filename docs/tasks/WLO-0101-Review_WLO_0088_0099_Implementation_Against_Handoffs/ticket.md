@@ -1,15 +1,25 @@
 ---
 id: WLO-0101
+
 title: 'Review WLO-0088–0099 implementation against handoffs'
+
 status: done
-theme: weight-core
-release:
-created: 2026-09-16T11:36:53Z
-modified: 2026-09-16T11:56:29Z
 closed: 2026-09-16T11:56:29Z
-revision: cbafb50eb72b4e8e
+status_changed: 2026-09-16T11:56:29Z
+
+theme: weight-core
+
+release:
+
+created: 2026-09-16T11:36:53Z
+
 blocks: []
+
 related: []
+
+parent:
+
+rank:
 ---
 
 # Description

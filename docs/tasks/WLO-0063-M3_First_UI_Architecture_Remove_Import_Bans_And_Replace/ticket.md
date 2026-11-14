@@ -1,15 +1,25 @@
 ---
 id: WLO-0063
+
 title: 'M3-first UI architecture: remove import bans and replace fake controls'
+
 status: done
-theme:
-release:
-created: 2026-09-15T18:20:51Z
-modified: 2026-09-15T18:45:35Z
 closed: 2026-09-15T18:45:35Z
-revision: 5be627b0bf206520
+status_changed: 2026-09-15T18:45:35Z
+
+theme:
+
+release:
+
+created: 2026-09-15T18:20:51Z
+
 blocks: [WLO-0056]
+
 related: [WLO-0057]
+
+parent:
+
+rank:
 ---
 
 # Description

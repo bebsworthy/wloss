@@ -1,15 +1,25 @@
 ---
 id: WLO-0038
+
 title: 'Health Connect weight import: durable source identity, sync semantics, and visible import log'
+
 status: done
-theme: weight-core
-release: 1
-created: 2026-09-14T13:37:55Z
-modified: 2026-09-16T02:13:26Z
 closed: 2026-09-16T01:01:27Z
-revision: 3e11de1256c66806
+status_changed: 2026-09-16T01:01:27Z
+
+theme: weight-core
+
+release: 1
+
+created: 2026-09-14T13:37:55Z
+
 blocks: [WLO-0077]
+
 related: [WLO-0039, WLO-0051, WLO-0052, WLO-0071, WLO-0079]
+
+parent:
+
+rank:
 ---
 
 # Description

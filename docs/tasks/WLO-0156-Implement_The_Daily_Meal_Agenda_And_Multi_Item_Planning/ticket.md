@@ -1,15 +1,25 @@
 ---
 id: WLO-0156
+
 title: Implement the daily meal agenda and multi-item planning from Flow 11
+
 status: done
-theme:
-release:
-created: 2026-09-19T10:25:25Z
-modified: 2026-09-19T12:21:31Z
 closed: 2026-09-19T12:21:31Z
-revision: ebf0bdbb553435b6
+status_changed: 2026-09-19T12:21:31Z
+
+theme:
+
+release:
+
+created: 2026-09-19T10:25:25Z
+
 blocks: []
+
 related: [WLO-0027, WLO-0151, WLO-0155, WLO-0161, WLO-0164]
+
+parent:
+
+rank:
 ---
 
 # Description

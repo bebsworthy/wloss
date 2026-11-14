@@ -1,15 +1,25 @@
 ---
 id: WLO-0060
+
 title: 'Backup safety: cancel disabled work and replace files atomically'
+
 status: done
-theme:
-release:
-created: 2026-09-15T18:20:51Z
-modified: 2026-09-15T19:22:17Z
 closed: 2026-09-15T19:22:17Z
-revision: f031f598b90eb1f4
+status_changed: 2026-09-15T19:22:17Z
+
+theme:
+
+release:
+
+created: 2026-09-15T18:20:51Z
+
 blocks: []
+
 related: [WLO-0057]
+
+parent:
+
+rank:
 ---
 
 # Description

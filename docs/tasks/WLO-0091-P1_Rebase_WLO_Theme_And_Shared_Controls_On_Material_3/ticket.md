@@ -1,15 +1,25 @@
 ---
 id: WLO-0091
+
 title: 'P1: Rebase WLO theme and shared controls on Material 3'
+
 status: done
-theme: weight-core
-release:
-created: 2026-09-16T07:22:28Z
-modified: 2026-09-16T14:02:51Z
 closed: 2026-09-16T14:02:51Z
-revision: 865ade0452542cd2
+status_changed: 2026-09-16T14:02:51Z
+
+theme: weight-core
+
+release:
+
+created: 2026-09-16T07:22:28Z
+
 blocks: [WLO-0090, WLO-0092, WLO-0093, WLO-0094, WLO-0095, WLO-0098, WLO-0099]
+
 related: [WLO-0087]
+
+parent:
+
+rank:
 ---
 
 # Description

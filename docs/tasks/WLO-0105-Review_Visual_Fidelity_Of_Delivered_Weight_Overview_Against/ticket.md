@@ -1,15 +1,25 @@
 ---
 id: WLO-0105
+
 title: Review visual fidelity of delivered weight overview against mockup
+
 status: done
-theme:
-release:
-created: 2026-09-16T16:43:38Z
-modified: 2026-09-16T16:44:02Z
 closed: 2026-09-16T16:44:02Z
-revision: 8cadc2fd951e29df
+status_changed: 2026-09-16T16:44:02Z
+
+theme:
+
+release:
+
+created: 2026-09-16T16:43:38Z
+
 blocks: []
+
 related: []
+
+parent:
+
+rank:
 ---
 
 # Description

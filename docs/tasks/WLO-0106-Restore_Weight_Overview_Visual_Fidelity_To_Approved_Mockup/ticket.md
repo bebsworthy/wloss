@@ -1,15 +1,25 @@
 ---
 id: WLO-0106
+
 title: Restore weight overview visual fidelity to approved mockup
+
 status: done
-theme:
-release:
-created: 2026-09-16T16:45:29Z
-modified: 2026-09-16T17:03:00Z
 closed: 2026-09-16T17:03:00Z
-revision: a6d21758567df9bc
+status_changed: 2026-09-16T17:03:00Z
+
+theme:
+
+release:
+
+created: 2026-09-16T16:45:29Z
+
 blocks: []
+
 related: []
+
+parent:
+
+rank:
 ---
 
 # Description

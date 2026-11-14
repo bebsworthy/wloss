@@ -2,12 +2,12 @@
 
 # Questions · WLO-0029
 
-## q-000040 · open
+## q-ca1cyjb · open
 
 Please validate the live alpha on the owner phone through Obtainium: install from the public wloss repository, then confirm a later alpha updates in place and preserves local data. What device/Android version was used, and did both install and update succeed?
 
 ## Resolved
 
-- q-000028
-- q-000029
-- q-000030
+- q-g9wgeqq
+- q-h43kwgj
+- q-dre3q1x

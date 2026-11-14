@@ -1,15 +1,25 @@
 ---
 id: WLO-0002
+
 title: Adopt FOSS/free-forever + per-capability AI consent as core objectives
+
 status: done
-theme:
-release:
-created: 2026-09-10T22:56:02Z
-modified: 2026-09-10T22:56:29Z
 closed: 2026-09-10T22:56:28Z
-revision: 7fca0fa0e515cbe1
+status_changed: 2026-09-10T22:56:28Z
+
+theme:
+
+release:
+
+created: 2026-09-10T22:56:02Z
+
 blocks: []
+
 related: []
+
+parent:
+
+rank:
 ---
 
 # Description

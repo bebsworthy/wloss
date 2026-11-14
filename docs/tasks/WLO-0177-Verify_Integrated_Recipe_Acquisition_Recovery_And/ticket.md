@@ -1,15 +1,25 @@
 ---
 id: WLO-0177
+
 title: 'Verify integrated recipe acquisition, recovery and portability'
+
 status: todo
-theme:
-release:
-created: 2026-09-21T10:10:09Z
-modified: 2026-09-21T10:10:11Z
 closed:
-revision: 99cf5b1e3091eebb
+status_changed: 2026-09-21T10:10:11Z
+
+theme:
+
+release:
+
+created: 2026-09-21T10:10:09Z
+
 blocks: []
+
 related: [WLO-0167]
+
+parent:
+
+rank: 11665408
 ---
 
 # Description

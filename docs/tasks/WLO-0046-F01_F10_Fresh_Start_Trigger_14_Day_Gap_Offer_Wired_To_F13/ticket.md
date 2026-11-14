@@ -1,15 +1,25 @@
 ---
 id: WLO-0046
+
 title: 'F01/F10 Fresh Start trigger: >=14-day gap offer wired to F13 hide-not-delete (R-B7)'
+
 status: canceled
-theme: weight-experience
-release: 2
-created: 2026-09-14T13:38:55Z
-modified: 2026-09-16T05:40:32Z
 closed: 2026-09-16T05:40:32Z
-revision: d458902f0422cf67
+status_changed: 2026-09-16T05:40:32Z
+
+theme: weight-experience
+
+release: 2
+
+created: 2026-09-14T13:38:55Z
+
 blocks: []
+
 related: []
+
+parent:
+
+rank:
 ---
 
 # Description

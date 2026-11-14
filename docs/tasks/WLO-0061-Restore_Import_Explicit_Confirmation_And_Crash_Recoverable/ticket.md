@@ -1,15 +1,25 @@
 ---
 id: WLO-0061
+
 title: 'Restore/import: explicit confirmation and crash-recoverable multi-store commit'
+
 status: done
-theme:
-release:
-created: 2026-09-15T18:20:51Z
-modified: 2026-09-15T19:16:41Z
 closed: 2026-09-15T19:16:29Z
-revision: ee53ec4aab8b0631
+status_changed: 2026-09-15T19:16:29Z
+
+theme:
+
+release:
+
+created: 2026-09-15T18:20:51Z
+
 blocks: []
+
 related: [WLO-0057]
+
+parent:
+
+rank:
 ---
 
 # Description

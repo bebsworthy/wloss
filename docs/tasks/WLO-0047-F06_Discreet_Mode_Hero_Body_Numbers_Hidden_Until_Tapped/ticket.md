@@ -1,15 +1,25 @@
 ---
 id: WLO-0047
+
 title: 'F06 discreet mode: hero body numbers hidden until tapped'
+
 status: canceled
-theme: weight-experience
-release: 2
-created: 2026-09-14T13:38:55Z
-modified: 2026-09-16T05:29:17Z
 closed: 2026-09-16T05:29:17Z
-revision: 4d975d4355f45e78
+status_changed: 2026-09-16T05:29:17Z
+
+theme: weight-experience
+
+release: 2
+
+created: 2026-09-14T13:38:55Z
+
 blocks: []
+
 related: []
+
+parent:
+
+rank:
 ---
 
 # Description

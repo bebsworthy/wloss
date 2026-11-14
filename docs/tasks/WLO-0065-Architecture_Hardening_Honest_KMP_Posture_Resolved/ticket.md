@@ -1,15 +1,25 @@
 ---
 id: WLO-0065
+
 title: 'Architecture hardening: honest KMP posture, resolved dependency checks, fatal lint'
+
 status: done
-theme:
-release:
-created: 2026-09-15T18:20:51Z
-modified: 2026-09-15T20:25:22Z
 closed: 2026-09-15T20:25:22Z
-revision: 73467644be44eeb1
+status_changed: 2026-09-15T20:25:22Z
+
+theme:
+
+release:
+
+created: 2026-09-15T18:20:51Z
+
 blocks: []
+
 related: [WLO-0029, WLO-0057]
+
+parent:
+
+rank:
 ---
 
 # Description

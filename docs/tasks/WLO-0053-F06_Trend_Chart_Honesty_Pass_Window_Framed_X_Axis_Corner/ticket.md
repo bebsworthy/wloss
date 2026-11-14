@@ -1,15 +1,25 @@
 ---
 id: WLO-0053
+
 title: 'F06 trend chart honesty pass: window-framed x-axis, corner-label fix, window-aware empty state, trend-gate re-scope'
+
 status: done
-theme: weight-core
-release: 1
-created: 2026-09-14T17:06:57Z
-modified: 2026-09-16T00:00:01Z
 closed: 2026-09-15T23:58:17Z
-revision: e3070eb6ffdf05c1
+status_changed: 2026-09-15T23:58:17Z
+
+theme: weight-core
+
+release: 1
+
+created: 2026-09-14T17:06:57Z
+
 blocks: [WLO-0042, WLO-0070, WLO-0076]
+
 related: [WLO-0042, WLO-0052, WLO-0054, WLO-0071, WLO-0079, WLO-0084]
+
+parent:
+
+rank:
 ---
 
 # Description

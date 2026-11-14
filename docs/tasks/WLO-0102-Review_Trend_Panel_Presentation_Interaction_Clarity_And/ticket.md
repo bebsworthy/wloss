@@ -1,15 +1,25 @@
 ---
 id: WLO-0102
+
 title: Review trend panel presentation interaction clarity and calculations
+
 status: done
-theme:
-release:
-created: 2026-09-16T15:39:19Z
-modified: 2026-09-16T15:42:16Z
 closed: 2026-09-16T15:42:16Z
-revision: 6761d702105b0584
+status_changed: 2026-09-16T15:42:16Z
+
+theme:
+
+release:
+
+created: 2026-09-16T15:39:19Z
+
 blocks: []
+
 related: []
+
+parent:
+
+rank:
 ---
 
 # Description

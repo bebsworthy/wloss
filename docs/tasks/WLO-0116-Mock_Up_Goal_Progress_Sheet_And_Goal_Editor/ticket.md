@@ -1,15 +1,25 @@
 ---
 id: WLO-0116
+
 title: Mock up goal progress sheet and goal editor
+
 status: done
-theme:
-release:
-created: 2026-09-16T21:06:54Z
-modified: 2026-09-16T21:25:31Z
 closed: 2026-09-16T21:10:07Z
-revision: c001a66210614b0d
+status_changed: 2026-09-16T21:10:07Z
+
+theme:
+
+release:
+
+created: 2026-09-16T21:06:54Z
+
 blocks: []
+
 related: []
+
+parent:
+
+rank:
 ---
 
 # Description

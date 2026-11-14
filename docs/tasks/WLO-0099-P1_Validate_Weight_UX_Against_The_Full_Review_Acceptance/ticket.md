@@ -1,15 +1,25 @@
 ---
 id: WLO-0099
+
 title: 'P1: Validate weight UX against the full review acceptance matrix'
+
 status: doing
-theme: weight-core
-release:
-created: 2026-09-16T07:22:28Z
-modified: 2026-09-16T09:45:39Z
 closed:
-revision: 3b61021057ee02db
+status_changed: 2026-09-16T11:53:46Z
+
+theme: weight-core
+
+release:
+
+created: 2026-09-16T07:22:28Z
+
 blocks: []
+
 related: [WLO-0087]
+
+parent:
+
+rank: 196608
 ---
 
 # Description

@@ -1,15 +1,25 @@
 ---
 id: WLO-0031
+
 title: 'UI architecture remediation — complete design-system enforcement + all-surface migration (audit WLO-0031)'
+
 status: done
-theme:
-release:
-created: 2026-09-13T21:21:08Z
-modified: 2026-09-14T00:44:48Z
 closed: 2026-09-14T00:44:48Z
-revision: a54e3d03c4bb6ad5
+status_changed: 2026-09-14T00:44:48Z
+
+theme:
+
+release:
+
+created: 2026-09-13T21:21:08Z
+
 blocks: []
+
 related: [WLO-0057]
+
+parent:
+
+rank:
 ---
 
 # Description

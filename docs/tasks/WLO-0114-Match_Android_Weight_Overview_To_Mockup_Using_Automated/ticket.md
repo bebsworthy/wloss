@@ -1,15 +1,25 @@
 ---
 id: WLO-0114
+
 title: Match Android weight overview to mockup using automated glyph overlays
+
 status: done
-theme:
-release:
-created: 2026-09-16T18:32:07Z
-modified: 2026-09-16T18:43:01Z
 closed: 2026-09-16T18:43:01Z
-revision: 457526894ebf82da
+status_changed: 2026-09-16T18:43:01Z
+
+theme:
+
+release:
+
+created: 2026-09-16T18:32:07Z
+
 blocks: []
+
 related: []
+
+parent:
+
+rank:
 ---
 
 # Description

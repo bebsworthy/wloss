@@ -1,15 +1,25 @@
 ---
 id: WLO-0118
+
 title: Review More navigation and settings hierarchy
+
 status: done
-theme:
-release:
-created: 2026-09-16T21:58:17Z
-modified: 2026-09-16T22:00:18Z
 closed: 2026-09-16T22:00:18Z
-revision: b11ac9409241bdca
+status_changed: 2026-09-16T22:00:18Z
+
+theme:
+
+release:
+
+created: 2026-09-16T21:58:17Z
+
 blocks: []
+
 related: []
+
+parent:
+
+rank:
 ---
 
 # Description

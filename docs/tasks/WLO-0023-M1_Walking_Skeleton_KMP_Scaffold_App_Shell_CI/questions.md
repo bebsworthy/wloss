@@ -2,7 +2,7 @@
 
 # Questions · WLO-0023
 
-## q-000027 · answered
+## q-94071ja · answered
 
 ADR-005 sets the application id / package namespace to app.wlo (packages app.wlo.*, deep links wlo://). This is a mechanical change until the first Play Store upload and expensive after. Confirm app.wlo as final, or propose an alternative (e.g. a reverse-domain you own). Work proceeds on app.wlo meanwhile.
 

@@ -1,15 +1,25 @@
 ---
 id: WLO-0107
+
 title: Use bundled Inter fonts in weight overview mockup
+
 status: done
-theme:
-release:
-created: 2026-09-16T17:05:02Z
-modified: 2026-09-16T17:05:42Z
 closed: 2026-09-16T17:05:42Z
-revision: c4b5c9817b3c56a5
+status_changed: 2026-09-16T17:05:42Z
+
+theme:
+
+release:
+
+created: 2026-09-16T17:05:02Z
+
 blocks: []
+
 related: []
+
+parent:
+
+rank:
 ---
 
 # Description

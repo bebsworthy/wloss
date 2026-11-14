@@ -1,15 +1,25 @@
 ---
 id: WLO-0049
+
 title: 'Real system clock: replace frozen FixedClock(DEMO_NOW) binding — app and writes live on 2026-09-08'
+
 status: done
-theme:
-release:
-created: 2026-09-14T14:03:45Z
-modified: 2026-09-14T15:55:25Z
 closed: 2026-09-14T15:55:25Z
-revision: e1b339569044caf9
+status_changed: 2026-09-14T15:55:25Z
+
+theme:
+
+release:
+
+created: 2026-09-14T14:03:45Z
+
 blocks: []
+
 related: []
+
+parent:
+
+rank:
 ---
 
 # Description

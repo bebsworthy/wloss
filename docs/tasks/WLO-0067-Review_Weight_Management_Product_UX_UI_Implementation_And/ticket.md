@@ -1,15 +1,25 @@
 ---
 id: WLO-0067
+
 title: 'Review weight-management product, UX, UI, implementation, and backlog'
+
 status: done
-theme:
-release:
-created: 2026-09-15T20:28:23Z
-modified: 2026-09-15T20:35:17Z
 closed: 2026-09-15T20:35:17Z
-revision: 181953c1c9d4ff86
+status_changed: 2026-09-15T20:35:17Z
+
+theme:
+
+release:
+
+created: 2026-09-15T20:28:23Z
+
 blocks: []
+
 related: [WLO-0079, WLO-0086]
+
+parent:
+
+rank:
 ---
 
 # Description

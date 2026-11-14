@@ -1,15 +1,25 @@
 ---
 id: WLO-0110
+
 title: Match mockup presentation scale to emulator display
+
 status: done
-theme:
-release:
-created: 2026-09-16T17:59:43Z
-modified: 2026-09-16T18:02:06Z
 closed: 2026-09-16T18:02:06Z
-revision: 8ef34df005f9efe9
+status_changed: 2026-09-16T18:02:06Z
+
+theme:
+
+release:
+
+created: 2026-09-16T17:59:43Z
+
 blocks: []
+
 related: []
+
+parent:
+
+rank:
 ---
 
 # Description

@@ -1,15 +1,25 @@
 ---
 id: WLO-0103
+
 title: Design weight overview and trend panel mockup
+
 status: done
-theme:
-release:
-created: 2026-09-16T16:04:17Z
-modified: 2026-09-16T16:14:40Z
 closed: 2026-09-16T16:14:40Z
-revision: c174072345e5aa83
+status_changed: 2026-09-16T16:14:40Z
+
+theme:
+
+release:
+
+created: 2026-09-16T16:04:17Z
+
 blocks: []
+
 related: []
+
+parent:
+
+rank:
 ---
 
 # Description

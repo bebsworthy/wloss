@@ -1,15 +1,25 @@
 ---
 id: WLO-0119
+
 title: 'Simplify More, Settings, AI and data navigation'
+
 status: done
-theme:
-release:
-created: 2026-09-16T22:12:40Z
-modified: 2026-09-16T22:33:10Z
 closed: 2026-09-16T22:33:10Z
-revision: f4f4056119fe3e8d
+status_changed: 2026-09-16T22:33:10Z
+
+theme:
+
+release:
+
+created: 2026-09-16T22:12:40Z
+
 blocks: []
+
 related: []
+
+parent:
+
+rank:
 ---
 
 # Description

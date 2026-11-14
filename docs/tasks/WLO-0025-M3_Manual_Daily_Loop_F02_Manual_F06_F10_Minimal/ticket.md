@@ -1,15 +1,25 @@
 ---
 id: WLO-0025
+
 title: 'M3 · Manual daily loop (F02 manual, F06, F10 minimal)'
+
 status: done
-theme:
-release:
-created: 2026-09-12T10:01:21Z
-modified: 2026-09-12T20:39:57Z
 closed: 2026-09-12T20:39:57Z
-revision: 44c8fd9aed5409d5
+status_changed: 2026-09-12T20:39:57Z
+
+theme:
+
+release:
+
+created: 2026-09-12T10:01:21Z
+
 blocks: [WLO-0026]
+
 related: [WLO-0014]
+
+parent:
+
+rank:
 ---
 
 # Description

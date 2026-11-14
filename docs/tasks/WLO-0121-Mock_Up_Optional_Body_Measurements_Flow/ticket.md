@@ -1,15 +1,25 @@
 ---
 id: WLO-0121
+
 title: Mock up optional body measurements flow
+
 status: done
-theme:
-release:
-created: 2026-09-16T23:18:08Z
-modified: 2026-09-16T23:22:15Z
 closed: 2026-09-16T23:22:15Z
-revision: 54b60d448dd7f94d
+status_changed: 2026-09-16T23:22:15Z
+
+theme:
+
+release:
+
+created: 2026-09-16T23:18:08Z
+
 blocks: []
+
 related: []
+
+parent:
+
+rank:
 ---
 
 # Description

@@ -1,15 +1,25 @@
 ---
 id: WLO-0054
+
 title: 'Advanced weight smoothing controls: collapsed selection, reset, and honest preview'
+
 status: backlog
-theme: weight-advanced
-release: 3
-created: 2026-09-14T17:06:57Z
-modified: 2026-09-15T21:29:21Z
 closed:
-revision: 4e72a2900eb77bc3
+status_changed: 2026-09-16T07:55:13Z
+
+theme: weight-advanced
+
+release: 3
+
+created: 2026-09-14T17:06:57Z
+
 blocks: [WLO-0078]
+
 related: [WLO-0042, WLO-0053, WLO-0062, WLO-0087, WLO-0098]
+
+parent:
+
+rank: 5242880
 ---
 
 # Description

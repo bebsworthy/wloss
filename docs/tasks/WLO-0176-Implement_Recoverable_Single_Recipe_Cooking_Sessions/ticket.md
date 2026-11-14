@@ -1,15 +1,25 @@
 ---
 id: WLO-0176
+
 title: Implement recoverable single-recipe cooking sessions
+
 status: todo
-theme:
-release:
-created: 2026-09-21T10:10:09Z
-modified: 2026-09-21T10:10:11Z
 closed:
-revision: bc6573e69d6a4196
+status_changed: 2026-09-21T10:10:11Z
+
+theme:
+
+release:
+
+created: 2026-09-21T10:10:09Z
+
 blocks: [WLO-0177]
+
 related: [WLO-0167]
+
+parent:
+
+rank: 11599872
 ---
 
 # Description

@@ -1,15 +1,25 @@
 ---
 id: WLO-0104
+
 title: Implement page-based weight overview and reliable trend chart
+
 status: done
-theme:
-release:
-created: 2026-09-16T16:15:02Z
-modified: 2026-09-16T16:35:14Z
 closed: 2026-09-16T16:35:14Z
-revision: 6c5c92c444c529ec
+status_changed: 2026-09-16T16:35:14Z
+
+theme:
+
+release:
+
+created: 2026-09-16T16:15:02Z
+
 blocks: []
+
 related: []
+
+parent:
+
+rank:
 ---
 
 # Description

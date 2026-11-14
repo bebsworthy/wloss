@@ -1,15 +1,25 @@
 ---
 id: WLO-0120
+
 title: Review body fat discovery and presentation
+
 status: done
-theme:
-release:
-created: 2026-09-16T23:06:38Z
-modified: 2026-09-16T23:06:48Z
 closed: 2026-09-16T23:06:48Z
-revision: f0803fd9938d7669
+status_changed: 2026-09-16T23:06:48Z
+
+theme:
+
+release:
+
+created: 2026-09-16T23:06:38Z
+
 blocks: []
+
 related: []
+
+parent:
+
+rank:
 ---
 
 # Description

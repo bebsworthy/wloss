@@ -1,15 +1,25 @@
 ---
 id: WLO-0109
+
 title: Align overview geometry and baselines with equal-width mockup
+
 status: done
-theme:
-release:
-created: 2026-09-16T17:51:39Z
-modified: 2026-09-16T17:54:20Z
 closed: 2026-09-16T17:54:20Z
-revision: bd33db7ddeb1941d
+status_changed: 2026-09-16T17:54:20Z
+
+theme:
+
+release:
+
+created: 2026-09-16T17:51:39Z
+
 blocks: []
+
 related: []
+
+parent:
+
+rank:
 ---
 
 # Description

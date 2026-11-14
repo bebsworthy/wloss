@@ -1,15 +1,25 @@
 ---
 id: WLO-0172
+
 title: Implement Android recipe sharing and offline text import
+
 status: todo
-theme:
-release:
-created: 2026-09-21T10:10:09Z
-modified: 2026-09-21T10:10:11Z
 closed:
-revision: ee5b2ed000643112
+status_changed: 2026-09-21T10:10:11Z
+
+theme:
+
+release:
+
+created: 2026-09-21T10:10:09Z
+
 blocks: [WLO-0173, WLO-0177]
+
 related: [WLO-0167]
+
+parent:
+
+rank: 11337728
 ---
 
 # Description

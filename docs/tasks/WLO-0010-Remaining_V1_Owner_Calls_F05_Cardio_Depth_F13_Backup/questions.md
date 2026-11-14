@@ -4,7 +4,7 @@
 
 ## Resolved
 
-- q-000007
-- q-000008
-- q-000009
-- q-000010
+- q-pbzmf96
+- q-5d7ck0f
+- q-d8zp6mw
+- q-8njf3w6

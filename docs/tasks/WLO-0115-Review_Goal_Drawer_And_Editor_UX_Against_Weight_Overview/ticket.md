@@ -1,15 +1,25 @@
 ---
 id: WLO-0115
+
 title: Review goal drawer and editor UX against weight overview
+
 status: done
-theme:
-release:
-created: 2026-09-16T21:02:47Z
-modified: 2026-09-16T21:04:46Z
 closed: 2026-09-16T21:04:46Z
-revision: f23ce2748dcd9d43
+status_changed: 2026-09-16T21:04:46Z
+
+theme:
+
+release:
+
+created: 2026-09-16T21:02:47Z
+
 blocks: []
+
 related: []
+
+parent:
+
+rank:
 ---
 
 # Description

@@ -1,0 +1,3 @@
+{"v":1,"eid":"a4307fe191287c32","at":"2026-09-11T01:08:59Z","n":0,"op":"question.add","id":"q-x1zgecm","by":null,"text":"Does v1 ship multi-profile, or single-profile with a partition-ready schema?","suggestions":["Single-profile v1, partition-ready schema — recommended","Full multi-profile in v1 (per-profile vault, locks, and HC routing on the critical path)"],"was":"q-000004"}
+{"v":1,"eid":"e24f16b28c03c0bb","at":"2026-09-11T01:08:59Z","n":1,"op":"question.approve","id":"q-x1zgecm","by":null,"suggestion":1}
+{"v":1,"eid":"5fe6d71c58200b90","at":"2026-09-11T01:08:59Z","n":2,"op":"question.resolve","id":"q-x1zgecm","by":null,"basis":"e24f16b28c03c0bb"}

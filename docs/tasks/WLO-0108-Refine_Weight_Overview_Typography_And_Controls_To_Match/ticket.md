@@ -1,15 +1,25 @@
 ---
 id: WLO-0108
+
 title: Refine weight overview typography and controls to match mockup
+
 status: done
-theme:
-release:
-created: 2026-09-16T17:18:41Z
-modified: 2026-09-16T17:21:25Z
 closed: 2026-09-16T17:21:25Z
-revision: 3ecb4f01ffc5e8cd
+status_changed: 2026-09-16T17:21:25Z
+
+theme:
+
+release:
+
+created: 2026-09-16T17:18:41Z
+
 blocks: []
+
 related: []
+
+parent:
+
+rank:
 ---
 
 # Description

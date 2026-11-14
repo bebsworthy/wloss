@@ -1,15 +1,25 @@
 ---
 id: WLO-0026
+
 title: 'M4 · Capture stack (F02 AI): runtime spike + zoo plumbing'
+
 status: done
-theme:
-release:
-created: 2026-09-12T10:01:53Z
-modified: 2026-09-13T02:58:16Z
 closed: 2026-09-13T02:58:16Z
-revision: 8f110eeefda5e4c8
+status_changed: 2026-09-13T02:58:16Z
+
+theme:
+
+release:
+
+created: 2026-09-12T10:01:53Z
+
 blocks: [WLO-0027]
+
 related: [WLO-0014]
+
+parent:
+
+rank:
 ---
 
 # Description

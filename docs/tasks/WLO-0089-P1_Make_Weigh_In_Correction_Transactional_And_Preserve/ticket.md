@@ -1,15 +1,25 @@
 ---
 id: WLO-0089
+
 title: 'P1: Make weigh-in correction transactional and preserve dashboard continuity'
+
 status: done
-theme: weight-core
-release:
-created: 2026-09-16T07:22:28Z
-modified: 2026-09-16T14:02:51Z
 closed: 2026-09-16T14:02:51Z
-revision: cb1b26cb26b5fb9a
+status_changed: 2026-09-16T14:02:51Z
+
+theme: weight-core
+
+release:
+
+created: 2026-09-16T07:22:28Z
+
 blocks: [WLO-0092, WLO-0099]
+
 related: [WLO-0087]
+
+parent:
+
+rank:
 ---
 
 # Description

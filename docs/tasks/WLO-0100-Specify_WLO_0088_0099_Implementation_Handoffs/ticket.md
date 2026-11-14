@@ -1,15 +1,25 @@
 ---
 id: WLO-0100
+
 title: 'Specify WLO-0088–0099 implementation handoffs'
+
 status: done
-theme: weight-core
-release:
-created: 2026-09-16T07:44:23Z
-modified: 2026-09-16T08:02:14Z
 closed: 2026-09-16T08:02:14Z
-revision: aa4046b176f59db9
+status_changed: 2026-09-16T08:02:14Z
+
+theme: weight-core
+
+release:
+
+created: 2026-09-16T07:44:23Z
+
 blocks: []
+
 related: []
+
+parent:
+
+rank:
 ---
 
 # Description

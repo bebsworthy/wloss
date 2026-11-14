@@ -1,15 +1,25 @@
 ---
 id: WLO-0058
+
 title: 'Privacy: disable implicit Android system backup and define transfer policy'
+
 status: done
-theme:
-release:
-created: 2026-09-15T18:20:51Z
-modified: 2026-09-15T18:41:06Z
 closed: 2026-09-15T18:41:06Z
-revision: e1fc0044542d0dfb
+status_changed: 2026-09-15T18:41:06Z
+
+theme:
+
+release:
+
+created: 2026-09-15T18:20:51Z
+
 blocks: []
+
 related: [WLO-0057]
+
+parent:
+
+rank:
 ---
 
 # Description

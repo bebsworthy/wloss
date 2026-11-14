@@ -1,15 +1,25 @@
 ---
 id: WLO-0083
+
 title: Implement and validate direction-correct weight-gain forecasting
+
 status: done
-theme: weight-core
-release: 2
-created: 2026-09-15T22:54:39Z
-modified: 2026-09-16T02:13:26Z
 closed: 2026-09-16T01:18:26Z
-revision: 05f6e2a1fad07c8b
+status_changed: 2026-09-16T01:18:26Z
+
+theme: weight-core
+
+release: 2
+
+created: 2026-09-15T22:54:39Z
+
 blocks: []
+
 related: [WLO-0073, WLO-0074, WLO-0080]
+
+parent:
+
+rank:
 ---
 
 # Description

@@ -1,15 +1,25 @@
 ---
 id: WLO-0059
+
 title: 'App lock: fail closed on cold start and process death'
+
 status: done
-theme:
-release:
-created: 2026-09-15T18:20:51Z
-modified: 2026-09-15T18:37:43Z
 closed: 2026-09-15T18:37:43Z
-revision: 16ad090bdabce79b
+status_changed: 2026-09-15T18:37:43Z
+
+theme:
+
+release:
+
+created: 2026-09-15T18:20:51Z
+
 blocks: []
+
 related: [WLO-0057]
+
+parent:
+
+rank:
 ---
 
 # Description

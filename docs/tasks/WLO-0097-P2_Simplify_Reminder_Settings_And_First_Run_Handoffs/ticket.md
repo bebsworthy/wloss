@@ -1,15 +1,25 @@
 ---
 id: WLO-0097
+
 title: 'P2: Simplify reminder, settings and first-run handoffs'
+
 status: done
-theme: weight-core
-release:
-created: 2026-09-16T07:22:28Z
-modified: 2026-09-16T14:02:52Z
 closed: 2026-09-16T14:02:52Z
-revision: 9d7bf8cdab094aa7
+status_changed: 2026-09-16T14:02:52Z
+
+theme: weight-core
+
+release:
+
+created: 2026-09-16T07:22:28Z
+
 blocks: [WLO-0099]
+
 related: [WLO-0087]
+
+parent:
+
+rank:
 ---
 
 # Description

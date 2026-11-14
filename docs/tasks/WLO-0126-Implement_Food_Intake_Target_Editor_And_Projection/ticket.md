@@ -1,15 +1,25 @@
 ---
 id: WLO-0126
+
 title: Implement food intake target editor and projection
+
 status: done
-theme:
-release:
-created: 2026-09-18T13:45:22Z
-modified: 2026-09-18T17:26:07Z
 closed: 2026-09-18T17:26:07Z
-revision: 162707ad5afd9523
+status_changed: 2026-09-18T17:26:07Z
+
+theme:
+
+release:
+
+created: 2026-09-18T13:45:22Z
+
 blocks: []
+
 related: []
+
+parent:
+
+rank:
 ---
 
 # Description

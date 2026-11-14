@@ -1,0 +1,6 @@
+{"v":1,"eid":"84cfdbd585ed1cb1","at":"2026-09-11T01:14:57Z","n":0,"op":"question.add","id":"q-rh5a40s","by":null,"text":"Should the forecast model body composition (fat-loss fraction) or stay partition-free in v1?","suggestions":["Partition-free v1 (recommended) — one published constant, composition-aware rates ship v1.x","Fat-fraction from day one — more honest near goal, more assumptions to publish"],"was":"q-000005"}
+{"v":1,"eid":"581346b660b3d2b7","at":"2026-09-11T01:14:57Z","n":1,"op":"question.approve","id":"q-rh5a40s","by":null,"suggestion":1}
+{"v":1,"eid":"1f9439aca0bbf1f0","at":"2026-09-11T01:14:57Z","n":2,"op":"question.resolve","id":"q-rh5a40s","by":null,"basis":"581346b660b3d2b7"}
+{"v":1,"eid":"ed817a530d6202c1","at":"2026-09-11T01:14:57Z","n":3,"op":"question.add","id":"q-w0nnsds","by":null,"text":"Unlock an opt-in daily check-in cadence for power users in v1?","suggestions":["Weekly-only v1 (recommended) — daily unlock is v1.x, informed by real usage","Daily opt-in in v1 — serves the high-frequency minority immediately"],"was":"q-000006"}
+{"v":1,"eid":"50e94354ddccf730","at":"2026-09-11T01:14:57Z","n":4,"op":"question.approve","id":"q-w0nnsds","by":null,"suggestion":2}
+{"v":1,"eid":"359b07c590948b6d","at":"2026-09-11T01:14:57Z","n":5,"op":"question.resolve","id":"q-w0nnsds","by":null,"basis":"50e94354ddccf730"}

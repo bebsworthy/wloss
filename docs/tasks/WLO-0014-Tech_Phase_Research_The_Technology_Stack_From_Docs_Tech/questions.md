@@ -4,10 +4,10 @@
 
 ## Resolved
 
-- q-000020
-- q-000021
-- q-000022
-- q-000023
-- q-000024
-- q-000025
-- q-000026
+- q-eqc6ath
+- q-e3gxbhx
+- q-tsrzw1e
+- q-6d2m6dj
+- q-fs9z18z
+- q-eq3c2ca
+- q-btb2tgb

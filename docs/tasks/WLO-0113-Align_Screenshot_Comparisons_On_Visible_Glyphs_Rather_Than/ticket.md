@@ -1,15 +1,25 @@
 ---
 id: WLO-0113
+
 title: Align screenshot comparisons on visible glyphs rather than text boxes
+
 status: done
-theme:
-release:
-created: 2026-09-16T18:30:02Z
-modified: 2026-09-16T18:31:19Z
 closed: 2026-09-16T18:31:19Z
-revision: 6d023de837664125
+status_changed: 2026-09-16T18:31:19Z
+
+theme:
+
+release:
+
+created: 2026-09-16T18:30:02Z
+
 blocks: []
+
 related: []
+
+parent:
+
+rank:
 ---
 
 # Description

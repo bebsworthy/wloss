@@ -1,15 +1,25 @@
 ---
 id: WLO-0023
+
 title: 'M1 · Walking skeleton: KMP scaffold, app shell, CI'
+
 status: done
-theme:
-release:
-created: 2026-09-12T10:00:24Z
-modified: 2026-09-12T12:43:43Z
 closed: 2026-09-12T12:43:43Z
-revision: 46bc7ee20f53f27f
+status_changed: 2026-09-12T12:43:43Z
+
+theme:
+
+release:
+
+created: 2026-09-12T10:00:24Z
+
 blocks: [WLO-0024]
+
 related: [WLO-0014]
+
+parent:
+
+rank:
 ---
 
 # Description

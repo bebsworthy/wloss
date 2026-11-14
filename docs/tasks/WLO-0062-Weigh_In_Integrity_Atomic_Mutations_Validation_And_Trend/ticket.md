@@ -1,15 +1,25 @@
 ---
 id: WLO-0062
+
 title: 'Weigh-in integrity: atomic mutations, validation, and trend-suffix repair'
+
 status: done
-theme:
-release:
-created: 2026-09-15T18:20:51Z
-modified: 2026-09-15T18:58:54Z
 closed: 2026-09-15T18:58:54Z
-revision: 68bff3c1c4201c0f
+status_changed: 2026-09-15T18:58:54Z
+
+theme:
+
+release:
+
+created: 2026-09-15T18:20:51Z
+
 blocks: []
+
 related: [WLO-0052, WLO-0054, WLO-0057]
+
+parent:
+
+rank:
 ---
 
 # Description

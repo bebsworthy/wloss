@@ -1,0 +1,3 @@
+{"v":1,"eid":"7ed6d48f0d35678a","at":"2026-09-11T01:08:59Z","n":0,"op":"question.add","id":"q-5f43aea","by":null,"text":"Ship meal-planning cloud generation in v1 or v1.x?","suggestions":["v1.x — recommended: deterministic engine carries v1; the BYOK showcase lands after launch","v1 — differentiating day-one demo, at the cost of F12 consent/payload work on the critical path"],"was":"q-000003"}
+{"v":1,"eid":"489f06e6b0ff7431","at":"2026-09-11T01:08:59Z","n":1,"op":"question.approve","id":"q-5f43aea","by":null,"suggestion":1}
+{"v":1,"eid":"f2732c2a860c4099","at":"2026-09-11T01:08:59Z","n":2,"op":"question.resolve","id":"q-5f43aea","by":null,"basis":"489f06e6b0ff7431"}

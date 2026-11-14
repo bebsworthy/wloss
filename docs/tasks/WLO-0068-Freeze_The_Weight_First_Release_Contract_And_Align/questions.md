@@ -4,5 +4,5 @@
 
 ## Resolved
 
-- q-000038
-- q-000039
+- q-1gzx36x
+- q-wcvpq7t

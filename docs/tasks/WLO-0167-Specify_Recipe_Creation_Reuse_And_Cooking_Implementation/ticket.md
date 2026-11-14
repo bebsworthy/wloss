@@ -1,15 +1,25 @@
 ---
 id: WLO-0167
+
 title: 'Specify recipe creation, reuse and cooking implementation'
+
 status: done
-theme:
-release:
-created: 2026-09-21T09:50:21Z
-modified: 2026-09-21T10:11:07Z
 closed: 2026-09-21T10:04:23Z
-revision: 1a4ca7f63ee79d64
+status_changed: 2026-09-21T10:04:23Z
+
+theme:
+
+release:
+
+created: 2026-09-21T09:50:21Z
+
 blocks: []
+
 related: [WLO-0157, WLO-0160, WLO-0161, WLO-0165, WLO-0166, WLO-0168, WLO-0169, WLO-0170, WLO-0171, WLO-0172, WLO-0173, WLO-0174, WLO-0175, WLO-0176, WLO-0177]
+
+parent:
+
+rank:
 ---
 
 # Description

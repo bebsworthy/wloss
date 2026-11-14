@@ -4,6 +4,6 @@
 
 ## Resolved
 
-- q-000031
-- q-000032
-- q-000033
+- q-2xxwswc
+- q-3dbzp4v
+- q-gjnpcp5

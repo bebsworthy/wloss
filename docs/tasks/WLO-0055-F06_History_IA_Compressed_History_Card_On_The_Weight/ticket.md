@@ -1,15 +1,25 @@
 ---
 id: WLO-0055
+
 title: 'F06 history IA: compressed history card on the weight surface + full-page logbook (verbatim, month sections, windowed)'
+
 status: done
-theme:
-release:
-created: 2026-09-14T21:37:01Z
-modified: 2026-09-15T21:28:00Z
 closed: 2026-09-15T21:28:00Z
-revision: 159a1869412ab347
+status_changed: 2026-09-15T21:28:00Z
+
+theme:
+
+release:
+
+created: 2026-09-14T21:37:01Z
+
 blocks: []
+
 related: [WLO-0050, WLO-0052, WLO-0056]
+
+parent:
+
+rank:
 ---
 
 # Description

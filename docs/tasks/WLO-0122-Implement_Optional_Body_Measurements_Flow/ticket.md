@@ -1,15 +1,25 @@
 ---
 id: WLO-0122
+
 title: Implement optional body measurements flow
+
 status: done
-theme:
-release:
-created: 2026-09-16T23:28:08Z
-modified: 2026-09-16T23:47:05Z
 closed: 2026-09-16T23:47:05Z
-revision: 8aaa37f45ce1b78b
+status_changed: 2026-09-16T23:47:05Z
+
+theme:
+
+release:
+
+created: 2026-09-16T23:28:08Z
+
 blocks: []
+
 related: []
+
+parent:
+
+rank:
 ---
 
 # Description

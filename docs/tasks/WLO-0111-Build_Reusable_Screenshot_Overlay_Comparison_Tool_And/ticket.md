@@ -1,15 +1,25 @@
 ---
 id: WLO-0111
+
 title: Build reusable screenshot overlay comparison tool and review weight layout
+
 status: done
-theme:
-release:
-created: 2026-09-16T18:09:07Z
-modified: 2026-09-16T18:14:22Z
 closed: 2026-09-16T18:14:22Z
-revision: 939707b59b914827
+status_changed: 2026-09-16T18:14:22Z
+
+theme:
+
+release:
+
+created: 2026-09-16T18:09:07Z
+
 blocks: []
+
 related: []
+
+parent:
+
+rank:
 ---
 
 # Description

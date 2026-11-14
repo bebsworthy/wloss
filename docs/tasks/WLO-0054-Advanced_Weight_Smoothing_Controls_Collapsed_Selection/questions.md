@@ -2,7 +2,7 @@
 
 # Questions · WLO-0054
 
-## q-000037 · answered
+## q-fmecp1q · answered
 
 During a tuner preview (non-default smoother/α) the hero stat and delta chip currently swap to the preview values while the banner claims 'the saved trend keeps the default smoother' (WLO-0054 §B). Which behavior?
 

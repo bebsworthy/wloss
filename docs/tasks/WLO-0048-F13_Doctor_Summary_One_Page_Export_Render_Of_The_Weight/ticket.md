@@ -1,15 +1,25 @@
 ---
 id: WLO-0048
+
 title: 'F13 doctor summary: one-page export render of the weight story'
+
 status: backlog
-theme: weight-advanced
-release: 3
-created: 2026-09-14T13:38:55Z
-modified: 2026-09-15T21:28:45Z
 closed:
-revision: bf9ad70d92cc0bbe
+status_changed: 2026-09-15T21:28:45Z
+
+theme: weight-advanced
+
+release: 3
+
+created: 2026-09-14T13:38:55Z
+
 blocks: []
+
 related: [WLO-0045, WLO-0073]
+
+parent:
+
+rank: 5570560
 ---
 
 # Description

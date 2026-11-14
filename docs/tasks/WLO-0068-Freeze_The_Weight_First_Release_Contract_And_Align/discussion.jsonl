@@ -1,0 +1,6 @@
+{"v":1,"eid":"effd4e8af50c74ec","at":"2026-09-15T21:31:14Z","n":0,"op":"question.add","id":"q-1gzx36x","by":null,"text":"For the weight-first launch, which goal modes are first-class?","suggestions":["Loss, maintenance, and gain (recommended: credible long-term weight management)","Loss and maintenance only","Loss only, with explicit unsupported states elsewhere"],"was":"q-000038"}
+{"v":1,"eid":"7d6a8cb4883eeb34","at":"2026-09-15T21:31:14Z","n":1,"op":"question.approve","id":"q-1gzx36x","by":null,"suggestion":1}
+{"v":1,"eid":"ab7f8dc8331ba32b","at":"2026-09-15T21:31:14Z","n":2,"op":"question.resolve","id":"q-1gzx36x","by":null,"basis":"7d6a8cb4883eeb34"}
+{"v":1,"eid":"6d6a95a5bafb855b","at":"2026-09-15T21:31:14Z","n":3,"op":"question.add","id":"q-wcvpq7t","by":null,"text":"Which navigation model should anchor the weight-first launch?","suggestions":["Make Weight a primary destination (recommended)","Keep Hub primary but redesign it as the Weight home","Keep the current five-tab IA"],"was":"q-000039"}
+{"v":1,"eid":"471f35d77cc80b6f","at":"2026-09-15T21:31:14Z","n":4,"op":"question.approve","id":"q-wcvpq7t","by":null,"suggestion":1}
+{"v":1,"eid":"352395f9e9d72be5","at":"2026-09-15T21:31:14Z","n":5,"op":"question.resolve","id":"q-wcvpq7t","by":null,"basis":"471f35d77cc80b6f"}

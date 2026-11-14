@@ -2,7 +2,7 @@
 
 # Questions · WLO-0053
 
-## q-000035 · answered
+## q-0pgz39e · answered
 
 Trend-line gate (F06 §4): the current rule — ≥3 daily scalars within [today-6, today] — keeps the line hidden forever after any ≥2-week lapse and blocks back-filled history (WLO-0053 §D). Re-scope it?
 
@@ -10,7 +10,7 @@ Trend-line gate (F06 §4): the current rule — ≥3 daily scalars within [today
 - [ ] Re-scope with a span floor: ≥3 scalars spanning ≥5 days in-window (stops a 3-day burst drawing a line)
 - [ ] Keep the today-anchored gate; fix the copy only (lapsed users get dots + honest message, never a line)
 
-## q-000036 · answered
+## q-0y3xdbs · answered
 
 The chart's top-right 'latest' numeral silently falls back to the window max when the trend line is hidden — the '78.3 / 78.3' duplicate in the screenshots (WLO-0053 §B). Treatment?
 

@@ -1,15 +1,25 @@
 ---
 id: WLO-0112
+
 title: Automate mockup and emulator comparison for agent use
+
 status: done
-theme:
-release:
-created: 2026-09-16T18:21:12Z
-modified: 2026-09-16T18:24:52Z
 closed: 2026-09-16T18:24:52Z
-revision: 87c181b613a1128f
+status_changed: 2026-09-16T18:24:52Z
+
+theme:
+
+release:
+
+created: 2026-09-16T18:21:12Z
+
 blocks: []
+
 related: []
+
+parent:
+
+rank:
 ---
 
 # Description

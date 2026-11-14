@@ -1,15 +1,25 @@
 ---
 id: WLO-0027
+
 title: 'M5 · Plan → shop pipeline (F03, F04)'
+
 status: done
-theme:
-release:
-created: 2026-09-12T10:02:19Z
-modified: 2026-09-13T06:56:36Z
 closed: 2026-09-13T06:56:36Z
-revision: acf575aa3851075b
+status_changed: 2026-09-13T06:56:36Z
+
+theme:
+
+release:
+
+created: 2026-09-12T10:02:19Z
+
 blocks: [WLO-0028]
+
 related: [WLO-0014, WLO-0156]
+
+parent:
+
+rank:
 ---
 
 # Description

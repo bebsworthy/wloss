@@ -1,15 +1,25 @@
 ---
 id: WLO-0034
+
 title: 'Forecast card: design-system header + single provenance pill, informative arrival copy, shared-time-axis chart with month ticks and legend, measured-mode wiring'
+
 status: done
-theme:
-release:
-created: 2026-09-14T11:09:16Z
-modified: 2026-09-14T12:54:10Z
 closed: 2026-09-14T12:54:10Z
-revision: da5f5cc5098fa1eb
+status_changed: 2026-09-14T12:54:10Z
+
+theme:
+
+release:
+
+created: 2026-09-14T11:09:16Z
+
 blocks: []
+
 related: []
+
+parent:
+
+rank:
 ---
 
 # Description

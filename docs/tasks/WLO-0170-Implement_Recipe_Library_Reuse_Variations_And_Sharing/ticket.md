@@ -1,15 +1,25 @@
 ---
 id: WLO-0170
+
 title: 'Implement recipe library, reuse, variations and sharing'
+
 status: todo
-theme:
-release:
-created: 2026-09-21T10:10:09Z
-modified: 2026-09-21T10:10:11Z
 closed:
-revision: 199db72114f0cb0d
+status_changed: 2026-09-21T10:10:11Z
+
+theme:
+
+release:
+
+created: 2026-09-21T10:10:09Z
+
 blocks: [WLO-0173, WLO-0176, WLO-0177]
+
 related: [WLO-0167]
+
+parent:
+
+rank: 11206656
 ---
 
 # Description

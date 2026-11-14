@@ -1,15 +1,25 @@
 ---
 id: WLO-0074
+
 title: 'Goal editor parity: shared controls and live forecast'
+
 status: done
-theme: weight-experience
-release: 1
-created: 2026-09-15T21:28:24Z
-modified: 2026-09-15T23:52:42Z
 closed: 2026-09-15T23:52:26Z
-revision: 22e6c089fd4dfef5
+status_changed: 2026-09-15T23:52:26Z
+
+theme: weight-experience
+
+release: 1
+
+created: 2026-09-15T21:28:24Z
+
 blocks: [WLO-0045]
+
 related: [WLO-0079, WLO-0083]
+
+parent:
+
+rank:
 ---
 
 # Description

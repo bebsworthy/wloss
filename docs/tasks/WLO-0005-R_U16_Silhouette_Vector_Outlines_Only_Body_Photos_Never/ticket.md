@@ -1,15 +1,25 @@
 ---
 id: WLO-0005
+
 title: 'R-U16: silhouette = vector outlines only, body photos never stored'
+
 status: done
-theme:
-release:
-created: 2026-09-11T00:24:39Z
-modified: 2026-09-11T00:24:41Z
 closed: 2026-09-11T00:24:40Z
-revision: d2b180620e36acb4
+status_changed: 2026-09-11T00:24:40Z
+
+theme:
+
+release:
+
+created: 2026-09-11T00:24:39Z
+
 blocks: []
+
 related: []
+
+parent:
+
+rank:
 ---
 
 # Description

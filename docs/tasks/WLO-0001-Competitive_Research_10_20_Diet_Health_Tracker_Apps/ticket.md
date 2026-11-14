@@ -1,15 +1,25 @@
 ---
 id: WLO-0001
+
 title: 'Competitive research: 10-20 diet/health tracker apps'
+
 status: done
-theme:
-release:
-created: 2026-09-10T18:41:22Z
-modified: 2026-09-10T19:54:50Z
 closed: 2026-09-10T19:54:50Z
-revision: 5993f1995a876e88
+status_changed: 2026-09-10T19:54:50Z
+
+theme:
+
+release:
+
+created: 2026-09-10T18:41:22Z
+
 blocks: []
+
 related: []
+
+parent:
+
+rank:
 ---
 
 # Description

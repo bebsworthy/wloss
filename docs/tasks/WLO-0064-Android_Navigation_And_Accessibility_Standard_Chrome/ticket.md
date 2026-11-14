@@ -1,15 +1,25 @@
 ---
 id: WLO-0064
+
 title: 'Android navigation and accessibility: standard chrome, adaptation, semantics'
+
 status: done
-theme:
-release:
-created: 2026-09-15T18:20:51Z
-modified: 2026-09-15T19:17:01Z
 closed: 2026-09-15T19:16:46Z
-revision: a0c106637332c1b8
+status_changed: 2026-09-15T19:16:46Z
+
+theme:
+
+release:
+
+created: 2026-09-15T18:20:51Z
+
 blocks: []
+
 related: [WLO-0057, WLO-0082]
+
+parent:
+
+rank:
 ---
 
 # Description

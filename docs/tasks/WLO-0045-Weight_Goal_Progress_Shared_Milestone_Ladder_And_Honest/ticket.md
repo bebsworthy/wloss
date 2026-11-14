@@ -1,15 +1,25 @@
 ---
 id: WLO-0045
+
 title: 'Weight goal progress: shared milestone ladder and honest forecast-range states'
+
 status: done
-theme: weight-experience
-release: 1
-created: 2026-09-14T13:38:34Z
-modified: 2026-09-16T00:44:01Z
 closed: 2026-09-16T00:44:01Z
-revision: 58f231ce40d75b60
+status_changed: 2026-09-16T00:44:01Z
+
+theme: weight-experience
+
+release: 1
+
+created: 2026-09-14T13:38:34Z
+
 blocks: [WLO-0075]
+
 related: [WLO-0048, WLO-0079]
+
+parent:
+
+rank:
 ---
 
 # Description

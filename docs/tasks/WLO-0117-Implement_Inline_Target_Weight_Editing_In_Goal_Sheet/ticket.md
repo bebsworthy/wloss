@@ -1,15 +1,25 @@
 ---
 id: WLO-0117
+
 title: Implement inline target-weight editing in goal sheet
+
 status: done
-theme:
-release:
-created: 2026-09-16T21:38:13Z
-modified: 2026-09-16T21:51:07Z
 closed: 2026-09-16T21:51:07Z
-revision: 9306c846f9bc0383
+status_changed: 2026-09-16T21:51:07Z
+
+theme:
+
+release:
+
+created: 2026-09-16T21:38:13Z
+
 blocks: []
+
 related: []
+
+parent:
+
+rank:
 ---
 
 # Description
